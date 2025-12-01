@@ -1,6 +1,7 @@
-import { Content } from "@google/genai";
+import { Content, Part } from "@google/genai";
 import { CONFIG } from "../config/index.js";
 import { ai } from "../services/gemini.js";
+import { fetchAsBase64 } from "./fetch.js";
 
 const messageHistory = new Map<string, Content[]>();
 const tokenCache = new Map<string, number>();
@@ -21,25 +22,114 @@ export async function countTokens(contents: Content[]): Promise<number> {
     return result.totalTokens || 0;
   } catch (error) {
     console.error("[History] Token count error:", error);
-    // Fallback: ước tính ~4 chars = 1 token
     const text = JSON.stringify(contents);
     return Math.ceil(text.length / 4);
   }
 }
 
 /**
- * Convert raw Zalo message sang Gemini Content format
+ * Lấy URL media từ message content
  */
-function toGeminiContent(msg: any): Content {
+function getMediaUrl(content: any): string | null {
+  if (!content) return null;
+  return (
+    content.href || content.hdUrl || content.thumbUrl || content.thumb || null
+  );
+}
+
+/**
+ * Lấy MIME type từ msgType
+ */
+function getMimeType(msgType: string, content: any): string {
+  if (msgType?.includes("photo") || msgType === "webchat") return "image/png";
+  if (msgType?.includes("video")) return "video/mp4";
+  if (msgType?.includes("voice")) return "audio/aac";
+  if (msgType?.includes("sticker")) return "image/png";
+  if (msgType?.includes("file")) {
+    const params = content?.params ? JSON.parse(content.params) : {};
+    const ext = params?.fileExt?.toLowerCase()?.replace(".", "") || "";
+    return CONFIG.mimeTypes[ext] || "application/octet-stream";
+  }
+  return "application/octet-stream";
+}
+
+/**
+ * Convert raw Zalo message sang Gemini Content format (với media support)
+ */
+async function toGeminiContent(msg: any): Promise<Content> {
   const role = msg.isSelf ? "model" : "user";
-  const text =
-    typeof msg.data?.content === "string"
-      ? msg.data.content
-      : "[Hình ảnh/Sticker]";
-  return {
-    role,
-    parts: [{ text }],
-  };
+  const content = msg.data?.content;
+  const msgType = msg.data?.msgType || "";
+  const parts: Part[] = [];
+
+  // Text message
+  if (typeof content === "string") {
+    parts.push({ text: content });
+    return { role, parts };
+  }
+
+  // Media messages
+  const mediaUrl = getMediaUrl(content);
+  const isMedia =
+    msgType.includes("photo") ||
+    msgType.includes("video") ||
+    msgType.includes("voice") ||
+    msgType.includes("sticker") ||
+    msgType.includes("file") ||
+    msgType === "webchat";
+
+  if (isMedia && mediaUrl) {
+    try {
+      // Thêm mô tả text
+      let description = "";
+      if (msgType.includes("sticker")) description = "[Sticker]";
+      else if (msgType.includes("photo") || msgType === "webchat")
+        description = "[Hình ảnh]";
+      else if (msgType.includes("video")) {
+        const params = content?.params ? JSON.parse(content.params) : {};
+        const duration = params?.duration
+          ? Math.round(params.duration / 1000)
+          : 0;
+        description = `[Video ${duration}s]`;
+      } else if (msgType.includes("voice")) {
+        const params = content?.params ? JSON.parse(content.params) : {};
+        const duration = params?.duration
+          ? Math.round(params.duration / 1000)
+          : 0;
+        description = `[Voice ${duration}s]`;
+      } else if (msgType.includes("file")) {
+        const fileName = content?.title || "file";
+        description = `[File: ${fileName}]`;
+      }
+
+      if (description) {
+        parts.push({ text: description });
+      }
+
+      // Fetch và thêm media data
+      const base64Data = await fetchAsBase64(mediaUrl);
+      if (base64Data) {
+        const mimeType = getMimeType(msgType, content);
+        parts.push({
+          inlineData: {
+            data: base64Data,
+            mimeType,
+          },
+        });
+        console.log(`[History] 📎 Loaded media: ${description} (${mimeType})`);
+      } else {
+        parts.push({ text: `${description} (không tải được)` });
+      }
+    } catch (e) {
+      console.error("[History] Error loading media:", e);
+      parts.push({ text: "[Media không tải được]" });
+    }
+  } else {
+    // Fallback cho các loại khác
+    parts.push({ text: "[Nội dung không xác định]" });
+  }
+
+  return { role, parts };
 }
 
 /**
@@ -54,30 +144,30 @@ export async function loadOldMessages(
     const timeout = setTimeout(() => {
       console.log(`[History] ⚠️ Timeout lấy lịch sử thread ${threadId}`);
       resolve([]);
-    }, 5000);
+    }, 10000); // Tăng timeout vì cần fetch media
 
-    const handler = (messages: any[], msgType: number) => {
+    const handler = async (messages: any[], msgType: number) => {
       if (msgType !== type) return;
 
       const threadMessages = messages.filter((m) => m.threadId === threadId);
       threadMessages.sort((a, b) => parseInt(a.data.ts) - parseInt(b.data.ts));
 
-      const history: Content[] = threadMessages.map((msg) => ({
-        role: msg.isSelf ? "model" : "user",
-        parts: [
-          {
-            text:
-              typeof msg.data.content === "string"
-                ? msg.data.content
-                : "[Hình ảnh/Sticker]",
-          },
-        ],
-      }));
-
       clearTimeout(timeout);
       api.listener.off("old_messages", handler);
+
       console.log(
-        `[History] 📚 Thread ${threadId}: Tải được ${history.length} tin nhắn cũ`
+        `[History] 📚 Thread ${threadId}: Đang load ${threadMessages.length} tin nhắn cũ...`
+      );
+
+      // Convert tất cả messages (bao gồm media)
+      const history: Content[] = [];
+      for (const msg of threadMessages) {
+        const content = await toGeminiContent(msg);
+        history.push(content);
+      }
+
+      console.log(
+        `[History] ✅ Thread ${threadId}: Đã load ${history.length} tin nhắn`
       );
       resolve(history);
     };
@@ -131,14 +221,31 @@ async function trimHistoryByTokens(threadId: string): Promise<void> {
 }
 
 /**
- * Lưu tin nhắn mới vào history
+ * Lưu tin nhắn mới vào history (với media support)
  */
 export async function saveToHistory(
   threadId: string,
   message: any
 ): Promise<void> {
   const history = messageHistory.get(threadId) || [];
-  history.push(toGeminiContent(message));
+  const content = await toGeminiContent(message);
+  history.push(content);
+  messageHistory.set(threadId, history);
+  await trimHistoryByTokens(threadId);
+}
+
+/**
+ * Lưu response text vào history (cho bot response)
+ */
+export async function saveResponseToHistory(
+  threadId: string,
+  responseText: string
+): Promise<void> {
+  const history = messageHistory.get(threadId) || [];
+  history.push({
+    role: "model",
+    parts: [{ text: responseText }],
+  });
   messageHistory.set(threadId, history);
   await trimHistoryByTokens(threadId);
 }
@@ -151,7 +258,7 @@ export function getHistory(threadId: string): Content[] {
 }
 
 /**
- * Lấy history dạng text context (cho prompt)
+ * Lấy history dạng text context (cho prompt) - chỉ lấy text parts
  */
 export function getHistoryContext(threadId: string): string {
   const history = getHistory(threadId);
@@ -160,11 +267,11 @@ export function getHistoryContext(threadId: string): string {
   return history
     .map((msg, index) => {
       const sender = msg.role === "model" ? "Bot" : "User";
-      const text =
-        msg.parts?.[0] && "text" in msg.parts[0]
-          ? msg.parts[0].text
-          : "(media)";
-      return `[${index}] ${sender}: ${text}`;
+      const textParts = msg.parts
+        ?.filter((p): p is { text: string } => "text" in p)
+        .map((p) => p.text)
+        .join(" ");
+      return `[${index}] ${sender}: ${textParts || "(media)"}`;
     })
     .join("\n");
 }

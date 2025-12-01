@@ -6,7 +6,11 @@ import {
   extractYouTubeUrls,
 } from "../services/gemini.js";
 import { sendResponse } from "./response.js";
-import { saveToHistory, getHistoryContext } from "../utils/history.js";
+import {
+  saveToHistory,
+  saveResponseToHistory,
+  getHistoryContext,
+} from "../utils/history.js";
 import { CONFIG, PROMPTS } from "../config/index.js";
 import { AIResponse } from "../config/schema.js";
 
@@ -68,15 +72,12 @@ export async function handleText(api: any, message: any, threadId: string) {
 
   await sendResponse(api, aiReply, threadId, message);
 
-  // Lưu response vào history - gộp tất cả text messages
+  // Lưu response vào history
   const responseText = aiReply.messages
     .map((m) => m.text)
     .filter(Boolean)
     .join(" ");
-  saveToHistory(threadId, {
-    isSelf: true,
-    data: { content: responseText },
-  });
+  await saveResponseToHistory(threadId, responseText);
 
   console.log(`[Bot] ✅ Đã trả lời.`);
 }
