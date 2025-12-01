@@ -24,6 +24,33 @@ const zalo = new Zalo({ selfListen: true, logging: true });
 // Rate limiter: lưu thời gian tin nhắn cuối của mỗi user
 const lastMessageTime = new Map<string, number>();
 
+// Lưu lịch sử tin nhắn gần đây của mỗi thread (để AI có thể quote)
+const messageHistory = new Map<string, any[]>();
+const MAX_HISTORY = 10; // Giữ 10 tin nhắn gần nhất
+
+function saveMessageToHistory(threadId: string, message: any) {
+  const history = messageHistory.get(threadId) || [];
+  history.push(message);
+  if (history.length > MAX_HISTORY) {
+    history.shift(); // Xóa tin cũ nhất
+  }
+  messageHistory.set(threadId, history);
+}
+
+function getHistoryContext(threadId: string): string {
+  const history = messageHistory.get(threadId) || [];
+  if (history.length === 0) return "";
+
+  return history
+    .map((msg, index) => {
+      const sender = msg.isSelf ? "Bot" : "User";
+      const content =
+        typeof msg.data?.content === "string" ? msg.data.content : "(media)";
+      return `[${index}] ${sender}: ${content}`;
+    })
+    .join("\n");
+}
+
 const SYSTEM_PROMPT = `Bạn là trợ lý AI vui tính trên Zalo. Trả lời ngắn gọn, tự nhiên.
 
 QUAN TRỌNG - Thêm tag cảm xúc ở ĐẦU câu trả lời:
@@ -33,6 +60,10 @@ QUAN TRỌNG - Thêm tag cảm xúc ở ĐẦU câu trả lời:
 - [SAD] nếu buồn, đồng cảm
 - [ANGRY] nếu tức giận
 - [LIKE] cho các trường hợp bình thường
+
+Nếu muốn TRÍCH DẪN (quote) một tin nhắn cũ trong lịch sử, thêm [QUOTE:số] ở đầu.
+Ví dụ: "[QUOTE:2] [HAHA] Đúng rồi, như mình đã nói!" - sẽ quote tin nhắn số 2 trong lịch sử.
+Chỉ dùng QUOTE khi thực sự cần nhắc lại tin nhắn cũ có liên quan.
 
 Nếu muốn gửi sticker, thêm [STICKER: keyword] vào cuối câu.
 Ví dụ: "[HAHA] Chào bạn! Hôm nay vui quá! [STICKER: hello]"
@@ -117,7 +148,8 @@ async function sendResponseWithSticker(
   originalMessage?: any
 ): Promise<void> {
   // Lấy reaction từ response
-  const { reaction, cleanText } = getReactionFromResponse(responseText);
+  const { reaction, cleanText: textAfterReaction } =
+    getReactionFromResponse(responseText);
 
   // Thả reaction vào tin nhắn gốc
   if (originalMessage) {
@@ -127,6 +159,23 @@ async function sendResponseWithSticker(
     } catch (e) {
       console.error("[Bot] Lỗi thả reaction:", e);
     }
+  }
+
+  // Kiểm tra xem AI có muốn quote tin nhắn cũ không
+  const quoteRegex = /\[QUOTE:(\d+)\]/i;
+  const quoteMatch = textAfterReaction.match(quoteRegex);
+  let messageToQuote = originalMessage;
+  let cleanText = textAfterReaction;
+
+  if (quoteMatch) {
+    const quoteIndex = parseInt(quoteMatch[1]);
+    const history = messageHistory.get(threadId) || [];
+
+    if (quoteIndex >= 0 && quoteIndex < history.length) {
+      messageToQuote = history[quoteIndex];
+      console.log(`[Bot] 📎 AI muốn quote tin nhắn #${quoteIndex}`);
+    }
+    cleanText = textAfterReaction.replace(quoteMatch[0], "").trim();
   }
 
   const stickerRegex = /\[STICKER:\s*(.*?)\]/i;
@@ -141,7 +190,20 @@ async function sendResponseWithSticker(
   }
 
   if (finalMessage) {
-    await api.sendMessage(`🤖 AI: ${finalMessage}`, threadId, ThreadType.User);
+    // Gửi tin nhắn kèm trích dẫn (quote)
+    if (messageToQuote?.data) {
+      await api.sendMessage(
+        { msg: `🤖 AI: ${finalMessage}`, quote: messageToQuote.data },
+        threadId,
+        ThreadType.User
+      );
+    } else {
+      await api.sendMessage(
+        `🤖 AI: ${finalMessage}`,
+        threadId,
+        ThreadType.User
+      );
+    }
   }
 
   if (stickerKeyword) {
@@ -368,11 +430,37 @@ async function main() {
       }
     }
 
+    // --- XỬ LÝ TIN NHẮN CÓ TRÍCH DẪN (User reply tin nhắn cũ) ---
+    const quoteData = message.data?.quote;
+    if (quoteData) {
+      const quoteContent =
+        quoteData.msg || quoteData.content || "(nội dung không xác định)";
+      console.log(`[Bot] 💬 User reply tin nhắn: "${quoteContent}"`);
+
+      // Gộp context: tin nhắn được trích dẫn + câu hỏi hiện tại
+      userPrompt = `Người dùng đang trả lời/hỏi về tin nhắn cũ có nội dung: "${quoteContent}"\n\nCâu hỏi/yêu cầu của họ: "${content}"`;
+    }
+
+    // Lưu tin nhắn user vào history
+    saveMessageToHistory(threadId, message);
+
+    // Lấy lịch sử chat để AI có context
+    const historyContext = getHistoryContext(threadId);
+    const promptWithHistory = historyContext
+      ? `Lịch sử chat gần đây:\n${historyContext}\n\nTin nhắn mới từ User: ${userPrompt}`
+      : userPrompt;
+
     console.log(`[Bot] 📩 Câu hỏi: ${userPrompt}`);
     await api.sendTypingEvent(threadId, ThreadType.User);
 
-    const aiReply = await getGeminiReply(userPrompt);
+    const aiReply = await getGeminiReply(promptWithHistory);
     await sendResponseWithSticker(api, aiReply, threadId, message);
+
+    // Lưu tin nhắn bot vào history (tạo fake message object)
+    saveMessageToHistory(threadId, {
+      isSelf: true,
+      data: { content: aiReply.replace(/\[.*?\]/g, "").trim() },
+    });
 
     console.log(`[Bot] ✅ Đã trả lời.`);
   });
