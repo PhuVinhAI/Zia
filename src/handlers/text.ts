@@ -1,5 +1,5 @@
 import { ThreadType } from "../services/zalo.js";
-import { getGeminiReply } from "../services/gemini.js";
+import { sendMessage, generateContent } from "../services/gemini.js";
 import { sendResponse } from "./response.js";
 import { saveToHistory, getHistoryContext } from "../utils/history.js";
 import { CONFIG, PROMPTS } from "../config/index.js";
@@ -61,7 +61,8 @@ export async function handleText(api: any, message: any, threadId: string) {
   console.log(`[Bot] 📩 Câu hỏi: ${userPrompt}`);
   await api.sendTypingEvent(threadId, ThreadType.User);
 
-  const aiReply = await getGeminiReply(promptWithHistory);
+  // Sử dụng multi-turn chat hoặc single generate
+  const aiReply = await generateContent(promptWithHistory);
   await sendResponse(api, aiReply, threadId, message);
 
   // Lưu response vào history

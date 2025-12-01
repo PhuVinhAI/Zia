@@ -1,8 +1,11 @@
 import { ThreadType } from "../services/zalo.js";
-import { getGeminiReply, ai } from "../services/gemini.js";
+import {
+  generateWithImage,
+  generateWithAudio,
+  generateWithFile,
+} from "../services/gemini.js";
 import { sendResponse } from "./response.js";
-import { fetchAsBase64 } from "../utils/fetch.js";
-import { CONFIG, SYSTEM_PROMPT, PROMPTS } from "../config/index.js";
+import { CONFIG, PROMPTS } from "../config/index.js";
 
 export async function handleSticker(api: any, message: any, threadId: string) {
   const content = message.data?.content;
@@ -14,7 +17,7 @@ export async function handleSticker(api: any, message: any, threadId: string) {
     const stickerUrl = stickerInfo?.stickerUrl || stickerInfo?.stickerSpriteUrl;
 
     await api.sendTypingEvent(threadId, ThreadType.User);
-    const aiReply = await getGeminiReply(PROMPTS.sticker, stickerUrl);
+    const aiReply = await generateWithImage(PROMPTS.sticker, stickerUrl);
     await sendResponse(api, aiReply, threadId, message);
     console.log(`[Bot] ✅ Đã trả lời sticker!`);
   } catch (e) {
@@ -30,7 +33,7 @@ export async function handleImage(api: any, message: any, threadId: string) {
 
   try {
     await api.sendTypingEvent(threadId, ThreadType.User);
-    const aiReply = await getGeminiReply(PROMPTS.image, imageUrl);
+    const aiReply = await generateWithImage(PROMPTS.image, imageUrl);
     await sendResponse(api, aiReply, threadId, message);
     console.log(`[Bot] ✅ Đã trả lời ảnh!`);
   } catch (e) {
@@ -48,7 +51,7 @@ export async function handleVideo(api: any, message: any, threadId: string) {
 
   try {
     await api.sendTypingEvent(threadId, ThreadType.User);
-    const aiReply = await getGeminiReply(PROMPTS.video(duration), thumbUrl);
+    const aiReply = await generateWithImage(PROMPTS.video(duration), thumbUrl);
     await sendResponse(api, aiReply, threadId, message);
     console.log(`[Bot] ✅ Đã trả lời video!`);
   } catch (e) {
@@ -65,29 +68,14 @@ export async function handleVoice(api: any, message: any, threadId: string) {
   console.log(`[Bot] 🎤 Nhận voice: ${duration}s`);
 
   try {
-    const base64Audio = await fetchAsBase64(audioUrl);
-
-    if (base64Audio) {
-      await api.sendTypingEvent(threadId, ThreadType.User);
-
-      const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
-        contents: [
-          { text: `${SYSTEM_PROMPT}\n\n${PROMPTS.voice(duration)}` },
-          { inlineData: { data: base64Audio, mimeType: "audio/aac" } },
-        ],
-      });
-
-      const aiReply = response.text || "Không nghe rõ, bạn nói lại được không?";
-      await sendResponse(api, aiReply, threadId, message);
-      console.log(`[Bot] ✅ Đã trả lời voice!`);
-    } else {
-      await api.sendMessage(
-        "🤖 AI: Không tải được voice, thử lại nhé!",
-        threadId,
-        ThreadType.User
-      );
-    }
+    await api.sendTypingEvent(threadId, ThreadType.User);
+    const aiReply = await generateWithAudio(
+      PROMPTS.voice(duration),
+      audioUrl,
+      "audio/aac"
+    );
+    await sendResponse(api, aiReply, threadId, message);
+    console.log(`[Bot] ✅ Đã trả lời voice!`);
   } catch (e) {
     console.error("[Bot] Lỗi xử lý voice:", e);
   }
@@ -106,42 +94,24 @@ export async function handleFile(api: any, message: any, threadId: string) {
   console.log(`[Bot] 📄 Nhận file: ${fileName} (${fileSize}KB)`);
 
   try {
+    await api.sendTypingEvent(threadId, ThreadType.User);
+
     if (CONFIG.readableFormats.includes(fileExt)) {
-      const base64File = await fetchAsBase64(fileUrl);
-
-      if (base64File) {
-        await api.sendTypingEvent(threadId, ThreadType.User);
-
-        const response = await ai.models.generateContent({
-          model: "gemini-2.5-flash",
-          contents: [
-            { text: `${SYSTEM_PROMPT}\n\n${PROMPTS.file(fileName, fileSize)}` },
-            {
-              inlineData: {
-                data: base64File,
-                mimeType:
-                  CONFIG.mimeTypes[fileExt] || "application/octet-stream",
-              },
-            },
-          ],
-        });
-
-        const aiReply = response.text || "Không đọc được file này.";
-        await sendResponse(api, aiReply, threadId, message);
-        console.log(`[Bot] ✅ Đã trả lời file!`);
-      } else {
-        await api.sendMessage(
-          `🤖 AI: Không tải được file "${fileName}"!`,
-          threadId,
-          ThreadType.User
-        );
-      }
+      const mimeType = CONFIG.mimeTypes[fileExt] || "application/octet-stream";
+      const aiReply = await generateWithFile(
+        PROMPTS.file(fileName, fileSize),
+        fileUrl,
+        mimeType
+      );
+      await sendResponse(api, aiReply, threadId, message);
+      console.log(`[Bot] ✅ Đã trả lời file!`);
     } else {
-      await api.sendTypingEvent(threadId, ThreadType.User);
-      const aiReply = await getGeminiReply(
+      const { generateContent } = await import("../services/gemini.js");
+      const aiReply = await generateContent(
         PROMPTS.fileUnreadable(fileName, fileExt, fileSize)
       );
       await sendResponse(api, aiReply, threadId, message);
+      console.log(`[Bot] ✅ Đã trả lời file (không đọc được)!`);
     }
   } catch (e) {
     console.error("[Bot] Lỗi xử lý file:", e);
