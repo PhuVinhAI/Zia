@@ -244,8 +244,38 @@ async function main() {
       return;
     }
 
-    // --- XỬ LÝ TEXT ---
-    if (typeof content !== "string") return;
+    // --- XỬ LÝ ẢNH ---
+    if (msgType === "chat.photo" || (msgType === "webchat" && content?.href)) {
+      // Lấy URL ảnh từ content
+      const imageUrl = content?.href || content?.hdUrl || content?.thumbUrl;
+
+      if (imageUrl) {
+        console.log(`[Bot] 🖼️ Nhận ảnh: ${imageUrl}`);
+
+        try {
+          const aiPrompt = `Người dùng gửi một hình ảnh. Hãy mô tả chi tiết hình ảnh này và phản hồi phù hợp.`;
+
+          console.log(`[Bot] 🤖 Cho AI xem ảnh...`);
+          await api.sendTypingEvent(threadId, ThreadType.User);
+
+          const aiReply = await getGeminiReply(aiPrompt, imageUrl);
+          await sendResponseWithSticker(api, aiReply, threadId, message);
+          console.log(`[Bot] ✅ Đã trả lời ảnh!`);
+        } catch (e) {
+          console.error("[Bot] Lỗi xử lý ảnh:", e);
+        }
+        return;
+      }
+    }
+
+    // DEBUG: Log các loại tin nhắn khác để biết cấu trúc
+    if (typeof content !== "string") {
+      console.log(
+        `[DEBUG] msgType: ${msgType}, content:`,
+        JSON.stringify(content, null, 2)
+      );
+      return;
+    }
 
     let userPrompt = content;
 
