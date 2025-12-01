@@ -243,6 +243,42 @@ export async function generateContent(prompt: string): Promise<AIResponse> {
 }
 
 /**
+ * Generate content với video (base64, dưới 20MB)
+ */
+export async function generateWithVideo(
+  prompt: string,
+  videoUrl: string,
+  mimeType: string = "video/mp4"
+): Promise<AIResponse> {
+  try {
+    console.log(`[Gemini] 🎬 Xử lý video: ${videoUrl}`);
+    const base64Video = await fetchAsBase64(videoUrl);
+    if (!base64Video) {
+      return {
+        reaction: "sad",
+        messages: [
+          { text: "Không tải được video.", sticker: "", quoteIndex: -1 },
+        ],
+      };
+    }
+
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: [
+        { text: `${SYSTEM_PROMPT}\n\n${prompt}` },
+        { inlineData: { data: base64Video, mimeType } },
+      ],
+      config: CONFIG_WITH_TOOLS,
+    });
+
+    return parseAIResponse(response.text || "{}");
+  } catch (error) {
+    console.error("Gemini Video Error:", error);
+    return DEFAULT_RESPONSE;
+  }
+}
+
+/**
  * Generate content với YouTube video
  */
 export async function generateWithYouTube(

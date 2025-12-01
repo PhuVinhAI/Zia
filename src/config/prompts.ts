@@ -33,7 +33,9 @@ export const PROMPTS = {
   image:
     "Người dùng gửi một hình ảnh. Hãy mô tả chi tiết hình ảnh này và phản hồi phù hợp.",
   video: (duration: number) =>
-    `Người dùng gửi một video dài ${duration} giây. Đây là ảnh thumbnail của video. Hãy mô tả những gì bạn thấy trong ảnh và đoán nội dung video có thể là gì.`,
+    `Người dùng gửi một video dài ${duration} giây. Hãy XEM video và mô tả/nhận xét nội dung video. Nếu video có âm thanh/lời nói thì nghe và phản hồi phù hợp.`,
+  videoThumb: (duration: number) =>
+    `Người dùng gửi một video dài ${duration} giây (video quá lớn nên chỉ có thumbnail). Hãy mô tả những gì bạn thấy trong ảnh và đoán nội dung video có thể là gì.`,
   voice: (duration: number) =>
     `Người dùng gửi một tin nhắn thoại dài ${duration} giây. Hãy nghe và trả lời nội dung họ nói.`,
   file: (fileName: string, fileSize: number) =>

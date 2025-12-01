@@ -3,6 +3,7 @@ import {
   generateWithImage,
   generateWithAudio,
   generateWithFile,
+  generateWithVideo,
 } from "../services/gemini.js";
 import { sendResponse } from "./response.js";
 import { CONFIG, PROMPTS } from "../config/index.js";
@@ -43,16 +44,37 @@ export async function handleImage(api: any, message: any, threadId: string) {
 
 export async function handleVideo(api: any, message: any, threadId: string) {
   const content = message.data?.content;
+  const videoUrl = content?.href || content?.hdUrl;
   const thumbUrl = content?.thumb;
   const params = content?.params ? JSON.parse(content.params) : {};
   const duration = params?.duration ? Math.round(params.duration / 1000) : 0;
+  const fileSize = params?.fileSize ? parseInt(params.fileSize) : 0;
 
-  console.log(`[Bot] 🎬 Nhận video: ${duration}s`);
+  console.log(
+    `[Bot] 🎬 Nhận video: ${duration}s, ${Math.round(fileSize / 1024 / 1024)}MB`
+  );
 
   try {
     await api.sendTypingEvent(threadId, ThreadType.User);
-    const aiReply = await generateWithImage(PROMPTS.video(duration), thumbUrl);
-    await sendResponse(api, aiReply, threadId, message);
+
+    // Nếu video dưới 20MB thì gửi video thật, không thì dùng thumbnail
+    if (videoUrl && fileSize > 0 && fileSize < 20 * 1024 * 1024) {
+      console.log(`[Bot] 📹 Gửi video thật cho AI xem`);
+      const aiReply = await generateWithVideo(
+        PROMPTS.video(duration),
+        videoUrl,
+        "video/mp4"
+      );
+      await sendResponse(api, aiReply, threadId, message);
+    } else {
+      console.log(`[Bot] 🖼️ Video quá lớn, dùng thumbnail`);
+      const aiReply = await generateWithImage(
+        PROMPTS.videoThumb(duration),
+        thumbUrl
+      );
+      await sendResponse(api, aiReply, threadId, message);
+    }
+
     console.log(`[Bot] ✅ Đã trả lời video!`);
   } catch (e) {
     console.error("[Bot] Lỗi xử lý video:", e);
