@@ -1,17 +1,21 @@
-import { API, ThreadType, Message } from "zca-js";
+import * as zcajs from "zca-js";
 import { getGeminiReply, clearChatHistory } from "../core/gemini.js";
 import { handleStickerResponse } from "./sticker.js";
 import { logger } from "../utils/logger.js";
 
+// Workaround cho TypeScript không nhận export từ zca-js
+const { ThreadType, API } = zcajs as any;
+type ZaloAPI = InstanceType<typeof API>;
+
 export async function onIncomingMessage(
-  api: API,
-  message: Message
+  api: ZaloAPI,
+  message: any
 ): Promise<void> {
   // Bỏ qua tin nhắn bản thân
   if (message.isSelf) return;
 
   const threadId = message.threadId;
-  const type = message.type as ThreadType;
+  const type = message.type;
   const content = message.data?.content;
 
   // Kiểm tra loại tin nhắn - chỉ xử lý text

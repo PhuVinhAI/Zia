@@ -41,7 +41,7 @@ export async function getGeminiReply(
       messageText = `(Người dùng gửi ảnh: ${imageUrl}) ${userMessage}. Hãy mô tả ảnh hoặc trả lời câu hỏi liên quan.`;
     }
 
-    const result = await chat.sendMessage({ parts: [{ text: messageText }] });
+    const result = await chat.sendMessage({ message: messageText });
 
     // Cập nhật lịch sử
     history.push({ role: "user", parts: [{ text: messageText }] });

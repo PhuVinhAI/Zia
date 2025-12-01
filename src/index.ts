@@ -13,7 +13,9 @@ async function main() {
     logger.success(`>>> Đăng nhập thành công! Tên: ${userName}`);
 
     // Lắng nghe sự kiện tin nhắn
-    api.listener.on("message", (message) => onIncomingMessage(api, message));
+    api.listener.on("message", (message: any) =>
+      onIncomingMessage(api, message)
+    );
 
     // Bắt đầu socket
     api.listener.start();
