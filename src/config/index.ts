@@ -30,7 +30,7 @@ export const CONFIG = {
   prefix: settings.bot.prefix,
   requirePrefix: settings.bot.requirePrefix,
   rateLimitMs: settings.bot.rateLimitMs,
-  maxHistory: settings.bot.maxHistory,
+  maxTokenHistory: settings.bot.maxTokenHistory || 300000, // 300k tokens
   selfListen: settings.bot.selfListen,
   logging: settings.bot.logging,
 

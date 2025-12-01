@@ -4,7 +4,7 @@
     "prefix": "#bot",
     "requirePrefix": false,
     "rateLimitMs": 3000,
-    "maxHistory": 10,
+    "maxTokenHistory": 300000,
     "selfListen": true,
     "logging": true
   },
