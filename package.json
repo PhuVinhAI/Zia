@@ -1,0 +1,29 @@
+{
+  "name": "zalo-ai-bot",
+  "version": "1.0.0",
+  "description": "Zalo AI Bot using zca-js and Google Gemini",
+  "main": "dist/index.js",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "npx ts-node src/index.ts"
+  },
+  "keywords": [
+    "zalo",
+    "bot",
+    "gemini",
+    "ai"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@google/genai": "^1.30.0",
+    "dotenv": "^16.4.5",
+    "zca-js": "^2.0.4"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.2"
+  }
+}
