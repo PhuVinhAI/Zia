@@ -18,7 +18,6 @@ export function reloadSettings() {
     ...settings.bot,
     allowedUsers: settings.allowedUsers,
     stickerKeywords: settings.stickers.keywords,
-    readableFormats: settings.files.readableFormats,
   });
   console.log("[Config] ✅ Đã reload settings");
 }
@@ -40,9 +39,6 @@ export const CONFIG = {
 
   // Sticker keywords
   stickerKeywords: settings.stickers.keywords as string[],
-
-  // Readable file formats
-  readableFormats: settings.files.readableFormats as string[],
 
   // MIME types mapping
   mimeTypes: {

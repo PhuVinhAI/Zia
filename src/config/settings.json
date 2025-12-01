@@ -23,17 +23,5 @@
       "thanks",
       "sorry"
     ]
-  },
-  "files": {
-    "readableFormats": [
-      "pdf",
-      "doc",
-      "docx",
-      "txt",
-      "csv",
-      "json",
-      "xml",
-      "html"
-    ]
   }
 }
