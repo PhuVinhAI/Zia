@@ -324,6 +324,96 @@ async function main() {
       return;
     }
 
+    // --- XỬ LÝ FILE ---
+    if (msgType === "share.file" && content?.href) {
+      const fileName = content?.title || "file";
+      const fileUrl = content?.href;
+      const params = content?.params ? JSON.parse(content.params) : {};
+      const fileExt = params?.fileExt?.toLowerCase() || "";
+      const fileSize = params?.fileSize
+        ? Math.round(parseInt(params.fileSize) / 1024)
+        : 0;
+
+      console.log(`[Bot] 📄 Nhận file: ${fileName} (${fileSize}KB)`);
+
+      try {
+        // Các định dạng Gemini có thể đọc
+        const readableFormats = [
+          "pdf",
+          "doc",
+          "docx",
+          "txt",
+          "csv",
+          "json",
+          "xml",
+          "html",
+        ];
+
+        if (readableFormats.includes(fileExt)) {
+          // Tải file và gửi cho Gemini đọc
+          const base64File = await fetchImageAsBase64(fileUrl);
+
+          if (base64File) {
+            console.log(`[Bot] 🤖 Cho AI đọc file ${fileExt}...`);
+            await api.sendTypingEvent(threadId, ThreadType.User);
+
+            // Map extension sang MIME type
+            const mimeTypes: Record<string, string> = {
+              pdf: "application/pdf",
+              doc: "application/msword",
+              docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+              txt: "text/plain",
+              csv: "text/csv",
+              json: "application/json",
+              xml: "application/xml",
+              html: "text/html",
+            };
+
+            const response = await ai.models.generateContent({
+              model: "gemini-2.5-flash",
+              contents: [
+                {
+                  text: `${SYSTEM_PROMPT}\n\nNgười dùng gửi file "${fileName}" (${fileSize}KB). Hãy đọc và tóm tắt nội dung chính của file này.`,
+                },
+                {
+                  inlineData: {
+                    data: base64File,
+                    mimeType: mimeTypes[fileExt] || "application/octet-stream",
+                  },
+                },
+              ],
+            });
+
+            const aiReply = response.text || "Không đọc được file này.";
+            await sendResponseWithSticker(api, aiReply, threadId, message);
+            console.log(`[Bot] ✅ Đã trả lời file!`);
+          } else {
+            await api.sendMessage(
+              `🤖 AI: Không tải được file "${fileName}", thử lại nhé!`,
+              threadId,
+              ThreadType.User
+            );
+          }
+        } else {
+          // File không đọc được, chỉ thông báo
+          const aiPrompt = `Người dùng gửi file "${fileName}" (định dạng .${fileExt}, ${fileSize}KB). Đây là loại file mình không đọc được nội dung. Hãy phản hồi phù hợp.`;
+
+          await api.sendTypingEvent(threadId, ThreadType.User);
+          const aiReply = await getGeminiReply(aiPrompt);
+          await sendResponseWithSticker(api, aiReply, threadId, message);
+          console.log(`[Bot] ✅ Đã trả lời file (không đọc được)!`);
+        }
+      } catch (e) {
+        console.error("[Bot] Lỗi xử lý file:", e);
+        await api.sendMessage(
+          `🤖 AI: Lỗi xử lý file "${fileName}", thử lại sau nhé!`,
+          threadId,
+          ThreadType.User
+        );
+      }
+      return;
+    }
+
     // --- XỬ LÝ ẢNH ---
     if (msgType === "chat.photo" || (msgType === "webchat" && content?.href)) {
       // Lấy URL ảnh từ content
