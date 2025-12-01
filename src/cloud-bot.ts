@@ -4,7 +4,7 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const { Zalo, ThreadType } = zcajs as any;
+const { Zalo, ThreadType, Reactions } = zcajs as any;
 
 // --- CẤU HÌNH ---
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
@@ -25,9 +25,18 @@ const zalo = new Zalo({ selfListen: true, logging: true });
 const lastMessageTime = new Map<string, number>();
 
 const SYSTEM_PROMPT = `Bạn là trợ lý AI vui tính trên Zalo. Trả lời ngắn gọn, tự nhiên.
-Nếu muốn thể hiện cảm xúc, thêm tag [STICKER: keyword] vào cuối câu.
-Ví dụ: "Chào bạn! [STICKER: hello]" hoặc "Haha vui quá! [STICKER: haha]"
-Các keyword phổ biến: hello, hi, love, haha, sad, cry, angry, wow, ok, thanks, sorry`;
+
+QUAN TRỌNG - Thêm tag cảm xúc ở ĐẦU câu trả lời:
+- [HEART] nếu yêu thương, cảm ơn, dễ thương
+- [HAHA] nếu vui vẻ, hài hước  
+- [WOW] nếu ngạc nhiên, ấn tượng
+- [SAD] nếu buồn, đồng cảm
+- [ANGRY] nếu tức giận
+- [LIKE] cho các trường hợp bình thường
+
+Nếu muốn gửi sticker, thêm [STICKER: keyword] vào cuối câu.
+Ví dụ: "[HAHA] Chào bạn! Hôm nay vui quá! [STICKER: hello]"
+Các keyword sticker: hello, hi, love, haha, sad, cry, angry, wow, ok, thanks, sorry`;
 
 // Tải hình ảnh và chuyển sang base64
 async function fetchImageAsBase64(url: string): Promise<string | null> {
@@ -73,20 +82,62 @@ async function getGeminiReply(
   }
 }
 
+// Lấy reaction từ response AI
+function getReactionFromResponse(text: string): {
+  reaction: any;
+  cleanText: string;
+} {
+  const reactionMap: Record<string, any> = {
+    "[HEART]": Reactions.HEART,
+    "[HAHA]": Reactions.HAHA,
+    "[WOW]": Reactions.WOW,
+    "[SAD]": Reactions.SAD,
+    "[ANGRY]": Reactions.ANGRY,
+    "[LIKE]": Reactions.LIKE,
+  };
+
+  let reaction = Reactions.LIKE; // Mặc định
+  let cleanText = text;
+
+  for (const [tag, react] of Object.entries(reactionMap)) {
+    if (text.includes(tag)) {
+      reaction = react;
+      cleanText = text.replace(tag, "").trim();
+      break;
+    }
+  }
+
+  return { reaction, cleanText };
+}
+
 async function sendResponseWithSticker(
   api: any,
   responseText: string,
-  threadId: string
+  threadId: string,
+  originalMessage?: any
 ): Promise<void> {
-  const stickerRegex = /\[STICKER:\s*(.*?)\]/i;
-  const match = responseText.match(stickerRegex);
+  // Lấy reaction từ response
+  const { reaction, cleanText } = getReactionFromResponse(responseText);
 
-  let finalMessage = responseText;
+  // Thả reaction vào tin nhắn gốc
+  if (originalMessage) {
+    try {
+      await api.addReaction(reaction, originalMessage);
+      console.log(`[Bot] 💖 Đã thả reaction!`);
+    } catch (e) {
+      console.error("[Bot] Lỗi thả reaction:", e);
+    }
+  }
+
+  const stickerRegex = /\[STICKER:\s*(.*?)\]/i;
+  const match = cleanText.match(stickerRegex);
+
+  let finalMessage = cleanText;
   let stickerKeyword: string | null = null;
 
   if (match) {
     stickerKeyword = match[1].trim();
-    finalMessage = responseText.replace(match[0], "").trim();
+    finalMessage = cleanText.replace(match[0], "").trim();
   }
 
   if (finalMessage) {
@@ -185,7 +236,7 @@ async function main() {
         await api.sendTypingEvent(threadId, ThreadType.User);
 
         const aiReply = await getGeminiReply(aiPrompt, stickerUrl);
-        await sendResponseWithSticker(api, aiReply, threadId);
+        await sendResponseWithSticker(api, aiReply, threadId, message);
         console.log(`[Bot] ✅ Đã trả lời sticker!`);
       } catch (e) {
         console.error("[Bot] Lỗi xử lý sticker:", e);
@@ -216,7 +267,7 @@ async function main() {
     await api.sendTypingEvent(threadId, ThreadType.User);
 
     const aiReply = await getGeminiReply(userPrompt);
-    await sendResponseWithSticker(api, aiReply, threadId);
+    await sendResponseWithSticker(api, aiReply, threadId, message);
 
     console.log(`[Bot] ✅ Đã trả lời.`);
   });
