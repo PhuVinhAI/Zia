@@ -268,6 +268,34 @@ async function main() {
       }
     }
 
+    // --- XỬ LÝ VIDEO ---
+    if (msgType === "chat.video.msg" && content?.thumb) {
+      const videoUrl = content?.href;
+      const thumbUrl = content?.thumb;
+      const params = content?.params ? JSON.parse(content.params) : {};
+      const duration = params?.duration
+        ? Math.round(params.duration / 1000)
+        : 0;
+
+      console.log(`[Bot] 🎬 Nhận video: ${duration}s`);
+      console.log(`[Bot] 🖼️ Thumbnail: ${thumbUrl}`);
+
+      try {
+        // Dùng thumbnail để AI mô tả (nhanh hơn upload video)
+        const aiPrompt = `Người dùng gửi một video dài ${duration} giây. Đây là ảnh thumbnail của video. Hãy mô tả những gì bạn thấy trong ảnh và đoán nội dung video có thể là gì.`;
+
+        console.log(`[Bot] 🤖 Cho AI xem thumbnail video...`);
+        await api.sendTypingEvent(threadId, ThreadType.User);
+
+        const aiReply = await getGeminiReply(aiPrompt, thumbUrl);
+        await sendResponseWithSticker(api, aiReply, threadId, message);
+        console.log(`[Bot] ✅ Đã trả lời video!`);
+      } catch (e) {
+        console.error("[Bot] Lỗi xử lý video:", e);
+      }
+      return;
+    }
+
     // DEBUG: Log các loại tin nhắn khác để biết cấu trúc
     if (typeof content !== "string") {
       console.log(
