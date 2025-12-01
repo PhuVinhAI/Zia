@@ -1,5 +1,11 @@
 import { ThreadType } from "../services/zalo.js";
-import { sendMessage, generateContent } from "../services/gemini.js";
+import {
+  generateContent,
+  generateWithYouTube,
+  generateWithMultipleYouTube,
+  generateWithUrl,
+  extractYouTubeUrls,
+} from "../services/gemini.js";
 import { sendResponse } from "./response.js";
 import { saveToHistory, getHistoryContext } from "../utils/history.js";
 import { CONFIG, PROMPTS } from "../config/index.js";
@@ -31,24 +37,6 @@ export async function handleText(api: any, message: any, threadId: string) {
     userPrompt = PROMPTS.quote(quoteContent, content);
   }
 
-  // Xử lý link trong tin nhắn
-  const urlRegex = /(https?:\/\/[^\s]+)/gi;
-  const urls = content.match(urlRegex);
-  if (urls && urls.length > 0) {
-    console.log(`[Bot] 🔗 Phát hiện ${urls.length} link`);
-    const linkInfo = urls
-      .map((url: string) => {
-        try {
-          const domain = new URL(url).hostname;
-          return `- ${url} (từ ${domain})`;
-        } catch {
-          return `- ${url}`;
-        }
-      })
-      .join("\n");
-    userPrompt = PROMPTS.link(linkInfo, content);
-  }
-
   // Lưu vào history
   saveToHistory(threadId, message);
 
@@ -61,8 +49,32 @@ export async function handleText(api: any, message: any, threadId: string) {
   console.log(`[Bot] 📩 Câu hỏi: ${userPrompt}`);
   await api.sendTypingEvent(threadId, ThreadType.User);
 
-  // Sử dụng multi-turn chat hoặc single generate
-  const aiReply = await generateContent(promptWithHistory);
+  let aiReply: string;
+
+  // Kiểm tra YouTube URLs
+  const youtubeUrls = extractYouTubeUrls(content);
+  if (youtubeUrls.length > 0) {
+    console.log(`[Bot] 🎬 Phát hiện ${youtubeUrls.length} YouTube video`);
+    const ytPrompt = PROMPTS.youtube(youtubeUrls, content);
+    if (youtubeUrls.length === 1) {
+      aiReply = await generateWithYouTube(ytPrompt, youtubeUrls[0]);
+    } else {
+      aiReply = await generateWithMultipleYouTube(ytPrompt, youtubeUrls);
+    }
+  } else {
+    // Kiểm tra URL thông thường
+    const urlRegex = /(https?:\/\/[^\s]+)/gi;
+    const urls = content.match(urlRegex);
+    if (urls && urls.length > 0) {
+      console.log(`[Bot] 🔗 Phát hiện ${urls.length} link`);
+      const urlPrompt = PROMPTS.url(urls, content);
+      aiReply = await generateWithUrl(urlPrompt, urls);
+    } else {
+      // Tin nhắn text thường
+      aiReply = await generateContent(promptWithHistory);
+    }
+  }
+
   await sendResponse(api, aiReply, threadId, message);
 
   // Lưu response vào history

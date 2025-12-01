@@ -1,8 +1,4 @@
-import {
-  GoogleGenAI,
-  createUserContent,
-  createPartFromUri,
-} from "@google/genai";
+import { GoogleGenAI } from "@google/genai";
 import { SYSTEM_PROMPT } from "../config/index.js";
 import { fetchAsBase64 } from "../utils/fetch.js";
 
@@ -14,6 +10,29 @@ if (!GEMINI_API_KEY || GEMINI_API_KEY === "your_gemini_api_key_here") {
 }
 
 export const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+
+// Regex để detect YouTube URL
+const YOUTUBE_REGEX =
+  /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|v\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/gi;
+
+/**
+ * Kiểm tra và chuẩn hóa YouTube URL
+ */
+export function extractYouTubeUrls(text: string): string[] {
+  const matches = text.matchAll(YOUTUBE_REGEX);
+  const urls: string[] = [];
+  for (const match of matches) {
+    urls.push(`https://www.youtube.com/watch?v=${match[1]}`);
+  }
+  return urls;
+}
+
+/**
+ * Kiểm tra có phải YouTube URL không
+ */
+export function isYouTubeUrl(url: string): boolean {
+  return YOUTUBE_REGEX.test(url);
+}
 
 // Lưu chat sessions cho multi-turn conversation
 const chatSessions = new Map<string, any>();
@@ -158,6 +177,77 @@ export async function generateContent(prompt: string): Promise<string> {
   } catch (error) {
     console.error("Gemini Error:", error);
     return "Gemini đang bận, thử lại sau nhé!";
+  }
+}
+
+/**
+ * Generate content với YouTube video
+ */
+export async function generateWithYouTube(
+  prompt: string,
+  youtubeUrl: string
+): Promise<string> {
+  try {
+    console.log(`[Gemini] 🎬 Xử lý YouTube: ${youtubeUrl}`);
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: [
+        { text: `${SYSTEM_PROMPT}\n\n${prompt}` },
+        { fileData: { fileUri: youtubeUrl } },
+      ],
+    });
+    return response.text || "Không xem được video này.";
+  } catch (error) {
+    console.error("Gemini YouTube Error:", error);
+    return "Lỗi xử lý video YouTube, thử lại sau nhé!";
+  }
+}
+
+/**
+ * Generate content với URL context (đọc nội dung trang web)
+ */
+export async function generateWithUrl(
+  prompt: string,
+  urls: string[]
+): Promise<string> {
+  try {
+    console.log(`[Gemini] 🔗 Đọc URL: ${urls.join(", ")}`);
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: `${SYSTEM_PROMPT}\n\n${prompt}`,
+      config: {
+        tools: [{ urlContext: {} }],
+      },
+    });
+    return response.text || "Không đọc được link này.";
+  } catch (error) {
+    console.error("Gemini URL Error:", error);
+    return "Lỗi đọc link, thử lại sau nhé!";
+  }
+}
+
+/**
+ * Generate content với nhiều YouTube videos
+ */
+export async function generateWithMultipleYouTube(
+  prompt: string,
+  youtubeUrls: string[]
+): Promise<string> {
+  try {
+    console.log(`[Gemini] 🎬 Xử lý ${youtubeUrls.length} YouTube videos`);
+    const contents: any[] = [{ text: `${SYSTEM_PROMPT}\n\n${prompt}` }];
+    for (const url of youtubeUrls.slice(0, 10)) {
+      // Max 10 videos
+      contents.push({ fileData: { fileUri: url } });
+    }
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents,
+    });
+    return response.text || "Không xem được video này.";
+  } catch (error) {
+    console.error("Gemini YouTube Error:", error);
+    return "Lỗi xử lý video YouTube, thử lại sau nhé!";
   }
 }
 

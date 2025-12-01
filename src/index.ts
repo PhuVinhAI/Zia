@@ -11,6 +11,103 @@ import {
   handleText,
 } from "./handlers/index.js";
 
+// Queue tin nhắn theo thread để xử lý tuần tự
+const messageQueues = new Map<string, any[]>();
+const processingThreads = new Set<string>();
+
+// Xử lý một tin nhắn
+async function processMessage(api: any, message: any, threadId: string) {
+  const content = message.data?.content;
+  const msgType = message.data?.msgType;
+
+  if (msgType === "chat.sticker" && content?.id) {
+    await handleSticker(api, message, threadId);
+  } else if (msgType === "share.file" && content?.href) {
+    await handleFile(api, message, threadId);
+  } else if (
+    msgType === "chat.photo" ||
+    (msgType === "webchat" && content?.href)
+  ) {
+    await handleImage(api, message, threadId);
+  } else if (msgType === "chat.video.msg" && content?.thumb) {
+    await handleVideo(api, message, threadId);
+  } else if (msgType === "chat.voice" && content?.href) {
+    await handleVoice(api, message, threadId);
+  } else if (typeof content === "string") {
+    await handleText(api, message, threadId);
+  } else {
+    console.log(
+      `[DEBUG] msgType: ${msgType}, content:`,
+      JSON.stringify(content, null, 2)
+    );
+  }
+}
+
+// Xử lý queue của một thread
+async function processQueue(api: any, threadId: string) {
+  if (processingThreads.has(threadId)) return;
+
+  const queue = messageQueues.get(threadId);
+  if (!queue || queue.length === 0) return;
+
+  processingThreads.add(threadId);
+
+  while (queue.length > 0) {
+    // Lấy tất cả tin nhắn text hiện có để gộp
+    const textMessages: any[] = [];
+    const otherMessages: any[] = [];
+
+    for (const msg of queue) {
+      const content = msg.data?.content;
+      const msgType = msg.data?.msgType;
+      if (
+        typeof content === "string" &&
+        !msgType?.includes("sticker") &&
+        !msgType?.includes("photo") &&
+        !msgType?.includes("video") &&
+        !msgType?.includes("voice") &&
+        !msgType?.includes("file")
+      ) {
+        textMessages.push(msg);
+      } else {
+        otherMessages.push(msg);
+      }
+    }
+
+    // Clear queue
+    queue.length = 0;
+
+    // Xử lý tin nhắn text gộp
+    if (textMessages.length > 0) {
+      if (textMessages.length === 1) {
+        await processMessage(api, textMessages[0], threadId);
+      } else {
+        // Gộp nhiều tin nhắn text thành một
+        const combinedContent = textMessages
+          .map((m) => m.data.content)
+          .join("\n");
+        const combinedMessage = {
+          ...textMessages[textMessages.length - 1],
+          data: {
+            ...textMessages[textMessages.length - 1].data,
+            content: combinedContent,
+          },
+          _originalMessages: textMessages,
+        };
+        console.log(`[Bot] 📦 Gộp ${textMessages.length} tin nhắn text`);
+        await processMessage(api, combinedMessage, threadId);
+      }
+    }
+
+    // Xử lý các tin nhắn media riêng lẻ
+    for (const msg of otherMessages) {
+      await processMessage(api, msg, threadId);
+    }
+  }
+
+  processingThreads.delete(threadId);
+}
+
 async function main() {
   console.log("─".repeat(50));
   console.log(`🤖 ${CONFIG.name}`);
@@ -27,70 +124,34 @@ async function main() {
   );
   console.log("─".repeat(50));
 
-  const { api, myId } = await loginWithQR();
+  const { api } = await loginWithQR();
 
   api.listener.on("message", async (message: any) => {
-    const content = message.data?.content;
     const threadId = message.threadId;
-    const msgType = message.data?.msgType;
     const isSelf = message.isSelf;
 
-    // Bỏ qua tin nhắn của chính bot
     if (isSelf) return;
 
-    // Lọc theo tên người gửi
     const senderName = message.data?.dName || "";
     if (!isAllowedUser(senderName)) {
       console.log(`[Bot] ⏭️ Bỏ qua: "${senderName}"`);
       return;
     }
 
-    // Kiểm tra rate limit
     if (!checkRateLimit(threadId)) return;
 
-    // Xử lý theo loại tin nhắn
+    // Thêm vào queue
+    if (!messageQueues.has(threadId)) {
+      messageQueues.set(threadId, []);
+    }
+    messageQueues.get(threadId)!.push(message);
+
+    // Xử lý queue (nếu chưa đang xử lý)
     try {
-      if (msgType === "chat.sticker" && content?.id) {
-        await handleSticker(api, message, threadId);
-        return;
-      }
-
-      if (msgType === "share.file" && content?.href) {
-        await handleFile(api, message, threadId);
-        return;
-      }
-
-      if (
-        msgType === "chat.photo" ||
-        (msgType === "webchat" && content?.href)
-      ) {
-        await handleImage(api, message, threadId);
-        return;
-      }
-
-      if (msgType === "chat.video.msg" && content?.thumb) {
-        await handleVideo(api, message, threadId);
-        return;
-      }
-
-      if (msgType === "chat.voice" && content?.href) {
-        await handleVoice(api, message, threadId);
-        return;
-      }
-
-      // Tin nhắn text
-      if (typeof content === "string") {
-        await handleText(api, message, threadId);
-        return;
-      }
-
-      // Debug các loại tin nhắn khác
-      console.log(
-        `[DEBUG] msgType: ${msgType}, content:`,
-        JSON.stringify(content, null, 2)
-      );
+      await processQueue(api, threadId);
     } catch (e) {
       console.error("[Bot] Lỗi xử lý tin nhắn:", e);
+      processingThreads.delete(threadId);
     }
   });
 
