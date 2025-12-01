@@ -26,7 +26,7 @@ const zalo = new Zalo({
 // System prompt để AI biết cách gợi ý sticker
 const SYSTEM_PROMPT = `Bạn là trợ lý AI vui tính trên Zalo. Trả lời ngắn gọn, tự nhiên.
 Nếu muốn thể hiện cảm xúc, thêm tag [STICKER: keyword] vào cuối câu.
-Ví dụ: "Chào bạn! [STICKER: hello]" hoặc "Haha vui quá! [STICKER: laugh]"
+Ví dụ: "Chào bạn! [STICKER: hello]" hoặc "Haha vui quá! [STICKER: haha]"
 Các keyword phổ biến: hello, hi, love, haha, sad, cry, angry, wow, ok, thanks, sorry`;
 
 async function getGeminiReply(prompt: string): Promise<string> {
