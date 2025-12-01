@@ -46,14 +46,45 @@ export const CONFIG = {
 
   // MIME types mapping
   mimeTypes: {
+    // Documents
     pdf: "application/pdf",
-    doc: "application/msword",
-    docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     txt: "text/plain",
-    csv: "text/csv",
-    json: "application/json",
-    xml: "application/xml",
     html: "text/html",
+    css: "text/css",
+    csv: "text/csv",
+    xml: "application/xml",
+    json: "application/json",
+    md: "text/markdown",
+    // Code
+    js: "text/javascript",
+    ts: "text/typescript",
+    py: "text/x-python",
+    java: "text/x-java",
+    c: "text/x-c",
+    cpp: "text/x-c++",
+    cs: "text/x-csharp",
+    go: "text/x-go",
+    rb: "text/x-ruby",
+    php: "text/x-php",
+    swift: "text/x-swift",
+    kt: "text/x-kotlin",
+    rs: "text/x-rust",
+    // Images
+    png: "image/png",
+    jpg: "image/jpeg",
+    jpeg: "image/jpeg",
+    gif: "image/gif",
+    webp: "image/webp",
+    // Audio
+    mp3: "audio/mpeg",
+    wav: "audio/wav",
+    aac: "audio/aac",
+    ogg: "audio/ogg",
+    // Video
+    mp4: "video/mp4",
+    webm: "video/webm",
+    mov: "video/quicktime",
+    avi: "video/x-msvideo",
   } as Record<string, string>,
 };
 

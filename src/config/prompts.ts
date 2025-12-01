@@ -40,6 +40,8 @@ export const PROMPTS = {
     `Người dùng gửi một tin nhắn thoại dài ${duration} giây. Hãy nghe và trả lời nội dung họ nói.`,
   file: (fileName: string, fileSize: number) =>
     `Người dùng gửi file "${fileName}" (${fileSize}KB). Hãy đọc và tóm tắt nội dung chính của file này.`,
+  fileText: (fileName: string, fileExt: string, fileSize: number) =>
+    `Người dùng gửi file "${fileName}" (định dạng .${fileExt}, ${fileSize}KB). Nội dung file đã được chuyển sang text ở bên dưới. Hãy đọc và tóm tắt/phản hồi phù hợp.`,
   fileUnreadable: (fileName: string, fileExt: string, fileSize: number) =>
     `Người dùng gửi file "${fileName}" (định dạng .${fileExt}, ${fileSize}KB). Đây là loại file mình không đọc được nội dung. Hãy phản hồi phù hợp.`,
   quote: (quoteContent: string, content: string) =>

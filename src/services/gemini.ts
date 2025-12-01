@@ -243,6 +243,31 @@ export async function generateContent(prompt: string): Promise<AIResponse> {
 }
 
 /**
+ * Generate content với base64 data trực tiếp (không cần fetch URL)
+ * Dùng cho file đã convert sang .txt
+ */
+export async function generateWithBase64(
+  prompt: string,
+  base64Data: string,
+  mimeType: string
+): Promise<AIResponse> {
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: [
+        { text: `${SYSTEM_PROMPT}\n\n${prompt}` },
+        { inlineData: { data: base64Data, mimeType } },
+      ],
+      config: CONFIG_WITH_TOOLS,
+    });
+    return parseAIResponse(response.text || "{}");
+  } catch (error) {
+    console.error("Gemini Base64 Error:", error);
+    return DEFAULT_RESPONSE;
+  }
+}
+
+/**
  * Generate content với video (base64, dưới 20MB)
  */
 export async function generateWithVideo(

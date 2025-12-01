@@ -108,33 +108,65 @@ export async function handleFile(api: any, message: any, threadId: string) {
   const fileName = content?.title || "file";
   const fileUrl = content?.href;
   const params = content?.params ? JSON.parse(content.params) : {};
-  const fileExt = params?.fileExt?.toLowerCase() || "";
+  const fileExt = (params?.fileExt?.toLowerCase() || "").replace(".", "");
   const fileSize = params?.fileSize
     ? Math.round(parseInt(params.fileSize) / 1024)
     : 0;
 
-  console.log(`[Bot] 📄 Nhận file: ${fileName} (${fileSize}KB)`);
+  console.log(`[Bot] 📄 Nhận file: ${fileName} (.${fileExt}, ${fileSize}KB)`);
 
   try {
     await api.sendTypingEvent(threadId, ThreadType.User);
 
-    if (CONFIG.readableFormats.includes(fileExt)) {
+    const {
+      isGeminiSupported,
+      isTextConvertible,
+      fetchAndConvertToTextBase64,
+    } = await import("../utils/fetch.js");
+    const { generateContent, generateWithBase64 } = await import(
+      "../services/gemini.js"
+    );
+
+    // 1. Nếu Gemini hỗ trợ native → gửi trực tiếp
+    if (isGeminiSupported(fileExt)) {
       const mimeType = CONFIG.mimeTypes[fileExt] || "application/octet-stream";
+      console.log(`[Bot] ✅ Gemini hỗ trợ native: ${fileExt}`);
       const aiReply = await generateWithFile(
         PROMPTS.file(fileName, fileSize),
         fileUrl,
         mimeType
       );
       await sendResponse(api, aiReply, threadId, message);
-      console.log(`[Bot] ✅ Đã trả lời file!`);
-    } else {
-      const { generateContent } = await import("../services/gemini.js");
+    }
+    // 2. Nếu có thể convert sang text → convert sang .txt và gửi như file thường
+    else if (isTextConvertible(fileExt)) {
+      console.log(`[Bot] 📝 Convert sang .txt: ${fileExt}`);
+      const base64Text = await fetchAndConvertToTextBase64(fileUrl);
+      if (base64Text) {
+        // Gửi như file .txt thường (text/plain) - truyền base64 trực tiếp
+        const aiReply = await generateWithBase64(
+          PROMPTS.fileText(fileName, fileExt, fileSize),
+          base64Text,
+          "text/plain"
+        );
+        await sendResponse(api, aiReply, threadId, message);
+      } else {
+        const aiReply = await generateContent(
+          PROMPTS.fileUnreadable(fileName, fileExt, fileSize)
+        );
+        await sendResponse(api, aiReply, threadId, message);
+      }
+    }
+    // 3. Không hỗ trợ
+    else {
+      console.log(`[Bot] ❌ Không hỗ trợ: ${fileExt}`);
       const aiReply = await generateContent(
         PROMPTS.fileUnreadable(fileName, fileExt, fileSize)
       );
       await sendResponse(api, aiReply, threadId, message);
-      console.log(`[Bot] ✅ Đã trả lời file (không đọc được)!`);
     }
+
+    console.log(`[Bot] ✅ Đã trả lời file!`);
   } catch (e) {
     console.error("[Bot] Lỗi xử lý file:", e);
   }
