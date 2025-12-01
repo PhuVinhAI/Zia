@@ -1,0 +1,39 @@
+{
+  "bot": {
+    "name": "Trợ lý AI Zalo",
+    "prefix": "#bot",
+    "requirePrefix": false,
+    "rateLimitMs": 3000,
+    "maxHistory": 10,
+    "selfListen": true,
+    "logging": true
+  },
+  "allowedUsers": ["Huỳnh Phước Thọ"],
+  "stickers": {
+    "keywords": [
+      "hello",
+      "hi",
+      "love",
+      "haha",
+      "sad",
+      "cry",
+      "angry",
+      "wow",
+      "ok",
+      "thanks",
+      "sorry"
+    ]
+  },
+  "files": {
+    "readableFormats": [
+      "pdf",
+      "doc",
+      "docx",
+      "txt",
+      "csv",
+      "json",
+      "xml",
+      "html"
+    ]
+  }
+}

@@ -1,42 +1,106 @@
-import { loginZalo } from "./core/zalo.js";
-import { onIncomingMessage } from "./handlers/message.js";
-import { logger } from "./utils/logger.js";
+import dotenv from "dotenv";
+dotenv.config();
+
+import { loginWithQR } from "./services/zalo.js";
+import { CONFIG } from "./config/index.js";
+import { checkRateLimit, isAllowedUser } from "./utils/index.js";
+import {
+  handleSticker,
+  handleImage,
+  handleVideo,
+  handleVoice,
+  handleFile,
+  handleText,
+} from "./handlers/index.js";
 
 async function main() {
-  logger.info(">>> Đang khởi động Zalo AI Bot...");
+  console.log("─".repeat(50));
+  console.log(`🤖 ${CONFIG.name}`);
+  console.log(
+    `📌 Prefix: "${CONFIG.prefix}" (${
+      CONFIG.requirePrefix ? "bắt buộc" : "tùy chọn"
+    })`
+  );
+  console.log(`⏱️ Rate limit: ${CONFIG.rateLimitMs}ms`);
+  console.log(
+    `👥 Allowed users: ${
+      CONFIG.allowedUsers.length > 0 ? CONFIG.allowedUsers.join(", ") : "Tất cả"
+    }`
+  );
+  console.log("─".repeat(50));
 
-  try {
-    // Login Zalo (tự động dùng credentials đã lưu hoặc QR)
-    const api = await loginZalo();
+  const { api, myId } = await loginWithQR();
 
-    const userName = api.getContext()?.loginInfo?.name || "Unknown";
-    logger.success(`>>> Đăng nhập thành công! Tên: ${userName}`);
+  api.listener.on("message", async (message: any) => {
+    const content = message.data?.content;
+    const threadId = message.threadId;
+    const msgType = message.data?.msgType;
+    const isSelf = message.isSelf;
 
-    // Lắng nghe sự kiện tin nhắn
-    api.listener.on("message", (message: any) =>
-      onIncomingMessage(api, message)
-    );
+    // Bỏ qua tin nhắn của chính bot
+    if (isSelf) return;
 
-    // Bắt đầu socket
-    api.listener.start();
-    logger.success(">>> Bot đang chạy và lắng nghe tin nhắn...");
+    // Lọc theo tên người gửi
+    const senderName = message.data?.dName || "";
+    if (!isAllowedUser(senderName)) {
+      console.log(`[Bot] ⏭️ Bỏ qua: "${senderName}"`);
+      return;
+    }
 
-    // Graceful shutdown
-    process.on("SIGINT", () => {
-      logger.info("Đang tắt bot...");
-      api.listener.stop();
-      process.exit(0);
-    });
+    // Kiểm tra rate limit
+    if (!checkRateLimit(threadId)) return;
 
-    process.on("SIGTERM", () => {
-      logger.info("Đang tắt bot...");
-      api.listener.stop();
-      process.exit(0);
-    });
-  } catch (error) {
-    logger.error("Lỗi khởi động bot:", error);
-    process.exit(1);
-  }
+    // Xử lý theo loại tin nhắn
+    try {
+      if (msgType === "chat.sticker" && content?.id) {
+        await handleSticker(api, message, threadId);
+        return;
+      }
+
+      if (msgType === "share.file" && content?.href) {
+        await handleFile(api, message, threadId);
+        return;
+      }
+
+      if (
+        msgType === "chat.photo" ||
+        (msgType === "webchat" && content?.href)
+      ) {
+        await handleImage(api, message, threadId);
+        return;
+      }
+
+      if (msgType === "chat.video.msg" && content?.thumb) {
+        await handleVideo(api, message, threadId);
+        return;
+      }
+
+      if (msgType === "chat.voice" && content?.href) {
+        await handleVoice(api, message, threadId);
+        return;
+      }
+
+      // Tin nhắn text
+      if (typeof content === "string") {
+        await handleText(api, message, threadId);
+        return;
+      }
+
+      // Debug các loại tin nhắn khác
+      console.log(
+        `[DEBUG] msgType: ${msgType}, content:`,
+        JSON.stringify(content, null, 2)
+      );
+    } catch (e) {
+      console.error("[Bot] Lỗi xử lý tin nhắn:", e);
+    }
+  });
+
+  api.listener.start();
+  console.log("👂 Bot đang lắng nghe...");
 }
 
-main();
+main().catch((err) => {
+  console.error("❌ Lỗi khởi động bot:", err);
+  process.exit(1);
+});

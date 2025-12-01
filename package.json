@@ -7,8 +7,7 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
-    "dev": "npx ts-node src/index.ts",
-    "cloud": "npx ts-node src/cloud-bot.ts"
+    "dev": "npx ts-node src/index.ts"
   },
   "keywords": [
     "zalo",
