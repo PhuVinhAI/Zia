@@ -1,7 +1,7 @@
 import * as zcajs from "zca-js";
 import { CONFIG } from "../config/index.js";
 
-export const { Zalo, ThreadType, Reactions } = zcajs as any;
+export const { Zalo, ThreadType, Reactions, TextStyle } = zcajs as any;
 
 export const zalo = new Zalo({
   selfListen: CONFIG.selfListen,

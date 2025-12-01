@@ -12,3 +12,4 @@ export {
   removeAllowedUser,
   getAllowedUsers,
 } from "./userFilter.js";
+export { parseRichText, createRichMessage } from "./richText.js";

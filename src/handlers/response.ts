@@ -1,5 +1,6 @@
 import { ThreadType, Reactions } from "../services/zalo.js";
 import { getHistory } from "../utils/history.js";
+import { createRichMessage } from "../utils/richText.js";
 
 // Lấy reaction từ response AI
 function getReactionFromResponse(text: string): {
@@ -79,24 +80,17 @@ export async function sendResponse(
     finalMessage = cleanText.replace(stickerMatch[0], "").trim();
   }
 
-  // Gửi tin nhắn
+  // Gửi tin nhắn với rich text
   if (finalMessage) {
     try {
-      if (messageToQuote?.data?.msgId) {
-        await api.sendMessage(
-          { msg: `🤖 AI: ${finalMessage}`, quote: messageToQuote.data },
-          threadId,
-          ThreadType.User
-        );
-      } else {
-        await api.sendMessage(
-          `🤖 AI: ${finalMessage}`,
-          threadId,
-          ThreadType.User
-        );
-      }
+      const richMsg = createRichMessage(
+        `🤖 AI: ${finalMessage}`,
+        messageToQuote?.data?.msgId ? messageToQuote.data : undefined
+      );
+      await api.sendMessage(richMsg, threadId, ThreadType.User);
     } catch (e) {
-      console.error("[Bot] Lỗi gửi tin nhắn với quote:", e);
+      console.error("[Bot] Lỗi gửi tin nhắn:", e);
+      // Fallback: gửi text thường nếu rich text lỗi
       await api.sendMessage(
         `🤖 AI: ${finalMessage}`,
         threadId,
