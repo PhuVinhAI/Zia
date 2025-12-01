@@ -1,5 +1,5 @@
 import { ThreadType, Reactions } from "../services/zalo.js";
-import { getHistory } from "../utils/history.js";
+import { getRawHistory } from "../utils/history.js";
 import { createRichMessage } from "../utils/richText.js";
 import { AIResponse } from "../config/schema.js";
 
@@ -57,9 +57,9 @@ export async function sendResponse(
     // Xác định quote message
     let quoteData: any = undefined;
     if (msg.quoteIndex >= 0) {
-      const history = getHistory(threadId);
-      if (msg.quoteIndex < history.length) {
-        const historyMsg = history[msg.quoteIndex];
+      const rawHistory = getRawHistory(threadId);
+      if (msg.quoteIndex < rawHistory.length) {
+        const historyMsg = rawHistory[msg.quoteIndex];
         if (historyMsg?.data?.msgId) {
           quoteData = historyMsg.data;
           console.log(`[Bot] 📎 Quote tin nhắn #${msg.quoteIndex}`);

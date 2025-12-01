@@ -4,6 +4,7 @@ import { ai } from "../services/gemini.js";
 import { fetchAsBase64 } from "./fetch.js";
 
 const messageHistory = new Map<string, Content[]>();
+const rawMessageHistory = new Map<string, any[]>(); // Lưu raw Zalo messages cho quote
 const tokenCache = new Map<string, number>();
 const initializedThreads = new Set<string>();
 
@@ -210,13 +211,17 @@ async function trimHistoryByTokens(threadId: string): Promise<void> {
     `[History] Thread ${threadId}: ${currentTokens} tokens (max: ${maxTokens})`
   );
 
+  const rawHistory = rawMessageHistory.get(threadId) || [];
+
   while (currentTokens > maxTokens && history.length > 2) {
     history.shift();
+    rawHistory.shift();
     currentTokens = await countTokens(history);
     console.log(`[History] Trimmed -> ${currentTokens} tokens`);
   }
 
   messageHistory.set(threadId, history);
+  rawMessageHistory.set(threadId, rawHistory);
   tokenCache.set(threadId, currentTokens);
 }
 
@@ -228,9 +233,14 @@ export async function saveToHistory(
   message: any
 ): Promise<void> {
   const history = messageHistory.get(threadId) || [];
+  const rawHistory = rawMessageHistory.get(threadId) || [];
+
   const content = await toGeminiContent(message);
   history.push(content);
+  rawHistory.push(message);
+
   messageHistory.set(threadId, history);
+  rawMessageHistory.set(threadId, rawHistory);
   await trimHistoryByTokens(threadId);
 }
 
@@ -242,11 +252,19 @@ export async function saveResponseToHistory(
   responseText: string
 ): Promise<void> {
   const history = messageHistory.get(threadId) || [];
+  const rawHistory = rawMessageHistory.get(threadId) || [];
+
   history.push({
     role: "model",
     parts: [{ text: responseText }],
   });
+  rawHistory.push({
+    isSelf: true,
+    data: { content: responseText },
+  });
+
   messageHistory.set(threadId, history);
+  rawMessageHistory.set(threadId, rawHistory);
   await trimHistoryByTokens(threadId);
 }
 
@@ -288,8 +306,16 @@ export function getCachedTokenCount(threadId: string): number {
  */
 export function clearHistory(threadId: string): void {
   messageHistory.delete(threadId);
+  rawMessageHistory.delete(threadId);
   tokenCache.delete(threadId);
   initializedThreads.delete(threadId);
+}
+
+/**
+ * Lấy raw Zalo messages (cho quote feature)
+ */
+export function getRawHistory(threadId: string): any[] {
+  return rawMessageHistory.get(threadId) || [];
 }
 
 /**
