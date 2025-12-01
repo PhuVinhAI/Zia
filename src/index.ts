@@ -2,6 +2,7 @@ import "./env.js";
 import { loginWithQR } from "./services/zalo.js";
 import { CONFIG } from "./config/index.js";
 import { checkRateLimit, isAllowedUser } from "./utils/index.js";
+import { initThreadHistory, isThreadInitialized } from "./utils/history.js";
 import {
   handleSticker,
   handleImage,
@@ -139,6 +140,12 @@ async function main() {
     }
 
     if (!checkRateLimit(threadId)) return;
+
+    // Khởi tạo history từ Zalo nếu chưa có
+    const msgType = message.type; // 0 = user, 1 = group
+    if (!isThreadInitialized(threadId)) {
+      await initThreadHistory(api, threadId, msgType);
+    }
 
     // Thêm vào queue
     if (!messageQueues.has(threadId)) {

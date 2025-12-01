@@ -1,15 +1,18 @@
+import { Content } from "@google/genai";
 import { CONFIG } from "../config/index.js";
 import { ai } from "../services/gemini.js";
 
-const messageHistory = new Map<string, any[]>();
-const tokenCache = new Map<string, number>(); // Cache token count per thread
+const messageHistory = new Map<string, Content[]>();
+const tokenCache = new Map<string, number>();
+const initializedThreads = new Set<string>();
 
 const GEMINI_MODEL = "gemini-2.5-flash";
 
 /**
  * Đếm token của một content array
  */
-export async function countTokens(contents: any[]): Promise<number> {
+export async function countTokens(contents: Content[]): Promise<number> {
+  if (contents.length === 0) return 0;
   try {
     const result = await ai.models.countTokens({
       model: GEMINI_MODEL,
@@ -25,16 +28,82 @@ export async function countTokens(contents: any[]): Promise<number> {
 }
 
 /**
- * Chuyển đổi history message sang format Gemini Content
+ * Convert raw Zalo message sang Gemini Content format
  */
-function toGeminiContent(msg: any): any {
+function toGeminiContent(msg: any): Content {
   const role = msg.isSelf ? "model" : "user";
   const text =
-    typeof msg.data?.content === "string" ? msg.data.content : "(media)";
+    typeof msg.data?.content === "string"
+      ? msg.data.content
+      : "[Hình ảnh/Sticker]";
   return {
     role,
     parts: [{ text }],
   };
+}
+
+/**
+ * Lấy lịch sử chat cũ từ Zalo API và convert sang format Gemini
+ */
+export async function loadOldMessages(
+  api: any,
+  threadId: string,
+  type: number
+): Promise<Content[]> {
+  return new Promise((resolve) => {
+    const timeout = setTimeout(() => {
+      console.log(`[History] ⚠️ Timeout lấy lịch sử thread ${threadId}`);
+      resolve([]);
+    }, 5000);
+
+    const handler = (messages: any[], msgType: number) => {
+      if (msgType !== type) return;
+
+      const threadMessages = messages.filter((m) => m.threadId === threadId);
+      threadMessages.sort((a, b) => parseInt(a.data.ts) - parseInt(b.data.ts));
+
+      const history: Content[] = threadMessages.map((msg) => ({
+        role: msg.isSelf ? "model" : "user",
+        parts: [
+          {
+            text:
+              typeof msg.data.content === "string"
+                ? msg.data.content
+                : "[Hình ảnh/Sticker]",
+          },
+        ],
+      }));
+
+      clearTimeout(timeout);
+      api.listener.off("old_messages", handler);
+      console.log(
+        `[History] 📚 Thread ${threadId}: Tải được ${history.length} tin nhắn cũ`
+      );
+      resolve(history);
+    };
+
+    api.listener.on("old_messages", handler);
+    api.listener.requestOldMessages(type, null);
+  });
+}
+
+/**
+ * Khởi tạo history cho thread từ Zalo (chỉ chạy 1 lần)
+ */
+export async function initThreadHistory(
+  api: any,
+  threadId: string,
+  type: number
+): Promise<void> {
+  if (initializedThreads.has(threadId)) return;
+
+  initializedThreads.add(threadId);
+  const oldHistory = await loadOldMessages(api, threadId, type);
+
+  if (oldHistory.length > 0) {
+    messageHistory.set(threadId, oldHistory);
+    await trimHistoryByTokens(threadId);
+  }
 }
 
 /**
@@ -45,71 +114,80 @@ async function trimHistoryByTokens(threadId: string): Promise<void> {
   if (history.length === 0) return;
 
   const maxTokens = CONFIG.maxTokenHistory;
-  let contents = history.map(toGeminiContent);
-  let currentTokens = await countTokens(contents);
+  let currentTokens = await countTokens(history);
 
   console.log(
     `[History] Thread ${threadId}: ${currentTokens} tokens (max: ${maxTokens})`
   );
 
-  // Xóa từ từ tin nhắn cũ nhất cho đến khi dưới ngưỡng
   while (currentTokens > maxTokens && history.length > 2) {
-    // Giữ ít nhất 2 tin nhắn
-    const removed = history.shift();
-    console.log(`[History] Removed old message to free tokens`);
-
-    contents = history.map(toGeminiContent);
-    currentTokens = await countTokens(contents);
-    console.log(`[History] After trim: ${currentTokens} tokens`);
+    history.shift();
+    currentTokens = await countTokens(history);
+    console.log(`[History] Trimmed -> ${currentTokens} tokens`);
   }
 
   messageHistory.set(threadId, history);
   tokenCache.set(threadId, currentTokens);
 }
 
-export async function saveToHistory(threadId: string, message: any) {
+/**
+ * Lưu tin nhắn mới vào history
+ */
+export async function saveToHistory(
+  threadId: string,
+  message: any
+): Promise<void> {
   const history = messageHistory.get(threadId) || [];
-  history.push(message);
+  history.push(toGeminiContent(message));
   messageHistory.set(threadId, history);
-
-  // Trim history nếu vượt quá token limit
   await trimHistoryByTokens(threadId);
 }
 
-export function getHistory(threadId: string): any[] {
+/**
+ * Lấy history dạng Gemini Content[]
+ */
+export function getHistory(threadId: string): Content[] {
   return messageHistory.get(threadId) || [];
 }
 
+/**
+ * Lấy history dạng text context (cho prompt)
+ */
 export function getHistoryContext(threadId: string): string {
   const history = getHistory(threadId);
   if (history.length === 0) return "";
 
   return history
     .map((msg, index) => {
-      const sender = msg.isSelf ? "Bot" : "User";
-      const content =
-        typeof msg.data?.content === "string" ? msg.data.content : "(media)";
-      return `[${index}] ${sender}: ${content}`;
+      const sender = msg.role === "model" ? "Bot" : "User";
+      const text =
+        msg.parts?.[0] && "text" in msg.parts[0]
+          ? msg.parts[0].text
+          : "(media)";
+      return `[${index}] ${sender}: ${text}`;
     })
     .join("\n");
 }
 
 /**
- * Lấy history dưới dạng Gemini Content format
- */
-export function getGeminiHistory(threadId: string): any[] {
-  const history = getHistory(threadId);
-  return history.map(toGeminiContent);
-}
-
-/**
- * Lấy số token hiện tại của thread (từ cache)
+ * Lấy số token hiện tại (từ cache)
  */
 export function getCachedTokenCount(threadId: string): number {
   return tokenCache.get(threadId) || 0;
 }
 
-export function clearHistory(threadId: string) {
+/**
+ * Xóa history của thread
+ */
+export function clearHistory(threadId: string): void {
   messageHistory.delete(threadId);
   tokenCache.delete(threadId);
+  initializedThreads.delete(threadId);
+}
+
+/**
+ * Kiểm tra thread đã được khởi tạo chưa
+ */
+export function isThreadInitialized(threadId: string): boolean {
+  return initializedThreads.has(threadId);
 }
