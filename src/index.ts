@@ -1,6 +1,4 @@
-import dotenv from "dotenv";
-dotenv.config();
-
+import "./env.js";
 import { loginWithQR } from "./services/zalo.js";
 import { CONFIG } from "./config/index.js";
 import { checkRateLimit, isAllowedUser } from "./utils/index.js";
