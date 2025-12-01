@@ -3,7 +3,6 @@ import {
   generateContent,
   generateWithYouTube,
   generateWithMultipleYouTube,
-  generateWithUrl,
   extractYouTubeUrls,
 } from "../services/gemini.js";
 import { sendResponse } from "./response.js";
@@ -51,7 +50,7 @@ export async function handleText(api: any, message: any, threadId: string) {
 
   let aiReply: string;
 
-  // Kiểm tra YouTube URLs
+  // Kiểm tra YouTube URLs - xử lý riêng vì cần gửi video trực tiếp cho Gemini
   const youtubeUrls = extractYouTubeUrls(content);
   if (youtubeUrls.length > 0) {
     console.log(`[Bot] 🎬 Phát hiện ${youtubeUrls.length} YouTube video`);
@@ -62,17 +61,8 @@ export async function handleText(api: any, message: any, threadId: string) {
       aiReply = await generateWithMultipleYouTube(ytPrompt, youtubeUrls);
     }
   } else {
-    // Kiểm tra URL thông thường
-    const urlRegex = /(https?:\/\/[^\s]+)/gi;
-    const urls = content.match(urlRegex);
-    if (urls && urls.length > 0) {
-      console.log(`[Bot] 🔗 Phát hiện ${urls.length} link`);
-      const urlPrompt = PROMPTS.url(urls, content);
-      aiReply = await generateWithUrl(urlPrompt, urls);
-    } else {
-      // Tin nhắn text thường
-      aiReply = await generateContent(promptWithHistory);
-    }
+    // Tin nhắn text thường - URL Context tool sẽ tự động đọc link nếu có
+    aiReply = await generateContent(promptWithHistory);
   }
 
   await sendResponse(api, aiReply, threadId, message);

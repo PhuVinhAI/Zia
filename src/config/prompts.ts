@@ -48,14 +48,8 @@ export const PROMPTS = {
     `Người dùng gửi file "${fileName}" (định dạng .${fileExt}, ${fileSize}KB). Đây là loại file mình không đọc được nội dung. Hãy phản hồi phù hợp.`,
   quote: (quoteContent: string, content: string) =>
     `Người dùng đang trả lời/hỏi về tin nhắn cũ có nội dung: "${quoteContent}"\n\nCâu hỏi/yêu cầu của họ: "${content}"`,
-  link: (linkInfo: string, content: string) =>
-    `Người dùng gửi tin nhắn có chứa link:\n${linkInfo}\n\nNội dung tin nhắn: "${content}"\n\nHãy nhận xét về link hoặc trả lời câu hỏi của họ. Nếu họ hỏi về nội dung link, hãy nói rằng bạn không thể truy cập link nhưng có thể giúp nếu họ mô tả nội dung.`,
   youtube: (urls: string[], content: string) =>
     `Người dùng gửi ${urls.length} video YouTube:\n${urls.join(
       "\n"
     )}\n\nTin nhắn: "${content}"\n\nHãy XEM video và trả lời/nhận xét về nội dung video. Nếu họ hỏi gì về video thì trả lời dựa trên nội dung video.`,
-  url: (urls: string[], content: string) =>
-    `Người dùng gửi ${urls.length} link:\n${urls.join(
-      "\n"
-    )}\n\nTin nhắn: "${content}"\n\nHãy ĐỌC nội dung các trang web và trả lời/nhận xét. Nếu họ hỏi gì về link thì trả lời dựa trên nội dung trang.`,
 };

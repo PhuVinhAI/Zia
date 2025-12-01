@@ -21,6 +21,15 @@ const GENERATION_CONFIG = {
   },
 };
 
+// Config với tools (Google Search + URL Context)
+const CONFIG_WITH_TOOLS = {
+  ...GENERATION_CONFIG,
+  tools: [
+    { googleSearch: {} }, // Grounding with Google Search
+    { urlContext: {} }, // Đọc nội dung URL
+  ],
+};
+
 // Regex để detect YouTube URL
 const YOUTUBE_REGEX =
   /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|v\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/gi;
@@ -56,7 +65,7 @@ export function getChatSession(threadId: string, history: any[] = []) {
       model: "gemini-2.5-flash",
       config: {
         systemInstruction: SYSTEM_PROMPT,
-        ...GENERATION_CONFIG,
+        ...CONFIG_WITH_TOOLS,
       },
       history: history.length > 0 ? history : undefined,
     });
@@ -108,7 +117,7 @@ export async function generateWithImage(
         { text: `${SYSTEM_PROMPT}\n\n${prompt}` },
         { inlineData: { data: base64Image, mimeType: "image/png" } },
       ],
-      config: GENERATION_CONFIG,
+      config: CONFIG_WITH_TOOLS,
     });
 
     return response.text || "Không có phản hồi từ AI.";
@@ -138,7 +147,7 @@ export async function generateWithAudio(
         { text: `${SYSTEM_PROMPT}\n\n${prompt}` },
         { inlineData: { data: base64Audio, mimeType } },
       ],
-      config: GENERATION_CONFIG,
+      config: CONFIG_WITH_TOOLS,
     });
 
     return response.text || "Không nghe rõ, bạn nói lại được không?";
@@ -168,7 +177,7 @@ export async function generateWithFile(
         { text: `${SYSTEM_PROMPT}\n\n${prompt}` },
         { inlineData: { data: base64File, mimeType } },
       ],
-      config: GENERATION_CONFIG,
+      config: CONFIG_WITH_TOOLS,
     });
 
     return response.text || "Không đọc được file này.";
@@ -179,14 +188,14 @@ export async function generateWithFile(
 }
 
 /**
- * Generate content đơn giản (không có media)
+ * Generate content đơn giản (không có media) - có Google Search + URL Context
  */
 export async function generateContent(prompt: string): Promise<string> {
   try {
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
       contents: `${SYSTEM_PROMPT}\n\nUser: ${prompt}`,
-      config: GENERATION_CONFIG,
+      config: CONFIG_WITH_TOOLS,
     });
     return response.text || "Không có phản hồi từ AI.";
   } catch (error) {
@@ -210,36 +219,12 @@ export async function generateWithYouTube(
         { text: `${SYSTEM_PROMPT}\n\n${prompt}` },
         { fileData: { fileUri: youtubeUrl } },
       ],
-      config: GENERATION_CONFIG,
+      config: CONFIG_WITH_TOOLS,
     });
     return response.text || "Không xem được video này.";
   } catch (error) {
     console.error("Gemini YouTube Error:", error);
     return "Lỗi xử lý video YouTube, thử lại sau nhé!";
-  }
-}
-
-/**
- * Generate content với URL context (đọc nội dung trang web)
- */
-export async function generateWithUrl(
-  prompt: string,
-  urls: string[]
-): Promise<string> {
-  try {
-    console.log(`[Gemini] 🔗 Đọc URL: ${urls.join(", ")}`);
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: `${SYSTEM_PROMPT}\n\n${prompt}`,
-      config: {
-        ...GENERATION_CONFIG,
-        tools: [{ urlContext: {} }],
-      },
-    });
-    return response.text || "Không đọc được link này.";
-  } catch (error) {
-    console.error("Gemini URL Error:", error);
-    return "Lỗi đọc link, thử lại sau nhé!";
   }
 }
 
@@ -260,7 +245,7 @@ export async function generateWithMultipleYouTube(
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
       contents,
-      config: GENERATION_CONFIG,
+      config: CONFIG_WITH_TOOLS,
     });
     return response.text || "Không xem được video này.";
   } catch (error) {
