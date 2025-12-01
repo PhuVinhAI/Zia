@@ -270,7 +270,6 @@ async function main() {
 
     // --- XỬ LÝ VIDEO ---
     if (msgType === "chat.video.msg" && content?.thumb) {
-      const videoUrl = content?.href;
       const thumbUrl = content?.thumb;
       const params = content?.params ? JSON.parse(content.params) : {};
       const duration = params?.duration
@@ -278,10 +277,8 @@ async function main() {
         : 0;
 
       console.log(`[Bot] 🎬 Nhận video: ${duration}s`);
-      console.log(`[Bot] 🖼️ Thumbnail: ${thumbUrl}`);
 
       try {
-        // Dùng thumbnail để AI mô tả (nhanh hơn upload video)
         const aiPrompt = `Người dùng gửi một video dài ${duration} giây. Đây là ảnh thumbnail của video. Hãy mô tả những gì bạn thấy trong ảnh và đoán nội dung video có thể là gì.`;
 
         console.log(`[Bot] 🤖 Cho AI xem thumbnail video...`);
@@ -292,6 +289,56 @@ async function main() {
         console.log(`[Bot] ✅ Đã trả lời video!`);
       } catch (e) {
         console.error("[Bot] Lỗi xử lý video:", e);
+      }
+      return;
+    }
+
+    // --- XỬ LÝ VOICE ---
+    if (msgType === "chat.voice" && content?.href) {
+      const audioUrl = content?.href;
+      const params = content?.params ? JSON.parse(content.params) : {};
+      const duration = params?.duration
+        ? Math.round(params.duration / 1000)
+        : 0;
+
+      console.log(`[Bot] 🎤 Nhận voice: ${duration}s`);
+
+      try {
+        // Tải audio và gửi cho Gemini
+        const base64Audio = await fetchImageAsBase64(audioUrl);
+
+        if (base64Audio) {
+          console.log(`[Bot] 🤖 Cho AI nghe voice...`);
+          await api.sendTypingEvent(threadId, ThreadType.User);
+
+          const response = await ai.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: [
+              {
+                text: `${SYSTEM_PROMPT}\n\nNgười dùng gửi một tin nhắn thoại dài ${duration} giây. Hãy nghe và trả lời nội dung họ nói.`,
+              },
+              { inlineData: { data: base64Audio, mimeType: "audio/aac" } },
+            ],
+          });
+
+          const aiReply =
+            response.text || "Không nghe rõ, bạn nói lại được không?";
+          await sendResponseWithSticker(api, aiReply, threadId, message);
+          console.log(`[Bot] ✅ Đã trả lời voice!`);
+        } else {
+          await api.sendMessage(
+            "🤖 AI: Không tải được voice, thử lại nhé!",
+            threadId,
+            ThreadType.User
+          );
+        }
+      } catch (e) {
+        console.error("[Bot] Lỗi xử lý voice:", e);
+        await api.sendMessage(
+          "🤖 AI: Lỗi xử lý voice, thử lại sau nhé!",
+          threadId,
+          ThreadType.User
+        );
       }
       return;
     }
