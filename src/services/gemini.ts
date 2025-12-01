@@ -16,26 +16,26 @@ if (!GEMINI_API_KEY || GEMINI_API_KEY === "your_gemini_api_key_here") {
 
 export const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
 
-// Config chung cho Gemini - theo settings trong hình
-const GENERATION_CONFIG = {
+// ============ GEMINI CONFIG - CHỈ CHỈNH Ở ĐÂY ============
+const GEMINI_MODEL = "gemini-2.5-flash";
+
+const GEMINI_CONFIG = {
   temperature: 1,
   topP: 0.95,
   maxOutputTokens: 65536,
   thinkingConfig: {
     thinkingBudget: 8192, // High thinking level
   },
-};
-
-// Config với tools (Google Search + URL Context) + Structured Output
-const CONFIG_WITH_TOOLS = {
-  ...GENERATION_CONFIG,
+  // Tools
   tools: [
     { googleSearch: {} }, // Grounding with Google Search
     { urlContext: {} }, // Đọc nội dung URL
   ],
+  // Structured Output
   responseMimeType: "application/json",
   responseSchema: AI_RESPONSE_SCHEMA,
 };
+// ========================================================
 
 // Parse JSON response từ AI
 export function parseAIResponse(text: string): AIResponse {
@@ -85,10 +85,10 @@ const chatSessions = new Map<string, any>();
 export function getChatSession(threadId: string, history: any[] = []) {
   if (!chatSessions.has(threadId)) {
     const chat = ai.chats.create({
-      model: "gemini-2.5-flash",
+      model: GEMINI_MODEL,
       config: {
         systemInstruction: SYSTEM_PROMPT,
-        ...CONFIG_WITH_TOOLS,
+        ...GEMINI_CONFIG,
       },
       history: history.length > 0 ? history : undefined,
     });
@@ -140,12 +140,12 @@ export async function generateWithImage(
     }
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: GEMINI_MODEL,
       contents: [
         { text: `${SYSTEM_PROMPT}\n\n${prompt}` },
         { inlineData: { data: base64Image, mimeType: "image/png" } },
       ],
-      config: CONFIG_WITH_TOOLS,
+      config: GEMINI_CONFIG,
     });
 
     return parseAIResponse(response.text || "{}");
@@ -175,12 +175,12 @@ export async function generateWithAudio(
     }
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: GEMINI_MODEL,
       contents: [
         { text: `${SYSTEM_PROMPT}\n\n${prompt}` },
         { inlineData: { data: base64Audio, mimeType } },
       ],
-      config: CONFIG_WITH_TOOLS,
+      config: GEMINI_CONFIG,
     });
 
     return parseAIResponse(response.text || "{}");
@@ -210,12 +210,12 @@ export async function generateWithFile(
     }
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: GEMINI_MODEL,
       contents: [
         { text: `${SYSTEM_PROMPT}\n\n${prompt}` },
         { inlineData: { data: base64File, mimeType } },
       ],
-      config: CONFIG_WITH_TOOLS,
+      config: GEMINI_CONFIG,
     });
 
     return parseAIResponse(response.text || "{}");
@@ -231,9 +231,9 @@ export async function generateWithFile(
 export async function generateContent(prompt: string): Promise<AIResponse> {
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: GEMINI_MODEL,
       contents: `${SYSTEM_PROMPT}\n\nUser: ${prompt}`,
-      config: CONFIG_WITH_TOOLS,
+      config: GEMINI_CONFIG,
     });
     return parseAIResponse(response.text || "{}");
   } catch (error) {
@@ -253,12 +253,12 @@ export async function generateWithBase64(
 ): Promise<AIResponse> {
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: GEMINI_MODEL,
       contents: [
         { text: `${SYSTEM_PROMPT}\n\n${prompt}` },
         { inlineData: { data: base64Data, mimeType } },
       ],
-      config: CONFIG_WITH_TOOLS,
+      config: GEMINI_CONFIG,
     });
     return parseAIResponse(response.text || "{}");
   } catch (error) {
@@ -288,12 +288,12 @@ export async function generateWithVideo(
     }
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: GEMINI_MODEL,
       contents: [
         { text: `${SYSTEM_PROMPT}\n\n${prompt}` },
         { inlineData: { data: base64Video, mimeType } },
       ],
-      config: CONFIG_WITH_TOOLS,
+      config: GEMINI_CONFIG,
     });
 
     return parseAIResponse(response.text || "{}");
@@ -313,12 +313,12 @@ export async function generateWithYouTube(
   try {
     console.log(`[Gemini] 🎬 Xử lý YouTube: ${youtubeUrl}`);
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: GEMINI_MODEL,
       contents: [
         { text: `${SYSTEM_PROMPT}\n\n${prompt}` },
         { fileData: { fileUri: youtubeUrl } },
       ],
-      config: CONFIG_WITH_TOOLS,
+      config: GEMINI_CONFIG,
     });
     return parseAIResponse(response.text || "{}");
   } catch (error) {
@@ -342,9 +342,9 @@ export async function generateWithMultipleYouTube(
       contents.push({ fileData: { fileUri: url } });
     }
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: GEMINI_MODEL,
       contents,
-      config: CONFIG_WITH_TOOLS,
+      config: GEMINI_CONFIG,
     });
     return parseAIResponse(response.text || "{}");
   } catch (error) {
