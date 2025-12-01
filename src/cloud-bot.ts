@@ -172,8 +172,16 @@ async function sendResponseWithSticker(
     const history = messageHistory.get(threadId) || [];
 
     if (quoteIndex >= 0 && quoteIndex < history.length) {
-      messageToQuote = history[quoteIndex];
-      console.log(`[Bot] 📎 AI muốn quote tin nhắn #${quoteIndex}`);
+      const historyMsg = history[quoteIndex];
+      // Chỉ quote nếu tin nhắn có đầy đủ data (không phải tin bot tự tạo)
+      if (historyMsg?.data?.msgId && !historyMsg.isSelf) {
+        messageToQuote = historyMsg;
+        console.log(`[Bot] 📎 AI muốn quote tin nhắn #${quoteIndex}`);
+      } else {
+        console.log(
+          `[Bot] ⚠️ Không thể quote tin nhắn #${quoteIndex} (không hợp lệ)`
+        );
+      }
     }
     cleanText = textAfterReaction.replace(quoteMatch[0], "").trim();
   }
@@ -191,13 +199,23 @@ async function sendResponseWithSticker(
 
   if (finalMessage) {
     // Gửi tin nhắn kèm trích dẫn (quote)
-    if (messageToQuote?.data) {
-      await api.sendMessage(
-        { msg: `🤖 AI: ${finalMessage}`, quote: messageToQuote.data },
-        threadId,
-        ThreadType.User
-      );
-    } else {
+    try {
+      if (messageToQuote?.data?.msgId) {
+        await api.sendMessage(
+          { msg: `🤖 AI: ${finalMessage}`, quote: messageToQuote.data },
+          threadId,
+          ThreadType.User
+        );
+      } else {
+        await api.sendMessage(
+          `🤖 AI: ${finalMessage}`,
+          threadId,
+          ThreadType.User
+        );
+      }
+    } catch (e) {
+      // Nếu quote lỗi, gửi tin nhắn thường
+      console.error("[Bot] Lỗi gửi tin nhắn với quote, thử gửi thường:", e);
       await api.sendMessage(
         `🤖 AI: ${finalMessage}`,
         threadId,
@@ -439,6 +457,28 @@ async function main() {
 
       // Gộp context: tin nhắn được trích dẫn + câu hỏi hiện tại
       userPrompt = `Người dùng đang trả lời/hỏi về tin nhắn cũ có nội dung: "${quoteContent}"\n\nCâu hỏi/yêu cầu của họ: "${content}"`;
+    }
+
+    // --- XỬ LÝ LINK TRONG TIN NHẮN ---
+    const urlRegex = /(https?:\/\/[^\s]+)/gi;
+    const urls = content.match(urlRegex);
+    if (urls && urls.length > 0) {
+      console.log(`[Bot] 🔗 Phát hiện ${urls.length} link: ${urls.join(", ")}`);
+
+      // Thêm context về link cho AI
+      const linkInfo = urls
+        .map((url: string) => {
+          // Trích xuất domain để AI biết nguồn
+          try {
+            const domain = new URL(url).hostname;
+            return `- ${url} (từ ${domain})`;
+          } catch {
+            return `- ${url}`;
+          }
+        })
+        .join("\n");
+
+      userPrompt = `Người dùng gửi tin nhắn có chứa link:\n${linkInfo}\n\nNội dung tin nhắn: "${content}"\n\nHãy nhận xét về link hoặc trả lời câu hỏi của họ. Nếu họ hỏi về nội dung link, hãy nói rằng bạn không thể truy cập link nhưng có thể giúp nếu họ mô tả nội dung.`;
     }
 
     // Lưu tin nhắn user vào history
