@@ -11,6 +11,16 @@ if (!GEMINI_API_KEY || GEMINI_API_KEY === "your_gemini_api_key_here") {
 
 export const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
 
+// Config chung cho Gemini - theo settings trong hình
+const GENERATION_CONFIG = {
+  temperature: 1,
+  topP: 0.95,
+  maxOutputTokens: 65536,
+  thinkingConfig: {
+    thinkingBudget: 8192, // High thinking level
+  },
+};
+
 // Regex để detect YouTube URL
 const YOUTUBE_REGEX =
   /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|v\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/gi;
@@ -46,6 +56,7 @@ export function getChatSession(threadId: string, history: any[] = []) {
       model: "gemini-2.5-flash",
       config: {
         systemInstruction: SYSTEM_PROMPT,
+        ...GENERATION_CONFIG,
       },
       history: history.length > 0 ? history : undefined,
     });
@@ -97,6 +108,7 @@ export async function generateWithImage(
         { text: `${SYSTEM_PROMPT}\n\n${prompt}` },
         { inlineData: { data: base64Image, mimeType: "image/png" } },
       ],
+      config: GENERATION_CONFIG,
     });
 
     return response.text || "Không có phản hồi từ AI.";
@@ -126,6 +138,7 @@ export async function generateWithAudio(
         { text: `${SYSTEM_PROMPT}\n\n${prompt}` },
         { inlineData: { data: base64Audio, mimeType } },
       ],
+      config: GENERATION_CONFIG,
     });
 
     return response.text || "Không nghe rõ, bạn nói lại được không?";
@@ -155,6 +168,7 @@ export async function generateWithFile(
         { text: `${SYSTEM_PROMPT}\n\n${prompt}` },
         { inlineData: { data: base64File, mimeType } },
       ],
+      config: GENERATION_CONFIG,
     });
 
     return response.text || "Không đọc được file này.";
@@ -172,6 +186,7 @@ export async function generateContent(prompt: string): Promise<string> {
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
       contents: `${SYSTEM_PROMPT}\n\nUser: ${prompt}`,
+      config: GENERATION_CONFIG,
     });
     return response.text || "Không có phản hồi từ AI.";
   } catch (error) {
@@ -195,6 +210,7 @@ export async function generateWithYouTube(
         { text: `${SYSTEM_PROMPT}\n\n${prompt}` },
         { fileData: { fileUri: youtubeUrl } },
       ],
+      config: GENERATION_CONFIG,
     });
     return response.text || "Không xem được video này.";
   } catch (error) {
@@ -216,6 +232,7 @@ export async function generateWithUrl(
       model: "gemini-2.5-flash",
       contents: `${SYSTEM_PROMPT}\n\n${prompt}`,
       config: {
+        ...GENERATION_CONFIG,
         tools: [{ urlContext: {} }],
       },
     });
@@ -243,6 +260,7 @@ export async function generateWithMultipleYouTube(
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
       contents,
+      config: GENERATION_CONFIG,
     });
     return response.text || "Không xem được video này.";
   } catch (error) {
