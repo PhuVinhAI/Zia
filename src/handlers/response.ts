@@ -1,69 +1,16 @@
 import { ThreadType, Reactions } from "../services/zalo.js";
 import { getHistory } from "../utils/history.js";
 import { createRichMessage } from "../utils/richText.js";
+import { AIResponse } from "../config/schema.js";
 
 const reactionMap: Record<string, any> = {
-  "[HEART]": Reactions.HEART,
-  "[HAHA]": Reactions.HAHA,
-  "[WOW]": Reactions.WOW,
-  "[SAD]": Reactions.SAD,
-  "[ANGRY]": Reactions.ANGRY,
-  "[LIKE]": Reactions.LIKE,
+  heart: Reactions.HEART,
+  haha: Reactions.HAHA,
+  wow: Reactions.WOW,
+  sad: Reactions.SAD,
+  angry: Reactions.ANGRY,
+  like: Reactions.LIKE,
 };
-
-// Parse một phần response
-function parseResponsePart(text: string): {
-  reaction: any | null;
-  reactOnly: boolean;
-  noReact: boolean;
-  quote: number | null;
-  sticker: string | null;
-  message: string;
-} {
-  let cleanText = text;
-  let reaction: any | null = null;
-  let reactOnly = false;
-  let noReact = false;
-  let quote: number | null = null;
-  let sticker: string | null = null;
-
-  // Check react only
-  if (cleanText.includes("[REACT_ONLY]")) {
-    reactOnly = true;
-    cleanText = cleanText.replace("[REACT_ONLY]", "").trim();
-  }
-
-  // Check no react
-  if (cleanText.includes("[NO_REACT]")) {
-    noReact = true;
-    cleanText = cleanText.replace("[NO_REACT]", "").trim();
-  }
-
-  // Get reaction
-  for (const [tag, react] of Object.entries(reactionMap)) {
-    if (cleanText.includes(tag)) {
-      reaction = react;
-      cleanText = cleanText.replace(tag, "").trim();
-      break;
-    }
-  }
-
-  // Get quote
-  const quoteMatch = cleanText.match(/\[QUOTE:(\d+)\]/i);
-  if (quoteMatch) {
-    quote = parseInt(quoteMatch[1]);
-    cleanText = cleanText.replace(quoteMatch[0], "").trim();
-  }
-
-  // Get sticker
-  const stickerMatch = cleanText.match(/\[STICKER:\s*(.*?)\]/i);
-  if (stickerMatch) {
-    sticker = stickerMatch[1].trim();
-    cleanText = cleanText.replace(stickerMatch[0], "").trim();
-  }
-
-  return { reaction, reactOnly, noReact, quote, sticker, message: cleanText };
-}
 
 // Gửi sticker helper
 async function sendSticker(api: any, keyword: string, threadId: string) {
@@ -86,74 +33,59 @@ async function sendSticker(api: any, keyword: string, threadId: string) {
 
 export async function sendResponse(
   api: any,
-  responseText: string,
+  response: AIResponse,
   threadId: string,
   originalMessage?: any
 ): Promise<void> {
-  // Chia response thành nhiều phần bằng [NEXT]
-  const parts = responseText
-    .split(/\[NEXT\]/i)
-    .map((p) => p.trim())
-    .filter(Boolean);
-  let hasReacted = false;
-
-  for (let i = 0; i < parts.length; i++) {
-    const part = parts[i];
-    const parsed = parseResponsePart(part);
-
-    // Thả reaction (chỉ lần đầu và nếu có reaction)
-    if (!hasReacted && parsed.reaction && !parsed.noReact && originalMessage) {
+  // Thả reaction
+  if (response.reaction !== "none" && originalMessage) {
+    const reaction = reactionMap[response.reaction];
+    if (reaction) {
       try {
-        await api.addReaction(parsed.reaction, originalMessage);
-        console.log(`[Bot] 💖 Đã thả reaction!`);
-        hasReacted = true;
+        await api.addReaction(reaction, originalMessage);
+        console.log(`[Bot] 💖 Đã thả reaction: ${response.reaction}`);
       } catch (e) {
         console.error("[Bot] Lỗi thả reaction:", e);
       }
     }
+  }
 
-    // Nếu chỉ react thì skip phần còn lại
-    if (parsed.reactOnly) continue;
+  // Gửi từng tin nhắn
+  for (let i = 0; i < response.messages.length; i++) {
+    const msg = response.messages[i];
 
-    // Xác định quote message (chỉ khi AI chủ động quote)
+    // Xác định quote message
     let quoteData: any = undefined;
-    if (parsed.quote !== null) {
+    if (msg.quoteIndex >= 0) {
       const history = getHistory(threadId);
-      if (parsed.quote >= 0 && parsed.quote < history.length) {
-        const historyMsg = history[parsed.quote];
+      if (msg.quoteIndex < history.length) {
+        const historyMsg = history[msg.quoteIndex];
         if (historyMsg?.data?.msgId) {
           quoteData = historyMsg.data;
-          console.log(`[Bot] 📎 Quote tin nhắn #${parsed.quote}`);
+          console.log(`[Bot] 📎 Quote tin nhắn #${msg.quoteIndex}`);
         }
       }
     }
 
     // Gửi tin nhắn text
-    if (parsed.message) {
+    if (msg.text) {
       try {
-        const richMsg = createRichMessage(
-          `🤖 AI: ${parsed.message}`,
-          quoteData
-        );
+        const richMsg = createRichMessage(`🤖 AI: ${msg.text}`, quoteData);
         await api.sendMessage(richMsg, threadId, ThreadType.User);
       } catch (e) {
         console.error("[Bot] Lỗi gửi tin nhắn:", e);
-        await api.sendMessage(
-          `🤖 AI: ${parsed.message}`,
-          threadId,
-          ThreadType.User
-        );
+        await api.sendMessage(`🤖 AI: ${msg.text}`, threadId, ThreadType.User);
       }
     }
 
     // Gửi sticker
-    if (parsed.sticker) {
-      if (parsed.message) await new Promise((r) => setTimeout(r, 800));
-      await sendSticker(api, parsed.sticker, threadId);
+    if (msg.sticker) {
+      if (msg.text) await new Promise((r) => setTimeout(r, 800));
+      await sendSticker(api, msg.sticker, threadId);
     }
 
     // Delay giữa các tin nhắn
-    if (i < parts.length - 1) {
+    if (i < response.messages.length - 1) {
       await new Promise((r) => setTimeout(r, 500 + Math.random() * 500));
     }
   }

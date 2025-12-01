@@ -58,3 +58,5 @@ export const CONFIG = {
 };
 
 export { SYSTEM_PROMPT, PROMPTS } from "./prompts.js";
+export { AI_RESPONSE_SCHEMA, DEFAULT_RESPONSE } from "./schema.js";
+export type { AIResponse, AIMessage } from "./schema.js";

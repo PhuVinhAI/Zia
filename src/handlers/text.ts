@@ -8,6 +8,7 @@ import {
 import { sendResponse } from "./response.js";
 import { saveToHistory, getHistoryContext } from "../utils/history.js";
 import { CONFIG, PROMPTS } from "../config/index.js";
+import { AIResponse } from "../config/schema.js";
 
 export async function handleText(api: any, message: any, threadId: string) {
   const content = message.data?.content;
@@ -48,7 +49,7 @@ export async function handleText(api: any, message: any, threadId: string) {
   console.log(`[Bot] 📩 Câu hỏi: ${userPrompt}`);
   await api.sendTypingEvent(threadId, ThreadType.User);
 
-  let aiReply: string;
+  let aiReply: AIResponse;
 
   // Kiểm tra YouTube URLs - xử lý riêng vì cần gửi video trực tiếp cho Gemini
   const youtubeUrls = extractYouTubeUrls(content);
@@ -67,10 +68,14 @@ export async function handleText(api: any, message: any, threadId: string) {
 
   await sendResponse(api, aiReply, threadId, message);
 
-  // Lưu response vào history
+  // Lưu response vào history - gộp tất cả text messages
+  const responseText = aiReply.messages
+    .map((m) => m.text)
+    .filter(Boolean)
+    .join(" ");
   saveToHistory(threadId, {
     isSelf: true,
-    data: { content: aiReply.replace(/\[.*?\]/g, "").trim() },
+    data: { content: responseText },
   });
 
   console.log(`[Bot] ✅ Đã trả lời.`);

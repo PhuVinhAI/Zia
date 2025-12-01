@@ -1,5 +1,10 @@
 import { GoogleGenAI } from "@google/genai";
 import { SYSTEM_PROMPT } from "../config/index.js";
+import {
+  AI_RESPONSE_SCHEMA,
+  AIResponse,
+  DEFAULT_RESPONSE,
+} from "../config/schema.js";
 import { fetchAsBase64 } from "../utils/fetch.js";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
@@ -21,14 +26,32 @@ const GENERATION_CONFIG = {
   },
 };
 
-// Config với tools (Google Search + URL Context)
+// Config với tools (Google Search + URL Context) + Structured Output
 const CONFIG_WITH_TOOLS = {
   ...GENERATION_CONFIG,
   tools: [
     { googleSearch: {} }, // Grounding with Google Search
     { urlContext: {} }, // Đọc nội dung URL
   ],
+  responseMimeType: "application/json",
+  responseSchema: AI_RESPONSE_SCHEMA,
 };
+
+// Parse JSON response từ AI
+export function parseAIResponse(text: string): AIResponse {
+  try {
+    const parsed = JSON.parse(text);
+    // Validate basic structure
+    if (parsed.reaction && Array.isArray(parsed.messages)) {
+      return parsed as AIResponse;
+    }
+    console.error("[Gemini] Invalid response structure:", text);
+    return DEFAULT_RESPONSE;
+  } catch (e) {
+    console.error("[Gemini] JSON parse error:", e, "Text:", text);
+    return DEFAULT_RESPONSE;
+  }
+}
 
 // Regex để detect YouTube URL
 const YOUTUBE_REGEX =
@@ -104,11 +127,16 @@ export async function sendMessage(
 export async function generateWithImage(
   prompt: string,
   imageUrl: string
-): Promise<string> {
+): Promise<AIResponse> {
   try {
     const base64Image = await fetchAsBase64(imageUrl);
     if (!base64Image) {
-      return "Không tải được hình ảnh.";
+      return {
+        reaction: "sad",
+        messages: [
+          { text: "Không tải được hình ảnh.", sticker: "", quoteIndex: -1 },
+        ],
+      };
     }
 
     const response = await ai.models.generateContent({
@@ -120,10 +148,10 @@ export async function generateWithImage(
       config: CONFIG_WITH_TOOLS,
     });
 
-    return response.text || "Không có phản hồi từ AI.";
+    return parseAIResponse(response.text || "{}");
   } catch (error) {
     console.error("Gemini Image Error:", error);
-    return "Lỗi xử lý hình ảnh, thử lại sau nhé!";
+    return DEFAULT_RESPONSE;
   }
 }
 
@@ -134,11 +162,16 @@ export async function generateWithAudio(
   prompt: string,
   audioUrl: string,
   mimeType: string = "audio/aac"
-): Promise<string> {
+): Promise<AIResponse> {
   try {
     const base64Audio = await fetchAsBase64(audioUrl);
     if (!base64Audio) {
-      return "Không tải được audio.";
+      return {
+        reaction: "sad",
+        messages: [
+          { text: "Không tải được audio.", sticker: "", quoteIndex: -1 },
+        ],
+      };
     }
 
     const response = await ai.models.generateContent({
@@ -150,10 +183,10 @@ export async function generateWithAudio(
       config: CONFIG_WITH_TOOLS,
     });
 
-    return response.text || "Không nghe rõ, bạn nói lại được không?";
+    return parseAIResponse(response.text || "{}");
   } catch (error) {
     console.error("Gemini Audio Error:", error);
-    return "Lỗi xử lý audio, thử lại sau nhé!";
+    return DEFAULT_RESPONSE;
   }
 }
 
@@ -164,11 +197,16 @@ export async function generateWithFile(
   prompt: string,
   fileUrl: string,
   mimeType: string
-): Promise<string> {
+): Promise<AIResponse> {
   try {
     const base64File = await fetchAsBase64(fileUrl);
     if (!base64File) {
-      return "Không tải được file.";
+      return {
+        reaction: "sad",
+        messages: [
+          { text: "Không tải được file.", sticker: "", quoteIndex: -1 },
+        ],
+      };
     }
 
     const response = await ai.models.generateContent({
@@ -180,27 +218,27 @@ export async function generateWithFile(
       config: CONFIG_WITH_TOOLS,
     });
 
-    return response.text || "Không đọc được file này.";
+    return parseAIResponse(response.text || "{}");
   } catch (error) {
     console.error("Gemini File Error:", error);
-    return "Lỗi xử lý file, thử lại sau nhé!";
+    return DEFAULT_RESPONSE;
   }
 }
 
 /**
  * Generate content đơn giản (không có media) - có Google Search + URL Context
  */
-export async function generateContent(prompt: string): Promise<string> {
+export async function generateContent(prompt: string): Promise<AIResponse> {
   try {
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
       contents: `${SYSTEM_PROMPT}\n\nUser: ${prompt}`,
       config: CONFIG_WITH_TOOLS,
     });
-    return response.text || "Không có phản hồi từ AI.";
+    return parseAIResponse(response.text || "{}");
   } catch (error) {
     console.error("Gemini Error:", error);
-    return "Gemini đang bận, thử lại sau nhé!";
+    return DEFAULT_RESPONSE;
   }
 }
 
@@ -210,7 +248,7 @@ export async function generateContent(prompt: string): Promise<string> {
 export async function generateWithYouTube(
   prompt: string,
   youtubeUrl: string
-): Promise<string> {
+): Promise<AIResponse> {
   try {
     console.log(`[Gemini] 🎬 Xử lý YouTube: ${youtubeUrl}`);
     const response = await ai.models.generateContent({
@@ -221,10 +259,10 @@ export async function generateWithYouTube(
       ],
       config: CONFIG_WITH_TOOLS,
     });
-    return response.text || "Không xem được video này.";
+    return parseAIResponse(response.text || "{}");
   } catch (error) {
     console.error("Gemini YouTube Error:", error);
-    return "Lỗi xử lý video YouTube, thử lại sau nhé!";
+    return DEFAULT_RESPONSE;
   }
 }
 
@@ -234,7 +272,7 @@ export async function generateWithYouTube(
 export async function generateWithMultipleYouTube(
   prompt: string,
   youtubeUrls: string[]
-): Promise<string> {
+): Promise<AIResponse> {
   try {
     console.log(`[Gemini] 🎬 Xử lý ${youtubeUrls.length} YouTube videos`);
     const contents: any[] = [{ text: `${SYSTEM_PROMPT}\n\n${prompt}` }];
@@ -247,10 +285,10 @@ export async function generateWithMultipleYouTube(
       contents,
       config: CONFIG_WITH_TOOLS,
     });
-    return response.text || "Không xem được video này.";
+    return parseAIResponse(response.text || "{}");
   } catch (error) {
     console.error("Gemini YouTube Error:", error);
-    return "Lỗi xử lý video YouTube, thử lại sau nhé!";
+    return DEFAULT_RESPONSE;
   }
 }
 
