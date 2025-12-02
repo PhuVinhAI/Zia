@@ -154,6 +154,7 @@ async function buildMessageParts(
 
 /**
  * Generate content sử dụng Chat session (multi-turn)
+ * Có retry logic cho lỗi 503 (model overloaded)
  */
 export async function generateContent(
   prompt: string,
@@ -161,58 +162,90 @@ export async function generateContent(
   threadId?: string,
   history?: Content[]
 ): Promise<AIResponse> {
-  try {
-    const mediaTypes = media?.map((m) => m.type) || [];
-    logStep("generateContent", {
-      type: media?.length ? "with-media" : "text-only",
-      mediaCount: media?.length || 0,
-      mediaTypes,
-      promptLength: prompt.length,
-      hasThread: !!threadId,
-    });
+  const mediaTypes = media?.map((m) => m.type) || [];
+  logStep("generateContent", {
+    type: media?.length ? "with-media" : "text-only",
+    mediaCount: media?.length || 0,
+    mediaTypes,
+    promptLength: prompt.length,
+    hasThread: !!threadId,
+  });
 
-    // Build message parts
-    const parts = await buildMessageParts(prompt, media);
+  // Build message parts một lần
+  const parts = await buildMessageParts(prompt, media);
+  const sessionId = threadId || `temp_${Date.now()}`;
 
-    if (media?.length) {
+  if (media?.length) {
+    console.log(
+      `[Gemini] 📦 Xử lý: ${media.length} media (${[
+        ...new Set(mediaTypes),
+      ].join(", ")})`
+    );
+  }
+
+  let lastError: any = null;
+
+  // Retry loop
+  for (let attempt = 0; attempt <= RETRY_CONFIG.maxRetries; attempt++) {
+    if (attempt > 0) {
+      const delayMs = RETRY_CONFIG.baseDelayMs * Math.pow(2, attempt - 1);
       console.log(
-        `[Gemini] 📦 Xử lý: ${media.length} media (${[
-          ...new Set(mediaTypes),
-        ].join(", ")})`
+        `[Gemini] 🔄 Retry ${attempt}/${RETRY_CONFIG.maxRetries} sau ${delayMs}ms...`
       );
+      debugLog("GEMINI", `Retry attempt ${attempt}, delay=${delayMs}ms`);
+      await sleep(delayMs);
+
+      // Reset chat session trước khi retry
+      deleteChatSession(sessionId);
     }
 
-    // Luôn dùng Chat session (tạo mới nếu chưa có threadId)
-    const sessionId = threadId || `temp_${Date.now()}`;
-    const chat = getChatSession(sessionId, history);
-    debugLog(
-      "GEMINI",
-      `Using chat session: ${sessionId}, history=${history?.length || 0}`
-    );
-
-    const response = await chat.sendMessage({ message: parts });
-    const rawText = response.text || "{}";
-
-    // Xóa temp session sau khi dùng
-    if (!threadId) deleteChatSession(sessionId);
-
-    logAIResponse(prompt.substring(0, 100), rawText);
-    return parseAIResponse(rawText);
-  } catch (error) {
-    logError("generateContent", error);
-    console.error("Gemini Error:", error);
-
-    // Nếu lỗi chat session, thử reset và retry
-    if (threadId) {
+    try {
+      const chat = getChatSession(sessionId, history);
       debugLog(
         "GEMINI",
-        `Error with chat session, resetting thread ${threadId}`
+        `Using chat session: ${sessionId}, history=${history?.length || 0}`
       );
-      deleteChatSession(threadId);
-    }
 
-    return DEFAULT_RESPONSE;
+      const response = await chat.sendMessage({ message: parts });
+      const rawText = response.text || "{}";
+
+      // Success!
+      if (attempt > 0) {
+        console.log(`[Gemini] ✅ Retry thành công sau ${attempt} lần thử`);
+      }
+
+      if (!threadId) deleteChatSession(sessionId);
+
+      logAIResponse(prompt.substring(0, 100), rawText);
+      return parseAIResponse(rawText);
+    } catch (error: any) {
+      lastError = error;
+
+      // Check if retryable
+      if (isRetryableError(error) && attempt < RETRY_CONFIG.maxRetries) {
+        console.log(
+          `[Gemini] ⚠️ Lỗi ${
+            error.status || error.code
+          }: Model overloaded, sẽ retry...`
+        );
+        debugLog("GEMINI", `Retryable error: ${error.status || error.code}`);
+        continue;
+      }
+
+      break;
+    }
   }
+
+  // Hết retry hoặc lỗi không retry được
+  logError("generateContent", lastError);
+  console.error("Gemini Error:", lastError);
+
+  if (threadId) {
+    debugLog("GEMINI", `Error with chat session, resetting thread ${threadId}`);
+    deleteChatSession(threadId);
+  }
+
+  return DEFAULT_RESPONSE;
 }
 
 // ═══════════════════════════════════════════════════
@@ -338,8 +371,34 @@ function getPlainText(buffer: string): string {
   ).trim();
 }
 
+// ═══════════════════════════════════════════════════
+// RETRY CONFIG
+// ═══════════════════════════════════════════════════
+
+const RETRY_CONFIG = {
+  maxRetries: 3,
+  baseDelayMs: 2000, // 2s, 4s, 8s (exponential)
+  retryableStatusCodes: [503, 429, 500, 502, 504],
+};
+
+/**
+ * Check if error is retryable (503, 429, etc.)
+ */
+function isRetryableError(error: any): boolean {
+  const status = error?.status || error?.code;
+  return RETRY_CONFIG.retryableStatusCodes.includes(status);
+}
+
+/**
+ * Sleep helper
+ */
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 /**
  * Generate content với streaming - dùng Chat API
+ * Có retry logic cho lỗi 503 (model overloaded)
  */
 export async function generateContentStream(
   prompt: string,
@@ -365,68 +424,107 @@ export async function generateContentStream(
 
   // Flag để track xem đã gửi response nào chưa
   let hasPartialResponse = false;
+  let lastError: any = null;
 
-  try {
-    // Build message parts
-    const parts = await buildMessageParts(prompt, media);
+  // Build message parts một lần
+  const parts = await buildMessageParts(prompt, media);
+  const sessionId = threadId || `temp_${Date.now()}`;
 
-    // Luôn dùng Chat session streaming
-    const sessionId = threadId || `temp_${Date.now()}`;
-    const chat = getChatSession(sessionId, history);
-    const response = await chat.sendMessageStream({ message: parts });
+  // Retry loop
+  for (let attempt = 0; attempt <= RETRY_CONFIG.maxRetries; attempt++) {
+    // Reset state cho mỗi attempt (trừ lần đầu)
+    if (attempt > 0) {
+      state.buffer = "";
+      state.sentReactions.clear();
+      state.sentStickers.clear();
+      state.sentMessages.clear();
+      state.sentUndos.clear();
+      hasPartialResponse = false;
 
-    for await (const chunk of response) {
-      if (callbacks.signal?.aborted) {
-        debugLog("STREAM", "Aborted");
-        // Đánh dấu có partial response nếu đã có buffer
-        hasPartialResponse = state.buffer.length > 0;
-        throw new Error("Aborted");
-      }
+      const delayMs = RETRY_CONFIG.baseDelayMs * Math.pow(2, attempt - 1);
+      console.log(
+        `[Gemini] 🔄 Retry ${attempt}/${RETRY_CONFIG.maxRetries} sau ${delayMs}ms...`
+      );
+      debugLog("STREAM", `Retry attempt ${attempt}, delay=${delayMs}ms`);
+      await sleep(delayMs);
 
-      if (chunk.text) {
-        state.buffer += chunk.text;
-        await processStreamChunk(state, callbacks);
-        // Đánh dấu đã có response
-        if (state.sentMessages.size > 0 || state.sentReactions.size > 0) {
-          hasPartialResponse = true;
+      // Reset chat session trước khi retry
+      deleteChatSession(sessionId);
+    }
+
+    try {
+      const chat = getChatSession(sessionId, history);
+      const response = await chat.sendMessageStream({ message: parts });
+
+      for await (const chunk of response) {
+        if (callbacks.signal?.aborted) {
+          debugLog("STREAM", "Aborted");
+          hasPartialResponse = state.buffer.length > 0;
+          throw new Error("Aborted");
+        }
+
+        if (chunk.text) {
+          state.buffer += chunk.text;
+          await processStreamChunk(state, callbacks);
+          if (state.sentMessages.size > 0 || state.sentReactions.size > 0) {
+            hasPartialResponse = true;
+          }
         }
       }
-    }
 
-    logAIResponse(`[STREAM] ${prompt.substring(0, 50)}`, state.buffer);
-
-    // Plain text còn lại
-    const plainText = getPlainText(state.buffer);
-    if (plainText && callbacks.onMessage) {
-      await callbacks.onMessage(plainText);
-    }
-
-    // Xóa temp session sau khi dùng
-    if (!threadId) deleteChatSession(sessionId);
-
-    await callbacks.onComplete?.();
-    return state.buffer;
-  } catch (error: any) {
-    if (error.message === "Aborted" || callbacks.signal?.aborted) {
-      debugLog(
-        "STREAM",
-        `Stream aborted, hasPartialResponse=${hasPartialResponse}`
-      );
-
-      // Nếu đã có partial response, vẫn gọi onComplete để lưu history
-      if (hasPartialResponse && callbacks.onComplete) {
-        debugLog("STREAM", "Calling onComplete for partial response");
-        await callbacks.onComplete();
+      // Success!
+      if (attempt > 0) {
+        console.log(`[Gemini] ✅ Retry thành công sau ${attempt} lần thử`);
       }
 
+      logAIResponse(`[STREAM] ${prompt.substring(0, 50)}`, state.buffer);
+
+      const plainText = getPlainText(state.buffer);
+      if (plainText && callbacks.onMessage) {
+        await callbacks.onMessage(plainText);
+      }
+
+      if (!threadId) deleteChatSession(sessionId);
+
+      await callbacks.onComplete?.();
       return state.buffer;
+    } catch (error: any) {
+      lastError = error;
+
+      // Abort không retry
+      if (error.message === "Aborted" || callbacks.signal?.aborted) {
+        debugLog(
+          "STREAM",
+          `Stream aborted, hasPartialResponse=${hasPartialResponse}`
+        );
+        if (hasPartialResponse && callbacks.onComplete) {
+          debugLog("STREAM", "Calling onComplete for partial response");
+          await callbacks.onComplete();
+        }
+        return state.buffer;
+      }
+
+      // Check if retryable
+      if (isRetryableError(error) && attempt < RETRY_CONFIG.maxRetries) {
+        console.log(
+          `[Gemini] ⚠️ Lỗi ${
+            error.status || error.code
+          }: Model overloaded, sẽ retry...`
+        );
+        debugLog("STREAM", `Retryable error: ${error.status || error.code}`);
+        continue; // Retry
+      }
+
+      // Non-retryable error hoặc hết retry
+      break;
     }
-    logError("generateContentStream", error);
-    callbacks.onError?.(error);
-
-    // Reset chat session nếu lỗi
-    if (threadId) deleteChatSession(threadId);
-
-    return state.buffer;
   }
+
+  // Hết retry hoặc lỗi không retry được
+  logError("generateContentStream", lastError);
+  callbacks.onError?.(lastError);
+
+  if (threadId) deleteChatSession(threadId);
+
+  return state.buffer;
 }
