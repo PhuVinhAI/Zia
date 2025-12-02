@@ -91,6 +91,7 @@ export const CONFIG = {
   logFile: settings.bot.logFile || "logs/bot.txt", // Đường dẫn file log
   unauthorizedLogFile:
     settings.bot.unauthorizedLogFile || "logs/unauthorized.json", // File log user chưa được cấp phép
+  maxToolDepth: settings.bot.maxToolDepth ?? 10, // Giới hạn độ sâu tool calls
 
   // Cloud Debug - cho phép test AI trong "Cloud của tôi"
   cloudDebug: {

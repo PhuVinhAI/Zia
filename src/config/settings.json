@@ -12,6 +12,7 @@
     "fileLogging": true,
     "logFile": "logs/bot.txt",
     "unauthorizedLogFile": "logs/unauthorized.json",
+    "maxToolDepth": 10,
     "cloudDebug": {
       "enabled": true,
       "prefix": "#b"

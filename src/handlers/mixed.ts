@@ -606,7 +606,7 @@ export async function handleMixedContent(
       depth: number = 0
     ): Promise<void> => {
       // Giới hạn độ sâu đệ quy để tránh loop vô hạn
-      const MAX_TOOL_DEPTH = 3;
+      const MAX_TOOL_DEPTH = CONFIG.maxToolDepth || 10;
       if (depth >= MAX_TOOL_DEPTH) {
         console.log(`[Bot] ⚠️ Đạt giới hạn tool depth (${MAX_TOOL_DEPTH})`);
         return;
