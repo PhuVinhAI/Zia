@@ -3,8 +3,18 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { debugLog, logError } from "../utils/logger.js";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const settingsPath = path.join(__dirname, "settings.json");
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Tìm đường dẫn settings.json - ưu tiên src/config, fallback về cùng thư mục
+const srcSettingsPath = path.resolve(
+  __dirname,
+  "../../src/config/settings.json"
+);
+const localSettingsPath = path.join(__dirname, "settings.json");
+const settingsPath = fs.existsSync(srcSettingsPath)
+  ? srcSettingsPath
+  : localSettingsPath;
 
 // Load settings từ JSON
 function loadSettings() {
@@ -43,20 +53,30 @@ export function reloadSettings() {
 
 // Watch file settings.json để auto reload
 let debounceTimer: NodeJS.Timeout | null = null;
-fs.watch(settingsPath, (eventType) => {
-  if (eventType === "change") {
-    // Debounce để tránh reload nhiều lần
-    if (debounceTimer) clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(() => {
-      console.log("[Config] 🔄 Phát hiện thay đổi settings.json...");
-      debugLog("CONFIG", "settings.json changed, triggering reload");
-      reloadSettings();
-    }, 100);
-  }
-});
-
-console.log("[Config] 👀 Đang watch settings.json để auto reload");
-debugLog("CONFIG", `Watching ${settingsPath} for changes`);
+try {
+  fs.watch(settingsPath, (eventType) => {
+    if (eventType === "change") {
+      // Debounce để tránh reload nhiều lần
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        console.log("[Config] 🔄 Phát hiện thay đổi settings.json...");
+        debugLog("CONFIG", "settings.json changed, triggering reload");
+        reloadSettings();
+      }, 100);
+    }
+  });
+  console.log("[Config] 👀 Đang watch settings.json để auto reload");
+  debugLog("CONFIG", `Watching ${settingsPath} for changes`);
+} catch (err) {
+  console.warn(
+    "[Config] ⚠️ Không thể watch settings.json:",
+    (err as Error).message
+  );
+  debugLog(
+    "CONFIG",
+    `Failed to watch settings.json: ${(err as Error).message}`
+  );
+}
 
 const settings = loadSettings();
 
