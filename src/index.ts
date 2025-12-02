@@ -285,31 +285,30 @@ async function main() {
 
     // ========== CLOUD DEBUG MODE ==========
     // Cho phép test AI trong "Cloud của tôi" (tin nhắn gửi cho chính mình)
-    const isCloudMessage = isSelf && threadId === myId;
+    // Cloud message = tin nhắn do chính mình gửi (isSelf) VÀ có prefix
+    const senderId = message.data?.uidFrom || threadId;
+    const content = message.data?.content;
+    const cloudPrefix = CONFIG.cloudDebug.prefix;
 
-    if (isCloudMessage && CONFIG.cloudDebug.enabled) {
-      const content = message.data?.content;
-      const cloudPrefix = CONFIG.cloudDebug.prefix;
+    // Kiểm tra xem có phải tin nhắn Cloud với prefix không
+    const hasCloudPrefix =
+      typeof content === "string" && content.startsWith(cloudPrefix);
+    const isCloudMessage =
+      isSelf && hasCloudPrefix && CONFIG.cloudDebug.enabled;
 
-      // Chỉ xử lý nếu tin nhắn có prefix (tránh loop vô tận)
-      if (typeof content === "string" && content.startsWith(cloudPrefix)) {
-        debugLog(
-          "CLOUD",
-          `Cloud message detected: ${content.substring(0, 50)}...`
-        );
-        console.log(`☁️ [Cloud] Nhận lệnh: ${content.substring(0, 50)}...`);
+    if (isCloudMessage) {
+      debugLog(
+        "CLOUD",
+        `Cloud message detected: ${content.substring(0, 50)}...`
+      );
+      console.log(`☁️ [Cloud] Nhận lệnh: ${content.substring(0, 50)}...`);
 
-        // Xóa prefix khỏi nội dung để AI xử lý
-        message.data.content = content.replace(cloudPrefix, "").trim();
+      // Xóa prefix khỏi nội dung để AI xử lý
+      message.data.content = content.replace(cloudPrefix, "").trim();
 
-        // Tiếp tục xử lý như tin nhắn bình thường (không return)
-      } else {
-        // Tin nhắn Cloud không có prefix -> bỏ qua (có thể là reply của bot)
-        debugLog("CLOUD", `Skipping cloud message without prefix`);
-        return;
-      }
+      // Tiếp tục xử lý như tin nhắn bình thường (không return)
     } else if (isSelf) {
-      // Tin nhắn tự gửi nhưng không phải Cloud -> bỏ qua
+      // Tin nhắn tự gửi không có prefix -> bỏ qua
       debugLog("MSG", `Skipping self message: thread=${threadId}`);
       return;
     }
@@ -321,7 +320,6 @@ async function main() {
       return;
     }
 
-    const senderId = message.data?.uidFrom || threadId;
     const senderName = message.data?.dName || "";
 
     // Cloud messages luôn được phép (đã check prefix ở trên)
