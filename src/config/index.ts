@@ -3,24 +3,43 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const settingsPath = path.join(__dirname, "settings.json");
 
 // Load settings từ JSON
 function loadSettings() {
-  const settingsPath = path.join(__dirname, "settings.json");
   const data = fs.readFileSync(settingsPath, "utf-8");
   return JSON.parse(data);
 }
 
 // Reload settings (hot reload)
 export function reloadSettings() {
-  const settings = loadSettings();
-  Object.assign(CONFIG, {
-    ...settings.bot,
-    allowedUsers: settings.allowedUsers,
-    stickerKeywords: settings.stickers.keywords,
-  });
-  console.log("[Config] ✅ Đã reload settings");
+  try {
+    const settings = loadSettings();
+    Object.assign(CONFIG, {
+      ...settings.bot,
+      allowedUsers: settings.allowedUsers,
+      stickerKeywords: settings.stickers.keywords,
+    });
+    console.log("[Config] ✅ Đã reload settings");
+  } catch (error) {
+    console.error("[Config] ❌ Lỗi reload settings:", error);
+  }
 }
+
+// Watch file settings.json để auto reload
+let debounceTimer: NodeJS.Timeout | null = null;
+fs.watch(settingsPath, (eventType) => {
+  if (eventType === "change") {
+    // Debounce để tránh reload nhiều lần
+    if (debounceTimer) clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      console.log("[Config] 🔄 Phát hiện thay đổi settings.json...");
+      reloadSettings();
+    }, 100);
+  }
+});
+
+console.log("[Config] 👀 Đang watch settings.json để auto reload");
 
 const settings = loadSettings();
 
