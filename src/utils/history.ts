@@ -329,15 +329,32 @@ export async function preloadAllHistory(api: any): Promise<void> {
     if (CONFIG.historyLoader.loadUser) {
       const userMessages = await fetchFullHistory(api, 0);
 
-      for (const msg of userMessages) {
+      // Lọc chỉ giữ tin nhắn từ allowedUserIds (nếu có config)
+      const allowedIds = CONFIG.allowedUserIds;
+      const filteredMessages =
+        allowedIds.length > 0
+          ? userMessages.filter((msg) => allowedIds.includes(msg.threadId))
+          : userMessages;
+
+      const skippedCount = userMessages.length - filteredMessages.length;
+      if (skippedCount > 0) {
+        console.log(
+          `[History] 🔒 Bỏ qua ${skippedCount} tin từ user không được phép`
+        );
+      }
+
+      for (const msg of filteredMessages) {
         const threadId = msg.threadId;
         if (!preloadedMessages.has(threadId)) {
           preloadedMessages.set(threadId, []);
         }
         preloadedMessages.get(threadId)!.push(msg);
       }
-      debugLog("HISTORY", `Preloaded ${userMessages.length} user messages`);
-      totalMsgs += userMessages.length;
+      debugLog(
+        "HISTORY",
+        `Preloaded ${filteredMessages.length} user messages (filtered from ${userMessages.length})`
+      );
+      totalMsgs += filteredMessages.length;
 
       // Delay trước khi load Group messages (nếu cần)
       if (userMessages.length > 0 && CONFIG.historyLoader.loadGroup) {

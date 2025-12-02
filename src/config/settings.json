@@ -14,7 +14,7 @@
     "unauthorizedLogFile": "logs/unauthorized.json"
   },
   "historyLoader": {
-    "defaultLimit": 100,
+    "defaultLimit": 1000,
     "minDelayMs": 2000,
     "maxDelayMs": 5000,
     "pageTimeoutMs": 10000,
