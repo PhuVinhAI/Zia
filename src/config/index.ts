@@ -95,6 +95,15 @@ export const CONFIG = {
   // Allowed user IDs (empty = allow all)
   allowedUserIds: (settings.allowedUserIds || []) as string[],
 
+  // Retry config cho Gemini API
+  retry: {
+    maxRetries: settings.retry?.maxRetries ?? 3,
+    baseDelayMs: settings.retry?.baseDelayMs ?? 2000,
+    retryableStatusCodes: settings.retry?.retryableStatusCodes ?? [
+      503, 429, 500, 502, 504,
+    ],
+  },
+
   // Sticker keywords
   stickerKeywords: settings.stickers.keywords as string[],
 

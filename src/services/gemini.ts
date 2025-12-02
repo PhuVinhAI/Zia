@@ -186,11 +186,11 @@ export async function generateContent(
   let lastError: any = null;
 
   // Retry loop
-  for (let attempt = 0; attempt <= RETRY_CONFIG.maxRetries; attempt++) {
+  for (let attempt = 0; attempt <= CONFIG.retry.maxRetries; attempt++) {
     if (attempt > 0) {
-      const delayMs = RETRY_CONFIG.baseDelayMs * Math.pow(2, attempt - 1);
+      const delayMs = CONFIG.retry.baseDelayMs * Math.pow(2, attempt - 1);
       console.log(
-        `[Gemini] 🔄 Retry ${attempt}/${RETRY_CONFIG.maxRetries} sau ${delayMs}ms...`
+        `[Gemini] 🔄 Retry ${attempt}/${CONFIG.retry.maxRetries} sau ${delayMs}ms...`
       );
       debugLog("GEMINI", `Retry attempt ${attempt}, delay=${delayMs}ms`);
       await sleep(delayMs);
@@ -222,7 +222,7 @@ export async function generateContent(
       lastError = error;
 
       // Check if retryable
-      if (isRetryableError(error) && attempt < RETRY_CONFIG.maxRetries) {
+      if (isRetryableError(error) && attempt < CONFIG.retry.maxRetries) {
         console.log(
           `[Gemini] ⚠️ Lỗi ${
             error.status || error.code
@@ -371,22 +371,12 @@ function getPlainText(buffer: string): string {
   ).trim();
 }
 
-// ═══════════════════════════════════════════════════
-// RETRY CONFIG
-// ═══════════════════════════════════════════════════
-
-const RETRY_CONFIG = {
-  maxRetries: 3,
-  baseDelayMs: 2000, // 2s, 4s, 8s (exponential)
-  retryableStatusCodes: [503, 429, 500, 502, 504],
-};
-
 /**
  * Check if error is retryable (503, 429, etc.)
  */
 function isRetryableError(error: any): boolean {
   const status = error?.status || error?.code;
-  return RETRY_CONFIG.retryableStatusCodes.includes(status);
+  return CONFIG.retry.retryableStatusCodes.includes(status);
 }
 
 /**
@@ -431,7 +421,7 @@ export async function generateContentStream(
   const sessionId = threadId || `temp_${Date.now()}`;
 
   // Retry loop
-  for (let attempt = 0; attempt <= RETRY_CONFIG.maxRetries; attempt++) {
+  for (let attempt = 0; attempt <= CONFIG.retry.maxRetries; attempt++) {
     // Reset state cho mỗi attempt (trừ lần đầu)
     if (attempt > 0) {
       state.buffer = "";
@@ -441,9 +431,9 @@ export async function generateContentStream(
       state.sentUndos.clear();
       hasPartialResponse = false;
 
-      const delayMs = RETRY_CONFIG.baseDelayMs * Math.pow(2, attempt - 1);
+      const delayMs = CONFIG.retry.baseDelayMs * Math.pow(2, attempt - 1);
       console.log(
-        `[Gemini] 🔄 Retry ${attempt}/${RETRY_CONFIG.maxRetries} sau ${delayMs}ms...`
+        `[Gemini] 🔄 Retry ${attempt}/${CONFIG.retry.maxRetries} sau ${delayMs}ms...`
       );
       debugLog("STREAM", `Retry attempt ${attempt}, delay=${delayMs}ms`);
       await sleep(delayMs);
@@ -505,7 +495,7 @@ export async function generateContentStream(
       }
 
       // Check if retryable
-      if (isRetryableError(error) && attempt < RETRY_CONFIG.maxRetries) {
+      if (isRetryableError(error) && attempt < CONFIG.retry.maxRetries) {
         console.log(
           `[Gemini] ⚠️ Lỗi ${
             error.status || error.code

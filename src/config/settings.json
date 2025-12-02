@@ -13,6 +13,11 @@
     "logFile": "logs/bot.txt",
     "unauthorizedLogFile": "logs/unauthorized.json"
   },
+  "retry": {
+    "maxRetries": 3,
+    "baseDelayMs": 2000,
+    "retryableStatusCodes": [503, 429, 500, 502, 504]
+  },
   "allowedUserIds": [
     "4779843125887605364",
     "5013616206173690802",
