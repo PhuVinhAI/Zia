@@ -71,6 +71,7 @@ export function formatAllToolResults(
 
 /**
  * Gửi thông báo đang gọi tool lên Zalo
+ * Dùng Zalo rich text format: *bold* _italic_
  */
 export async function notifyToolCall(
   api: any,
@@ -78,10 +79,14 @@ export async function notifyToolCall(
   toolCalls: ToolCall[]
 ): Promise<void> {
   const toolNames = toolCalls.map((c) => c.toolName).join(", ");
+  // Zalo format: *bold* _italic_ (không phải markdown)
   const message = `🔧 *Đang gọi tool:* _${toolNames}_...`;
 
   try {
-    await api.sendMessage(message, threadId, ThreadType.User);
+    // Import createRichMessage để format đúng Zalo style
+    const { createRichMessage } = await import("../utils/richText.js");
+    const richMsg = createRichMessage(message);
+    await api.sendMessage(richMsg, threadId, ThreadType.User);
     console.log(`[Tool] 🔧 Gọi tool: ${toolNames}`);
     debugLog("TOOL", `Notified tool call: ${toolNames}`);
   } catch (e) {

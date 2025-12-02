@@ -246,20 +246,37 @@ export async function sendResponse(
 // STREAMING CALLBACKS
 // ═══════════════════════════════════════════════════
 
+// Regex để detect và strip tool tags từ text
+const TOOL_TAG_REGEX =
+  /\[tool:\w+(?:\s+[^\]]*?)?\](?:\s*\{[\s\S]*?\}\s*\[\/tool\])?/gi;
+
+function stripToolTags(text: string): string {
+  return text.replace(TOOL_TAG_REGEX, "").trim();
+}
+
+function hasToolTags(text: string): boolean {
+  TOOL_TAG_REGEX.lastIndex = 0;
+  return TOOL_TAG_REGEX.test(text);
+}
+
 export function createStreamCallbacks(
   api: any,
   threadId: string,
   originalMessage?: any,
-  messages?: any[]
+  messages?: any[],
+  enableToolDetection: boolean = false
 ): StreamCallbacks & { hasResponse: () => boolean } {
   let messageCount = 0;
   let reactionCount = 0;
   const pendingStickers: string[] = [];
   let completed = false; // Prevent double onComplete
+  let toolDetected = false; // Track if tool was detected
 
   debugLog(
     "STREAM_CB",
-    `Creating callbacks: thread=${threadId}, messages=${messages?.length || 0}`
+    `Creating callbacks: thread=${threadId}, messages=${
+      messages?.length || 0
+    }, toolDetection=${enableToolDetection}`
   );
 
   return {
@@ -277,11 +294,23 @@ export function createStreamCallbacks(
     },
 
     onMessage: async (text: string, quoteIndex?: number) => {
+      // Strip tool tags từ text trước khi gửi
+      const cleanText = stripToolTags(text);
+
+      // Nếu text chỉ có tool tags (sau khi strip thì rỗng), không gửi
+      if (!cleanText) {
+        if (hasToolTags(text)) {
+          toolDetected = true;
+          debugLog("STREAM_CB", `Tool detected in message, skipping send`);
+        }
+        return;
+      }
+
       messageCount++;
       const quoteData = resolveQuoteData(quoteIndex, threadId, messages);
 
       try {
-        const richMsg = createRichMessage(`🤖 AI: ${text}`, quoteData);
+        const richMsg = createRichMessage(`🤖 AI: ${cleanText}`, quoteData);
         const result = await api.sendMessage(
           richMsg,
           threadId,
@@ -289,10 +318,14 @@ export function createStreamCallbacks(
         );
         logZaloAPI("sendMessage", { message: richMsg, threadId }, result);
         console.log(`[Bot] 📤 Streaming: Đã gửi tin nhắn #${messageCount}`);
-        logMessage("OUT", threadId, { type: "text", text, quoteIndex });
+        logMessage("OUT", threadId, {
+          type: "text",
+          text: cleanText,
+          quoteIndex,
+        });
       } catch (e: any) {
         logError("onMessage", e);
-        await api.sendMessage(`🤖 AI: ${text}`, threadId, ThreadType.User);
+        await api.sendMessage(`🤖 AI: ${cleanText}`, threadId, ThreadType.User);
       }
       await new Promise((r) => setTimeout(r, 300));
     },
@@ -324,6 +357,19 @@ export function createStreamCallbacks(
         return;
       }
       completed = true;
+
+      // Nếu tool detected và chưa gửi tin nhắn nào, không gửi sticker
+      if (toolDetected && messageCount === 0) {
+        debugLog("STREAM_CB", "Tool detected, skipping stickers");
+        console.log(`[Bot] 🔧 Phát hiện tool call, đang xử lý...`);
+        logStep("streamComplete", {
+          threadId,
+          messageCount,
+          stickerCount: 0,
+          toolDetected: true,
+        });
+        return;
+      }
 
       // Gửi stickers đã queue (chỉ khi không bị abort hoặc có partial response)
       for (const keyword of pendingStickers) {

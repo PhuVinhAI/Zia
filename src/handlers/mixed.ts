@@ -614,11 +614,13 @@ export async function handleMixedContent(
 
       if (CONFIG.useStreaming) {
         // STREAMING MODE - Cần xử lý tool sau khi stream xong
+        // Tạo callbacks với tool-aware logic
         const callbacks = createStreamCallbacks(
           api,
           threadId,
           lastMsg,
-          messages
+          messages,
+          true // enableToolDetection - tạm dừng gửi tin nếu phát hiện tool
         );
         callbacks.signal = signal;
 
@@ -651,6 +653,13 @@ export async function handleMixedContent(
         );
 
         if (toolResult.hasTools) {
+          debugLog(
+            "MIXED",
+            `Tool detected: ${toolResult.toolCalls
+              .map((t) => t.toolName)
+              .join(", ")}`
+          );
+
           // Lưu AI response (có tool call) vào history
           await saveResponseToHistory(threadId, result);
 

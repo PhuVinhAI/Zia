@@ -212,10 +212,11 @@ VÍ DỤ:
 - Lấy danh sách bạn bè: [tool:getAllFriends limit=10]
 
 QUY TẮC QUAN TRỌNG:
-1. Khi gọi tool, CHỈ viết tag tool, KHÔNG viết gì thêm
-2. Sau khi tool trả kết quả, bạn sẽ nhận được kết quả và tiếp tục trả lời user
+1. Khi gọi tool, viết tag tool VÀ có thể kèm text thông báo ngắn (ví dụ: "Để mình kiểm tra nhé... [tool:getAllFriends]")
+2. Sau khi tool trả kết quả, bạn sẽ nhận được kết quả trong [tool_result:...] và tiếp tục trả lời user
 3. Nếu cần thông tin user (tên, giới tính...) để xưng hô, hãy gọi [tool:getUserInfo] trước
 4. KHÔNG tự bịa thông tin, hãy dùng tool để lấy thông tin chính xác
+5. Tool tags sẽ được ẩn khỏi tin nhắn gửi đi, user chỉ thấy text thông báo
 `;
 }
 

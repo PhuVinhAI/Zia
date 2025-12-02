@@ -373,6 +373,7 @@ const TAG_PATTERNS = [
   /\[quote:-?\d+\][\s\S]*?\[\/quote\]/gi,
   /\[msg\][\s\S]*?\[\/msg\]/gi,
   /\[undo:-?\d+\]/gi,
+  /\[tool:\w+(?:\s+[^\]]*?)?\](?:\s*\{[\s\S]*?\}\s*\[\/tool\])?/gi, // Tool tags
 ];
 
 function getPlainText(buffer: string): string {

@@ -14,7 +14,7 @@
     "unauthorizedLogFile": "logs/unauthorized.json",
     "cloudDebug": {
       "enabled": true,
-      "prefix": "#bot"
+      "prefix": "#b"
     }
   },
   "historyLoader": {
