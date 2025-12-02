@@ -18,6 +18,7 @@ import {
   isTextConvertible,
   fetchAndConvertToTextBase64,
 } from "../utils/fetch.js";
+import { checkRateLimit, markApiCall } from "../utils/rateLimit.js";
 
 /**
  * Phân loại chi tiết tin nhắn
@@ -386,6 +387,21 @@ export async function handleMixedContent(
 
       if (signal?.aborted) return;
 
+      // Check rate limit
+      const waitTime = checkRateLimit(threadId);
+      if (waitTime > 0) {
+        const waitSec = Math.ceil(waitTime / 1000);
+        console.log(`[Bot] ⏳ Rate limit: chờ ${waitSec}s`);
+        await api.sendMessage(
+          `⏳ Đợi ${waitSec}s nữa AI mới trả lời nhé...`,
+          threadId,
+          ThreadType.User
+        );
+        await new Promise((r) => setTimeout(r, waitTime));
+        if (signal?.aborted) return;
+      }
+      markApiCall(threadId);
+
       // Dùng streaming nếu bật
       if (CONFIG.useStreaming) {
         const callbacks = createStreamCallbacks(
@@ -424,6 +440,21 @@ export async function handleMixedContent(
     debugLog("MIXED", `Prompt: ${prompt.substring(0, 200)}...`);
     debugLog("MIXED", `Media parts: ${media.length}`);
 
+    // Check rate limit
+    const waitTime = checkRateLimit(threadId);
+    if (waitTime > 0) {
+      const waitSec = Math.ceil(waitTime / 1000);
+      console.log(`[Bot] ⏳ Rate limit: chờ ${waitSec}s`);
+      await api.sendMessage(
+        `⏳ Đợi ${waitSec}s nữa AI mới trả lời nhé...`,
+        threadId,
+        ThreadType.User
+      );
+      await new Promise((r) => setTimeout(r, waitTime));
+      if (signal?.aborted) return;
+    }
+    markApiCall(threadId);
+
     // Dùng streaming nếu bật
     if (CONFIG.useStreaming) {
       const callbacks = createStreamCallbacks(
@@ -461,8 +492,6 @@ export async function handleMixedContent(
       await saveResponseToHistory(threadId, responseText);
       console.log(`[Bot] ✅ Đã trả lời ${messages.length} tin nhắn!`);
     }
-
-    console.log(`[Bot] ✅ Đã trả lời ${messages.length} tin nhắn!`);
   } catch (e: any) {
     if (e.message === "Aborted" || signal?.aborted) {
       debugLog("MIXED", "Aborted during processing");
