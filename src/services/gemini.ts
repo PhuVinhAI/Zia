@@ -255,6 +255,49 @@ export async function generateWithBase64(
 }
 
 /**
+ * Generate content với nhiều hình ảnh (multimodal)
+ */
+export async function generateWithMultipleImages(
+  prompt: string,
+  imageUrls: string[]
+): Promise<AIResponse> {
+  try {
+    const contents: any[] = [{ text: `${SYSTEM_PROMPT}\n\n${prompt}` }];
+
+    for (const url of imageUrls) {
+      const base64Image = await fetchAsBase64(url);
+      if (base64Image) {
+        contents.push({
+          inlineData: { data: base64Image, mimeType: "image/png" },
+        });
+      }
+    }
+
+    if (contents.length === 1) {
+      // Không có ảnh nào load được
+      return {
+        reactions: ["sad"],
+        messages: [
+          { text: "Không tải được hình ảnh.", sticker: "", quoteIndex: -1 },
+        ],
+        undoIndexes: [],
+      };
+    }
+
+    const response = await ai.models.generateContent({
+      model: GEMINI_MODEL,
+      contents,
+      config: GEMINI_CONFIG,
+    });
+
+    return parseAIResponse(response.text || "{}");
+  } catch (error) {
+    console.error("Gemini Multiple Images Error:", error);
+    return DEFAULT_RESPONSE;
+  }
+}
+
+/**
  * Generate content với video (base64, dưới 20MB)
  */
 export async function generateWithVideo(

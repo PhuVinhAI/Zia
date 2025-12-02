@@ -88,6 +88,7 @@ export function createStreamCallbacks(
   originalMessage?: any
 ): StreamCallbacks {
   let messageCount = 0;
+  const pendingStickers: string[] = []; // Queue sticker để gửi sau cùng
 
   return {
     // Gửi reaction ngay khi phát hiện
@@ -103,9 +104,10 @@ export function createStreamCallbacks(
       }
     },
 
-    // Gửi sticker ngay khi phát hiện
+    // Queue sticker để gửi sau cùng (tránh bị đảo thứ tự)
     onSticker: async (keyword: string) => {
-      await sendSticker(api, keyword, threadId);
+      pendingStickers.push(keyword);
+      console.log(`[Bot] 🎨 Queue sticker: "${keyword}"`);
     },
 
     // Gửi tin nhắn ngay khi tag đóng
@@ -179,9 +181,18 @@ export function createStreamCallbacks(
       }
     },
 
-    onComplete: () => {
+    onComplete: async () => {
+      // Gửi tất cả sticker sau khi hoàn tất (để không bị đảo thứ tự)
+      for (const keyword of pendingStickers) {
+        await sendSticker(api, keyword, threadId);
+      }
+
       console.log(
-        `[Bot] ✅ Streaming hoàn tất! Đã gửi ${messageCount} tin nhắn`
+        `[Bot] ✅ Streaming hoàn tất! Đã gửi ${messageCount} tin nhắn${
+          pendingStickers.length > 0
+            ? ` + ${pendingStickers.length} sticker`
+            : ""
+        }`
       );
     },
 

@@ -11,6 +11,7 @@ import {
   handleFile,
   handleText,
   handleTextStream,
+  handleMultipleImages,
 } from "./handlers/index.js";
 import { setupSelfMessageListener } from "./handlers/streamResponse.js";
 
@@ -51,6 +52,23 @@ async function processMessage(api: any, message: any, threadId: string) {
   }
 }
 
+// Helper: Phân loại tin nhắn
+function classifyMessage(msg: any): "text" | "image" | "video" | "other" {
+  const content = msg.data?.content;
+  const msgType = msg.data?.msgType || "";
+
+  if (typeof content === "string" && !msgType.includes("sticker")) {
+    return "text";
+  }
+  if (msgType === "chat.photo" || (msgType === "webchat" && content?.href)) {
+    return "image";
+  }
+  if (msgType === "chat.video.msg") {
+    return "video";
+  }
+  return "other";
+}
+
 // Xử lý queue của một thread
 async function processQueue(api: any, threadId: string) {
   if (processingThreads.has(threadId)) return;
@@ -61,22 +79,17 @@ async function processQueue(api: any, threadId: string) {
   processingThreads.add(threadId);
 
   while (queue.length > 0) {
-    // Lấy tất cả tin nhắn text hiện có để gộp
+    // Phân loại tin nhắn
     const textMessages: any[] = [];
+    const imageMessages: any[] = [];
     const otherMessages: any[] = [];
 
     for (const msg of queue) {
-      const content = msg.data?.content;
-      const msgType = msg.data?.msgType;
-      if (
-        typeof content === "string" &&
-        !msgType?.includes("sticker") &&
-        !msgType?.includes("photo") &&
-        !msgType?.includes("video") &&
-        !msgType?.includes("voice") &&
-        !msgType?.includes("file")
-      ) {
+      const type = classifyMessage(msg);
+      if (type === "text") {
         textMessages.push(msg);
+      } else if (type === "image") {
+        imageMessages.push(msg);
       } else {
         otherMessages.push(msg);
       }
@@ -85,7 +98,33 @@ async function processQueue(api: any, threadId: string) {
     // Clear queue
     queue.length = 0;
 
-    // Xử lý tin nhắn text gộp
+    // Lấy caption từ text messages (nếu có ảnh)
+    let caption = "";
+    if (imageMessages.length > 0 && textMessages.length > 0) {
+      caption = textMessages.map((m) => m.data.content).join("\n");
+      console.log(`[Bot] 📝 Dùng text làm caption cho ảnh: "${caption}"`);
+      textMessages.length = 0; // Clear text vì đã dùng làm caption
+    }
+
+    // Xử lý nhiều ảnh cùng lúc
+    if (imageMessages.length > 1) {
+      console.log(`[Bot] 📦 Gộp ${imageMessages.length} ảnh`);
+      await handleMultipleImages(
+        api,
+        imageMessages,
+        threadId,
+        caption || undefined
+      );
+    } else if (imageMessages.length === 1) {
+      // 1 ảnh + caption
+      if (caption) {
+        const msg = imageMessages[0];
+        msg.data.content = { ...msg.data.content, title: caption };
+      }
+      await processMessage(api, imageMessages[0], threadId);
+    }
+
+    // Xử lý tin nhắn text gộp (nếu còn)
     if (textMessages.length > 0) {
       if (textMessages.length === 1) {
         await processMessage(api, textMessages[0], threadId);
@@ -107,7 +146,7 @@ async function processQueue(api: any, threadId: string) {
       }
     }
 
-    // Xử lý các tin nhắn media riêng lẻ
+    // Xử lý các tin nhắn khác (video, voice, file, sticker...)
     for (const msg of otherMessages) {
       await processMessage(api, msg, threadId);
     }

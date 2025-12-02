@@ -5,6 +5,7 @@ export {
   handleVideo,
   handleVoice,
   handleFile,
+  handleMultipleImages,
 } from "./media.js";
 export { handleText } from "./text.js";
 

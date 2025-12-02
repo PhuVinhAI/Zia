@@ -8,7 +8,7 @@ export interface StreamCallbacks {
   onSticker?: (keyword: string) => Promise<void>;
   onMessage?: (text: string, quoteIndex?: number) => Promise<void>;
   onUndo?: (index: number) => Promise<void>;
-  onComplete?: () => void;
+  onComplete?: () => void | Promise<void>;
   onError?: (error: Error) => void;
 }
 
@@ -151,7 +151,7 @@ export async function generateContentStream(
       await callbacks.onMessage(plainText);
     }
 
-    callbacks.onComplete?.();
+    await callbacks.onComplete?.();
   } catch (error) {
     console.error("[Streaming] Error:", error);
     callbacks.onError?.(error as Error);
@@ -203,7 +203,7 @@ export async function chatStream(
       await callbacks.onMessage(plainText);
     }
 
-    callbacks.onComplete?.();
+    await callbacks.onComplete?.();
   } catch (error) {
     console.error("[Chat Streaming] Error:", error);
     callbacks.onError?.(error as Error);

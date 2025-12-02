@@ -39,12 +39,24 @@ export const PROMPTS = {
     "Người dùng gửi một sticker. Hãy XEM và HIỂU ý nghĩa/cảm xúc mà người dùng muốn truyền đạt qua sticker này (KHÔNG mô tả sticker), rồi phản hồi phù hợp với ý đó.",
   image:
     "Người dùng gửi một hình ảnh. Hãy mô tả chi tiết hình ảnh này và phản hồi phù hợp.",
+  imageWithCaption: (caption: string) =>
+    `Người dùng gửi một hình ảnh kèm tin nhắn: "${caption}"\n\nHãy XEM ảnh và trả lời theo yêu cầu/câu hỏi của họ. Nếu họ không hỏi gì cụ thể thì mô tả ảnh và phản hồi phù hợp.`,
   video: (duration: number) =>
-    `Người dùng gửi một video dài ${duration} giây. Hãy XEM video và mô tả/nhận xét nội dung video. Nếu video có âm thanh/lời nói thì nghe và phản hồi phù hợp.`,
+    `Người dùng gửi một video dài ${
+      duration || "?"
+    }s. Hãy XEM video và mô tả/nhận xét nội dung video. Nếu video có âm thanh/lời nói thì nghe và phản hồi phù hợp.`,
+  videoWithCaption: (duration: number, caption: string) =>
+    `Người dùng gửi một video dài ${
+      duration || "?"
+    }s kèm tin nhắn: "${caption}"\n\nHãy XEM video và trả lời theo yêu cầu/câu hỏi của họ. Nếu video có âm thanh/lời nói thì nghe và phản hồi phù hợp.`,
   videoThumb: (duration: number) =>
-    `Người dùng gửi một video dài ${duration} giây (video quá lớn nên chỉ có thumbnail). Hãy mô tả những gì bạn thấy trong ảnh và đoán nội dung video có thể là gì.`,
+    `Người dùng gửi một video dài ${duration}s (video quá lớn nên chỉ có thumbnail). Hãy mô tả những gì bạn thấy trong ảnh và đoán nội dung video có thể là gì.`,
+  videoThumbWithCaption: (duration: number, caption: string) =>
+    `Người dùng gửi một video dài ${duration}s kèm tin nhắn: "${caption}" (video quá lớn nên chỉ có thumbnail). Hãy mô tả những gì bạn thấy và trả lời theo yêu cầu của họ.`,
   voice: (duration: number) =>
-    `Người dùng gửi một tin nhắn thoại dài ${duration} giây. Hãy nghe và trả lời nội dung họ nói.`,
+    `Người dùng gửi một tin nhắn thoại dài ${
+      duration || "?"
+    }s. Hãy nghe và trả lời nội dung họ nói.`,
   file: (fileName: string, fileSize: number) =>
     `Người dùng gửi file "${fileName}" (${fileSize}KB). Hãy đọc và tóm tắt nội dung chính của file này.`,
   fileText: (fileName: string, fileExt: string, fileSize: number) =>
@@ -57,4 +69,8 @@ export const PROMPTS = {
     `Người dùng gửi ${urls.length} video YouTube:\n${urls.join(
       "\n"
     )}\n\nTin nhắn: "${content}"\n\nHãy XEM video và trả lời/nhận xét về nội dung video. Nếu họ hỏi gì về video thì trả lời dựa trên nội dung video.`,
+  multipleImages: (count: number) =>
+    `Người dùng gửi ${count} hình ảnh. Hãy XEM tất cả các ảnh và mô tả/so sánh/nhận xét về chúng.`,
+  multipleImagesWithCaption: (count: number, caption: string) =>
+    `Người dùng gửi ${count} hình ảnh kèm tin nhắn: "${caption}"\n\nHãy XEM tất cả các ảnh và trả lời theo yêu cầu/câu hỏi của họ.`,
 };
