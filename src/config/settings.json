@@ -6,7 +6,8 @@
     "rateLimitMs": 3000,
     "maxTokenHistory": 300000,
     "selfListen": true,
-    "logging": true
+    "logging": true,
+    "useStreaming": true
   },
   "allowedUsers": ["Nguyễn Huỳnh Thuật"],
   "stickers": {

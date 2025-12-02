@@ -10,6 +10,7 @@ import {
   handleVoice,
   handleFile,
   handleText,
+  handleTextStream,
 } from "./handlers/index.js";
 
 // Queue tin nhắn theo thread để xử lý tuần tự
@@ -35,7 +36,12 @@ async function processMessage(api: any, message: any, threadId: string) {
   } else if (msgType === "chat.voice" && content?.href) {
     await handleVoice(api, message, threadId);
   } else if (typeof content === "string") {
-    await handleText(api, message, threadId);
+    // Sử dụng streaming handler nếu bật
+    if (CONFIG.useStreaming) {
+      await handleTextStream(api, message, threadId);
+    } else {
+      await handleText(api, message, threadId);
+    }
   } else {
     console.log(
       `[DEBUG] msgType: ${msgType}, content:`,

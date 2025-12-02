@@ -52,6 +52,7 @@ export const CONFIG = {
   maxTokenHistory: settings.bot.maxTokenHistory || 300000, // 300k tokens
   selfListen: settings.bot.selfListen,
   logging: settings.bot.logging,
+  useStreaming: settings.bot.useStreaming ?? true, // Bật streaming mặc định
 
   // Allowed users (empty = allow all)
   allowedUsers: settings.allowedUsers as string[],

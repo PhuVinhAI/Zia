@@ -17,9 +17,9 @@ if (!GEMINI_API_KEY || GEMINI_API_KEY === "your_gemini_api_key_here") {
 export const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
 
 // ============ GEMINI CONFIG - CHỈ CHỈNH Ở ĐÂY ============
-const GEMINI_MODEL = "gemini-2.5-flash";
+export const GEMINI_MODEL = "gemini-2.5-flash";
 
-const GEMINI_CONFIG = {
+export const GEMINI_CONFIG = {
   temperature: 1,
   topP: 0.95,
   maxOutputTokens: 65536,
