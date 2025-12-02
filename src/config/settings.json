@@ -11,7 +11,11 @@
     "useCharacter": false,
     "fileLogging": true,
     "logFile": "logs/bot.txt",
-    "unauthorizedLogFile": "logs/unauthorized.json"
+    "unauthorizedLogFile": "logs/unauthorized.json",
+    "cloudDebug": {
+      "enabled": true,
+      "prefix": "#bot"
+    }
   },
   "historyLoader": {
     "enabled": false,

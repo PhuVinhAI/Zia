@@ -92,6 +92,12 @@ export const CONFIG = {
   unauthorizedLogFile:
     settings.bot.unauthorizedLogFile || "logs/unauthorized.json", // File log user chưa được cấp phép
 
+  // Cloud Debug - cho phép test AI trong "Cloud của tôi"
+  cloudDebug: {
+    enabled: settings.bot.cloudDebug?.enabled ?? false,
+    prefix: settings.bot.cloudDebug?.prefix || "#bot",
+  },
+
   // Allowed user IDs (empty = allow all)
   allowedUserIds: (settings.allowedUserIds || []) as string[],
 

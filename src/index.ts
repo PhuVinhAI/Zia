@@ -230,8 +230,17 @@ async function main() {
 
   logStep("main:start", { config: CONFIG.name });
 
-  const { api } = await loginWithQR();
+  const { api, myId } = await loginWithQR();
   logStep("main:loginComplete", "Zalo login successful");
+
+  // Log Cloud Debug status
+  if (CONFIG.cloudDebug.enabled) {
+    console.log(`☁️ Cloud Debug: ON (prefix: "${CONFIG.cloudDebug.prefix}")`);
+    debugLog(
+      "INIT",
+      `Cloud Debug enabled with prefix: ${CONFIG.cloudDebug.prefix}`
+    );
+  }
 
   // Setup listener để bắt tin nhắn của chính mình (cho tính năng thu hồi)
   setupSelfMessageListener(api);
@@ -274,7 +283,33 @@ async function main() {
       logMessage("IN", threadId, message); // Log toàn bộ raw message
     }
 
-    if (isSelf) {
+    // ========== CLOUD DEBUG MODE ==========
+    // Cho phép test AI trong "Cloud của tôi" (tin nhắn gửi cho chính mình)
+    const isCloudMessage = isSelf && threadId === myId;
+
+    if (isCloudMessage && CONFIG.cloudDebug.enabled) {
+      const content = message.data?.content;
+      const cloudPrefix = CONFIG.cloudDebug.prefix;
+
+      // Chỉ xử lý nếu tin nhắn có prefix (tránh loop vô tận)
+      if (typeof content === "string" && content.startsWith(cloudPrefix)) {
+        debugLog(
+          "CLOUD",
+          `Cloud message detected: ${content.substring(0, 50)}...`
+        );
+        console.log(`☁️ [Cloud] Nhận lệnh: ${content.substring(0, 50)}...`);
+
+        // Xóa prefix khỏi nội dung để AI xử lý
+        message.data.content = content.replace(cloudPrefix, "").trim();
+
+        // Tiếp tục xử lý như tin nhắn bình thường (không return)
+      } else {
+        // Tin nhắn Cloud không có prefix -> bỏ qua (có thể là reply của bot)
+        debugLog("CLOUD", `Skipping cloud message without prefix`);
+        return;
+      }
+    } else if (isSelf) {
+      // Tin nhắn tự gửi nhưng không phải Cloud -> bỏ qua
       debugLog("MSG", `Skipping self message: thread=${threadId}`);
       return;
     }
@@ -288,7 +323,9 @@ async function main() {
 
     const senderId = message.data?.uidFrom || threadId;
     const senderName = message.data?.dName || "";
-    if (!isAllowedUser(senderId, senderName)) {
+
+    // Cloud messages luôn được phép (đã check prefix ở trên)
+    if (!isCloudMessage && !isAllowedUser(senderId, senderName)) {
       console.log(`[Bot] ⏭️ Bỏ qua: "${senderName}" (${senderId})`);
       return;
     }
