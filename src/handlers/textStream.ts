@@ -1,5 +1,5 @@
 import { ThreadType } from "../services/zalo.js";
-import { generateContentStream, chatStream } from "../services/streaming.js";
+import { generateContentStream } from "../services/streaming.js";
 import { createStreamCallbacks } from "./streamResponse.js";
 import {
   saveToHistory,
@@ -7,6 +7,24 @@ import {
   getHistoryContext,
 } from "../utils/history.js";
 import { CONFIG, PROMPTS } from "../config/index.js";
+
+/**
+ * Giữ trạng thái Typing liên tục cho đến khi dừng
+ */
+function startTyping(api: any, threadId: string, type: any) {
+  // Gửi lần đầu ngay lập tức
+  api.sendTypingEvent(threadId, type).catch(() => {});
+
+  // Lặp lại mỗi 3 giây để duy trì trạng thái
+  const interval = setInterval(() => {
+    api.sendTypingEvent(threadId, type).catch(() => {});
+  }, 3000);
+
+  // Trả về hàm để dừng typing
+  return function stopTyping() {
+    clearInterval(interval);
+  };
+}
 
 /**
  * Handler text với streaming - gửi response ngay khi có tag hoàn chỉnh
@@ -52,7 +70,9 @@ export async function handleTextStream(
     : userPrompt;
 
   console.log(`[Bot] 📩 Câu hỏi (streaming): ${userPrompt}`);
-  await api.sendTypingEvent(threadId, ThreadType.User);
+
+  // Bắt đầu typing liên tục
+  const stopTyping = startTyping(api, threadId, ThreadType.User);
 
   // Tạo callbacks cho streaming
   const callbacks = createStreamCallbacks(api, threadId, message);
@@ -65,8 +85,27 @@ export async function handleTextStream(
     await originalOnMessage?.(text, quoteIndex);
   };
 
-  // Gọi streaming
-  await generateContentStream(promptWithHistory, callbacks);
+  // Wrap onComplete để dừng typing
+  const originalOnComplete = callbacks.onComplete;
+  callbacks.onComplete = () => {
+    stopTyping();
+    originalOnComplete?.();
+  };
+
+  // Wrap onError để dừng typing khi lỗi
+  const originalOnError = callbacks.onError;
+  callbacks.onError = (error: Error) => {
+    stopTyping();
+    originalOnError?.(error);
+  };
+
+  try {
+    // Gọi streaming
+    await generateContentStream(promptWithHistory, callbacks);
+  } catch (error) {
+    stopTyping();
+    throw error;
+  }
 
   // Lưu response vào history
   if (fullResponse.trim()) {
