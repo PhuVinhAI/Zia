@@ -512,5 +512,75 @@ export async function generateWithMultipleYouTube(
   }
 }
 
+/**
+ * Generate content với mixed media (nhiều loại media cùng lúc)
+ * Hỗ trợ: image, video, audio, file
+ */
+export async function generateWithMixedContent(
+  prompt: string,
+  mediaParts: Array<{
+    type: "image" | "video" | "audio" | "file";
+    url: string;
+    mimeType: string;
+  }>
+): Promise<AIResponse> {
+  try {
+    console.log(`[Gemini] 📦 Xử lý ${mediaParts.length} media parts`);
+    logStep("generateWithMixedContent", {
+      mediaCount: mediaParts.length,
+      types: mediaParts.map((p) => p.type),
+      prompt: prompt.substring(0, 100),
+    });
+
+    const contents: any[] = [{ text: `${SYSTEM_PROMPT}\n\n${prompt}` }];
+    let loadedCount = 0;
+
+    for (const part of mediaParts) {
+      try {
+        const base64Data = await fetchAsBase64(part.url);
+        if (base64Data) {
+          contents.push({
+            inlineData: { data: base64Data, mimeType: part.mimeType },
+          });
+          loadedCount++;
+          debugLog(
+            "GEMINI",
+            `Loaded ${part.type}: ${base64Data.length} chars (${part.mimeType})`
+          );
+        } else {
+          debugLog("GEMINI", `Failed to load ${part.type}: ${part.url}`);
+        }
+      } catch (e) {
+        debugLog("GEMINI", `Error loading ${part.type}: ${e}`);
+      }
+    }
+
+    if (contents.length === 1) {
+      // Không có media nào load được, chỉ có text
+      debugLog("GEMINI", "No media loaded, using text-only");
+      return generateContent(prompt);
+    }
+
+    debugLog(
+      "GEMINI",
+      `Sending ${loadedCount}/${mediaParts.length} media to Gemini`
+    );
+
+    const response = await ai.models.generateContent({
+      model: GEMINI_MODEL,
+      contents,
+      config: GEMINI_CONFIG,
+    });
+
+    const rawText = response.text || "{}";
+    logAIResponse(`[MIXED ${loadedCount} media] ${prompt}`, rawText);
+    return parseAIResponse(rawText);
+  } catch (error) {
+    logError("generateWithMixedContent", error);
+    console.error("Gemini Mixed Content Error:", error);
+    return DEFAULT_RESPONSE;
+  }
+}
+
 // Legacy export for backward compatibility
 export const getGeminiReply = generateContent;

@@ -21,6 +21,8 @@ import {
   handleText,
   handleTextStream,
   handleMultipleImages,
+  handleMixedContent,
+  classifyMessageDetailed,
 } from "./handlers/index.js";
 import { setupSelfMessageListener } from "./handlers/streamResponse.js";
 import { startTask, abortTask } from "./utils/taskManager.js";
@@ -146,21 +148,21 @@ async function processMessage(
   }
 }
 
-// Helper: Phân loại tin nhắn
-function classifyMessage(msg: any): "text" | "image" | "video" | "other" {
+// Helper: Kiểm tra tin nhắn có phải chỉ là text thuần không
+function isTextOnly(msg: any): boolean {
   const content = msg.data?.content;
   const msgType = msg.data?.msgType || "";
+  return typeof content === "string" && !msgType.includes("sticker");
+}
 
-  if (typeof content === "string" && !msgType.includes("sticker")) {
-    return "text";
-  }
-  if (msgType === "chat.photo" || (msgType === "webchat" && content?.href)) {
-    return "image";
-  }
-  if (msgType === "chat.video.msg") {
-    return "video";
-  }
-  return "other";
+// Helper: Kiểm tra có media (ảnh, video, voice, file, sticker) không
+function hasMedia(messages: any[]): boolean {
+  return messages.some((msg) => {
+    const classified = classifyMessageDetailed(msg);
+    return ["image", "video", "voice", "file", "sticker"].includes(
+      classified.type
+    );
+  });
 }
 
 // Xử lý queue của một thread
@@ -191,67 +193,32 @@ async function processQueue(api: any, threadId: string, signal?: AbortSignal) {
       return;
     }
 
-    // Phân loại tin nhắn
-    const textMessages: any[] = [];
-    const imageMessages: any[] = [];
-    const otherMessages: any[] = [];
-
-    for (const msg of queue) {
-      const type = classifyMessage(msg);
-      if (type === "text") {
-        textMessages.push(msg);
-      } else if (type === "image") {
-        imageMessages.push(msg);
-      } else {
-        otherMessages.push(msg);
-      }
-    }
-
-    // Clear queue
+    // Lấy tất cả tin nhắn từ queue
+    const allMessages = [...queue];
     queue.length = 0;
 
-    debugLog(
-      "QUEUE",
-      `Classified: text=${textMessages.length}, image=${imageMessages.length}, other=${otherMessages.length}`
-    );
-    logStep("processQueue:classified", {
-      text: textMessages.length,
-      image: imageMessages.length,
-      other: otherMessages.length,
-    });
+    debugLog("QUEUE", `Processing ${allMessages.length} messages`);
+    logStep("processQueue:messages", { count: allMessages.length });
 
-    // Lấy caption từ text messages (nếu có ảnh)
-    let caption = "";
-    if (imageMessages.length > 0 && textMessages.length > 0) {
-      caption = textMessages.map((m) => m.data.content).join("\n");
-      console.log(`[Bot] 📝 Dùng text làm caption cho ảnh: "${caption}"`);
-      debugLog("QUEUE", `Using text as caption: "${caption}"`);
-      textMessages.length = 0; // Clear text vì đã dùng làm caption
-    }
+    // Kiểm tra có media không
+    const containsMedia = hasMedia(allMessages);
 
-    // Xử lý nhiều ảnh cùng lúc
-    if (imageMessages.length > 1) {
-      console.log(`[Bot] 📦 Gộp ${imageMessages.length} ảnh`);
-      debugLog("QUEUE", `Grouping ${imageMessages.length} images`);
-      await handleMultipleImages(
-        api,
-        imageMessages,
-        threadId,
-        caption || undefined
+    if (containsMedia) {
+      // CÓ MEDIA: Gộp tất cả thành 1 request mixed content
+      debugLog(
+        "QUEUE",
+        `Using handleMixedContent for ${allMessages.length} messages`
       );
-    } else if (imageMessages.length === 1) {
-      // 1 ảnh + caption
-      if (caption) {
-        const msg = imageMessages[0];
-        msg.data.content = { ...msg.data.content, title: caption };
-        debugLog("QUEUE", `Single image with caption`);
-      }
-      await processMessage(api, imageMessages[0], threadId);
-    }
+      await handleMixedContent(api, allMessages, threadId, signal);
+    } else {
+      // CHỈ CÓ TEXT: Gộp text và xử lý như cũ
+      const textMessages = allMessages.filter(isTextOnly);
 
-    // Xử lý tin nhắn text gộp (nếu còn)
-    if (textMessages.length > 0) {
-      // Kiểm tra abort trước khi xử lý text
+      if (textMessages.length === 0) {
+        debugLog("QUEUE", "No processable messages");
+        continue;
+      }
+
       if (signal?.aborted) {
         debugLog("QUEUE", `Aborted before processing text messages`);
         break;
@@ -281,12 +248,6 @@ async function processQueue(api: any, threadId: string, signal?: AbortSignal) {
         );
         await processMessage(api, combinedMessage, threadId, signal);
       }
-    }
-
-    // Xử lý các tin nhắn khác (video, voice, file, sticker...)
-    for (const msg of otherMessages) {
-      if (signal?.aborted) break;
-      await processMessage(api, msg, threadId, signal);
     }
   }
 
