@@ -93,6 +93,87 @@ export function setupSelfMessageListener(api: any) {
 }
 
 // ═══════════════════════════════════════════════════
+// SHARED QUOTE RESOLVER
+// ═══════════════════════════════════════════════════
+
+function resolveQuoteData(
+  quoteIndex: number | undefined,
+  threadId: string,
+  batchMessages?: any[]
+): any {
+  if (quoteIndex === undefined) return undefined;
+
+  if (quoteIndex >= 0) {
+    // Quote từ batch messages hoặc history
+    if (batchMessages && quoteIndex < batchMessages.length) {
+      const msg = batchMessages[quoteIndex];
+      if (msg?.data?.msgId) {
+        console.log(`[Bot] 📎 Quote tin #${quoteIndex}`);
+        return msg.data;
+      }
+    }
+    // Fallback to history
+    const rawHistory = getRawHistory(threadId);
+    if (quoteIndex < rawHistory.length) {
+      const msg = rawHistory[quoteIndex];
+      if (msg?.data?.msgId) return msg.data;
+    }
+  } else {
+    // Quote tin bot đã gửi (index âm)
+    const botMsg = getSentMessage(threadId, quoteIndex);
+    if (botMsg) {
+      console.log(`[Bot] 📎 Quote tin bot #${quoteIndex}`);
+      return {
+        msgId: botMsg.msgId,
+        cliMsgId: botMsg.cliMsgId,
+        msg: botMsg.content,
+      };
+    }
+  }
+  return undefined;
+}
+
+// ═══════════════════════════════════════════════════
+// SHARED REACTION HANDLER
+// ═══════════════════════════════════════════════════
+
+async function handleReaction(
+  api: any,
+  reaction: string,
+  threadId: string,
+  originalMessage?: any,
+  batchMessages?: any[]
+): Promise<void> {
+  let reactionType = reaction;
+  let targetMsg = originalMessage;
+
+  if (reaction.includes(":")) {
+    const [indexStr, type] = reaction.split(":");
+    reactionType = type;
+    const index = parseInt(indexStr);
+    if (batchMessages && index >= 0 && index < batchMessages.length) {
+      targetMsg = batchMessages[index];
+    }
+  }
+
+  const reactionObj = reactionMap[reactionType];
+  if (reactionObj && targetMsg) {
+    try {
+      const result = await api.addReaction(reactionObj, targetMsg);
+      logZaloAPI(
+        "addReaction",
+        { reaction: reactionType, msgId: targetMsg?.data?.msgId },
+        result
+      );
+      console.log(`[Bot] 💖 Đã thả reaction: ${reactionType}`);
+      logMessage("OUT", threadId, { type: "reaction", reaction: reactionType });
+    } catch (e: any) {
+      logError("handleReaction", e);
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════
 // NON-STREAMING RESPONSE
 // ═══════════════════════════════════════════════════
 
@@ -115,64 +196,19 @@ export async function sendResponse(
 
   // Thả reactions
   for (const r of response.reactions) {
-    let reactionType = r;
-    let targetMessage = originalMessage;
-
-    if (r.includes(":")) {
-      const [indexStr, type] = r.split(":");
-      const index = parseInt(indexStr);
-      reactionType = type;
-      if (allMessages && index >= 0 && index < allMessages.length) {
-        targetMessage = allMessages[index];
-      }
-    }
-
-    const reaction = reactionMap[reactionType];
-    if (reaction && targetMessage) {
-      try {
-        const result = await api.addReaction(reaction, targetMessage);
-        logZaloAPI(
-          "addReaction",
-          { reaction: reactionType, msgId: targetMessage?.data?.msgId },
-          result
-        );
-        console.log(`[Bot] 💖 Đã thả reaction: ${reactionType}`);
-        logMessage("OUT", threadId, {
-          type: "reaction",
-          reaction: reactionType,
-        });
-        await new Promise((r) => setTimeout(r, 300));
-      } catch (e: any) {
-        logError("sendResponse:reaction", e);
-      }
-    }
+    await handleReaction(api, r, threadId, originalMessage, allMessages);
+    await new Promise((r) => setTimeout(r, 300));
   }
 
   // Gửi messages
   for (let i = 0; i < response.messages.length; i++) {
     const msg = response.messages[i];
+    const quoteData = resolveQuoteData(
+      msg.quoteIndex >= 0 ? msg.quoteIndex : undefined,
+      threadId,
+      allMessages
+    );
 
-    // Xác định quote
-    let quoteData: any = undefined;
-    if (msg.quoteIndex >= 0) {
-      if (allMessages && msg.quoteIndex < allMessages.length) {
-        const batchMsg = allMessages[msg.quoteIndex];
-        if (batchMsg?.data?.msgId) {
-          quoteData = batchMsg.data;
-          console.log(`[Bot] 📎 Quote tin nhắn #${msg.quoteIndex}`);
-        }
-      } else {
-        const rawHistory = getRawHistory(threadId);
-        if (msg.quoteIndex < rawHistory.length) {
-          const historyMsg = rawHistory[msg.quoteIndex];
-          if (historyMsg?.data?.msgId) {
-            quoteData = historyMsg.data;
-          }
-        }
-      }
-    }
-
-    // Gửi text
     if (msg.text) {
       try {
         const richMsg = createRichMessage(`🤖 AI: ${msg.text}`, quoteData);
@@ -193,7 +229,6 @@ export async function sendResponse(
       }
     }
 
-    // Gửi sticker
     if (msg.sticker) {
       if (msg.text) await new Promise((r) => setTimeout(r, 800));
       await sendSticker(api, msg.sticker, threadId);
@@ -227,36 +262,7 @@ export function createStreamCallbacks(
 
   return {
     onReaction: async (reaction: string) => {
-      let reactionType = reaction;
-      let targetMsg = originalMessage;
-
-      if (reaction.includes(":")) {
-        const [indexStr, type] = reaction.split(":");
-        reactionType = type;
-        const index = parseInt(indexStr);
-        if (messages && index >= 0 && index < messages.length) {
-          targetMsg = messages[index];
-        }
-      }
-
-      const reactionObj = reactionMap[reactionType];
-      if (reactionObj && targetMsg) {
-        try {
-          const result = await api.addReaction(reactionObj, targetMsg);
-          logZaloAPI(
-            "addReaction",
-            { reaction: reactionType, msgId: targetMsg?.data?.msgId },
-            result
-          );
-          console.log(`[Bot] 💖 Streaming: Đã thả reaction: ${reactionType}`);
-          logMessage("OUT", threadId, {
-            type: "reaction",
-            reaction: reactionType,
-          });
-        } catch (e: any) {
-          logError("onReaction", e);
-        }
-      }
+      await handleReaction(api, reaction, threadId, originalMessage, messages);
     },
 
     onSticker: async (keyword: string) => {
@@ -266,39 +272,7 @@ export function createStreamCallbacks(
 
     onMessage: async (text: string, quoteIndex?: number) => {
       messageCount++;
-
-      let quoteData: any = undefined;
-      if (quoteIndex !== undefined) {
-        if (quoteIndex >= 0) {
-          // Quote từ batch messages hoặc history
-          if (messages && quoteIndex < messages.length) {
-            const batchMsg = messages[quoteIndex];
-            if (batchMsg?.data?.msgId) {
-              quoteData = batchMsg.data;
-              console.log(`[Bot] 📎 Quote tin #${quoteIndex}`);
-            }
-          } else {
-            const rawHistory = getRawHistory(threadId);
-            if (quoteIndex < rawHistory.length) {
-              const historyMsg = rawHistory[quoteIndex];
-              if (historyMsg?.data?.msgId) {
-                quoteData = historyMsg.data;
-              }
-            }
-          }
-        } else {
-          // Quote tin bot đã gửi (index âm)
-          const botMsg = getSentMessage(threadId, quoteIndex);
-          if (botMsg) {
-            quoteData = {
-              msgId: botMsg.msgId,
-              cliMsgId: botMsg.cliMsgId,
-              msg: botMsg.content,
-            };
-            console.log(`[Bot] 📎 Quote tin bot #${quoteIndex}`);
-          }
-        }
-      }
+      const quoteData = resolveQuoteData(quoteIndex, threadId, messages);
 
       try {
         const richMsg = createRichMessage(`🤖 AI: ${text}`, quoteData);
@@ -314,7 +288,6 @@ export function createStreamCallbacks(
         logError("onMessage", e);
         await api.sendMessage(`🤖 AI: ${text}`, threadId, ThreadType.User);
       }
-
       await new Promise((r) => setTimeout(r, 300));
     },
 
@@ -326,7 +299,6 @@ export function createStreamCallbacks(
         );
         return;
       }
-
       try {
         const undoData = { msgId: msg.msgId, cliMsgId: msg.cliMsgId };
         const result = await api.undo(undoData, threadId, ThreadType.User);

@@ -100,6 +100,7 @@ export function classifyMessageDetailed(msg: any): ClassifiedMessage {
     const params = content?.params ? JSON.parse(content.params) : {};
     const fileExt = (params?.fileExt?.toLowerCase() || "").replace(".", "");
     const fileSize = params?.fileSize ? parseInt(params.fileSize) : 0;
+    const mimeType = CONFIG.mimeTypes[fileExt] || "application/octet-stream";
     return {
       type: "file",
       message: msg,
@@ -107,7 +108,7 @@ export function classifyMessageDetailed(msg: any): ClassifiedMessage {
       fileName: content.title || "file",
       fileExt,
       fileSize,
-      mimeType: getMimeType(fileExt),
+      mimeType,
     };
   }
 
@@ -115,67 +116,32 @@ export function classifyMessageDetailed(msg: any): ClassifiedMessage {
     let url = content?.href;
     if (!url && content?.params) {
       try {
-        const params = JSON.parse(content.params);
-        url = params?.href;
+        url = JSON.parse(content.params)?.href;
       } catch {}
     }
-    if (url) {
-      return { type: "link", message: msg, url, text: url };
-    }
+    if (url) return { type: "link", message: msg, url, text: url };
   }
 
   return { type: "unknown", message: msg };
 }
 
-// Dùng CONFIG.mimeTypes thay vì duplicate
-function getMimeType(ext: string): string {
-  return CONFIG.mimeTypes[ext] || "application/octet-stream";
-}
-
-function checkPrefix(content: string): {
-  shouldProcess: boolean;
-  userPrompt: string;
-} {
-  if (!CONFIG.requirePrefix)
-    return { shouldProcess: true, userPrompt: content };
-  if (!content.startsWith(CONFIG.prefix))
-    return { shouldProcess: false, userPrompt: "" };
-  const userPrompt = content.replace(CONFIG.prefix, "").trim();
-  return { shouldProcess: userPrompt.length > 0, userPrompt };
-}
-
-function getQuoteContent(message: any): string | null {
-  const quoteData = message.data?.quote;
-  if (quoteData) {
-    const quoteContent =
-      quoteData.msg || quoteData.content || "(nội dung không xác định)";
-    console.log(`[Bot] 💬 User reply: "${quoteContent}"`);
-    return quoteContent;
-  }
-  return null;
-}
-
 /**
- * Chuẩn bị MediaPart[] cho generateContent
+ * Chuẩn bị MediaPart[] từ classified messages
  */
 async function prepareMediaParts(
   api: any,
   classified: ClassifiedMessage[]
-): Promise<{ media: MediaPart[]; extraPrompts: string[] }> {
+): Promise<{ media: MediaPart[]; notes: string[] }> {
   const media: MediaPart[] = [];
-  const extraPrompts: string[] = [];
+  const notes: string[] = [];
 
   for (const item of classified) {
     if (item.type === "sticker" && item.stickerId) {
       try {
-        const stickerDetails = await api.getStickersDetail(item.stickerId);
-        const stickerInfo = stickerDetails?.[0];
-        const stickerUrl =
-          stickerInfo?.stickerUrl || stickerInfo?.stickerSpriteUrl;
-        if (stickerUrl) {
-          media.push({ type: "image", url: stickerUrl, mimeType: "image/png" });
-        }
-      } catch (e) {
+        const details = await api.getStickersDetail(item.stickerId);
+        const url = details?.[0]?.stickerUrl || details?.[0]?.stickerSpriteUrl;
+        if (url) media.push({ type: "image", url, mimeType: "image/png" });
+      } catch {
         debugLog("MIXED", `Failed to get sticker ${item.stickerId}`);
       }
     } else if (item.type === "image" && item.url) {
@@ -194,9 +160,7 @@ async function prepareMediaParts(
           url: item.thumbUrl,
           mimeType: "image/jpeg",
         });
-        extraPrompts.push(
-          `(Video ${item.duration || 0}s quá lớn, chỉ có thumbnail)`
-        );
+        notes.push(`(Video ${item.duration || 0}s quá lớn, chỉ có thumbnail)`);
       }
     } else if (item.type === "voice" && item.url) {
       media.push({
@@ -205,39 +169,81 @@ async function prepareMediaParts(
         mimeType: item.mimeType || "audio/aac",
       });
     } else if (item.type === "file" && item.url && item.fileExt) {
-      const fileExt = item.fileExt;
-      const mimeType = item.mimeType || "application/octet-stream";
-
-      if (isGeminiSupported(fileExt)) {
-        media.push({ type: "file", url: item.url, mimeType });
-      } else if (isTextConvertible(fileExt)) {
-        console.log(`[Bot] 📝 Convert file sang text: ${fileExt}`);
-        const base64Text = await fetchAndConvertToTextBase64(item.url);
-        if (base64Text) {
-          media.push({
-            type: "file",
-            base64: base64Text,
-            mimeType: "text/plain",
-          });
-        } else {
-          extraPrompts.push(
-            `(File "${item.fileName}" không đọc được nội dung)`
-          );
-        }
+      if (isGeminiSupported(item.fileExt)) {
+        media.push({
+          type: "file",
+          url: item.url,
+          mimeType: item.mimeType || "application/octet-stream",
+        });
+      } else if (isTextConvertible(item.fileExt)) {
+        console.log(`[Bot] 📝 Convert file sang text: ${item.fileExt}`);
+        const base64 = await fetchAndConvertToTextBase64(item.url);
+        if (base64)
+          media.push({ type: "file", base64, mimeType: "text/plain" });
+        else notes.push(`(File "${item.fileName}" không đọc được)`);
       } else {
-        extraPrompts.push(
-          `(File "${item.fileName}" định dạng .${fileExt} không hỗ trợ)`
+        notes.push(
+          `(File "${item.fileName}" định dạng .${item.fileExt} không hỗ trợ)`
         );
       }
     }
   }
 
-  return { media, extraPrompts };
+  return { media, notes };
 }
 
 /**
- * Handler CHÍNH - xử lý TẤT CẢ loại tin nhắn
- * Sử dụng Chat API của Gemini để quản lý multi-turn conversation
+ * Build prompt thống nhất cho mọi loại tin nhắn
+ */
+function buildPrompt(
+  classified: ClassifiedMessage[],
+  userText: string,
+  quoteContent: string | null,
+  youtubeUrls: string[],
+  mediaNotes: string[]
+): string {
+  const hasMedia = classified.some((c) =>
+    ["image", "video", "voice", "file", "sticker"].includes(c.type)
+  );
+
+  let prompt: string;
+
+  if (hasMedia) {
+    // Có media → dùng mixedContent prompt
+    const items = classified.map((c) => ({
+      type: c.type,
+      text: c.text,
+      url: c.url,
+      duration: c.duration,
+      fileName: c.fileName,
+    }));
+    prompt = PROMPTS.mixedContent(items);
+    prompt += PROMPTS.mediaNote(mediaNotes);
+  } else {
+    // Text only → dùng userText trực tiếp
+    prompt = userText;
+  }
+
+  // Thêm quote context
+  if (quoteContent) {
+    prompt += PROMPTS.quoteContext(quoteContent);
+  }
+
+  // Thêm YouTube context
+  if (youtubeUrls.length > 0) {
+    if (hasMedia) {
+      prompt += PROMPTS.youtubeInBatch(youtubeUrls);
+    } else {
+      // Text-only với YouTube → override prompt
+      prompt = PROMPTS.youtube(youtubeUrls, userText);
+    }
+  }
+
+  return prompt;
+}
+
+/**
+ * Handler CHÍNH - xử lý TẤT CẢ loại tin nhắn trong 1 flow duy nhất
  */
 export async function handleMixedContent(
   api: any,
@@ -245,6 +251,7 @@ export async function handleMixedContent(
   threadId: string,
   signal?: AbortSignal
 ) {
+  // 1. Phân loại tất cả tin nhắn
   const classified = messages.map(classifyMessageDetailed);
 
   const counts = {
@@ -257,11 +264,6 @@ export async function handleMixedContent(
     link: classified.filter((c) => c.type === "link").length,
   };
 
-  const hasMedia =
-    counts.image + counts.video + counts.voice + counts.file + counts.sticker >
-    0;
-  const isTextOnly = !hasMedia && counts.text > 0;
-
   console.log(
     `[Bot] 📦 Xử lý ${messages.length} tin nhắn: ` +
       Object.entries(counts)
@@ -269,165 +271,73 @@ export async function handleMixedContent(
         .map(([k, v]) => `${v} ${k}`)
         .join(", ")
   );
-
   logStep("handleMixedContent", { threadId, counts, total: messages.length });
 
   try {
-    // Lưu tin nhắn vào history (để Gemini Chat API có context)
+    // 2. Lưu vào history
     for (const msg of messages) {
       await saveToHistory(threadId, msg);
     }
 
-    if (signal?.aborted) {
-      debugLog("MIXED", "Aborted before processing");
-      return;
-    }
+    if (signal?.aborted) return debugLog("MIXED", "Aborted before processing");
 
     await api.sendTypingEvent(threadId, ThreadType.User);
 
-    // Lấy history cho Chat session
-    // Note: initThreadHistory đã được gọi trong index.ts trước khi vào đây
+    // 3. Lấy history và context
     const history = getHistory(threadId);
-
     const lastMsg = messages[messages.length - 1];
-    const quoteContent = getQuoteContent(lastMsg);
+    const quoteContent = lastMsg.data?.quote
+      ? lastMsg.data.quote.msg ||
+        lastMsg.data.quote.content ||
+        "(nội dung không xác định)"
+      : null;
+    if (quoteContent) console.log(`[Bot] 💬 User reply: "${quoteContent}"`);
 
-    // ========== TEXT-ONLY ==========
-    if (isTextOnly) {
-      const allTexts = classified
-        .filter((c) => c.type === "text")
-        .map((c) => c.text)
-        .filter(Boolean);
-      let combinedText = allTexts.join("\n");
-
-      const { shouldProcess, userPrompt } = checkPrefix(combinedText);
-      if (!shouldProcess) {
-        if (CONFIG.requirePrefix) {
-          await api.sendMessage(
-            PROMPTS.prefixHint(CONFIG.prefix),
-            threadId,
-            ThreadType.User
-          );
-        }
-        return;
-      }
-
-      // Build prompt với quote context nếu có
-      let finalPrompt = quoteContent
-        ? userPrompt + PROMPTS.quoteContext(quoteContent)
-        : userPrompt;
-
-      // Check YouTube
-      const youtubeUrls = extractYouTubeUrls(combinedText);
-      let ytMedia: MediaPart[] | undefined;
-
-      if (youtubeUrls.length > 0) {
-        console.log(`[Bot] 🎬 Phát hiện ${youtubeUrls.length} YouTube video`);
-        finalPrompt = PROMPTS.youtube(youtubeUrls, combinedText);
-        ytMedia = youtubeUrls.map((url) => ({ type: "youtube", url }));
-      }
-
-      if (signal?.aborted) return;
-
-      // Check rate limit
-      const waitTime = checkRateLimit(threadId);
-      if (waitTime > 0) {
-        const waitSec = Math.ceil(waitTime / 1000);
-        console.log(`[Bot] ⏳ Rate limit: chờ ${waitSec}s`);
-        await api.sendMessage(
-          PROMPTS.rateLimit(waitSec),
-          threadId,
-          ThreadType.User
-        );
-        await new Promise((r) => setTimeout(r, waitTime));
-        if (signal?.aborted) return;
-      }
-      markApiCall(threadId);
-
-      // Dùng streaming nếu bật
-      if (CONFIG.useStreaming) {
-        const callbacks = createStreamCallbacks(
-          api,
-          threadId,
-          lastMsg,
-          messages
-        );
-        callbacks.signal = signal;
-        const streamResult = await generateContentStream(
-          finalPrompt,
-          callbacks,
-          ytMedia,
-          threadId,
-          history
-        );
-        // Lưu response vào history cho streaming
-        if (streamResult) {
-          await saveResponseToHistory(threadId, streamResult);
-        }
-        console.log(`[Bot] ✅ Đã trả lời text (streaming)!`);
-      } else {
-        const aiReply = await generateContent(
-          finalPrompt,
-          ytMedia,
-          threadId,
-          history
-        );
-        if (signal?.aborted) return;
-        await sendResponse(api, aiReply, threadId, lastMsg, messages);
-        const responseText = aiReply.messages
-          .map((m) => m.text)
-          .filter(Boolean)
-          .join(" ");
-        await saveResponseToHistory(threadId, responseText);
-        console.log(`[Bot] ✅ Đã trả lời text!`);
-      }
-      return;
-    }
-
-    // ========== CÓ MEDIA ==========
-    const { media, extraPrompts } = await prepareMediaParts(api, classified);
-
-    if (signal?.aborted) return;
-
-    // Build prompt từ PROMPTS
-    const classifiedItems = classified.map((c) => ({
-      type: c.type,
-      text: c.text,
-      url: c.url,
-      duration: c.duration,
-      fileName: c.fileName,
-    }));
-
-    let prompt = PROMPTS.mixedContent(classifiedItems);
-    prompt += PROMPTS.mediaNote(extraPrompts);
-
-    // Thêm quote context nếu có
-    if (quoteContent) {
-      prompt += PROMPTS.quoteContext(quoteContent);
-    }
-
-    // Check YouTube trong các text messages
+    // 4. Lấy text từ tất cả tin nhắn
     const allTexts = classified
       .filter((c) => c.type === "text" || c.type === "link")
       .map((c) => c.text || c.url || "")
       .filter(Boolean);
-    const combinedText = allTexts.join(" ");
-    const youtubeUrls = extractYouTubeUrls(combinedText);
+    const combinedText = allTexts.join("\n");
 
+    // 5. Check prefix (chỉ áp dụng cho text)
+    if (combinedText && CONFIG.requirePrefix) {
+      if (!combinedText.startsWith(CONFIG.prefix)) {
+        await api.sendMessage(
+          PROMPTS.prefixHint(CONFIG.prefix),
+          threadId,
+          ThreadType.User
+        );
+        return;
+      }
+    }
+    const userText = CONFIG.requirePrefix
+      ? combinedText.replace(CONFIG.prefix, "").trim()
+      : combinedText;
+
+    // 6. Chuẩn bị media parts
+    const { media, notes } = await prepareMediaParts(api, classified);
+    if (signal?.aborted) return;
+
+    // 7. Check YouTube
+    const youtubeUrls = extractYouTubeUrls(combinedText);
     if (youtubeUrls.length > 0) {
-      console.log(
-        `[Bot] 🎬 Phát hiện ${youtubeUrls.length} YouTube video (trong media batch)`
-      );
-      prompt += PROMPTS.youtubeInBatch(youtubeUrls);
-      youtubeUrls.forEach((url) => {
-        media.push({ type: "youtube", url });
-      });
+      console.log(`[Bot] 🎬 Phát hiện ${youtubeUrls.length} YouTube video`);
+      youtubeUrls.forEach((url) => media.push({ type: "youtube", url }));
     }
 
+    // 8. Build prompt thống nhất
+    const prompt = buildPrompt(
+      classified,
+      userText,
+      quoteContent,
+      youtubeUrls,
+      notes
+    );
     debugLog("MIXED", `Prompt: ${prompt.substring(0, 200)}...`);
     debugLog("MIXED", `Media parts: ${media.length}`);
 
-    // Check rate limit
+    // 9. Check rate limit
     const waitTime = checkRateLimit(threadId);
     if (waitTime > 0) {
       const waitSec = Math.ceil(waitTime / 1000);
@@ -442,28 +352,25 @@ export async function handleMixedContent(
     }
     markApiCall(threadId);
 
-    // Dùng streaming nếu bật
+    // 10. Gọi Gemini và gửi response
+    const mediaToSend = media.length > 0 ? media : undefined;
+
     if (CONFIG.useStreaming) {
       const callbacks = createStreamCallbacks(api, threadId, lastMsg, messages);
       callbacks.signal = signal;
-      const streamResult = await generateContentStream(
+      const result = await generateContentStream(
         prompt,
         callbacks,
-        media.length > 0 ? media : undefined,
+        mediaToSend,
         threadId,
         history
       );
-      // Lưu response vào history cho streaming
-      if (streamResult) {
-        await saveResponseToHistory(threadId, streamResult);
-      }
-      console.log(
-        `[Bot] ✅ Đã trả lời ${messages.length} tin nhắn (streaming)!`
-      );
+      if (result) await saveResponseToHistory(threadId, result);
+      console.log(`[Bot] ✅ Đã trả lời (streaming)!`);
     } else {
       const aiReply = await generateContent(
         prompt,
-        media.length > 0 ? media : undefined,
+        mediaToSend,
         threadId,
         history
       );
@@ -474,14 +381,13 @@ export async function handleMixedContent(
         .filter(Boolean)
         .join(" ");
       await saveResponseToHistory(threadId, responseText);
-      console.log(`[Bot] ✅ Đã trả lời ${messages.length} tin nhắn!`);
+      console.log(`[Bot] ✅ Đã trả lời!`);
     }
   } catch (e: any) {
     if (e.message === "Aborted" || signal?.aborted) {
-      debugLog("MIXED", "Aborted during processing");
-      return;
+      return debugLog("MIXED", "Aborted during processing");
     }
     logError("handleMixedContent", e);
-    console.error("[Bot] Lỗi xử lý mixed content:", e);
+    console.error("[Bot] Lỗi xử lý:", e);
   }
 }

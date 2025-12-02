@@ -194,34 +194,19 @@ export async function generateContent(
       );
     }
 
-    let rawText: string;
+    // Luôn dùng Chat session (tạo mới nếu chưa có threadId)
+    const sessionId = threadId || `temp_${Date.now()}`;
+    const chat = getChatSession(sessionId, history);
+    debugLog(
+      "GEMINI",
+      `Using chat session: ${sessionId}, history=${history?.length || 0}`
+    );
 
-    if (threadId) {
-      // Dùng Chat session cho multi-turn
-      // Nếu chưa có session, tạo mới với history (nếu có)
-      const chat = getChatSession(threadId, history);
-      debugLog(
-        "GEMINI",
-        `Using chat session for thread ${threadId}, history=${
-          history?.length || 0
-        }`
-      );
+    const response = await chat.sendMessage({ message: parts });
+    const rawText = response.text || "{}";
 
-      const response = await chat.sendMessage({ message: parts });
-      rawText = response.text || "{}";
-    } else {
-      // Fallback: single-turn (không có thread context)
-      debugLog("GEMINI", "Using single-turn generation (no thread)");
-      const response = await ai.models.generateContent({
-        model: GEMINI_MODEL,
-        contents: [{ role: "user", parts }],
-        config: {
-          ...GEMINI_CONFIG,
-          systemInstruction: getPrompt(),
-        },
-      });
-      rawText = response.text || "{}";
-    }
+    // Xóa temp session sau khi dùng
+    if (!threadId) deleteChatSession(sessionId);
 
     logAIResponse(prompt.substring(0, 100), rawText);
     return parseAIResponse(rawText);
@@ -381,23 +366,10 @@ export async function generateContentStream(
     // Build message parts
     const parts = await buildMessageParts(prompt, media);
 
-    let response: AsyncGenerator<any>;
-
-    if (threadId) {
-      // Dùng Chat session streaming
-      const chat = getChatSession(threadId, history);
-      response = await chat.sendMessageStream({ message: parts });
-    } else {
-      // Fallback: single-turn streaming
-      response = await ai.models.generateContentStream({
-        model: GEMINI_MODEL,
-        contents: [{ role: "user", parts }],
-        config: {
-          ...GEMINI_CONFIG,
-          systemInstruction: getPrompt(),
-        },
-      });
-    }
+    // Luôn dùng Chat session streaming
+    const sessionId = threadId || `temp_${Date.now()}`;
+    const chat = getChatSession(sessionId, history);
+    const response = await chat.sendMessageStream({ message: parts });
 
     for await (const chunk of response) {
       if (callbacks.signal?.aborted) {
@@ -419,6 +391,9 @@ export async function generateContentStream(
       await callbacks.onMessage(plainText);
     }
 
+    // Xóa temp session sau khi dùng
+    if (!threadId) deleteChatSession(sessionId);
+
     await callbacks.onComplete?.();
     return state.buffer;
   } catch (error: any) {
@@ -430,9 +405,7 @@ export async function generateContentStream(
     callbacks.onError?.(error);
 
     // Reset chat session nếu lỗi
-    if (threadId) {
-      deleteChatSession(threadId);
-    }
+    if (threadId) deleteChatSession(threadId);
 
     return state.buffer;
   }
