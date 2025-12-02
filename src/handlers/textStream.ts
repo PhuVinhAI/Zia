@@ -7,6 +7,7 @@ import {
   getHistoryContext,
 } from "../utils/history.js";
 import { CONFIG, PROMPTS } from "../config/index.js";
+import { logStep, logError } from "../utils/logger.js";
 
 /**
  * Giữ trạng thái Typing liên tục cho đến khi dừng
@@ -70,6 +71,12 @@ export async function handleTextStream(
     : userPrompt;
 
   console.log(`[Bot] 📩 Câu hỏi (streaming): ${userPrompt}`);
+  logStep("handleTextStream", {
+    userPrompt,
+    hasQuote: !!quoteData,
+    historyLength: historyContext?.length || 0,
+    threadId,
+  });
 
   // Bắt đầu typing liên tục
   const stopTyping = startTyping(api, threadId, ThreadType.User);
@@ -102,14 +109,16 @@ export async function handleTextStream(
   try {
     // Gọi streaming
     await generateContentStream(promptWithHistory, callbacks);
-  } catch (error) {
+  } catch (error: any) {
     stopTyping();
+    logError("handleTextStream", error);
     throw error;
   }
 
   // Lưu response vào history
   if (fullResponse.trim()) {
     await saveResponseToHistory(threadId, fullResponse.trim());
+    logStep("savedResponse", { responseLength: fullResponse.length });
   }
 
   console.log(`[Bot] ✅ Đã trả lời (streaming).`);

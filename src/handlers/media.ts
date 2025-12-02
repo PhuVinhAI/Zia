@@ -8,24 +8,33 @@ import {
 import { sendResponse } from "./response.js";
 import { CONFIG, PROMPTS } from "../config/index.js";
 import { saveToHistory, saveResponseToHistory } from "../utils/history.js";
+import { logStep, logZaloAPI, logError } from "../utils/logger.js";
 
 export async function handleSticker(api: any, message: any, threadId: string) {
   const content = message.data?.content;
   console.log(`[Bot] 🎨 Nhận sticker ID: ${content.id}`);
+  logStep("handleSticker", { stickerId: content.id, threadId });
 
   try {
-    // Lưu sticker vào history
     await saveToHistory(threadId, message);
 
     const stickerDetails = await api.getStickersDetail(content.id);
+    logZaloAPI("getStickersDetail", { stickerId: content.id }, stickerDetails);
+
     const stickerInfo = stickerDetails?.[0];
     const stickerUrl = stickerInfo?.stickerUrl || stickerInfo?.stickerSpriteUrl;
 
     await api.sendTypingEvent(threadId, ThreadType.User);
+    logStep("generateWithImage", {
+      prompt: "sticker",
+      url: stickerUrl?.substring(0, 50),
+    });
+
     const aiReply = await generateWithImage(PROMPTS.sticker, stickerUrl);
+    logStep("aiReply", aiReply);
+
     await sendResponse(api, aiReply, threadId, message);
 
-    // Lưu response
     const responseText = aiReply.messages
       .map((m) => m.text)
       .filter(Boolean)
@@ -33,7 +42,8 @@ export async function handleSticker(api: any, message: any, threadId: string) {
     await saveResponseToHistory(threadId, responseText);
 
     console.log(`[Bot] ✅ Đã trả lời sticker!`);
-  } catch (e) {
+  } catch (e: any) {
+    logError("handleSticker", e);
     console.error("[Bot] Lỗi xử lý sticker:", e);
   }
 }
@@ -41,27 +51,27 @@ export async function handleSticker(api: any, message: any, threadId: string) {
 export async function handleImage(api: any, message: any, threadId: string) {
   const content = message.data?.content;
   const imageUrl = content?.href || content?.hdUrl || content?.thumbUrl;
-  const caption = content?.title || content?.desc || ""; // Caption kèm ảnh
+  const caption = content?.title || content?.desc || "";
 
-  if (caption) {
-    console.log(`[Bot] 🖼️ Nhận ảnh + caption: "${caption}"`);
-  } else {
-    console.log(`[Bot] 🖼️ Nhận ảnh`);
-  }
+  console.log(`[Bot] 🖼️ Nhận ảnh${caption ? ` + caption: "${caption}"` : ""}`);
+  logStep("handleImage", {
+    imageUrl: imageUrl?.substring(0, 50),
+    caption,
+    threadId,
+  });
 
   try {
-    // Lưu ảnh vào history
     await saveToHistory(threadId, message);
-
     await api.sendTypingEvent(threadId, ThreadType.User);
 
-    // Nếu có caption → dùng caption làm prompt, không thì dùng prompt mặc định
     const prompt = caption ? PROMPTS.imageWithCaption(caption) : PROMPTS.image;
+    logStep("generateWithImage", { prompt: prompt.substring(0, 100) });
 
     const aiReply = await generateWithImage(prompt, imageUrl);
+    logStep("aiReply", aiReply);
+
     await sendResponse(api, aiReply, threadId, message);
 
-    // Lưu response
     const responseText = aiReply.messages
       .map((m) => m.text)
       .filter(Boolean)
@@ -69,7 +79,8 @@ export async function handleImage(api: any, message: any, threadId: string) {
     await saveResponseToHistory(threadId, responseText);
 
     console.log(`[Bot] ✅ Đã trả lời ảnh!`);
-  } catch (e) {
+  } catch (e: any) {
+    logError("handleImage", e);
     console.error("[Bot] Lỗi xử lý ảnh:", e);
   }
 }

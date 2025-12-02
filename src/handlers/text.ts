@@ -13,6 +13,7 @@ import {
 } from "../utils/history.js";
 import { CONFIG, PROMPTS } from "../config/index.js";
 import { AIResponse } from "../config/schema.js";
+import { logStep, logError } from "../utils/logger.js";
 
 export async function handleText(api: any, message: any, threadId: string) {
   const content = message.data?.content;
@@ -51,33 +52,43 @@ export async function handleText(api: any, message: any, threadId: string) {
     : userPrompt;
 
   console.log(`[Bot] 📩 Câu hỏi: ${userPrompt}`);
+  logStep("handleText", { userPrompt, hasQuote: !!quoteData, threadId });
+
   await api.sendTypingEvent(threadId, ThreadType.User);
 
   let aiReply: AIResponse;
 
-  // Kiểm tra YouTube URLs - xử lý riêng vì cần gửi video trực tiếp cho Gemini
-  const youtubeUrls = extractYouTubeUrls(content);
-  if (youtubeUrls.length > 0) {
-    console.log(`[Bot] 🎬 Phát hiện ${youtubeUrls.length} YouTube video`);
-    const ytPrompt = PROMPTS.youtube(youtubeUrls, content);
-    if (youtubeUrls.length === 1) {
-      aiReply = await generateWithYouTube(ytPrompt, youtubeUrls[0]);
+  try {
+    // Kiểm tra YouTube URLs - xử lý riêng vì cần gửi video trực tiếp cho Gemini
+    const youtubeUrls = extractYouTubeUrls(content);
+    if (youtubeUrls.length > 0) {
+      console.log(`[Bot] 🎬 Phát hiện ${youtubeUrls.length} YouTube video`);
+      logStep("YouTube detected", { urls: youtubeUrls });
+      const ytPrompt = PROMPTS.youtube(youtubeUrls, content);
+      if (youtubeUrls.length === 1) {
+        aiReply = await generateWithYouTube(ytPrompt, youtubeUrls[0]);
+      } else {
+        aiReply = await generateWithMultipleYouTube(ytPrompt, youtubeUrls);
+      }
     } else {
-      aiReply = await generateWithMultipleYouTube(ytPrompt, youtubeUrls);
+      // Tin nhắn text thường - URL Context tool sẽ tự động đọc link nếu có
+      logStep("generateContent", { promptLength: promptWithHistory.length });
+      aiReply = await generateContent(promptWithHistory);
     }
-  } else {
-    // Tin nhắn text thường - URL Context tool sẽ tự động đọc link nếu có
-    aiReply = await generateContent(promptWithHistory);
+
+    logStep("aiReply", aiReply);
+    await sendResponse(api, aiReply, threadId, message);
+
+    // Lưu response vào history
+    const responseText = aiReply.messages
+      .map((m) => m.text)
+      .filter(Boolean)
+      .join(" ");
+    await saveResponseToHistory(threadId, responseText);
+
+    console.log(`[Bot] ✅ Đã trả lời.`);
+  } catch (e: any) {
+    logError("handleText", e);
+    console.error("[Bot] Lỗi xử lý text:", e);
   }
-
-  await sendResponse(api, aiReply, threadId, message);
-
-  // Lưu response vào history
-  const responseText = aiReply.messages
-    .map((m) => m.text)
-    .filter(Boolean)
-    .join(" ");
-  await saveResponseToHistory(threadId, responseText);
-
-  console.log(`[Bot] ✅ Đã trả lời.`);
 }
