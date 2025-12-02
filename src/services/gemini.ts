@@ -198,8 +198,14 @@ export async function generateContent(
 
     if (threadId) {
       // Dùng Chat session cho multi-turn
+      // Nếu chưa có session, tạo mới với history (nếu có)
       const chat = getChatSession(threadId, history);
-      debugLog("GEMINI", `Using chat session for thread ${threadId}`);
+      debugLog(
+        "GEMINI",
+        `Using chat session for thread ${threadId}, history=${
+          history?.length || 0
+        }`
+      );
 
       const response = await chat.sendMessage({ message: parts });
       rawText = response.text || "{}";

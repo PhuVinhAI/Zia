@@ -4,14 +4,12 @@ import {
   generateContentStream,
   extractYouTubeUrls,
   MediaPart,
-  resetChatSession,
 } from "../services/gemini.js";
 import { sendResponse, createStreamCallbacks } from "./response.js";
 import {
   saveToHistory,
   saveResponseToHistory,
   getHistory,
-  isThreadInitialized,
 } from "../utils/history.js";
 import { logStep, logError, debugLog } from "../utils/logger.js";
 import { CONFIG, PROMPTS } from "../config/index.js";
@@ -129,23 +127,9 @@ export function classifyMessageDetailed(msg: any): ClassifiedMessage {
   return { type: "unknown", message: msg };
 }
 
+// Dùng CONFIG.mimeTypes thay vì duplicate
 function getMimeType(ext: string): string {
-  const mimeTypes: Record<string, string> = {
-    pdf: "application/pdf",
-    doc: "application/msword",
-    docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    txt: "text/plain",
-    csv: "text/csv",
-    json: "application/json",
-    mp3: "audio/mpeg",
-    mp4: "video/mp4",
-    jpg: "image/jpeg",
-    jpeg: "image/jpeg",
-    png: "image/png",
-    gif: "image/gif",
-    webp: "image/webp",
-  };
-  return mimeTypes[ext] || "application/octet-stream";
+  return CONFIG.mimeTypes[ext] || "application/octet-stream";
 }
 
 function checkPrefix(content: string): {
@@ -301,12 +285,9 @@ export async function handleMixedContent(
 
     await api.sendTypingEvent(threadId, ThreadType.User);
 
-    // Lấy history cho Chat session (nếu thread mới khởi tạo)
+    // Lấy history cho Chat session
+    // Note: initThreadHistory đã được gọi trong index.ts trước khi vào đây
     const history = getHistory(threadId);
-    const needsReset = !isThreadInitialized(threadId);
-    if (needsReset && history.length > 0) {
-      resetChatSession(threadId, history);
-    }
 
     const lastMsg = messages[messages.length - 1];
     const quoteContent = getQuoteContent(lastMsg);
@@ -372,10 +353,25 @@ export async function handleMixedContent(
           messages
         );
         callbacks.signal = signal;
-        await generateContentStream(finalPrompt, callbacks, ytMedia, threadId);
+        const streamResult = await generateContentStream(
+          finalPrompt,
+          callbacks,
+          ytMedia,
+          threadId,
+          history
+        );
+        // Lưu response vào history cho streaming
+        if (streamResult) {
+          await saveResponseToHistory(threadId, streamResult);
+        }
         console.log(`[Bot] ✅ Đã trả lời text (streaming)!`);
       } else {
-        const aiReply = await generateContent(finalPrompt, ytMedia, threadId);
+        const aiReply = await generateContent(
+          finalPrompt,
+          ytMedia,
+          threadId,
+          history
+        );
         if (signal?.aborted) return;
         await sendResponse(api, aiReply, threadId, lastMsg, messages);
         const responseText = aiReply.messages
@@ -450,12 +446,17 @@ export async function handleMixedContent(
     if (CONFIG.useStreaming) {
       const callbacks = createStreamCallbacks(api, threadId, lastMsg, messages);
       callbacks.signal = signal;
-      await generateContentStream(
+      const streamResult = await generateContentStream(
         prompt,
         callbacks,
         media.length > 0 ? media : undefined,
-        threadId
+        threadId,
+        history
       );
+      // Lưu response vào history cho streaming
+      if (streamResult) {
+        await saveResponseToHistory(threadId, streamResult);
+      }
       console.log(
         `[Bot] ✅ Đã trả lời ${messages.length} tin nhắn (streaming)!`
       );
@@ -463,7 +464,8 @@ export async function handleMixedContent(
       const aiReply = await generateContent(
         prompt,
         media.length > 0 ? media : undefined,
-        threadId
+        threadId,
+        history
       );
       if (signal?.aborted) return;
       await sendResponse(api, aiReply, threadId, lastMsg, messages);
