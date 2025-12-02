@@ -1,5 +1,5 @@
 import "./env.js";
-import { loginWithQR } from "./services/zalo.js";
+import { loginWithQR, ThreadType } from "./services/zalo.js";
 import { CONFIG } from "./config/index.js";
 import { checkRateLimit, isAllowedUser } from "./utils/index.js";
 import { initThreadHistory, isThreadInitialized } from "./utils/history.js";
@@ -138,6 +138,12 @@ async function main() {
     const isSelf = message.isSelf;
 
     if (isSelf) return;
+
+    // Chặn tin nhắn từ nhóm - chỉ xử lý tin nhắn cá nhân
+    if (message.type === ThreadType.Group) {
+      console.log(`[Bot] 🚫 Bỏ qua tin nhắn nhóm: ${threadId}`);
+      return;
+    }
 
     const senderName = message.data?.dName || "";
     if (!isAllowedUser(senderName)) {
