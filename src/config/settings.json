@@ -9,7 +9,7 @@
     "logging": true,
     "useStreaming": true
   },
-  "allowedUsers": ["Nguyễn Huỳnh Thuật", "Phú Vinh"],
+  "allowedUsers": ["Nguyễn Huỳnh Thuật", "Phú Vinh", "Quang Vinh Phạm"],
   "stickers": {
     "keywords": [
       "hello",
