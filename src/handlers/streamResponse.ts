@@ -58,16 +58,24 @@ export function setupSelfMessageListener(api: any) {
 
     if (!msgId || !cliMsgId) return;
 
-    // Tìm pending message và resolve
-    const key = `${threadId}:${content}`;
-    const resolver = pendingMessages.get(key);
-    if (resolver) {
-      resolver(msgId, cliMsgId);
-      pendingMessages.delete(key);
+    // Convert content thành string để lưu trữ
+    // - Text: giữ nguyên
+    // - Object (sticker, ảnh...): convert sang JSON string
+    const contentStr =
+      typeof content === "string" ? content : JSON.stringify(content);
+
+    // Tìm pending message và resolve (chỉ cho text)
+    if (typeof content === "string") {
+      const key = `${threadId}:${content}`;
+      const resolver = pendingMessages.get(key);
+      if (resolver) {
+        resolver(msgId, cliMsgId);
+        pendingMessages.delete(key);
+      }
     }
 
-    // Lưu vào store để có thể thu hồi sau
-    saveSentMessage(threadId, msgId, cliMsgId, content);
+    // Lưu vào store để có thể thu hồi sau (mọi loại tin nhắn)
+    saveSentMessage(threadId, msgId, cliMsgId, contentStr);
   });
 }
 
