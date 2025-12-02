@@ -7,6 +7,10 @@ import {
   initFileLogger,
   enableFileLogging,
   logMessage,
+  debugLog,
+  logStep,
+  logError,
+  getCurrentLogFile,
 } from "./utils/logger.js";
 import {
   handleSticker,
@@ -20,10 +24,22 @@ import {
 } from "./handlers/index.js";
 import { setupSelfMessageListener } from "./handlers/streamResponse.js";
 
-// Khởi tạo file logging nếu bật
+// Khởi tạo file logging nếu bật - mỗi lần chạy tạo file mới
 if (CONFIG.fileLogging) {
   initFileLogger(CONFIG.logFile);
   enableFileLogging();
+  debugLog(
+    "INIT",
+    `Config loaded: ${JSON.stringify({
+      name: CONFIG.name,
+      prefix: CONFIG.prefix,
+      requirePrefix: CONFIG.requirePrefix,
+      rateLimitMs: CONFIG.rateLimitMs,
+      useStreaming: CONFIG.useStreaming,
+      selfListen: CONFIG.selfListen,
+      allowedUsers: CONFIG.allowedUsers,
+    })}`
+  );
 }
 
 // Queue tin nhắn theo thread để xử lý tuần tự
@@ -35,24 +51,43 @@ async function processMessage(api: any, message: any, threadId: string) {
   const content = message.data?.content;
   const msgType = message.data?.msgType;
 
+  debugLog(
+    "PROCESS",
+    `Processing message: msgType=${msgType}, thread=${threadId}`
+  );
+  logStep("processMessage", { msgType, threadId, contentType: typeof content });
+
   if (msgType === "chat.sticker" && content?.id) {
+    debugLog("PROCESS", `Routing to handleSticker: stickerId=${content.id}`);
     await handleSticker(api, message, threadId);
   } else if (msgType === "share.file" && content?.href) {
+    debugLog("PROCESS", `Routing to handleFile: ${content?.title}`);
     await handleFile(api, message, threadId);
   } else if (
     msgType === "chat.photo" ||
     (msgType === "webchat" && content?.href)
   ) {
+    debugLog("PROCESS", `Routing to handleImage`);
     await handleImage(api, message, threadId);
   } else if (msgType === "chat.video.msg" && content?.thumb) {
+    debugLog("PROCESS", `Routing to handleVideo`);
     await handleVideo(api, message, threadId);
   } else if (msgType === "chat.voice" && content?.href) {
+    debugLog("PROCESS", `Routing to handleVoice`);
     await handleVoice(api, message, threadId);
   } else if (typeof content === "string") {
     // Sử dụng streaming handler nếu bật
     if (CONFIG.useStreaming) {
+      debugLog(
+        "PROCESS",
+        `Routing to handleTextStream: "${content.substring(0, 50)}..."`
+      );
       await handleTextStream(api, message, threadId);
     } else {
+      debugLog(
+        "PROCESS",
+        `Routing to handleText: "${content.substring(0, 50)}..."`
+      );
       await handleText(api, message, threadId);
     }
   } else {
@@ -60,6 +95,7 @@ async function processMessage(api: any, message: any, threadId: string) {
       `[DEBUG] msgType: ${msgType}, content:`,
       JSON.stringify(content, null, 2)
     );
+    debugLog("PROCESS", `Unknown message type: ${msgType}`, content);
   }
 }
 
@@ -82,12 +118,23 @@ function classifyMessage(msg: any): "text" | "image" | "video" | "other" {
 
 // Xử lý queue của một thread
 async function processQueue(api: any, threadId: string) {
-  if (processingThreads.has(threadId)) return;
+  if (processingThreads.has(threadId)) {
+    debugLog("QUEUE", `Thread ${threadId} already processing, skipping`);
+    return;
+  }
 
   const queue = messageQueues.get(threadId);
-  if (!queue || queue.length === 0) return;
+  if (!queue || queue.length === 0) {
+    debugLog("QUEUE", `Thread ${threadId} queue empty`);
+    return;
+  }
 
   processingThreads.add(threadId);
+  debugLog(
+    "QUEUE",
+    `Processing queue for thread ${threadId}: ${queue.length} messages`
+  );
+  logStep("processQueue:start", { threadId, queueLength: queue.length });
 
   while (queue.length > 0) {
     // Phân loại tin nhắn
@@ -109,17 +156,29 @@ async function processQueue(api: any, threadId: string) {
     // Clear queue
     queue.length = 0;
 
+    debugLog(
+      "QUEUE",
+      `Classified: text=${textMessages.length}, image=${imageMessages.length}, other=${otherMessages.length}`
+    );
+    logStep("processQueue:classified", {
+      text: textMessages.length,
+      image: imageMessages.length,
+      other: otherMessages.length,
+    });
+
     // Lấy caption từ text messages (nếu có ảnh)
     let caption = "";
     if (imageMessages.length > 0 && textMessages.length > 0) {
       caption = textMessages.map((m) => m.data.content).join("\n");
       console.log(`[Bot] 📝 Dùng text làm caption cho ảnh: "${caption}"`);
+      debugLog("QUEUE", `Using text as caption: "${caption}"`);
       textMessages.length = 0; // Clear text vì đã dùng làm caption
     }
 
     // Xử lý nhiều ảnh cùng lúc
     if (imageMessages.length > 1) {
       console.log(`[Bot] 📦 Gộp ${imageMessages.length} ảnh`);
+      debugLog("QUEUE", `Grouping ${imageMessages.length} images`);
       await handleMultipleImages(
         api,
         imageMessages,
@@ -131,6 +190,7 @@ async function processQueue(api: any, threadId: string) {
       if (caption) {
         const msg = imageMessages[0];
         msg.data.content = { ...msg.data.content, title: caption };
+        debugLog("QUEUE", `Single image with caption`);
       }
       await processMessage(api, imageMessages[0], threadId);
     }
@@ -153,6 +213,12 @@ async function processQueue(api: any, threadId: string) {
           _originalMessages: textMessages,
         };
         console.log(`[Bot] 📦 Gộp ${textMessages.length} tin nhắn text`);
+        debugLog(
+          "QUEUE",
+          `Combined ${
+            textMessages.length
+          } text messages: "${combinedContent.substring(0, 100)}..."`
+        );
         await processMessage(api, combinedMessage, threadId);
       }
     }
@@ -164,6 +230,8 @@ async function processQueue(api: any, threadId: string) {
   }
 
   processingThreads.delete(threadId);
+  debugLog("QUEUE", `Finished processing queue for thread ${threadId}`);
+  logStep("processQueue:end", { threadId });
 }
 
 async function main() {
@@ -180,12 +248,20 @@ async function main() {
       CONFIG.allowedUsers.length > 0 ? CONFIG.allowedUsers.join(", ") : "Tất cả"
     }`
   );
+  console.log(`📝 Streaming: ${CONFIG.useStreaming ? "ON" : "OFF"}`);
+  if (CONFIG.fileLogging) {
+    console.log(`📄 Log file: ${getCurrentLogFile()}`);
+  }
   console.log("─".repeat(50));
 
+  logStep("main:start", { config: CONFIG.name });
+
   const { api } = await loginWithQR();
+  logStep("main:loginComplete", "Zalo login successful");
 
   // Setup listener để bắt tin nhắn của chính mình (cho tính năng thu hồi)
   setupSelfMessageListener(api);
+  debugLog("INIT", "Self message listener setup complete");
 
   api.listener.on("message", async (message: any) => {
     const threadId = message.threadId;
@@ -196,11 +272,15 @@ async function main() {
       logMessage("IN", threadId, message); // Log toàn bộ raw message
     }
 
-    if (isSelf) return;
+    if (isSelf) {
+      debugLog("MSG", `Skipping self message: thread=${threadId}`);
+      return;
+    }
 
     // Chặn tin nhắn từ nhóm - chỉ xử lý tin nhắn cá nhân
     if (message.type === ThreadType.Group) {
       console.log(`[Bot] 🚫 Bỏ qua tin nhắn nhóm: ${threadId}`);
+      debugLog("MSG", `Skipping group message: thread=${threadId}`);
       return;
     }
 
@@ -210,11 +290,15 @@ async function main() {
       return;
     }
 
-    if (!checkRateLimit(threadId)) return;
+    if (!checkRateLimit(threadId)) {
+      debugLog("MSG", `Rate limited: thread=${threadId}`);
+      return;
+    }
 
     // Khởi tạo history từ Zalo nếu chưa có
     const msgType = message.type; // 0 = user, 1 = group
     if (!isThreadInitialized(threadId)) {
+      debugLog("MSG", `Initializing history for thread: ${threadId}`);
       await initThreadHistory(api, threadId, msgType);
     }
 
@@ -223,11 +307,18 @@ async function main() {
       messageQueues.set(threadId, []);
     }
     messageQueues.get(threadId)!.push(message);
+    debugLog(
+      "MSG",
+      `Added to queue: thread=${threadId}, queueSize=${
+        messageQueues.get(threadId)!.length
+      }`
+    );
 
     // Xử lý queue (nếu chưa đang xử lý)
     try {
       await processQueue(api, threadId);
-    } catch (e) {
+    } catch (e: any) {
+      logError("processQueue", e);
       console.error("[Bot] Lỗi xử lý tin nhắn:", e);
       processingThreads.delete(threadId);
     }
@@ -235,9 +326,11 @@ async function main() {
 
   api.listener.start();
   console.log("👂 Bot đang lắng nghe...");
+  logStep("main:listening", "Bot is now listening for messages");
 }
 
 main().catch((err) => {
+  logError("main", err);
   console.error("❌ Lỗi khởi động bot:", err);
   process.exit(1);
 });

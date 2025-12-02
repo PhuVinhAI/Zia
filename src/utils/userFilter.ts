@@ -2,6 +2,7 @@ import { CONFIG, reloadSettings } from "../config/index.js";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { debugLog } from "./logger.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const settingsPath = path.join(__dirname, "../config/settings.json");
@@ -9,11 +10,19 @@ const settingsPath = path.join(__dirname, "../config/settings.json");
 export function isAllowedUser(senderName: string): boolean {
   // Nếu danh sách rỗng, cho phép tất cả
   if (!CONFIG.allowedUsers || CONFIG.allowedUsers.length === 0) {
+    debugLog("USER_FILTER", `Allowed (no filter): "${senderName}"`);
     return true;
   }
 
   // Kiểm tra tên có trong danh sách không
-  return CONFIG.allowedUsers.some((name) => senderName.includes(name));
+  const allowed = CONFIG.allowedUsers.some((name) => senderName.includes(name));
+  debugLog(
+    "USER_FILTER",
+    `${
+      allowed ? "Allowed" : "Blocked"
+    }: "${senderName}", allowedList=[${CONFIG.allowedUsers.join(", ")}]`
+  );
+  return allowed;
 }
 
 export function addAllowedUser(name: string): boolean {

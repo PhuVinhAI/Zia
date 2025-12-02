@@ -213,9 +213,12 @@ export async function loadOldMessages(
   threadId: string,
   type: number
 ): Promise<Content[]> {
+  debugLog("HISTORY", `loadOldMessages: thread=${threadId}, type=${type}`);
+
   return new Promise((resolve) => {
     const timeout = setTimeout(() => {
       console.log(`[History] ⚠️ Timeout lấy lịch sử thread ${threadId}`);
+      debugLog("HISTORY", `Timeout loading history for thread ${threadId}`);
       resolve([]);
     }, 10000); // Tăng timeout vì cần fetch media
 
@@ -231,6 +234,10 @@ export async function loadOldMessages(
       console.log(
         `[History] 📚 Thread ${threadId}: Đang load ${threadMessages.length} tin nhắn cũ...`
       );
+      debugLog(
+        "HISTORY",
+        `Loading ${threadMessages.length} old messages for thread ${threadId}`
+      );
 
       // Convert tất cả messages (bao gồm media)
       const history: Content[] = [];
@@ -241,6 +248,10 @@ export async function loadOldMessages(
 
       console.log(
         `[History] ✅ Thread ${threadId}: Đã load ${history.length} tin nhắn`
+      );
+      debugLog(
+        "HISTORY",
+        `Loaded ${history.length} messages for thread ${threadId}`
       );
       resolve(history);
     };
@@ -258,14 +269,24 @@ export async function initThreadHistory(
   threadId: string,
   type: number
 ): Promise<void> {
-  if (initializedThreads.has(threadId)) return;
+  if (initializedThreads.has(threadId)) {
+    debugLog("HISTORY", `Thread ${threadId} already initialized, skipping`);
+    return;
+  }
 
+  debugLog("HISTORY", `Initializing history for thread ${threadId}`);
   initializedThreads.add(threadId);
   const oldHistory = await loadOldMessages(api, threadId, type);
 
   if (oldHistory.length > 0) {
     messageHistory.set(threadId, oldHistory);
+    debugLog(
+      "HISTORY",
+      `Set ${oldHistory.length} messages for thread ${threadId}`
+    );
     await trimHistoryByTokens(threadId);
+  } else {
+    debugLog("HISTORY", `No old messages found for thread ${threadId}`);
   }
 }
 
@@ -281,6 +302,10 @@ async function trimHistoryByTokens(threadId: string): Promise<void> {
 
   console.log(
     `[History] Thread ${threadId}: ${currentTokens} tokens (max: ${maxTokens})`
+  );
+  debugLog(
+    "HISTORY",
+    `trimHistoryByTokens: thread=${threadId}, tokens=${currentTokens}, max=${maxTokens}, messages=${history.length}`
   );
 
   const rawHistory = rawMessageHistory.get(threadId) || [];
@@ -302,6 +327,10 @@ async function trimHistoryByTokens(threadId: string): Promise<void> {
       console.log(
         `[History] Trimmed ${trimCount} messages -> ${currentTokens} tokens`
       );
+      debugLog(
+        "HISTORY",
+        `Trimmed ${trimCount} messages, now ${currentTokens} tokens, ${history.length} messages`
+      );
     }
   }
 
@@ -309,11 +338,22 @@ async function trimHistoryByTokens(threadId: string): Promise<void> {
     console.warn(
       `[History] ⚠️ Max trim attempts reached for thread ${threadId}`
     );
+    debugLog(
+      "HISTORY",
+      `WARNING: Max trim attempts (${maxTrimAttempts}) reached for thread ${threadId}`
+    );
   }
 
   messageHistory.set(threadId, history);
   rawMessageHistory.set(threadId, rawHistory);
   tokenCache.set(threadId, currentTokens);
+
+  if (trimCount > 0) {
+    debugLog(
+      "HISTORY",
+      `Trim complete: removed ${trimCount} messages, final=${history.length} messages, ${currentTokens} tokens`
+    );
+  }
 }
 
 /**
@@ -403,6 +443,7 @@ export function getCachedTokenCount(threadId: string): number {
  * Xóa history của thread
  */
 export function clearHistory(threadId: string): void {
+  debugLog("HISTORY", `Clearing history for thread ${threadId}`);
   messageHistory.delete(threadId);
   rawMessageHistory.delete(threadId);
   tokenCache.delete(threadId);

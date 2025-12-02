@@ -3,27 +3,58 @@ import * as path from "path";
 
 let logStream: fs.WriteStream | null = null;
 let fileLoggingEnabled = false;
+let currentLogFile: string = "";
 
 /**
- * Khởi tạo file logger
+ * Tạo tên file log với timestamp
  */
-export function initFileLogger(filePath: string): void {
+function generateLogFileName(basePath: string): string {
+  const dir = path.dirname(basePath);
+  const ext = path.extname(basePath);
+  const name = path.basename(basePath, ext);
+
+  const now = new Date();
+  const timestamp = now
+    .toISOString()
+    .replace(/[:.]/g, "-")
+    .replace("T", "_")
+    .slice(0, 19);
+
+  return path.join(dir, `${name}_${timestamp}${ext}`);
+}
+
+/**
+ * Khởi tạo file logger - tạo file mới mỗi lần chạy
+ */
+export function initFileLogger(basePath: string): void {
   // Tạo thư mục logs nếu chưa có
-  const dir = path.dirname(filePath);
+  const dir = path.dirname(basePath);
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
 
+  // Tạo file log mới với timestamp
+  currentLogFile = generateLogFileName(basePath);
+
   // Mở stream để ghi log
-  logStream = fs.createWriteStream(filePath, { flags: "a" });
+  logStream = fs.createWriteStream(currentLogFile, { flags: "w" });
 
   // Ghi header khi khởi động
-  const startMsg = `\n${"=".repeat(
-    80
-  )}\n[${new Date().toISOString()}] 🚀 BOT STARTED\n${"=".repeat(80)}\n`;
+  const startMsg =
+    `${"=".repeat(80)}\n` +
+    `[${new Date().toISOString()}] 🚀 BOT STARTED\n` +
+    `Log file: ${currentLogFile}\n` +
+    `${"=".repeat(80)}\n\n`;
   logStream.write(startMsg);
 
-  console.log(`[Logger] 📝 Ghi log ra file: ${filePath}`);
+  console.log(`[Logger] 📝 Ghi log ra file: ${currentLogFile}`);
+}
+
+/**
+ * Lấy đường dẫn file log hiện tại
+ */
+export function getCurrentLogFile(): string {
+  return currentLogFile;
 }
 
 /**

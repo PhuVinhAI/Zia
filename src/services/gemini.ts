@@ -6,7 +6,13 @@ import {
   parseAIResponse,
 } from "../config/schema.js";
 import { fetchAsBase64 } from "../utils/fetch.js";
-import { logAIResponse, logError } from "../utils/logger.js";
+import {
+  logAIResponse,
+  logError,
+  debugLog,
+  logStep,
+  logAPI,
+} from "../utils/logger.js";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
 
@@ -14,6 +20,8 @@ if (!GEMINI_API_KEY || GEMINI_API_KEY === "your_gemini_api_key_here") {
   console.error("❌ Vui lòng cấu hình GEMINI_API_KEY trong file .env");
   process.exit(1);
 }
+
+debugLog("GEMINI", "Initializing Gemini API...");
 
 export const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
 
@@ -69,6 +77,7 @@ const chatSessions = new Map<string, any>();
  */
 export function getChatSession(threadId: string, history: any[] = []) {
   if (!chatSessions.has(threadId)) {
+    debugLog("GEMINI", `Creating new chat session for thread: ${threadId}`);
     const chat = ai.chats.create({
       model: GEMINI_MODEL,
       config: {
@@ -86,6 +95,7 @@ export function getChatSession(threadId: string, history: any[] = []) {
  * Xóa chat session
  */
 export function clearChatSession(threadId: string) {
+  debugLog("GEMINI", `Clearing chat session for thread: ${threadId}`);
   chatSessions.delete(threadId);
 }
 
@@ -97,10 +107,17 @@ export async function sendMessage(
   message: string
 ): Promise<string> {
   try {
+    debugLog(
+      "GEMINI",
+      `sendMessage: thread=${threadId}, msg="${message.substring(0, 100)}..."`
+    );
     const chat = getChatSession(threadId);
     const response = await chat.sendMessage({ message });
-    return response.text || "Không có phản hồi từ AI.";
+    const result = response.text || "Không có phản hồi từ AI.";
+    debugLog("GEMINI", `Response: ${result.substring(0, 200)}...`);
+    return result;
   } catch (error) {
+    logError("sendMessage", error);
     console.error("Gemini Chat Error:", error);
     return "Gemini đang bận, thử lại sau nhé!";
   }
@@ -115,8 +132,14 @@ export async function generateWithImage(
 ): Promise<AIResponse> {
   try {
     console.log(`[Gemini] 🖼️ Xử lý ảnh: ${imageUrl.substring(0, 80)}...`);
+    logStep("generateWithImage", {
+      prompt: prompt.substring(0, 100),
+      imageUrl: imageUrl.substring(0, 80),
+    });
+
     const base64Image = await fetchAsBase64(imageUrl);
     if (!base64Image) {
+      debugLog("GEMINI", "Failed to fetch image");
       return {
         reactions: ["sad"],
         messages: [
@@ -125,6 +148,8 @@ export async function generateWithImage(
         undoIndexes: [],
       };
     }
+
+    debugLog("GEMINI", `Image loaded: ${base64Image.length} chars base64`);
 
     const response = await ai.models.generateContent({
       model: GEMINI_MODEL,
@@ -137,7 +162,9 @@ export async function generateWithImage(
 
     const rawText = response.text || "{}";
     logAIResponse(`[IMAGE] ${prompt}`, rawText);
-    return parseAIResponse(rawText);
+    const parsed = parseAIResponse(rawText);
+    debugLog("GEMINI", `Parsed response: ${JSON.stringify(parsed)}`);
+    return parsed;
   } catch (error) {
     logError("generateWithImage", error);
     console.error("Gemini Image Error:", error);
@@ -154,8 +181,15 @@ export async function generateWithAudio(
   mimeType: string = "audio/aac"
 ): Promise<AIResponse> {
   try {
+    logStep("generateWithAudio", {
+      prompt: prompt.substring(0, 100),
+      audioUrl: audioUrl.substring(0, 80),
+      mimeType,
+    });
+
     const base64Audio = await fetchAsBase64(audioUrl);
     if (!base64Audio) {
+      debugLog("GEMINI", "Failed to fetch audio");
       return {
         reactions: ["sad"],
         messages: [
@@ -164,6 +198,8 @@ export async function generateWithAudio(
         undoIndexes: [],
       };
     }
+
+    debugLog("GEMINI", `Audio loaded: ${base64Audio.length} chars base64`);
 
     const response = await ai.models.generateContent({
       model: GEMINI_MODEL,
@@ -174,8 +210,11 @@ export async function generateWithAudio(
       config: GEMINI_CONFIG,
     });
 
-    return parseAIResponse(response.text || "{}");
+    const rawText = response.text || "{}";
+    logAIResponse(`[AUDIO] ${prompt}`, rawText);
+    return parseAIResponse(rawText);
   } catch (error) {
+    logError("generateWithAudio", error);
     console.error("Gemini Audio Error:", error);
     return DEFAULT_RESPONSE;
   }
@@ -190,8 +229,15 @@ export async function generateWithFile(
   mimeType: string
 ): Promise<AIResponse> {
   try {
+    logStep("generateWithFile", {
+      prompt: prompt.substring(0, 100),
+      fileUrl: fileUrl.substring(0, 80),
+      mimeType,
+    });
+
     const base64File = await fetchAsBase64(fileUrl);
     if (!base64File) {
+      debugLog("GEMINI", "Failed to fetch file");
       return {
         reactions: ["sad"],
         messages: [
@@ -200,6 +246,11 @@ export async function generateWithFile(
         undoIndexes: [],
       };
     }
+
+    debugLog(
+      "GEMINI",
+      `File loaded: ${base64File.length} chars base64, mimeType=${mimeType}`
+    );
 
     const response = await ai.models.generateContent({
       model: GEMINI_MODEL,
@@ -210,8 +261,11 @@ export async function generateWithFile(
       config: GEMINI_CONFIG,
     });
 
-    return parseAIResponse(response.text || "{}");
+    const rawText = response.text || "{}";
+    logAIResponse(`[FILE] ${prompt}`, rawText);
+    return parseAIResponse(rawText);
   } catch (error) {
+    logError("generateWithFile", error);
     console.error("Gemini File Error:", error);
     return DEFAULT_RESPONSE;
   }
@@ -222,6 +276,9 @@ export async function generateWithFile(
  */
 export async function generateContent(prompt: string): Promise<AIResponse> {
   try {
+    logStep("generateContent", { promptLength: prompt.length });
+    debugLog("GEMINI", `Prompt: ${prompt.substring(0, 300)}...`);
+
     const response = await ai.models.generateContent({
       model: GEMINI_MODEL,
       contents: `${SYSTEM_PROMPT}\n\nUser: ${prompt}`,
@@ -229,7 +286,12 @@ export async function generateContent(prompt: string): Promise<AIResponse> {
     });
     const rawText = response.text || "{}";
     logAIResponse(prompt, rawText);
-    return parseAIResponse(rawText);
+    const parsed = parseAIResponse(rawText);
+    debugLog(
+      "GEMINI",
+      `Parsed: reactions=${parsed.reactions}, messages=${parsed.messages.length}`
+    );
+    return parsed;
   } catch (error) {
     logError("generateContent", error);
     console.error("Gemini Error:", error);
@@ -247,6 +309,12 @@ export async function generateWithBase64(
   mimeType: string
 ): Promise<AIResponse> {
   try {
+    logStep("generateWithBase64", {
+      prompt: prompt.substring(0, 100),
+      dataLength: base64Data.length,
+      mimeType,
+    });
+
     const response = await ai.models.generateContent({
       model: GEMINI_MODEL,
       contents: [
@@ -255,8 +323,12 @@ export async function generateWithBase64(
       ],
       config: GEMINI_CONFIG,
     });
-    return parseAIResponse(response.text || "{}");
+
+    const rawText = response.text || "{}";
+    logAIResponse(`[BASE64] ${prompt}`, rawText);
+    return parseAIResponse(rawText);
   } catch (error) {
+    logError("generateWithBase64", error);
     console.error("Gemini Base64 Error:", error);
     return DEFAULT_RESPONSE;
   }
@@ -271,7 +343,13 @@ export async function generateWithMultipleImages(
 ): Promise<AIResponse> {
   try {
     console.log(`[Gemini] 🖼️ Xử lý ${imageUrls.length} ảnh`);
+    logStep("generateWithMultipleImages", {
+      imageCount: imageUrls.length,
+      prompt: prompt.substring(0, 100),
+    });
+
     const contents: any[] = [{ text: `${SYSTEM_PROMPT}\n\n${prompt}` }];
+    let loadedCount = 0;
 
     for (const url of imageUrls) {
       const base64Image = await fetchAsBase64(url);
@@ -279,11 +357,17 @@ export async function generateWithMultipleImages(
         contents.push({
           inlineData: { data: base64Image, mimeType: "image/png" },
         });
+        loadedCount++;
+        debugLog(
+          "GEMINI",
+          `Loaded image ${loadedCount}/${imageUrls.length}: ${base64Image.length} chars`
+        );
       }
     }
 
     if (contents.length === 1) {
       // Không có ảnh nào load được
+      debugLog("GEMINI", "No images loaded successfully");
       return {
         reactions: ["sad"],
         messages: [
@@ -292,6 +376,8 @@ export async function generateWithMultipleImages(
         undoIndexes: [],
       };
     }
+
+    debugLog("GEMINI", `Sending ${loadedCount} images to Gemini`);
 
     const response = await ai.models.generateContent({
       model: GEMINI_MODEL,
@@ -319,8 +405,15 @@ export async function generateWithVideo(
 ): Promise<AIResponse> {
   try {
     console.log(`[Gemini] 🎬 Xử lý video: ${videoUrl}`);
+    logStep("generateWithVideo", {
+      prompt: prompt.substring(0, 100),
+      videoUrl: videoUrl.substring(0, 80),
+      mimeType,
+    });
+
     const base64Video = await fetchAsBase64(videoUrl);
     if (!base64Video) {
+      debugLog("GEMINI", "Failed to fetch video");
       return {
         reactions: ["sad"],
         messages: [
@@ -329,6 +422,8 @@ export async function generateWithVideo(
         undoIndexes: [],
       };
     }
+
+    debugLog("GEMINI", `Video loaded: ${base64Video.length} chars base64`);
 
     const response = await ai.models.generateContent({
       model: GEMINI_MODEL,
@@ -339,8 +434,11 @@ export async function generateWithVideo(
       config: GEMINI_CONFIG,
     });
 
-    return parseAIResponse(response.text || "{}");
+    const rawText = response.text || "{}";
+    logAIResponse(`[VIDEO] ${prompt}`, rawText);
+    return parseAIResponse(rawText);
   } catch (error) {
+    logError("generateWithVideo", error);
     console.error("Gemini Video Error:", error);
     return DEFAULT_RESPONSE;
   }
@@ -355,6 +453,11 @@ export async function generateWithYouTube(
 ): Promise<AIResponse> {
   try {
     console.log(`[Gemini] 🎬 Xử lý YouTube: ${youtubeUrl}`);
+    logStep("generateWithYouTube", {
+      prompt: prompt.substring(0, 100),
+      youtubeUrl,
+    });
+
     const response = await ai.models.generateContent({
       model: GEMINI_MODEL,
       contents: [
@@ -363,8 +466,12 @@ export async function generateWithYouTube(
       ],
       config: GEMINI_CONFIG,
     });
-    return parseAIResponse(response.text || "{}");
+
+    const rawText = response.text || "{}";
+    logAIResponse(`[YOUTUBE] ${prompt}`, rawText);
+    return parseAIResponse(rawText);
   } catch (error) {
+    logError("generateWithYouTube", error);
     console.error("Gemini YouTube Error:", error);
     return DEFAULT_RESPONSE;
   }
@@ -379,6 +486,11 @@ export async function generateWithMultipleYouTube(
 ): Promise<AIResponse> {
   try {
     console.log(`[Gemini] 🎬 Xử lý ${youtubeUrls.length} YouTube videos`);
+    logStep("generateWithMultipleYouTube", {
+      videoCount: youtubeUrls.length,
+      urls: youtubeUrls,
+    });
+
     const contents: any[] = [{ text: `${SYSTEM_PROMPT}\n\n${prompt}` }];
     for (const url of youtubeUrls.slice(0, 10)) {
       // Max 10 videos
@@ -389,8 +501,12 @@ export async function generateWithMultipleYouTube(
       contents,
       config: GEMINI_CONFIG,
     });
-    return parseAIResponse(response.text || "{}");
+
+    const rawText = response.text || "{}";
+    logAIResponse(`[${youtubeUrls.length} YOUTUBE] ${prompt}`, rawText);
+    return parseAIResponse(rawText);
   } catch (error) {
+    logError("generateWithMultipleYouTube", error);
     console.error("Gemini YouTube Error:", error);
     return DEFAULT_RESPONSE;
   }

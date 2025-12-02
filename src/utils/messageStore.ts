@@ -1,6 +1,7 @@
 /**
  * Lưu trữ tin nhắn đã gửi để có thể thu hồi
  */
+import { debugLog } from "./logger.js";
 
 interface SentMessage {
   msgId: string;
@@ -42,6 +43,13 @@ export function saveSentMessage(
   if (messages.length > MAX_MESSAGES_PER_THREAD) {
     messages.shift();
   }
+
+  debugLog(
+    "MSG_STORE",
+    `Saved: thread=${threadId}, msgId=${msgId}, index=${
+      messages.length - 1
+    }, content="${content.substring(0, 50)}..."`
+  );
 
   // Trả về index của tin nhắn vừa lưu
   return messages.length - 1;

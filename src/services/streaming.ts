@@ -1,7 +1,7 @@
 import { ai, GEMINI_MODEL, GEMINI_CONFIG } from "./gemini.js";
 import { SYSTEM_PROMPT } from "../config/index.js";
 import { ReactionType } from "../config/schema.js";
-import { logAIResponse, logError, debugLog } from "../utils/logger.js";
+import { logAIResponse, logError, debugLog, logStep } from "../utils/logger.js";
 
 // Callback types cho streaming
 export interface StreamCallbacks {
@@ -131,6 +131,12 @@ export async function generateContentStream(
     quoteIndex: -1,
   };
 
+  debugLog(
+    "STREAM",
+    `Starting stream: prompt="${prompt.substring(0, 100)}..."`
+  );
+  logStep("generateContentStream:start", { promptLength: prompt.length });
+
   try {
     const response = await ai.models.generateContentStream({
       model: GEMINI_MODEL,
@@ -138,9 +144,15 @@ export async function generateContentStream(
       config: GEMINI_CONFIG,
     });
 
+    let chunkCount = 0;
     for await (const chunk of response) {
       if (chunk.text) {
+        chunkCount++;
         state.buffer += chunk.text;
+        debugLog(
+          "STREAM",
+          `Chunk #${chunkCount}: +${chunk.text.length} chars, total=${state.buffer.length}`
+        );
         // Process mỗi khi có chunk mới
         await processStreamChunk(state, callbacks);
       }
@@ -148,6 +160,10 @@ export async function generateContentStream(
 
     // Log full response
     logAIResponse(`[STREAM] ${prompt}`, state.buffer);
+    debugLog(
+      "STREAM",
+      `Stream complete: ${chunkCount} chunks, ${state.buffer.length} chars`
+    );
     debugLog("STREAM", "Parsed:", {
       reactions: Array.from(state.sentReactions),
       stickers: Array.from(state.sentStickers),
@@ -157,10 +173,18 @@ export async function generateContentStream(
     // Xử lý plain text còn lại (nếu có)
     const plainText = getPlainText(state.buffer);
     if (plainText && callbacks.onMessage) {
+      debugLog(
+        "STREAM",
+        `Remaining plain text: "${plainText.substring(0, 100)}..."`
+      );
       await callbacks.onMessage(plainText);
     }
 
     await callbacks.onComplete?.();
+    logStep("generateContentStream:end", {
+      chunkCount,
+      bufferLength: state.buffer.length,
+    });
   } catch (error) {
     logError("generateContentStream", error);
     console.error("[Streaming] Error:", error);
@@ -188,6 +212,19 @@ export async function chatStream(
     quoteIndex: -1,
   };
 
+  debugLog(
+    "CHAT_STREAM",
+    `Starting chat stream: thread=${_threadId}, msg="${message.substring(
+      0,
+      100
+    )}...", historyLen=${history.length}`
+  );
+  logStep("chatStream:start", {
+    threadId: _threadId,
+    messageLength: message.length,
+    historyLength: history.length,
+  });
+
   try {
     const chat = ai.chats.create({
       model: GEMINI_MODEL,
@@ -200,16 +237,26 @@ export async function chatStream(
 
     const stream = await chat.sendMessageStream({ message });
 
+    let chunkCount = 0;
     for await (const chunk of stream) {
       if (chunk.text) {
+        chunkCount++;
         state.buffer += chunk.text;
+        debugLog(
+          "CHAT_STREAM",
+          `Chunk #${chunkCount}: +${chunk.text.length} chars`
+        );
         await processStreamChunk(state, callbacks);
       }
     }
 
     // Log full response
     logAIResponse(`[CHAT] ${message}`, state.buffer);
-    debugLog("CHAT", "Parsed:", {
+    debugLog(
+      "CHAT_STREAM",
+      `Chat stream complete: ${chunkCount} chunks, ${state.buffer.length} chars`
+    );
+    debugLog("CHAT_STREAM", "Parsed:", {
       reactions: Array.from(state.sentReactions),
       stickers: Array.from(state.sentStickers),
       messages: Array.from(state.sentMessages),
@@ -218,10 +265,18 @@ export async function chatStream(
     // Xử lý plain text còn lại
     const plainText = getPlainText(state.buffer);
     if (plainText && callbacks.onMessage) {
+      debugLog(
+        "CHAT_STREAM",
+        `Remaining plain text: "${plainText.substring(0, 100)}..."`
+      );
       await callbacks.onMessage(plainText);
     }
 
     await callbacks.onComplete?.();
+    logStep("chatStream:end", {
+      chunkCount,
+      bufferLength: state.buffer.length,
+    });
   } catch (error) {
     logError("chatStream", error);
     console.error("[Chat Streaming] Error:", error);

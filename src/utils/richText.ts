@@ -1,4 +1,5 @@
 import { TextStyle } from "../services/zalo.js";
+import { debugLog } from "./logger.js";
 
 interface StyleItem {
   start: number;
@@ -85,10 +86,12 @@ export function createRichMessage(
 
   if (styles.length > 0) {
     result.styles = styles;
+    debugLog("RICH_TEXT", `Parsed ${styles.length} styles from text`);
   }
 
   if (quote) {
     result.quote = quote;
+    debugLog("RICH_TEXT", `Added quote: msgId=${quote.msgId}`);
   }
 
   return result;

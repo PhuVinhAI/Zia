@@ -108,6 +108,15 @@ export async function handleVideo(api: any, message: any, threadId: string) {
     );
   }
 
+  logStep("handleVideo", {
+    videoUrl: videoUrl?.substring(0, 50),
+    thumbUrl: thumbUrl?.substring(0, 50),
+    duration,
+    fileSize,
+    caption,
+    threadId,
+  });
+
   try {
     // Lưu video vào history
     await saveToHistory(threadId, message);
@@ -117,18 +126,22 @@ export async function handleVideo(api: any, message: any, threadId: string) {
     let aiReply;
     // Nếu video dưới 20MB thì gửi video thật, không thì dùng thumbnail
     if (videoUrl && fileSize > 0 && fileSize < 20 * 1024 * 1024) {
-      console.log(`[Bot] � GVửi video thật cho AI xem`);
+      console.log(`[Bot] 🎬 Gửi video thật cho AI xem`);
+      logStep("handleVideo", "Using real video (< 20MB)");
       const prompt = caption
         ? PROMPTS.videoWithCaption(duration, caption)
         : PROMPTS.video(duration);
       aiReply = await generateWithVideo(prompt, videoUrl, "video/mp4");
     } else {
       console.log(`[Bot] 🖼️ Video quá lớn, dùng thumbnail`);
+      logStep("handleVideo", "Using thumbnail (video too large)");
       const prompt = caption
         ? PROMPTS.videoThumbWithCaption(duration, caption)
         : PROMPTS.videoThumb(duration);
       aiReply = await generateWithImage(prompt, thumbUrl);
     }
+
+    logStep("handleVideo:aiReply", aiReply);
     await sendResponse(api, aiReply, threadId, message);
 
     // Lưu response
@@ -139,7 +152,8 @@ export async function handleVideo(api: any, message: any, threadId: string) {
     await saveResponseToHistory(threadId, responseText);
 
     console.log(`[Bot] ✅ Đã trả lời video!`);
-  } catch (e) {
+  } catch (e: any) {
+    logError("handleVideo", e);
     console.error("[Bot] Lỗi xử lý video:", e);
   }
 }
@@ -151,6 +165,11 @@ export async function handleVoice(api: any, message: any, threadId: string) {
   const duration = params?.duration ? Math.round(params.duration / 1000) : 0;
 
   console.log(`[Bot] 🎤 Nhận voice: ${duration}s`);
+  logStep("handleVoice", {
+    audioUrl: audioUrl?.substring(0, 50),
+    duration,
+    threadId,
+  });
 
   try {
     // Lưu voice vào history
@@ -162,6 +181,8 @@ export async function handleVoice(api: any, message: any, threadId: string) {
       audioUrl,
       "audio/aac"
     );
+
+    logStep("handleVoice:aiReply", aiReply);
     await sendResponse(api, aiReply, threadId, message);
 
     // Lưu response
@@ -172,7 +193,8 @@ export async function handleVoice(api: any, message: any, threadId: string) {
     await saveResponseToHistory(threadId, responseText);
 
     console.log(`[Bot] ✅ Đã trả lời voice!`);
-  } catch (e) {
+  } catch (e: any) {
+    logError("handleVoice", e);
     console.error("[Bot] Lỗi xử lý voice:", e);
   }
 }
@@ -188,6 +210,13 @@ export async function handleFile(api: any, message: any, threadId: string) {
     : 0;
 
   console.log(`[Bot] 📄 Nhận file: ${fileName} (.${fileExt}, ${fileSize}KB)`);
+  logStep("handleFile", {
+    fileName,
+    fileUrl: fileUrl?.substring(0, 50),
+    fileExt,
+    fileSize,
+    threadId,
+  });
 
   try {
     // Lưu file vào history
@@ -206,10 +235,12 @@ export async function handleFile(api: any, message: any, threadId: string) {
 
     let aiReply;
     const mimeType = CONFIG.mimeTypes[fileExt] || "application/octet-stream";
+    logStep("handleFile:mimeType", { fileExt, mimeType });
 
     // 1. Nếu Gemini hỗ trợ native → gửi trực tiếp
     if (isGeminiSupported(fileExt)) {
       console.log(`[Bot] ✅ Gemini hỗ trợ native: ${fileExt}`);
+      logStep("handleFile", `Gemini native support: ${fileExt}`);
 
       // Dùng prompt phù hợp với loại file
       let prompt: string;
@@ -218,14 +249,17 @@ export async function handleFile(api: any, message: any, threadId: string) {
         const duration = 0; // Không biết duration từ file attachment
         prompt = PROMPTS.video(duration);
         console.log(`[Bot] 🎬 Xử lý như video`);
+        logStep("handleFile", "Processing as video");
       } else if (mimeType.startsWith("audio/")) {
         // Audio file → dùng prompt voice
         const duration = 0;
         prompt = PROMPTS.voice(duration);
         console.log(`[Bot] 🎤 Xử lý như audio`);
+        logStep("handleFile", "Processing as audio");
       } else {
         // Các file khác (PDF, HTML, text...)
         prompt = PROMPTS.file(fileName, fileSize);
+        logStep("handleFile", "Processing as document");
       }
 
       aiReply = await generateWithFile(prompt, fileUrl, mimeType);
@@ -233,14 +267,17 @@ export async function handleFile(api: any, message: any, threadId: string) {
     // 2. Nếu có thể convert sang text → convert sang .txt và gửi như file thường
     else if (isTextConvertible(fileExt)) {
       console.log(`[Bot] 📝 Convert sang .txt: ${fileExt}`);
+      logStep("handleFile", `Converting to text: ${fileExt}`);
       const base64Text = await fetchAndConvertToTextBase64(fileUrl);
       if (base64Text) {
+        logStep("handleFile", `Text converted: ${base64Text.length} chars`);
         aiReply = await generateWithBase64(
           PROMPTS.fileText(fileName, fileExt, fileSize),
           base64Text,
           "text/plain"
         );
       } else {
+        logStep("handleFile", "Text conversion failed");
         aiReply = await generateContent(
           PROMPTS.fileUnreadable(fileName, fileExt, fileSize)
         );
@@ -249,11 +286,13 @@ export async function handleFile(api: any, message: any, threadId: string) {
     // 3. Không hỗ trợ
     else {
       console.log(`[Bot] ❌ Không hỗ trợ: ${fileExt}`);
+      logStep("handleFile", `Unsupported format: ${fileExt}`);
       aiReply = await generateContent(
         PROMPTS.fileUnreadable(fileName, fileExt, fileSize)
       );
     }
 
+    logStep("handleFile:aiReply", aiReply);
     await sendResponse(api, aiReply, threadId, message);
 
     // Lưu response
@@ -264,7 +303,8 @@ export async function handleFile(api: any, message: any, threadId: string) {
     await saveResponseToHistory(threadId, responseText);
 
     console.log(`[Bot] ✅ Đã trả lời file!`);
-  } catch (e) {
+  } catch (e: any) {
+    logError("handleFile", e);
     console.error("[Bot] Lỗi xử lý file:", e);
   }
 }
@@ -285,6 +325,11 @@ export async function handleMultipleImages(
       caption ? ` + caption: "${caption}"` : ""
     }`
   );
+  logStep("handleMultipleImages", {
+    imageCount: messages.length,
+    caption,
+    threadId,
+  });
 
   try {
     // Lưu tất cả ảnh vào history
@@ -302,12 +347,18 @@ export async function handleMultipleImages(
       })
       .filter(Boolean);
 
+    logStep("handleMultipleImages:urls", {
+      urls: imageUrls.map((u: string) => u.substring(0, 50)),
+    });
+
     // Tạo prompt phù hợp
     const prompt = caption
       ? PROMPTS.multipleImagesWithCaption(imageUrls.length, caption)
       : PROMPTS.multipleImages(imageUrls.length);
 
     const aiReply = await generateWithMultipleImages(prompt, imageUrls);
+    logStep("handleMultipleImages:aiReply", aiReply);
+
     await sendResponse(api, aiReply, threadId, messages[messages.length - 1]);
 
     // Lưu response
@@ -318,7 +369,8 @@ export async function handleMultipleImages(
     await saveResponseToHistory(threadId, responseText);
 
     console.log(`[Bot] ✅ Đã trả lời ${messages.length} ảnh!`);
-  } catch (e) {
+  } catch (e: any) {
+    logError("handleMultipleImages", e);
     console.error("[Bot] Lỗi xử lý nhiều ảnh:", e);
   }
 }
