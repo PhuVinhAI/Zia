@@ -4,6 +4,8 @@
 import { ToolDefinition, ToolCall, ToolContext, ToolResult } from "./types.js";
 import { getUserInfoTool } from "./getUserInfo.js";
 import { getAllFriendsTool } from "./getAllFriends.js";
+import { getFriendOnlinesTool } from "./getFriendOnlines.js";
+import { sendCardTool } from "./sendCard.js";
 import { debugLog } from "../utils/logger.js";
 
 // ═══════════════════════════════════════════════════
@@ -16,6 +18,8 @@ const toolRegistry: Map<string, ToolDefinition> = new Map();
 // Register tools
 toolRegistry.set("getUserInfo", getUserInfoTool);
 toolRegistry.set("getAllFriends", getAllFriendsTool);
+toolRegistry.set("getFriendOnlines", getFriendOnlinesTool);
+toolRegistry.set("sendCard", sendCardTool);
 
 // Export danh sách tools
 export const registeredTools = Array.from(toolRegistry.values());
