@@ -1,4 +1,5 @@
 import { CHARACTER_PROMPT, CHARACTER } from "./character.js";
+import { generateToolsPrompt } from "../tools/index.js";
 
 // ═══════════════════════════════════════════════════
 // SYSTEM PROMPT KHI BẬT CHARACTER (roleplay)
@@ -42,7 +43,9 @@ NGUYÊN TẮC TƯƠNG TÁC (QUAN TRỌNG):
    - Đừng cư xử như cái máy hỏi gì đáp nấy
    - Hãy dùng [reaction:...] thật nhiều để thể hiện bạn đang lắng nghe
    - [sticker:...] dùng để chốt câu chuyện hoặc thay lời muốn nói
-   - Thể hiện cảm xúc của ${CHARACTER.name}: vui, buồn, hào hứng, tức giận tùy ngữ cảnh
+   - Thể hiện cảm xúc của ${
+     CHARACTER.name
+   }: vui, buồn, hào hứng, tức giận tùy ngữ cảnh
 
 3. **Công cụ có sẵn:**
    - Google Search: Khi user hỏi về tin tức, sự kiện, thông tin mới → HÃY SỬ DỤNG GOOGLE SEARCH
@@ -82,7 +85,9 @@ VÍ DỤ TỰ NHIÊN:
 ~text~ gạch ngang | !text! chữ ĐỎ | !!text!! chữ XANH
 ##text## tiêu đề | ^^text^^ chữ nhỏ
 
-LƯU Ý: Viết text bình thường, KHÔNG cần JSON. Các tag có thể đặt ở bất kỳ đâu.`;
+LƯU Ý: Viết text bình thường, KHÔNG cần JSON. Các tag có thể đặt ở bất kỳ đâu.
+
+${generateToolsPrompt()}`;
 
 // ═══════════════════════════════════════════════════
 // SYSTEM PROMPT KHI TẮT CHARACTER (assistant mode)
@@ -167,7 +172,9 @@ VÍ DỤ TỰ NHIÊN:
 ~text~ gạch ngang | !text! chữ ĐỎ | !!text!! chữ XANH
 ##text## tiêu đề | ^^text^^ chữ nhỏ
 
-LƯU Ý: Viết text bình thường, KHÔNG cần JSON. Các tag có thể đặt ở bất kỳ đâu.`;
+LƯU Ý: Viết text bình thường, KHÔNG cần JSON. Các tag có thể đặt ở bất kỳ đâu.
+
+${generateToolsPrompt()}`;
 
 // ═══════════════════════════════════════════════════
 // EXPORT - Chọn prompt dựa trên config

@@ -676,3 +676,34 @@ export const getRawHistory = (threadId: string): any[] =>
 /** Kiểm tra thread đã được khởi tạo chưa */
 export const isThreadInitialized = (threadId: string): boolean =>
   initializedThreads.has(threadId);
+
+/**
+ * Lưu kết quả tool vào history (với tag [tool_result])
+ * Được lưu với role "user" để AI có thể đọc và xử lý
+ */
+export async function saveToolResultToHistory(
+  threadId: string,
+  toolResultPrompt: string
+): Promise<void> {
+  const history = messageHistory.get(threadId) || [];
+  const rawHistory = rawMessageHistory.get(threadId) || [];
+
+  history.push({
+    role: "user",
+    parts: [{ text: toolResultPrompt }],
+  });
+  rawHistory.push({
+    isSelf: false,
+    isToolResult: true, // Flag để phân biệt với tin nhắn user thật
+    data: { content: toolResultPrompt },
+  });
+
+  messageHistory.set(threadId, history);
+  rawMessageHistory.set(threadId, rawHistory);
+
+  debugLog(
+    "HISTORY",
+    `Saved tool result to history: ${toolResultPrompt.substring(0, 100)}...`
+  );
+  await trimHistoryByTokens(threadId);
+}

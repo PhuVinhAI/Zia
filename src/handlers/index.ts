@@ -11,3 +11,12 @@ export {
   type ClassifiedMessage,
   type MessageType,
 } from "./mixed.js";
+
+// Tool handler - Xử lý custom tools
+export {
+  handleToolCalls,
+  isToolOnlyResponse,
+  formatToolResultForAI,
+  notifyToolCall,
+  type ToolHandlerResult,
+} from "./toolHandler.js";

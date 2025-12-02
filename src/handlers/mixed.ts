@@ -6,9 +6,11 @@ import {
   MediaPart,
 } from "../services/gemini.js";
 import { sendResponse, createStreamCallbacks } from "./response.js";
+import { handleToolCalls, isToolOnlyResponse } from "./toolHandler.js";
 import {
   saveToHistory,
   saveResponseToHistory,
+  saveToolResultToHistory,
   getHistory,
 } from "../utils/history.js";
 import { logStep, logError, debugLog } from "../utils/logger.js";
@@ -591,55 +593,152 @@ export async function handleMixedContent(
     }
     markApiCall(threadId);
 
-    // 10. Gọi Gemini và gửi response
+    // 10. Gọi Gemini và xử lý response (có thể có tool calls)
     const mediaToSend = media.length > 0 ? media : undefined;
+    const senderId = lastMsg.data?.uidFrom || threadId;
+    const senderName = lastMsg.data?.dName;
 
-    if (CONFIG.useStreaming) {
-      const callbacks = createStreamCallbacks(api, threadId, lastMsg, messages);
-      callbacks.signal = signal;
-
-      const result = await generateContentStream(
-        prompt,
-        callbacks,
-        mediaToSend,
-        threadId,
-        history
-      );
-
-      // Lưu response vào history (kể cả partial khi abort)
-      if (result) {
-        debugLog(
-          "MIXED",
-          `Saving AI response to history: ${result.substring(0, 100)}...`
-        );
-        await saveResponseToHistory(threadId, result);
+    // Helper function để xử lý AI response với tool support
+    const processAIResponse = async (
+      currentPrompt: string,
+      currentMedia: typeof mediaToSend,
+      currentHistory: typeof history,
+      depth: number = 0
+    ): Promise<void> => {
+      // Giới hạn độ sâu đệ quy để tránh loop vô hạn
+      const MAX_TOOL_DEPTH = 3;
+      if (depth >= MAX_TOOL_DEPTH) {
+        console.log(`[Bot] ⚠️ Đạt giới hạn tool depth (${MAX_TOOL_DEPTH})`);
+        return;
       }
 
-      // Log khác nhau cho abort vs complete
-      if (signal?.aborted) {
-        debugLog(
-          "MIXED",
-          `Aborted with ${result ? "partial" : "no"} response saved`
+      if (CONFIG.useStreaming) {
+        // STREAMING MODE - Cần xử lý tool sau khi stream xong
+        const callbacks = createStreamCallbacks(
+          api,
+          threadId,
+          lastMsg,
+          messages
         );
+        callbacks.signal = signal;
+
+        const result = await generateContentStream(
+          currentPrompt,
+          callbacks,
+          currentMedia,
+          threadId,
+          currentHistory
+        );
+
+        if (signal?.aborted) {
+          debugLog(
+            "MIXED",
+            `Aborted with ${result ? "partial" : "no"} response`
+          );
+          if (result) await saveResponseToHistory(threadId, result);
+          return;
+        }
+
+        if (!result) return;
+
+        // Check for tool calls in streamed response
+        const toolResult = await handleToolCalls(
+          result,
+          api,
+          threadId,
+          senderId,
+          senderName
+        );
+
+        if (toolResult.hasTools) {
+          // Lưu AI response (có tool call) vào history
+          await saveResponseToHistory(threadId, result);
+
+          // Lưu tool result vào history
+          await saveToolResultToHistory(threadId, toolResult.promptForAI);
+
+          // Gọi lại AI với tool result (không có media)
+          const updatedHistory = getHistory(threadId);
+          await processAIResponse(
+            toolResult.promptForAI,
+            undefined, // Không cần media cho tool result
+            updatedHistory,
+            depth + 1
+          );
+        } else {
+          // Không có tool call, lưu response bình thường
+          await saveResponseToHistory(threadId, result);
+          console.log(`[Bot] ✅ Đã trả lời (streaming)!`);
+        }
       } else {
-        console.log(`[Bot] ✅ Đã trả lời (streaming)!`);
+        // NON-STREAMING MODE
+        const aiReply = await generateContent(
+          currentPrompt,
+          currentMedia,
+          threadId,
+          currentHistory
+        );
+
+        if (signal?.aborted) return;
+
+        const responseText = aiReply.messages
+          .map((m) => m.text)
+          .filter(Boolean)
+          .join(" ");
+
+        // Check for tool calls
+        const toolResult = await handleToolCalls(
+          responseText,
+          api,
+          threadId,
+          senderId,
+          senderName
+        );
+
+        if (toolResult.hasTools) {
+          // Nếu response CHỈ có tool call (không có text khác), không gửi response
+          if (!isToolOnlyResponse(responseText)) {
+            // Có text khác ngoài tool call, gửi phần text đó
+            await sendResponse(
+              api,
+              {
+                ...aiReply,
+                messages: aiReply.messages.map((m) => ({
+                  ...m,
+                  text: m.text ? toolResult.cleanedResponse : m.text,
+                })),
+              },
+              threadId,
+              lastMsg,
+              messages
+            );
+          }
+
+          // Lưu AI response (có tool call) vào history
+          await saveResponseToHistory(threadId, responseText);
+
+          // Lưu tool result vào history
+          await saveToolResultToHistory(threadId, toolResult.promptForAI);
+
+          // Gọi lại AI với tool result
+          const updatedHistory = getHistory(threadId);
+          await processAIResponse(
+            toolResult.promptForAI,
+            undefined,
+            updatedHistory,
+            depth + 1
+          );
+        } else {
+          // Không có tool call, xử lý bình thường
+          await sendResponse(api, aiReply, threadId, lastMsg, messages);
+          await saveResponseToHistory(threadId, responseText);
+          console.log(`[Bot] ✅ Đã trả lời!`);
+        }
       }
-    } else {
-      const aiReply = await generateContent(
-        prompt,
-        mediaToSend,
-        threadId,
-        history
-      );
-      if (signal?.aborted) return;
-      await sendResponse(api, aiReply, threadId, lastMsg, messages);
-      const responseText = aiReply.messages
-        .map((m) => m.text)
-        .filter(Boolean)
-        .join(" ");
-      await saveResponseToHistory(threadId, responseText);
-      console.log(`[Bot] ✅ Đã trả lời!`);
-    }
+    };
+
+    // Bắt đầu xử lý
+    await processAIResponse(prompt, mediaToSend, history);
   } catch (e: any) {
     if (e.message === "Aborted" || signal?.aborted) {
       return debugLog("MIXED", "Aborted during processing");
