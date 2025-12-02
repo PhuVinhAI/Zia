@@ -22,7 +22,7 @@ export function reloadSettings() {
     const settings = loadSettings();
     Object.assign(CONFIG, {
       ...settings.bot,
-      allowedUsers: settings.allowedUsers,
+      allowedUserIds: settings.allowedUserIds || [],
       stickerKeywords: settings.stickers.keywords,
     });
     console.log("[Config] ✅ Đã reload settings");
@@ -32,7 +32,7 @@ export function reloadSettings() {
         name: CONFIG.name,
         prefix: CONFIG.prefix,
         useStreaming: CONFIG.useStreaming,
-        allowedUsers: CONFIG.allowedUsers,
+        allowedUserIds: CONFIG.allowedUserIds,
       })}`
     );
   } catch (error) {
@@ -72,9 +72,11 @@ export const CONFIG = {
   useStreaming: settings.bot.useStreaming ?? true, // Bật streaming mặc định
   fileLogging: settings.bot.fileLogging ?? false, // Ghi log ra file
   logFile: settings.bot.logFile || "logs/bot.log", // Đường dẫn file log
+  unauthorizedLogFile:
+    settings.bot.unauthorizedLogFile || "logs/unauthorized.json", // File log user chưa được cấp phép
 
-  // Allowed users (empty = allow all)
-  allowedUsers: settings.allowedUsers as string[],
+  // Allowed user IDs (empty = allow all)
+  allowedUserIds: (settings.allowedUserIds || []) as string[],
 
   // Sticker keywords
   stickerKeywords: settings.stickers.keywords as string[],

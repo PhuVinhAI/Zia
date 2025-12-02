@@ -1,4 +1,4 @@
-import { CONFIG, reloadSettings } from "../config/index.js";
+import { CONFIG } from "../config/index.js";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -7,53 +7,169 @@ import { debugLog } from "./logger.js";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const settingsPath = path.join(__dirname, "../config/settings.json");
 
-export function isAllowedUser(senderName: string): boolean {
+// Cache để tránh ghi trùng lặp
+const loggedUnauthorizedUsers = new Set<string>();
+
+/**
+ * Kiểm tra user có được phép sử dụng bot không (theo ID)
+ */
+export function isAllowedUser(userId: string, userName: string): boolean {
   // Nếu danh sách rỗng, cho phép tất cả
-  if (!CONFIG.allowedUsers || CONFIG.allowedUsers.length === 0) {
-    debugLog("USER_FILTER", `Allowed (no filter): "${senderName}"`);
+  if (!CONFIG.allowedUserIds || CONFIG.allowedUserIds.length === 0) {
+    debugLog(
+      "USER_FILTER",
+      `Allowed (no filter): id=${userId}, name="${userName}"`
+    );
     return true;
   }
 
-  // Kiểm tra tên có trong danh sách không
-  const allowed = CONFIG.allowedUsers.some((name) => senderName.includes(name));
+  // Kiểm tra ID có trong danh sách không
+  const allowed = CONFIG.allowedUserIds.includes(userId);
   debugLog(
     "USER_FILTER",
     `${
       allowed ? "Allowed" : "Blocked"
-    }: "${senderName}", allowedList=[${CONFIG.allowedUsers.join(", ")}]`
+    }: id=${userId}, name="${userName}", allowedIds=[${CONFIG.allowedUserIds.join(
+      ", "
+    )}]`
   );
+
+  // Nếu không được phép, ghi log ra file
+  if (!allowed) {
+    logUnauthorizedUser(userId, userName);
+  }
+
   return allowed;
 }
 
-export function addAllowedUser(name: string): boolean {
-  if (CONFIG.allowedUsers.includes(name)) {
+/**
+ * Ghi log người dùng chưa được cấp phép vào file JSON
+ */
+function logUnauthorizedUser(userId: string, userName: string): void {
+  // Tránh ghi trùng trong cùng session
+  if (loggedUnauthorizedUsers.has(userId)) {
+    return;
+  }
+  loggedUnauthorizedUsers.add(userId);
+
+  const logFilePath = path.resolve(
+    CONFIG.unauthorizedLogFile || "logs/unauthorized.json"
+  );
+  const logDir = path.dirname(logFilePath);
+
+  // Tạo thư mục nếu chưa có
+  if (!fs.existsSync(logDir)) {
+    fs.mkdirSync(logDir, { recursive: true });
+  }
+
+  // Đọc file hiện tại hoặc tạo mới
+  let unauthorizedList: Array<{
+    id: string;
+    name: string;
+    firstSeen: string;
+    lastSeen: string;
+  }> = [];
+  if (fs.existsSync(logFilePath)) {
+    try {
+      const data = fs.readFileSync(logFilePath, "utf-8");
+      unauthorizedList = JSON.parse(data);
+    } catch {
+      unauthorizedList = [];
+    }
+  }
+
+  // Kiểm tra xem user đã có trong list chưa
+  const existingIndex = unauthorizedList.findIndex((u) => u.id === userId);
+  const now = new Date().toISOString();
+
+  if (existingIndex >= 0) {
+    // Cập nhật lastSeen và name (có thể đổi tên)
+    unauthorizedList[existingIndex].lastSeen = now;
+    unauthorizedList[existingIndex].name = userName;
+  } else {
+    // Thêm mới
+    unauthorizedList.push({
+      id: userId,
+      name: userName,
+      firstSeen: now,
+      lastSeen: now,
+    });
+    console.log(
+      `[UserFilter] 📝 Ghi nhận user mới chưa được cấp phép: ${userName} (${userId})`
+    );
+  }
+
+  // Ghi file
+  fs.writeFileSync(logFilePath, JSON.stringify(unauthorizedList, null, 2));
+  debugLog(
+    "USER_FILTER",
+    `Logged unauthorized user: id=${userId}, name="${userName}"`
+  );
+}
+
+/**
+ * Thêm user ID vào danh sách được phép
+ */
+export function addAllowedUserId(userId: string): boolean {
+  if (CONFIG.allowedUserIds.includes(userId)) {
     return false;
   }
 
-  CONFIG.allowedUsers.push(name);
+  CONFIG.allowedUserIds.push(userId);
   saveSettings();
   return true;
 }
 
-export function removeAllowedUser(name: string): boolean {
-  const index = CONFIG.allowedUsers.indexOf(name);
+/**
+ * Xóa user ID khỏi danh sách được phép
+ */
+export function removeAllowedUserId(userId: string): boolean {
+  const index = CONFIG.allowedUserIds.indexOf(userId);
   if (index === -1) {
     return false;
   }
 
-  CONFIG.allowedUsers.splice(index, 1);
+  CONFIG.allowedUserIds.splice(index, 1);
   saveSettings();
   return true;
 }
 
-export function getAllowedUsers(): string[] {
-  return CONFIG.allowedUsers;
+/**
+ * Lấy danh sách user IDs được phép
+ */
+export function getAllowedUserIds(): string[] {
+  return CONFIG.allowedUserIds;
+}
+
+/**
+ * Lấy danh sách người dùng chưa được cấp phép từ file
+ */
+export function getUnauthorizedUsers(): Array<{
+  id: string;
+  name: string;
+  firstSeen: string;
+  lastSeen: string;
+}> {
+  const logFilePath = path.resolve(
+    CONFIG.unauthorizedLogFile || "logs/unauthorized.json"
+  );
+
+  if (!fs.existsSync(logFilePath)) {
+    return [];
+  }
+
+  try {
+    const data = fs.readFileSync(logFilePath, "utf-8");
+    return JSON.parse(data);
+  } catch {
+    return [];
+  }
 }
 
 function saveSettings() {
   const data = fs.readFileSync(settingsPath, "utf-8");
   const settings = JSON.parse(data);
-  settings.allowedUsers = CONFIG.allowedUsers;
+  settings.allowedUserIds = CONFIG.allowedUserIds;
   fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
-  console.log("[Config] ✅ Đã lưu danh sách người dùng");
+  console.log("[Config] ✅ Đã lưu danh sách user IDs");
 }

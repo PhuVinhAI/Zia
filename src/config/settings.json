@@ -9,16 +9,10 @@
     "logging": true,
     "useStreaming": true,
     "fileLogging": true,
-    "logFile": "logs/bot.log"
+    "logFile": "logs/bot.log",
+    "unauthorizedLogFile": "logs/unauthorized.json"
   },
-  "allowedUsers": [
-    "Nguyễn Huỳnh Thuật",
-    "Phú Vinh",
-    "Quang Vinh Phạm",
-    "Kiện An",
-    "Hưng",
-    "Huỳnh Phước Thọ"
-  ],
+  "allowedUserIds": [],
   "stickers": {
     "keywords": [
       "hello",

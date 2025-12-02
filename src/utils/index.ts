@@ -8,8 +8,9 @@ export {
 } from "./history.js";
 export {
   isAllowedUser,
-  addAllowedUser,
-  removeAllowedUser,
-  getAllowedUsers,
+  addAllowedUserId,
+  removeAllowedUserId,
+  getAllowedUserIds,
+  getUnauthorizedUsers,
 } from "./userFilter.js";
 export { parseRichText, createRichMessage } from "./richText.js";

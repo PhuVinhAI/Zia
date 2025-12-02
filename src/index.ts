@@ -1,7 +1,8 @@
 import "./env.js";
 import { loginWithQR, ThreadType } from "./services/zalo.js";
 import { CONFIG } from "./config/index.js";
-import { checkRateLimit, isAllowedUser } from "./utils/index.js";
+import { checkRateLimit } from "./utils/index.js";
+import { isAllowedUser } from "./utils/userFilter.js";
 import { initThreadHistory, isThreadInitialized } from "./utils/history.js";
 import {
   initFileLogger,
@@ -37,7 +38,7 @@ if (CONFIG.fileLogging) {
       rateLimitMs: CONFIG.rateLimitMs,
       useStreaming: CONFIG.useStreaming,
       selfListen: CONFIG.selfListen,
-      allowedUsers: CONFIG.allowedUsers,
+      allowedUserIds: CONFIG.allowedUserIds,
     })}`
   );
 }
@@ -244,8 +245,10 @@ async function main() {
   );
   console.log(`⏱️ Rate limit: ${CONFIG.rateLimitMs}ms`);
   console.log(
-    `👥 Allowed users: ${
-      CONFIG.allowedUsers.length > 0 ? CONFIG.allowedUsers.join(", ") : "Tất cả"
+    `👥 Allowed user IDs: ${
+      CONFIG.allowedUserIds.length > 0
+        ? CONFIG.allowedUserIds.join(", ")
+        : "Tất cả"
     }`
   );
   console.log(`📝 Streaming: ${CONFIG.useStreaming ? "ON" : "OFF"}`);
@@ -284,9 +287,10 @@ async function main() {
       return;
     }
 
+    const senderId = message.data?.uidFrom || threadId;
     const senderName = message.data?.dName || "";
-    if (!isAllowedUser(senderName)) {
-      console.log(`[Bot] ⏭️ Bỏ qua: "${senderName}"`);
+    if (!isAllowedUser(senderId, senderName)) {
+      console.log(`[Bot] ⏭️ Bỏ qua: "${senderName}" (${senderId})`);
       return;
     }
 
