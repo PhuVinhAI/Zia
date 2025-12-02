@@ -1,9 +1,9 @@
 import { GoogleGenAI } from "@google/genai";
 import { SYSTEM_PROMPT } from "../config/index.js";
 import {
-  AI_RESPONSE_SCHEMA,
   AIResponse,
   DEFAULT_RESPONSE,
+  parseAIResponse,
 } from "../config/schema.js";
 import { fetchAsBase64 } from "../utils/fetch.js";
 
@@ -31,27 +31,11 @@ const GEMINI_CONFIG = {
     { googleSearch: {} }, // Grounding with Google Search
     { urlContext: {} }, // Đọc nội dung URL
   ],
-  // Structured Output
-  responseMimeType: "application/json",
-  responseSchema: AI_RESPONSE_SCHEMA,
 };
 // ========================================================
 
-// Parse JSON response từ AI
-export function parseAIResponse(text: string): AIResponse {
-  try {
-    const parsed = JSON.parse(text);
-    // Validate basic structure
-    if (parsed.reaction && Array.isArray(parsed.messages)) {
-      return parsed as AIResponse;
-    }
-    console.error("[Gemini] Invalid response structure:", text);
-    return DEFAULT_RESPONSE;
-  } catch (e) {
-    console.error("[Gemini] JSON parse error:", e, "Text:", text);
-    return DEFAULT_RESPONSE;
-  }
-}
+// Re-export parseAIResponse từ schema
+export { parseAIResponse } from "../config/schema.js";
 
 // Regex để detect YouTube URL
 const YOUTUBE_REGEX =

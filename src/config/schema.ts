@@ -1,41 +1,3 @@
-// JSON Schema cho AI Response - Structured Output
-export const AI_RESPONSE_SCHEMA = {
-  type: "object",
-  properties: {
-    reaction: {
-      type: "string",
-      enum: ["heart", "haha", "wow", "sad", "angry", "like", "none"],
-      description:
-        "Reaction để thả vào tin nhắn người dùng. 'none' = không thả reaction",
-    },
-    messages: {
-      type: "array",
-      description: "Danh sách các tin nhắn để gửi (có thể nhiều tin)",
-      items: {
-        type: "object",
-        properties: {
-          text: {
-            type: "string",
-            description: "Nội dung tin nhắn text. Để trống nếu chỉ gửi sticker",
-          },
-          sticker: {
-            type: "string",
-            description:
-              "Keyword sticker để gửi (hello, hi, love, haha, sad, cry, angry, wow, ok, thanks, sorry). Để trống nếu không gửi sticker",
-          },
-          quoteIndex: {
-            type: "integer",
-            description:
-              "Index tin nhắn trong lịch sử để quote. -1 = không quote",
-          },
-        },
-        required: ["text", "sticker", "quoteIndex"],
-      },
-    },
-  },
-  required: ["reaction", "messages"],
-};
-
 // TypeScript interface
 export interface AIMessage {
   text: string;
@@ -55,3 +17,72 @@ export const DEFAULT_RESPONSE: AIResponse = {
     { text: "Xin lỗi, mình gặp lỗi rồi!", sticker: "", quoteIndex: -1 },
   ],
 };
+
+// Parse AI response từ text với tag []
+export function parseAIResponse(text: string): AIResponse {
+  try {
+    const result: AIResponse = {
+      reaction: "none",
+      messages: [],
+    };
+
+    // Parse [reaction:xxx]
+    const reactionMatch = text.match(/\[reaction:(\w+)\]/i);
+    if (reactionMatch) {
+      const r = reactionMatch[1].toLowerCase();
+      if (
+        ["heart", "haha", "wow", "sad", "angry", "like", "none"].includes(r)
+      ) {
+        result.reaction = r as AIResponse["reaction"];
+      }
+    }
+
+    // Parse [sticker:xxx]
+    const stickerMatches = text.matchAll(/\[sticker:(\w+)\]/gi);
+    for (const match of stickerMatches) {
+      result.messages.push({
+        text: "",
+        sticker: match[1],
+        quoteIndex: -1,
+      });
+    }
+
+    // Parse [quote:index]nội dung[/quote]
+    const quoteMatches = text.matchAll(
+      /\[quote:(\d+)\]([\s\S]*?)\[\/quote\]/gi
+    );
+    for (const match of quoteMatches) {
+      result.messages.push({
+        text: match[2].trim(),
+        sticker: "",
+        quoteIndex: parseInt(match[1]),
+      });
+    }
+
+    // Lấy text thuần (loại bỏ các tag)
+    let plainText = text
+      .replace(/\[reaction:\w+\]/gi, "")
+      .replace(/\[sticker:\w+\]/gi, "")
+      .replace(/\[quote:\d+\][\s\S]*?\[\/quote\]/gi, "")
+      .trim();
+
+    // Nếu có text thuần, thêm vào messages
+    if (plainText) {
+      result.messages.unshift({
+        text: plainText,
+        sticker: "",
+        quoteIndex: -1,
+      });
+    }
+
+    // Nếu không có message nào, trả về default
+    if (result.messages.length === 0 && result.reaction === "none") {
+      return DEFAULT_RESPONSE;
+    }
+
+    return result;
+  } catch (e) {
+    console.error("[Parser] Error:", e, "Text:", text);
+    return DEFAULT_RESPONSE;
+  }
+}
