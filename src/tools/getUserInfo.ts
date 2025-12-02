@@ -22,11 +22,15 @@ export const getUserInfoTool: ToolDefinition = {
     context: ToolContext
   ): Promise<ToolResult> => {
     try {
-      const userId = params.userId || context.senderId;
+      // Đảm bảo userId luôn là string (API Zalo yêu cầu string)
+      let userId = params.userId || context.senderId;
 
       if (!userId) {
         return { success: false, error: "Không có userId để lấy thông tin" };
       }
+
+      // Convert to string nếu cần (phòng trường hợp bị parse thành number)
+      userId = String(userId);
 
       debugLog("TOOL:getUserInfo", `Calling API with userId=${userId}`);
       const result = await context.api.getUserInfo(userId);

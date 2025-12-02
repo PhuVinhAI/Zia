@@ -38,6 +38,9 @@ const TOOL_CALL_REGEX =
 
 /**
  * Parse parameters từ string format: param1="value1" param2="value2"
+ *
+ * LƯU Ý: Không convert số lớn (>15 chữ số) thành Number vì JavaScript
+ * sẽ mất precision. Giữ nguyên string cho userId, threadId, etc.
  */
 function parseInlineParams(paramStr: string): Record<string, any> {
   const params: Record<string, any> = {};
@@ -52,10 +55,25 @@ function parseInlineParams(paramStr: string): Record<string, any> {
     const value = match[2] ?? match[3] ?? match[4];
 
     // Try to parse as number or boolean
-    if (value === "true") params[key] = true;
-    else if (value === "false") params[key] = false;
-    else if (!isNaN(Number(value)) && value !== "") params[key] = Number(value);
-    else params[key] = value;
+    if (value === "true") {
+      params[key] = true;
+    } else if (value === "false") {
+      params[key] = false;
+    } else if (!isNaN(Number(value)) && value !== "") {
+      // QUAN TRỌNG: Không convert số lớn (>15 chữ số) thành Number
+      // vì JavaScript Number sẽ mất precision (userId, threadId thường 18-19 chữ số)
+      // Cũng giữ string nếu key chứa "id", "Id", "ID" để an toàn
+      const isLargeNumber = value.length > 15;
+      const isIdField = /id$/i.test(key);
+
+      if (isLargeNumber || isIdField) {
+        params[key] = value; // Giữ nguyên string
+      } else {
+        params[key] = Number(value);
+      }
+    } else {
+      params[key] = value;
+    }
   }
 
   return params;

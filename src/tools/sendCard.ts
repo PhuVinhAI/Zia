@@ -41,6 +41,9 @@ export const sendCardTool: ToolDefinition = {
         targetUserId = context.api.getContext().uid;
       }
 
+      // Đảm bảo userId luôn là string (API Zalo yêu cầu string)
+      targetUserId = String(targetUserId);
+
       debugLog(
         "TOOL:sendCard",
         `Sending card for userId=${targetUserId}, threadId=${context.threadId}`

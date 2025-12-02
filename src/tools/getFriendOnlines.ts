@@ -36,7 +36,32 @@ export const getFriendOnlinesTool: ToolDefinition = {
         "TOOL:getFriendOnlines",
         `Calling API with limit=${limit}, includeNames=${includeNames}`
       );
-      const result = await context.api.getFriendOnlines();
+
+      let result: any;
+      try {
+        result = await context.api.getFriendOnlines();
+      } catch (apiError: any) {
+        // API có thể throw error khi không có ai online hoặc response rỗng
+        debugLog("TOOL:getFriendOnlines", `API error: ${apiError.message}`);
+
+        // Nếu lỗi JSON parse, có thể không có ai online
+        if (
+          apiError.message?.includes("JSON") ||
+          apiError.message?.includes("Unexpected")
+        ) {
+          return {
+            success: true,
+            data: {
+              total: 0,
+              message:
+                "Không có ai đang online hoặc API tạm thời không khả dụng",
+              friends: [],
+            },
+          };
+        }
+        throw apiError;
+      }
+
       logZaloAPI(
         "tool:getFriendOnlines",
         { limit, includeNames },
@@ -50,12 +75,20 @@ export const getFriendOnlinesTool: ToolDefinition = {
         }`
       );
 
+      // Handle trường hợp result null/undefined hoặc onlines rỗng
       if (!result || !result.onlines || !Array.isArray(result.onlines)) {
         debugLog(
           "TOOL:getFriendOnlines",
-          `Invalid response: ${JSON.stringify(result)?.substring(0, 500)}`
+          `Invalid/empty response: ${JSON.stringify(result)?.substring(0, 500)}`
         );
-        return { success: false, error: "Không lấy được danh sách online" };
+        return {
+          success: true,
+          data: {
+            total: 0,
+            message: "Không có ai đang online (hoặc họ ẩn trạng thái)",
+            friends: [],
+          },
+        };
       }
 
       const onlineList = result.onlines.slice(0, limit);
