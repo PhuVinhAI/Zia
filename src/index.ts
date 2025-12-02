@@ -12,8 +12,10 @@ import {
   logError,
   getCurrentLogFile,
 } from "./utils/logger.js";
-import { handleMixedContent } from "./handlers/index.js";
-import { setupSelfMessageListener } from "./handlers/streamResponse.js";
+import {
+  handleMixedContent,
+  setupSelfMessageListener,
+} from "./handlers/index.js";
 import { startTask, abortTask } from "./utils/taskManager.js";
 
 // Khởi tạo file logging nếu bật - mỗi lần chạy tạo file mới

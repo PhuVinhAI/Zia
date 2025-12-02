@@ -4,10 +4,8 @@ import {
   generateContentStream,
   extractYouTubeUrls,
   MediaPart,
-  StreamCallbacks,
 } from "../services/gemini.js";
-import { sendResponse } from "./response.js";
-import { createStreamCallbacks } from "./streamResponse.js";
+import { sendResponse, createStreamCallbacks } from "./response.js";
 import {
   saveToHistory,
   saveResponseToHistory,

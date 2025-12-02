@@ -2,6 +2,12 @@ import { ThreadType, Reactions } from "../services/zalo.js";
 import { getRawHistory } from "../utils/history.js";
 import { createRichMessage } from "../utils/richText.js";
 import { AIResponse } from "../config/schema.js";
+import { StreamCallbacks } from "../services/gemini.js";
+import {
+  saveSentMessage,
+  getSentMessage,
+  removeSentMessage,
+} from "../utils/messageStore.js";
 import {
   logZaloAPI,
   logMessage,
@@ -9,6 +15,10 @@ import {
   logStep,
   logError,
 } from "../utils/logger.js";
+
+// ═══════════════════════════════════════════════════
+// SHARED HELPERS
+// ═══════════════════════════════════════════════════
 
 const reactionMap: Record<string, any> = {
   heart: Reactions.HEART,
@@ -19,7 +29,6 @@ const reactionMap: Record<string, any> = {
   like: Reactions.LIKE,
 };
 
-// Gửi sticker helper
 async function sendSticker(api: any, keyword: string, threadId: string) {
   try {
     console.log(`[Bot] 🎨 Tìm sticker: "${keyword}"`);
@@ -27,16 +36,10 @@ async function sendSticker(api: any, keyword: string, threadId: string) {
 
     const stickerIds = await api.getStickers(keyword);
     logZaloAPI("getStickers", { keyword }, stickerIds);
-    debugLog(
-      "STICKER",
-      `Found ${stickerIds?.length || 0} stickers for "${keyword}"`
-    );
 
     if (stickerIds?.length > 0) {
       const randomId =
         stickerIds[Math.floor(Math.random() * stickerIds.length)];
-      debugLog("STICKER", `Selected random sticker: ${randomId}`);
-
       const stickerDetails = await api.getStickersDetail(randomId);
       logZaloAPI("getStickersDetail", { stickerId: randomId }, stickerDetails);
 
@@ -51,7 +54,6 @@ async function sendSticker(api: any, keyword: string, threadId: string) {
           { sticker: stickerDetails[0], threadId },
           result
         );
-
         console.log(`[Bot] ✅ Đã gửi sticker!`);
         logMessage("OUT", threadId, {
           type: "sticker",
@@ -59,20 +61,41 @@ async function sendSticker(api: any, keyword: string, threadId: string) {
           stickerId: randomId,
         });
       }
-    } else {
-      debugLog("STICKER", `No stickers found for "${keyword}"`);
     }
   } catch (e: any) {
     logZaloAPI("sendSticker", { keyword, threadId }, null, e);
     logError("sendSticker", e);
-    console.error("[Bot] Lỗi gửi sticker:", e);
   }
 }
 
-/**
- * Gửi response từ AI
- * @param allMessages - Danh sách tất cả tin nhắn trong batch (để quote/react đúng tin)
- */
+// ═══════════════════════════════════════════════════
+// SELF MESSAGE LISTENER (cho tính năng thu hồi)
+// ═══════════════════════════════════════════════════
+
+export function setupSelfMessageListener(api: any) {
+  debugLog("SELF_LISTEN", "Setting up self message listener");
+
+  api.listener.on("message", (message: any) => {
+    if (!message.isSelf) return;
+
+    const content = message.data?.content;
+    const threadId = message.threadId;
+    const msgId = message.data?.msgId;
+    const cliMsgId = message.data?.cliMsgId;
+
+    if (!msgId || !cliMsgId) return;
+
+    const contentStr =
+      typeof content === "string" ? content : JSON.stringify(content);
+    saveSentMessage(threadId, msgId, cliMsgId, contentStr);
+    debugLog("SELF_LISTEN", `Saved: msgId=${msgId}`);
+  });
+}
+
+// ═══════════════════════════════════════════════════
+// NON-STREAMING RESPONSE
+// ═══════════════════════════════════════════════════
+
 export async function sendResponse(
   api: any,
   response: AIResponse,
@@ -82,124 +105,77 @@ export async function sendResponse(
 ): Promise<void> {
   debugLog(
     "RESPONSE",
-    `sendResponse: thread=${threadId}, reactions=${
-      response.reactions.length
-    }, messages=${response.messages.length}, batchSize=${
-      allMessages?.length || 1
-    }`
+    `sendResponse: thread=${threadId}, reactions=${response.reactions.length}, messages=${response.messages.length}`
   );
   logStep("sendResponse:start", {
     threadId,
     reactions: response.reactions,
     messageCount: response.messages.length,
-    batchSize: allMessages?.length || 1,
   });
 
-  // Thả nhiều reaction
-  if (response.reactions.length > 0) {
-    for (const r of response.reactions) {
-      // Kiểm tra xem có phải reaction với index không (format: "0:heart" hoặc "heart")
-      let reactionType = r;
-      let targetMessage = originalMessage;
+  // Thả reactions
+  for (const r of response.reactions) {
+    let reactionType = r;
+    let targetMessage = originalMessage;
 
-      if (r.includes(":")) {
-        const [indexStr, type] = r.split(":");
-        const index = parseInt(indexStr);
-        reactionType = type;
-
-        // Nếu có allMessages và index hợp lệ, lấy tin nhắn tương ứng
-        if (allMessages && index >= 0 && index < allMessages.length) {
-          targetMessage = allMessages[index];
-          debugLog(
-            "RESPONSE",
-            `Reaction ${type} targeting message index ${index}`
-          );
-        }
+    if (r.includes(":")) {
+      const [indexStr, type] = r.split(":");
+      const index = parseInt(indexStr);
+      reactionType = type;
+      if (allMessages && index >= 0 && index < allMessages.length) {
+        targetMessage = allMessages[index];
       }
+    }
 
-      const reaction = reactionMap[reactionType];
-      if (reaction && targetMessage) {
-        try {
-          debugLog("RESPONSE", `Sending reaction: ${reactionType}`);
-          const result = await api.addReaction(reaction, targetMessage);
-          logZaloAPI(
-            "addReaction",
-            { reaction: reactionType, msgId: targetMessage?.data?.msgId },
-            result
-          );
-
-          console.log(`[Bot] 💖 Đã thả reaction: ${reactionType}`);
-          logMessage("OUT", threadId, {
-            type: "reaction",
-            reaction: reactionType,
-          });
-
-          await new Promise((resolve) => setTimeout(resolve, 300));
-        } catch (e: any) {
-          logZaloAPI(
-            "addReaction",
-            { reaction: reactionType, threadId },
-            null,
-            e
-          );
-          logError("sendResponse:reaction", e);
-          console.error("[Bot] Lỗi thả reaction:", e);
-        }
+    const reaction = reactionMap[reactionType];
+    if (reaction && targetMessage) {
+      try {
+        const result = await api.addReaction(reaction, targetMessage);
+        logZaloAPI(
+          "addReaction",
+          { reaction: reactionType, msgId: targetMessage?.data?.msgId },
+          result
+        );
+        console.log(`[Bot] 💖 Đã thả reaction: ${reactionType}`);
+        logMessage("OUT", threadId, {
+          type: "reaction",
+          reaction: reactionType,
+        });
+        await new Promise((r) => setTimeout(r, 300));
+      } catch (e: any) {
+        logError("sendResponse:reaction", e);
       }
     }
   }
 
-  // Gửi từng tin nhắn
+  // Gửi messages
   for (let i = 0; i < response.messages.length; i++) {
     const msg = response.messages[i];
-    debugLog(
-      "RESPONSE",
-      `Sending message ${i + 1}/${
-        response.messages.length
-      }: text="${msg.text?.substring(0, 50)}...", sticker=${
-        msg.sticker
-      }, quoteIndex=${msg.quoteIndex}`
-    );
 
-    // Xác định quote message
+    // Xác định quote
     let quoteData: any = undefined;
     if (msg.quoteIndex >= 0) {
-      // Ưu tiên quote từ batch messages (nếu có)
       if (allMessages && msg.quoteIndex < allMessages.length) {
         const batchMsg = allMessages[msg.quoteIndex];
         if (batchMsg?.data?.msgId) {
           quoteData = batchMsg.data;
-          console.log(`[Bot] 📎 Quote tin nhắn batch #${msg.quoteIndex}`);
-          debugLog(
-            "RESPONSE",
-            `Quote batch message #${msg.quoteIndex}: msgId=${quoteData.msgId}`
-          );
+          console.log(`[Bot] 📎 Quote tin nhắn #${msg.quoteIndex}`);
         }
       } else {
-        // Fallback: quote từ history
         const rawHistory = getRawHistory(threadId);
         if (msg.quoteIndex < rawHistory.length) {
           const historyMsg = rawHistory[msg.quoteIndex];
           if (historyMsg?.data?.msgId) {
             quoteData = historyMsg.data;
-            console.log(`[Bot] 📎 Quote tin nhắn history #${msg.quoteIndex}`);
-            debugLog(
-              "RESPONSE",
-              `Quote history message #${msg.quoteIndex}: msgId=${quoteData.msgId}`
-            );
           }
         }
       }
     }
 
-    // Gửi tin nhắn text
+    // Gửi text
     if (msg.text) {
       try {
         const richMsg = createRichMessage(`🤖 AI: ${msg.text}`, quoteData);
-        debugLog(
-          "RESPONSE",
-          `Sending text message: ${msg.text.substring(0, 100)}...`
-        );
         const result = await api.sendMessage(
           richMsg,
           threadId,
@@ -212,9 +188,7 @@ export async function sendResponse(
           quoteIndex: msg.quoteIndex,
         });
       } catch (e: any) {
-        logZaloAPI("sendMessage", { text: msg.text, threadId }, null, e);
         logError("sendResponse:text", e);
-        console.error("[Bot] Lỗi gửi tin nhắn:", e);
         await api.sendMessage(`🤖 AI: ${msg.text}`, threadId, ThreadType.User);
       }
     }
@@ -222,15 +196,170 @@ export async function sendResponse(
     // Gửi sticker
     if (msg.sticker) {
       if (msg.text) await new Promise((r) => setTimeout(r, 800));
-      debugLog("RESPONSE", `Sending sticker: ${msg.sticker}`);
       await sendSticker(api, msg.sticker, threadId);
     }
 
-    // Delay giữa các tin nhắn
     if (i < response.messages.length - 1) {
       await new Promise((r) => setTimeout(r, 500 + Math.random() * 500));
     }
   }
 
   logStep("sendResponse:end", { threadId });
+}
+
+// ═══════════════════════════════════════════════════
+// STREAMING CALLBACKS
+// ═══════════════════════════════════════════════════
+
+export function createStreamCallbacks(
+  api: any,
+  threadId: string,
+  originalMessage?: any,
+  messages?: any[]
+): StreamCallbacks {
+  let messageCount = 0;
+  const pendingStickers: string[] = [];
+
+  debugLog(
+    "STREAM_CB",
+    `Creating callbacks: thread=${threadId}, messages=${messages?.length || 0}`
+  );
+
+  return {
+    onReaction: async (reaction: string) => {
+      let reactionType = reaction;
+      let targetMsg = originalMessage;
+
+      if (reaction.includes(":")) {
+        const [indexStr, type] = reaction.split(":");
+        reactionType = type;
+        const index = parseInt(indexStr);
+        if (messages && index >= 0 && index < messages.length) {
+          targetMsg = messages[index];
+        }
+      }
+
+      const reactionObj = reactionMap[reactionType];
+      if (reactionObj && targetMsg) {
+        try {
+          const result = await api.addReaction(reactionObj, targetMsg);
+          logZaloAPI(
+            "addReaction",
+            { reaction: reactionType, msgId: targetMsg?.data?.msgId },
+            result
+          );
+          console.log(`[Bot] 💖 Streaming: Đã thả reaction: ${reactionType}`);
+          logMessage("OUT", threadId, {
+            type: "reaction",
+            reaction: reactionType,
+          });
+        } catch (e: any) {
+          logError("onReaction", e);
+        }
+      }
+    },
+
+    onSticker: async (keyword: string) => {
+      pendingStickers.push(keyword);
+      console.log(`[Bot] 🎨 Queue sticker: "${keyword}"`);
+    },
+
+    onMessage: async (text: string, quoteIndex?: number) => {
+      messageCount++;
+
+      let quoteData: any = undefined;
+      if (quoteIndex !== undefined) {
+        if (quoteIndex >= 0) {
+          // Quote từ batch messages hoặc history
+          if (messages && quoteIndex < messages.length) {
+            const batchMsg = messages[quoteIndex];
+            if (batchMsg?.data?.msgId) {
+              quoteData = batchMsg.data;
+              console.log(`[Bot] 📎 Quote tin #${quoteIndex}`);
+            }
+          } else {
+            const rawHistory = getRawHistory(threadId);
+            if (quoteIndex < rawHistory.length) {
+              const historyMsg = rawHistory[quoteIndex];
+              if (historyMsg?.data?.msgId) {
+                quoteData = historyMsg.data;
+              }
+            }
+          }
+        } else {
+          // Quote tin bot đã gửi (index âm)
+          const botMsg = getSentMessage(threadId, quoteIndex);
+          if (botMsg) {
+            quoteData = {
+              msgId: botMsg.msgId,
+              cliMsgId: botMsg.cliMsgId,
+              msg: botMsg.content,
+            };
+            console.log(`[Bot] 📎 Quote tin bot #${quoteIndex}`);
+          }
+        }
+      }
+
+      try {
+        const richMsg = createRichMessage(`🤖 AI: ${text}`, quoteData);
+        const result = await api.sendMessage(
+          richMsg,
+          threadId,
+          ThreadType.User
+        );
+        logZaloAPI("sendMessage", { message: richMsg, threadId }, result);
+        console.log(`[Bot] 📤 Streaming: Đã gửi tin nhắn #${messageCount}`);
+        logMessage("OUT", threadId, { type: "text", text, quoteIndex });
+      } catch (e: any) {
+        logError("onMessage", e);
+        await api.sendMessage(`🤖 AI: ${text}`, threadId, ThreadType.User);
+      }
+
+      await new Promise((r) => setTimeout(r, 300));
+    },
+
+    onUndo: async (index: number) => {
+      const msg = getSentMessage(threadId, index);
+      if (!msg) {
+        console.log(
+          `[Bot] ⚠️ Không tìm thấy tin nhắn index ${index} để thu hồi`
+        );
+        return;
+      }
+
+      try {
+        const undoData = { msgId: msg.msgId, cliMsgId: msg.cliMsgId };
+        const result = await api.undo(undoData, threadId, ThreadType.User);
+        logZaloAPI("undo", { undoData, threadId }, result);
+        removeSentMessage(threadId, msg.msgId);
+        console.log(`[Bot] 🗑️ Đã thu hồi tin nhắn`);
+        logMessage("OUT", threadId, { type: "undo", msgId: msg.msgId });
+      } catch (e: any) {
+        logError("onUndo", e);
+      }
+    },
+
+    onComplete: async () => {
+      for (const keyword of pendingStickers) {
+        await sendSticker(api, keyword, threadId);
+      }
+      console.log(
+        `[Bot] ✅ Streaming hoàn tất! ${messageCount} tin nhắn${
+          pendingStickers.length > 0
+            ? ` + ${pendingStickers.length} sticker`
+            : ""
+        }`
+      );
+      logStep("streamComplete", {
+        threadId,
+        messageCount,
+        stickerCount: pendingStickers.length,
+      });
+    },
+
+    onError: (error: Error) => {
+      console.error("[Bot] ❌ Streaming error:", error);
+      logError("streamError", error);
+    },
+  };
 }

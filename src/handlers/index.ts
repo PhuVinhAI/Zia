@@ -1,8 +1,8 @@
-export { sendResponse } from "./response.js";
 export {
+  sendResponse,
   createStreamCallbacks,
   setupSelfMessageListener,
-} from "./streamResponse.js";
+} from "./response.js";
 
 // Mixed content handler - XỬ LÝ TẤT CẢ loại tin nhắn
 export {
