@@ -49,20 +49,15 @@ if (CONFIG.fileLogging) {
 const messageQueues = new Map<string, any[]>();
 const processingThreads = new Set<string>();
 
-// ========== HUMAN-LIKE BUFFERING ==========
+// ========== BUFFERING ==========
 // Cơ chế đệm tin nhắn để gom nhiều tin thành 1 context trước khi xử lý
 interface ThreadBuffer {
   timer: NodeJS.Timeout | null;
   messages: any[];
   isTyping: boolean; // Bot đang typing
-  userTyping: boolean; // User đang typing
-  userTypingTimer: NodeJS.Timeout | null; // Timer để detect user dừng typing
-  firstMessageTime: number | null; // Thời điểm nhận tin nhắn đầu tiên trong buffer
 }
 const threadBuffers = new Map<string, ThreadBuffer>();
 const BUFFER_DELAY_MS = 2500; // Chờ 2.5s để user nhắn hết câu
-const USER_TYPING_TIMEOUT_MS = 3000; // Sau 3s không thấy typing event thì coi như user dừng gõ
-const MAX_WAIT_MS = 15000; // Tối đa chờ 15s dù user vẫn đang typing
 
 // Xử lý một tin nhắn
 async function processMessage(
@@ -258,13 +253,9 @@ async function processQueue(api: any, threadId: string, signal?: AbortSignal) {
   logStep("processQueue:end", { threadId });
 }
 
-// ========== XỬ LÝ BUFFER - HUMAN-LIKE ==========
+// ========== XỬ LÝ BUFFER ==========
 // Khi buffer timeout, gom tất cả tin nhắn và đưa vào queue xử lý
-async function processBufferedMessages(
-  api: any,
-  threadId: string,
-  forceProcess = false
-) {
+async function processBufferedMessages(api: any, threadId: string) {
   const buffer = threadBuffers.get(threadId);
   if (!buffer || buffer.messages.length === 0) {
     // Không có tin nhắn, tắt typing nếu đang bật
@@ -278,41 +269,10 @@ async function processBufferedMessages(
     return;
   }
 
-  // Kiểm tra đã chờ quá lâu chưa (15s)
-  const waitedTooLong =
-    buffer.firstMessageTime &&
-    Date.now() - buffer.firstMessageTime >= MAX_WAIT_MS;
-
-  // Nếu user vẫn đang typing VÀ chưa chờ quá lâu, chờ thêm
-  if (buffer.userTyping && !forceProcess && !waitedTooLong) {
-    debugLog("BUFFER", `User still typing, waiting... (${threadId})`);
-    // Reset timer để chờ user gõ xong
-    if (buffer.timer) clearTimeout(buffer.timer);
-    buffer.timer = setTimeout(() => {
-      processBufferedMessages(api, threadId);
-    }, BUFFER_DELAY_MS);
-    return;
-  }
-
-  // Log nếu force process do chờ quá lâu
-  if (waitedTooLong && buffer.userTyping) {
-    debugLog(
-      "BUFFER",
-      `Force processing - waited ${MAX_WAIT_MS}ms (${threadId})`
-    );
-    console.log(`[Bot] ⏰ Đã chờ quá lâu, xử lý tin nhắn dù user vẫn đang gõ`);
-  }
-
   // Lấy tin nhắn và clear buffer ngay để đón tin mới
   const messagesToProcess = [...buffer.messages];
   buffer.messages = [];
   buffer.timer = null;
-  buffer.firstMessageTime = null; // Reset thời gian
-  buffer.userTyping = false; // Reset trạng thái typing
-  if (buffer.userTypingTimer) {
-    clearTimeout(buffer.userTypingTimer);
-    buffer.userTypingTimer = null;
-  }
   // Giữ isTyping = true trong khi xử lý, sẽ tắt sau khi xong
 
   debugLog(
@@ -430,24 +390,9 @@ async function main() {
         timer: null,
         messages: [],
         isTyping: false,
-        userTyping: false,
-        userTypingTimer: null,
-        firstMessageTime: null,
       });
     }
     const buffer = threadBuffers.get(threadId)!;
-
-    // Ghi nhận thời điểm tin nhắn đầu tiên trong buffer
-    if (buffer.messages.length === 0) {
-      buffer.firstMessageTime = Date.now();
-    }
-
-    // Reset trạng thái userTyping khi nhận được tin nhắn thực (user đã gửi xong)
-    buffer.userTyping = false;
-    if (buffer.userTypingTimer) {
-      clearTimeout(buffer.userTypingTimer);
-      buffer.userTypingTimer = null;
-    }
 
     // 2. Thêm tin nhắn vào buffer
     buffer.messages.push(message);
@@ -476,74 +421,6 @@ async function main() {
     buffer.timer = setTimeout(() => {
       processBufferedMessages(api, threadId);
     }, BUFFER_DELAY_MS);
-  });
-
-  // ========== TYPING LISTENER - HUMAN-LIKE ==========
-  // Lắng nghe khi user đang gõ để chờ họ gõ xong
-  api.listener.on("typing", (event: any) => {
-    // Bỏ qua nếu là chính bot đang gõ
-    if (event.isSelf) return;
-
-    // Chỉ xử lý tin nhắn cá nhân
-    if (event.type === ThreadType.Group) return;
-
-    const threadId = event.threadId;
-    const senderId = event.data?.uid;
-
-    debugLog("TYPING", `User ${senderId} is typing in thread ${threadId}`);
-
-    // Lấy hoặc tạo buffer cho thread
-    if (!threadBuffers.has(threadId)) {
-      threadBuffers.set(threadId, {
-        timer: null,
-        messages: [],
-        isTyping: false,
-        userTyping: false,
-        userTypingTimer: null,
-        firstMessageTime: null,
-      });
-    }
-    const buffer = threadBuffers.get(threadId)!;
-
-    // Đánh dấu user đang typing
-    const wasTyping = buffer.userTyping;
-    buffer.userTyping = true;
-
-    // CHỈ abort task nếu:
-    // 1. Có tin nhắn trong buffer (user đang gõ thêm tin mới)
-    // 2. HOẶC user đã typing liên tục (không phải chỉ 1 event đơn lẻ)
-    if (buffer.messages.length > 0 || wasTyping) {
-      abortTask(threadId);
-      debugLog("TYPING", `Aborted task - user is actively typing`);
-    }
-
-    // Reset buffer timer nếu có (chờ user gõ xong)
-    if (buffer.timer) {
-      clearTimeout(buffer.timer);
-      buffer.timer = null;
-      debugLog(
-        "TYPING",
-        `Paused buffer timer - waiting for user to finish typing`
-      );
-    }
-
-    // Reset typing timer - sau 3s không thấy typing event thì coi như user dừng gõ
-    if (buffer.userTypingTimer) {
-      clearTimeout(buffer.userTypingTimer);
-    }
-    buffer.userTypingTimer = setTimeout(() => {
-      buffer.userTyping = false;
-      buffer.userTypingTimer = null;
-      debugLog("TYPING", `User stopped typing in thread ${threadId}`);
-
-      // Nếu có tin nhắn trong buffer, bắt đầu đếm lại 2.5s
-      if (buffer.messages.length > 0) {
-        debugLog("TYPING", `Resuming buffer timer for ${threadId}`);
-        buffer.timer = setTimeout(() => {
-          processBufferedMessages(api, threadId);
-        }, BUFFER_DELAY_MS);
-      }
-    }, USER_TYPING_TIMEOUT_MS);
   });
 
   api.listener.start();
