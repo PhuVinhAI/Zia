@@ -251,9 +251,11 @@ export function createStreamCallbacks(
   threadId: string,
   originalMessage?: any,
   messages?: any[]
-): StreamCallbacks {
+): StreamCallbacks & { hasResponse: () => boolean } {
   let messageCount = 0;
+  let reactionCount = 0;
   const pendingStickers: string[] = [];
+  let completed = false; // Prevent double onComplete
 
   debugLog(
     "STREAM_CB",
@@ -261,7 +263,11 @@ export function createStreamCallbacks(
   );
 
   return {
+    // Helper để check xem đã có response nào chưa
+    hasResponse: () => messageCount > 0 || reactionCount > 0,
+
     onReaction: async (reaction: string) => {
+      reactionCount++;
       await handleReaction(api, reaction, threadId, originalMessage, messages);
     },
 
@@ -312,6 +318,14 @@ export function createStreamCallbacks(
     },
 
     onComplete: async () => {
+      // Prevent double execution
+      if (completed) {
+        debugLog("STREAM_CB", "onComplete already called, skipping");
+        return;
+      }
+      completed = true;
+
+      // Gửi stickers đã queue (chỉ khi không bị abort hoặc có partial response)
       for (const keyword of pendingStickers) {
         await sendSticker(api, keyword, threadId);
       }

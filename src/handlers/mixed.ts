@@ -354,6 +354,17 @@ export async function handleMixedContent(
     if (CONFIG.useStreaming) {
       const callbacks = createStreamCallbacks(api, threadId, lastMsg, messages);
       callbacks.signal = signal;
+
+      // Wrap onComplete để lưu history
+      const originalOnComplete = callbacks.onComplete;
+      let streamResult = "";
+      callbacks.onComplete = async () => {
+        if (streamResult) {
+          await saveResponseToHistory(threadId, streamResult);
+        }
+        await originalOnComplete?.();
+      };
+
       const result = await generateContentStream(
         prompt,
         callbacks,
@@ -361,7 +372,17 @@ export async function handleMixedContent(
         threadId,
         history
       );
-      if (result) await saveResponseToHistory(threadId, result);
+      streamResult = result;
+
+      // Nếu bị abort nhưng có result, vẫn lưu
+      if (result && signal?.aborted) {
+        debugLog(
+          "MIXED",
+          `Saving partial response after abort: ${result.substring(0, 50)}...`
+        );
+        await saveResponseToHistory(threadId, result);
+      }
+
       console.log(`[Bot] ✅ Đã trả lời (streaming)!`);
     } else {
       const aiReply = await generateContent(

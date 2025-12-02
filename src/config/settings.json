@@ -8,7 +8,7 @@
     "selfListen": true,
     "logging": true,
     "useStreaming": true,
-    "useCharacter": true,
+    "useCharacter": false,
     "fileLogging": true,
     "logFile": "logs/bot.log",
     "unauthorizedLogFile": "logs/unauthorized.json"
@@ -16,7 +16,10 @@
   "allowedUserIds": [
     "4779843125887605364",
     "5013616206173690802",
-    "2635887951774596533"
+    "2635887951774596533",
+    "7946678712090274665",
+    "1565348328338661784",
+    "193137975454310799"
   ],
   "stickers": {
     "keywords": [
@@ -30,7 +33,8 @@
       "wow",
       "ok",
       "thanks",
-      "sorry"
+      "sorry",
+      "goodnight"
     ]
   }
 }

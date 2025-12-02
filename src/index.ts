@@ -46,9 +46,11 @@ interface ThreadBuffer {
   timer: NodeJS.Timeout | null;
   messages: any[];
   isTyping: boolean; // Bot đang typing
+  typingInterval: NodeJS.Timeout | null; // Interval để refresh typing
 }
 const threadBuffers = new Map<string, ThreadBuffer>();
 const BUFFER_DELAY_MS = 2500; // Chờ 2.5s để user nhắn hết câu
+const TYPING_REFRESH_MS = 3000; // Refresh typing mỗi 3s (Zalo tự tắt sau ~5s)
 
 // Xử lý queue của một thread - LUÔN dùng handleMixedContent
 async function processQueue(api: any, threadId: string, signal?: AbortSignal) {
@@ -108,6 +110,44 @@ async function processQueue(api: any, threadId: string, signal?: AbortSignal) {
   logStep("processQueue:end", { threadId });
 }
 
+// Helper: Bắt đầu typing với auto-refresh
+function startTypingWithRefresh(api: any, threadId: string) {
+  const buffer = threadBuffers.get(threadId);
+  if (!buffer) return;
+
+  // Gửi typing ngay
+  api.sendTypingEvent(threadId, ThreadType.User).catch(() => {});
+  buffer.isTyping = true;
+
+  // Clear interval cũ nếu có
+  if (buffer.typingInterval) {
+    clearInterval(buffer.typingInterval);
+  }
+
+  // Tạo interval để refresh typing mỗi 3s
+  buffer.typingInterval = setInterval(() => {
+    if (buffer.isTyping) {
+      api.sendTypingEvent(threadId, ThreadType.User).catch(() => {});
+      debugLog("TYPING", `Refreshed typing for ${threadId}`);
+    }
+  }, TYPING_REFRESH_MS);
+
+  debugLog("BUFFER", `Started typing with refresh for ${threadId}`);
+}
+
+// Helper: Dừng typing và clear interval
+function stopTyping(threadId: string) {
+  const buffer = threadBuffers.get(threadId);
+  if (!buffer) return;
+
+  buffer.isTyping = false;
+  if (buffer.typingInterval) {
+    clearInterval(buffer.typingInterval);
+    buffer.typingInterval = null;
+  }
+  debugLog("BUFFER", `Stopped typing for ${threadId}`);
+}
+
 // ========== XỬ LÝ BUFFER ==========
 // Khi buffer timeout, gom tất cả tin nhắn và đưa vào queue xử lý
 async function processBufferedMessages(api: any, threadId: string) {
@@ -115,11 +155,7 @@ async function processBufferedMessages(api: any, threadId: string) {
   if (!buffer || buffer.messages.length === 0) {
     // Không có tin nhắn, tắt typing nếu đang bật
     if (buffer?.isTyping) {
-      buffer.isTyping = false;
-      debugLog(
-        "BUFFER",
-        `Cleared typing indicator (no messages) for ${threadId}`
-      );
+      stopTyping(threadId);
     }
     return;
   }
@@ -162,11 +198,7 @@ async function processBufferedMessages(api: any, threadId: string) {
     processingThreads.delete(threadId);
   } finally {
     // Tắt typing indicator sau khi xử lý xong (dù thành công hay lỗi)
-    const buf = threadBuffers.get(threadId);
-    if (buf) {
-      buf.isTyping = false;
-      debugLog("BUFFER", `Stopped typing indicator for ${threadId}`);
-    }
+    stopTyping(threadId);
   }
 }
 
@@ -245,6 +277,7 @@ async function main() {
         timer: null,
         messages: [],
         isTyping: false,
+        typingInterval: null,
       });
     }
     const buffer = threadBuffers.get(threadId)!;
@@ -259,11 +292,9 @@ async function main() {
     // 3. Hủy task đang chạy nếu có (bot đang trả lời thì dừng lại)
     abortTask(threadId);
 
-    // 4. Hiển thị "Đang soạn tin..." ngay khi nhận tin đầu tiên
+    // 4. Hiển thị "Đang soạn tin..." với auto-refresh
     if (!buffer.isTyping) {
-      api.sendTypingEvent(threadId, ThreadType.User).catch(() => {});
-      buffer.isTyping = true;
-      debugLog("BUFFER", `Started typing indicator for ${threadId}`);
+      startTypingWithRefresh(api, threadId);
     }
 
     // 6. Reset timer (Debounce) - nếu user nhắn tiếp trong 2.5s, chờ tiếp

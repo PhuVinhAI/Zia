@@ -363,6 +363,9 @@ export async function generateContentStream(
     }, thread=${threadId || "none"}`
   );
 
+  // Flag để track xem đã gửi response nào chưa
+  let hasPartialResponse = false;
+
   try {
     // Build message parts
     const parts = await buildMessageParts(prompt, media);
@@ -375,12 +378,18 @@ export async function generateContentStream(
     for await (const chunk of response) {
       if (callbacks.signal?.aborted) {
         debugLog("STREAM", "Aborted");
+        // Đánh dấu có partial response nếu đã có buffer
+        hasPartialResponse = state.buffer.length > 0;
         throw new Error("Aborted");
       }
 
       if (chunk.text) {
         state.buffer += chunk.text;
         await processStreamChunk(state, callbacks);
+        // Đánh dấu đã có response
+        if (state.sentMessages.size > 0 || state.sentReactions.size > 0) {
+          hasPartialResponse = true;
+        }
       }
     }
 
@@ -399,7 +408,17 @@ export async function generateContentStream(
     return state.buffer;
   } catch (error: any) {
     if (error.message === "Aborted" || callbacks.signal?.aborted) {
-      debugLog("STREAM", "Stream aborted");
+      debugLog(
+        "STREAM",
+        `Stream aborted, hasPartialResponse=${hasPartialResponse}`
+      );
+
+      // Nếu đã có partial response, vẫn gọi onComplete để lưu history
+      if (hasPartialResponse && callbacks.onComplete) {
+        debugLog("STREAM", "Calling onComplete for partial response");
+        await callbacks.onComplete();
+      }
+
       return state.buffer;
     }
     logError("generateContentStream", error);
