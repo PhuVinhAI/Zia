@@ -101,18 +101,34 @@ export function createStreamCallbacks(
     },
 
     // Gửi tin nhắn ngay khi tag đóng
+    // quoteIndex >= 0: quote tin user (từ history)
+    // quoteIndex < 0: quote tin bot đã gửi (từ messageStore, -1 = mới nhất)
     onMessage: async (text: string, quoteIndex?: number) => {
       messageCount++;
 
       // Xác định quote message nếu có
       let quoteData: any = undefined;
-      if (quoteIndex !== undefined && quoteIndex >= 0) {
-        const rawHistory = getRawHistory(threadId);
-        if (quoteIndex < rawHistory.length) {
-          const historyMsg = rawHistory[quoteIndex];
-          if (historyMsg?.data?.msgId) {
-            quoteData = historyMsg.data;
-            console.log(`[Bot] 📎 Streaming: Quote tin nhắn #${quoteIndex}`);
+      if (quoteIndex !== undefined) {
+        if (quoteIndex >= 0) {
+          // Quote tin nhắn user từ history
+          const rawHistory = getRawHistory(threadId);
+          if (quoteIndex < rawHistory.length) {
+            const historyMsg = rawHistory[quoteIndex];
+            if (historyMsg?.data?.msgId) {
+              quoteData = historyMsg.data;
+              console.log(`[Bot] 📎 Quote tin user #${quoteIndex}`);
+            }
+          }
+        } else {
+          // Quote tin nhắn bot đã gửi (index âm: -1 = mới nhất)
+          const botMsg = getSentMessage(threadId, quoteIndex);
+          if (botMsg) {
+            quoteData = {
+              msgId: botMsg.msgId,
+              cliMsgId: botMsg.cliMsgId,
+              msg: botMsg.content,
+            };
+            console.log(`[Bot] 📎 Quote tin bot #${quoteIndex}`);
           }
         }
       }

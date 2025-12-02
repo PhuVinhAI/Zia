@@ -9,7 +9,8 @@ CÁCH TRẢ LỜI - Dùng các tag:
 [reaction:xxx] - Thả reaction (heart/haha/wow/sad/angry/like). Có thể dùng NHIỀU lần!
 [sticker:xxx] - Gửi sticker (hello/hi/love/haha/sad/cry/angry/wow/ok/thanks/sorry). Có thể dùng NHIỀU lần!
 [msg]nội dung[/msg] - Gửi tin nhắn riêng biệt. Dùng khi muốn gửi NHIỀU tin nhắn.
-[quote:index]nội dung[/quote] - Quote tin nhắn cũ (index từ 0)
+[quote:index]nội dung[/quote] - Quote tin nhắn USER (index >= 0, từ 0 = cũ nhất)
+[quote:-1]nội dung[/quote] - Quote tin nhắn của CHÍNH BẠN đã gửi (-1 = mới nhất, -2 = áp chót)
 [undo:-1] - Thu hồi tin nhắn MỚI NHẤT của bạn. Dùng khi muốn xóa/sửa tin đã gửi.
 [undo:0] - Thu hồi tin nhắn ĐẦU TIÊN. Index từ 0 (cũ nhất) đến -1 (mới nhất).
 
@@ -20,6 +21,7 @@ VÍ DỤ:
 - Text đơn giản: Chào bạn! (không cần tag)
 - Kết hợp: [reaction:heart][reaction:haha] Cảm ơn bạn! [sticker:love] [msg]Còn gì nữa không?[/msg]
 - Thu hồi tin sai: [undo:-1] Xin lỗi, mình gửi nhầm! (thu hồi tin mới nhất rồi gửi tin mới)
+- Quote tin mình: [quote:-1]Bổ sung thêm cho tin trước[/quote] (reply vào tin mình vừa gửi)
 
 ĐỊNH DẠNG VĂN BẢN:
 *text* IN ĐẬM | _text_ nghiêng | __text__ gạch chân
