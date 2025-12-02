@@ -76,6 +76,23 @@ async function processMessage(api: any, message: any, threadId: string) {
   } else if (msgType === "chat.voice" && content?.href) {
     debugLog("PROCESS", `Routing to handleVoice`);
     await handleVoice(api, message, threadId);
+  } else if (msgType === "chat.recommended" && content?.href) {
+    // Link được Zalo preview (YouTube, website...)
+    debugLog("PROCESS", `Routing to handleLink: ${content.href}`);
+    // Chuyển thành text message với URL
+    const linkMessage = {
+      ...message,
+      data: {
+        ...message.data,
+        content: content.href,
+        msgType: "webchat",
+      },
+    };
+    if (CONFIG.useStreaming) {
+      await handleTextStream(api, linkMessage, threadId);
+    } else {
+      await handleText(api, linkMessage, threadId);
+    }
   } else if (typeof content === "string") {
     // Sử dụng streaming handler nếu bật
     if (CONFIG.useStreaming) {
