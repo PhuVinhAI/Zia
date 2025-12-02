@@ -1,4 +1,4 @@
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, Chat, Content, Part } from "@google/genai";
 import { CONFIG } from "../config/index.js";
 import { getSystemPrompt } from "../config/prompts.js";
 import {
@@ -62,147 +62,175 @@ export interface MediaPart {
   type: MediaType;
   url?: string;
   mimeType?: string;
-  base64?: string; // Nếu đã có base64 sẵn (file đã convert)
+  base64?: string;
 }
 
 // ═══════════════════════════════════════════════════
-// UNIFIED GENERATE CONTENT - XỬ LÝ TẤT CẢ
+// CHAT SESSION MANAGER - Quản lý multi-turn conversation
+// ═══════════════════════════════════════════════════
+
+const chatSessions = new Map<string, Chat>();
+
+/**
+ * Lấy hoặc tạo chat session cho thread
+ */
+export function getChatSession(threadId: string, history?: Content[]): Chat {
+  let chat = chatSessions.get(threadId);
+
+  if (!chat) {
+    debugLog("GEMINI", `Creating new chat session for thread ${threadId}`);
+    chat = ai.chats.create({
+      model: GEMINI_MODEL,
+      config: {
+        ...GEMINI_CONFIG,
+        systemInstruction: getPrompt(),
+      },
+      history: history || [],
+    });
+    chatSessions.set(threadId, chat);
+  }
+
+  return chat;
+}
+
+/**
+ * Reset chat session (khi cần reload history)
+ */
+export function resetChatSession(threadId: string, history?: Content[]): Chat {
+  debugLog("GEMINI", `Resetting chat session for thread ${threadId}`);
+  chatSessions.delete(threadId);
+  return getChatSession(threadId, history);
+}
+
+/**
+ * Xóa chat session
+ */
+export function deleteChatSession(threadId: string): void {
+  chatSessions.delete(threadId);
+}
+
+// ═══════════════════════════════════════════════════
+// BUILD MESSAGE PARTS - Chuẩn bị content cho sendMessage
 // ═══════════════════════════════════════════════════
 
 /**
- * Generate content thống nhất - xử lý mọi loại input
- *
- * @param prompt - Text prompt
- * @param media - Array các media parts (optional)
- *
- * Ví dụ:
- * - Text only: generateContent("Xin chào")
- * - 1 ảnh: generateContent("Mô tả ảnh", [{ type: "image", url: "..." }])
- * - Nhiều ảnh: generateContent("So sánh", [{ type: "image", url: "..." }, { type: "image", url: "..." }])
- * - Mixed: generateContent("Xem hết", [{ type: "image", url: "..." }, { type: "video", url: "..." }])
- * - YouTube: generateContent("Tóm tắt video", [{ type: "youtube", url: "https://youtube.com/..." }])
- * - File đã convert: generateContent("Đọc file", [{ type: "file", base64: "...", mimeType: "text/plain" }])
+ * Build message parts từ prompt và media
+ */
+async function buildMessageParts(
+  prompt: string,
+  media?: MediaPart[]
+): Promise<Part[]> {
+  const parts: Part[] = [{ text: prompt }];
+
+  if (!media || media.length === 0) {
+    return parts;
+  }
+
+  for (const item of media) {
+    try {
+      if (item.type === "youtube" && item.url) {
+        parts.push({ fileData: { fileUri: item.url } });
+        debugLog("GEMINI", `Added YouTube: ${item.url}`);
+      } else if (item.base64) {
+        parts.push({
+          inlineData: {
+            data: item.base64,
+            mimeType: item.mimeType || "application/octet-stream",
+          },
+        });
+        debugLog("GEMINI", `Added pre-converted: ${item.mimeType}`);
+      } else if (item.url) {
+        const base64Data = await fetchAsBase64(item.url);
+        if (base64Data) {
+          parts.push({
+            inlineData: {
+              data: base64Data,
+              mimeType: item.mimeType || "application/octet-stream",
+            },
+          });
+          debugLog("GEMINI", `Loaded ${item.type}: ${item.mimeType}`);
+        }
+      }
+    } catch (e) {
+      debugLog("GEMINI", `Error loading ${item.type}: ${e}`);
+    }
+  }
+
+  return parts;
+}
+
+// ═══════════════════════════════════════════════════
+// GENERATE CONTENT - Dùng Chat API
+// ═══════════════════════════════════════════════════
+
+/**
+ * Generate content sử dụng Chat session (multi-turn)
  */
 export async function generateContent(
   prompt: string,
-  media?: MediaPart[]
+  media?: MediaPart[],
+  threadId?: string,
+  history?: Content[]
 ): Promise<AIResponse> {
   try {
-    // Nếu không có media → text only
-    if (!media || media.length === 0) {
-      logStep("generateContent", {
-        type: "text-only",
-        promptLength: prompt.length,
-      });
-      debugLog("GEMINI", `Text-only prompt: ${prompt.substring(0, 200)}...`);
+    const mediaTypes = media?.map((m) => m.type) || [];
+    logStep("generateContent", {
+      type: media?.length ? "with-media" : "text-only",
+      mediaCount: media?.length || 0,
+      mediaTypes,
+      promptLength: prompt.length,
+      hasThread: !!threadId,
+    });
 
+    // Build message parts
+    const parts = await buildMessageParts(prompt, media);
+
+    if (media?.length) {
+      console.log(
+        `[Gemini] 📦 Xử lý: ${media.length} media (${[
+          ...new Set(mediaTypes),
+        ].join(", ")})`
+      );
+    }
+
+    let rawText: string;
+
+    if (threadId) {
+      // Dùng Chat session cho multi-turn
+      const chat = getChatSession(threadId, history);
+      debugLog("GEMINI", `Using chat session for thread ${threadId}`);
+
+      const response = await chat.sendMessage({ message: parts });
+      rawText = response.text || "{}";
+    } else {
+      // Fallback: single-turn (không có thread context)
+      debugLog("GEMINI", "Using single-turn generation (no thread)");
       const response = await ai.models.generateContent({
         model: GEMINI_MODEL,
-        contents: `${getPrompt()}\n\nUser: ${prompt}`,
-        config: GEMINI_CONFIG,
+        contents: [{ role: "user", parts }],
+        config: {
+          ...GEMINI_CONFIG,
+          systemInstruction: getPrompt(),
+        },
       });
-
-      const rawText = response.text || "{}";
-      logAIResponse(prompt, rawText);
-      return parseAIResponse(rawText);
+      rawText = response.text || "{}";
     }
 
-    // Có media → build contents array
-    const mediaTypes = media.map((m) => m.type);
-    const hasYouTube = media.some((m) => m.type === "youtube");
-
-    console.log(
-      `[Gemini] 📦 Xử lý: ${media.length} media (${[
-        ...new Set(mediaTypes),
-      ].join(", ")})`
-    );
-    logStep("generateContent", {
-      mediaCount: media.length,
-      types: mediaTypes,
-      promptLength: prompt.length,
-    });
-
-    const contents: any[] = [{ text: `${getPrompt()}\n\n${prompt}` }];
-    let loadedCount = 0;
-    const errors: string[] = [];
-
-    for (const part of media) {
-      try {
-        if (part.type === "youtube" && part.url) {
-          // YouTube → dùng fileData
-          contents.push({ fileData: { fileUri: part.url } });
-          loadedCount++;
-          debugLog("GEMINI", `Added YouTube: ${part.url}`);
-        } else if (part.base64) {
-          // Đã có base64 sẵn (file đã convert)
-          contents.push({
-            inlineData: {
-              data: part.base64,
-              mimeType: part.mimeType || "application/octet-stream",
-            },
-          });
-          loadedCount++;
-          debugLog(
-            "GEMINI",
-            `Added pre-converted: ${part.base64.length} chars (${part.mimeType})`
-          );
-        } else if (part.url) {
-          // Cần fetch URL → base64
-          const base64Data = await fetchAsBase64(part.url);
-          if (base64Data) {
-            contents.push({
-              inlineData: {
-                data: base64Data,
-                mimeType: part.mimeType || "application/octet-stream",
-              },
-            });
-            loadedCount++;
-            debugLog(
-              "GEMINI",
-              `Loaded ${part.type}: ${base64Data.length} chars (${part.mimeType})`
-            );
-          } else {
-            errors.push(`Không tải được ${part.type}`);
-            debugLog("GEMINI", `Failed to load ${part.type}: ${part.url}`);
-          }
-        }
-      } catch (e) {
-        errors.push(`Lỗi ${part.type}`);
-        debugLog("GEMINI", `Error loading ${part.type}: ${e}`);
-      }
-    }
-
-    // Nếu không load được media nào (trừ YouTube)
-    if (loadedCount === 0 && !hasYouTube) {
-      debugLog("GEMINI", "No media loaded, falling back to text-only");
-      // Thêm thông báo lỗi vào prompt
-      const errorPrompt =
-        errors.length > 0
-          ? `${prompt}\n\n(Lưu ý: ${errors.join(", ")})`
-          : prompt;
-      return generateContent(errorPrompt);
-    }
-
-    debugLog(
-      "GEMINI",
-      `Sending ${loadedCount}/${media.length} media to Gemini`
-    );
-
-    const response = await ai.models.generateContent({
-      model: GEMINI_MODEL,
-      contents,
-      config: GEMINI_CONFIG,
-    });
-
-    const rawText = response.text || "{}";
-    logAIResponse(
-      `[${loadedCount} media] ${prompt.substring(0, 100)}`,
-      rawText
-    );
+    logAIResponse(prompt.substring(0, 100), rawText);
     return parseAIResponse(rawText);
   } catch (error) {
     logError("generateContent", error);
     console.error("Gemini Error:", error);
+
+    // Nếu lỗi chat session, thử reset và retry
+    if (threadId) {
+      debugLog(
+        "GEMINI",
+        `Error with chat session, resetting thread ${threadId}`
+      );
+      deleteChatSession(threadId);
+    }
+
     return DEFAULT_RESPONSE;
   }
 }
@@ -318,12 +346,14 @@ function getPlainText(buffer: string): string {
 }
 
 /**
- * Generate content với streaming - hỗ trợ cả text và media
+ * Generate content với streaming - dùng Chat API
  */
 export async function generateContentStream(
   prompt: string,
   callbacks: StreamCallbacks,
-  media?: MediaPart[]
+  media?: MediaPart[],
+  threadId?: string,
+  history?: Content[]
 ): Promise<string> {
   const state: ParserState = {
     buffer: "",
@@ -337,50 +367,30 @@ export async function generateContentStream(
     "STREAM",
     `Starting stream: prompt="${prompt.substring(0, 100)}...", media=${
       media?.length || 0
-    }`
+    }, thread=${threadId || "none"}`
   );
 
   try {
-    let contents: any;
+    // Build message parts
+    const parts = await buildMessageParts(prompt, media);
 
-    if (!media || media.length === 0) {
-      // Text only
-      contents = `${getPrompt()}\n\nUser: ${prompt}`;
+    let response: AsyncGenerator<any>;
+
+    if (threadId) {
+      // Dùng Chat session streaming
+      const chat = getChatSession(threadId, history);
+      response = await chat.sendMessageStream({ message: parts });
     } else {
-      // Có media → build contents array
-      const contentParts: any[] = [{ text: `${getPrompt()}\n\n${prompt}` }];
-
-      for (const part of media) {
-        if (part.type === "youtube" && part.url) {
-          contentParts.push({ fileData: { fileUri: part.url } });
-        } else if (part.base64) {
-          contentParts.push({
-            inlineData: {
-              data: part.base64,
-              mimeType: part.mimeType || "application/octet-stream",
-            },
-          });
-        } else if (part.url) {
-          const base64Data = await fetchAsBase64(part.url);
-          if (base64Data) {
-            contentParts.push({
-              inlineData: {
-                data: base64Data,
-                mimeType: part.mimeType || "application/octet-stream",
-              },
-            });
-          }
-        }
-      }
-
-      contents = contentParts;
+      // Fallback: single-turn streaming
+      response = await ai.models.generateContentStream({
+        model: GEMINI_MODEL,
+        contents: [{ role: "user", parts }],
+        config: {
+          ...GEMINI_CONFIG,
+          systemInstruction: getPrompt(),
+        },
+      });
     }
-
-    const response = await ai.models.generateContentStream({
-      model: GEMINI_MODEL,
-      contents,
-      config: GEMINI_CONFIG,
-    });
 
     for await (const chunk of response) {
       if (callbacks.signal?.aborted) {
@@ -411,6 +421,12 @@ export async function generateContentStream(
     }
     logError("generateContentStream", error);
     callbacks.onError?.(error);
+
+    // Reset chat session nếu lỗi
+    if (threadId) {
+      deleteChatSession(threadId);
+    }
+
     return state.buffer;
   }
 }

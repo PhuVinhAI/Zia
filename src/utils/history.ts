@@ -414,7 +414,8 @@ export function getHistory(threadId: string): Content[] {
 }
 
 /**
- * Lấy history dạng text context (cho prompt) - chỉ lấy text parts
+ * Lấy history dạng text context (cho debug/logging) - chỉ lấy text parts
+ * NOTE: Không còn dùng để nhét vào prompt, Chat API tự quản lý history
  */
 export function getHistoryContext(threadId: string): string {
   const history = getHistory(threadId);

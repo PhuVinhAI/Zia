@@ -153,12 +153,96 @@ export function getSystemPrompt(useCharacter?: boolean): string {
   return shouldUseCharacter ? CHARACTER_SYSTEM_PROMPT : ASSISTANT_SYSTEM_PROMPT;
 }
 
-// Prompts còn dùng (các prompts khác đã được buildMixedPrompt trong mixed.ts xử lý)
+// ═══════════════════════════════════════════════════
+// MESSAGE PROMPTS - Các template prompt cho tin nhắn
+// ═══════════════════════════════════════════════════
+
+export interface ClassifiedItem {
+  type: string;
+  text?: string;
+  url?: string;
+  duration?: number;
+  fileName?: string;
+}
+
 export const PROMPTS = {
-  quote: (quoteContent: string, content: string) =>
-    `Người dùng đang trả lời/hỏi về tin nhắn cũ có nội dung: "${quoteContent}"\n\nCâu hỏi/yêu cầu của họ: "${content}"`,
+  // Quote context - khi user reply tin nhắn cũ
+  quote: (quoteContent: string, userPrompt: string) =>
+    `Người dùng đang trả lời/hỏi về tin nhắn cũ có nội dung: "${quoteContent}"\n\nCâu hỏi/yêu cầu của họ: "${userPrompt}"`,
+
+  // Quote context ngắn gọn (append vào prompt)
+  quoteContext: (quoteContent: string) =>
+    `\n[QUOTE CONTEXT] Người dùng đang reply tin nhắn cũ: "${quoteContent}"`,
+
+  // YouTube video
   youtube: (urls: string[], content: string) =>
     `Người dùng gửi ${urls.length} video YouTube:\n${urls.join(
       "\n"
     )}\n\nTin nhắn: "${content}"\n\nHãy XEM video và trả lời/nhận xét về nội dung video. Nếu họ hỏi gì về video thì trả lời dựa trên nội dung video.`,
+
+  // YouTube trong media batch
+  youtubeInBatch: (urls: string[]) =>
+    `\n\n[YOUTUBE] Có ${urls.length} video YouTube: ${urls.join(
+      ", "
+    )}. Hãy XEM video và phản hồi.`,
+
+  // Mixed content - nhiều loại tin nhắn
+  mixedContent: (items: ClassifiedItem[]) => {
+    const parts: string[] = [];
+
+    items.forEach((item, index) => {
+      switch (item.type) {
+        case "text":
+          parts.push(`[${index}] Tin nhắn: "${item.text}"`);
+          break;
+        case "sticker":
+          parts.push(`[${index}] Sticker: (xem hình sticker đính kèm)`);
+          break;
+        case "image":
+          parts.push(`[${index}] Ảnh: (xem hình ảnh đính kèm)`);
+          break;
+        case "video":
+          parts.push(
+            `[${index}] Video ${item.duration || 0}s: (xem video đính kèm)`
+          );
+          break;
+        case "voice":
+          parts.push(
+            `[${index}] Tin nhắn thoại ${
+              item.duration || 0
+            }s: (nghe audio đính kèm)`
+          );
+          break;
+        case "file":
+          parts.push(`[${index}] File "${item.fileName}": (đọc file đính kèm)`);
+          break;
+        case "link":
+          parts.push(`[${index}] Link: ${item.url}`);
+          break;
+      }
+    });
+
+    return `Người dùng gửi ${
+      items.length
+    } nội dung theo thứ tự (số trong ngoặc vuông là INDEX):
+${parts.join("\n")}
+
+HƯỚNG DẪN:
+- Dùng [quote:INDEX]nội dung[/quote] để reply vào tin nhắn cụ thể
+- Dùng [reaction:INDEX:loại] để thả reaction vào tin cụ thể
+- Nếu không cần quote/react tin cụ thể, cứ trả lời bình thường
+
+Hãy XEM/NGHE tất cả nội dung đính kèm và phản hồi phù hợp.`;
+  },
+
+  // Lưu ý thêm cho media
+  mediaNote: (notes: string[]) =>
+    notes.length > 0 ? `\n\nLưu ý: ${notes.join(", ")}` : "",
+
+  // Rate limit message
+  rateLimit: (seconds: number) =>
+    `⏳ Đợi ${seconds}s nữa AI mới trả lời nhé...`,
+
+  // Prefix hint
+  prefixHint: (prefix: string) => `💡 Cú pháp: ${prefix} <câu hỏi>`,
 };

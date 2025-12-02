@@ -4,12 +4,14 @@ import {
   generateContentStream,
   extractYouTubeUrls,
   MediaPart,
+  resetChatSession,
 } from "../services/gemini.js";
 import { sendResponse, createStreamCallbacks } from "./response.js";
 import {
   saveToHistory,
   saveResponseToHistory,
-  getHistoryContext,
+  getHistory,
+  isThreadInitialized,
 } from "../utils/history.js";
 import { logStep, logError, debugLog } from "../utils/logger.js";
 import { CONFIG, PROMPTS } from "../config/index.js";
@@ -146,54 +148,6 @@ function getMimeType(ext: string): string {
   return mimeTypes[ext] || "application/octet-stream";
 }
 
-function buildMixedPrompt(classified: ClassifiedMessage[]): string {
-  const parts: string[] = [];
-
-  classified.forEach((item, index) => {
-    switch (item.type) {
-      case "text":
-        parts.push(`[${index}] Tin nhắn: "${item.text}"`);
-        break;
-      case "sticker":
-        parts.push(`[${index}] Sticker: (xem hình sticker đính kèm)`);
-        break;
-      case "image":
-        parts.push(`[${index}] Ảnh: (xem hình ảnh đính kèm)`);
-        break;
-      case "video":
-        parts.push(
-          `[${index}] Video ${item.duration || 0}s: (xem video đính kèm)`
-        );
-        break;
-      case "voice":
-        parts.push(
-          `[${index}] Tin nhắn thoại ${
-            item.duration || 0
-          }s: (nghe audio đính kèm)`
-        );
-        break;
-      case "file":
-        parts.push(`[${index}] File "${item.fileName}": (đọc file đính kèm)`);
-        break;
-      case "link":
-        parts.push(`[${index}] Link: ${item.url}`);
-        break;
-    }
-  });
-
-  return `Người dùng gửi ${
-    classified.length
-  } nội dung theo thứ tự (số trong ngoặc vuông là INDEX):
-${parts.join("\n")}
-
-HƯỚNG DẪN:
-- Dùng [quote:INDEX]nội dung[/quote] để reply vào tin nhắn cụ thể
-- Dùng [reaction:INDEX:loại] để thả reaction vào tin cụ thể
-- Nếu không cần quote/react tin cụ thể, cứ trả lời bình thường
-
-Hãy XEM/NGHE tất cả nội dung đính kèm và phản hồi phù hợp.`;
-}
-
 function checkPrefix(content: string): {
   shouldProcess: boolean;
   userPrompt: string;
@@ -206,15 +160,15 @@ function checkPrefix(content: string): {
   return { shouldProcess: userPrompt.length > 0, userPrompt };
 }
 
-function processQuoteInText(message: any, userPrompt: string): string {
+function getQuoteContent(message: any): string | null {
   const quoteData = message.data?.quote;
   if (quoteData) {
     const quoteContent =
       quoteData.msg || quoteData.content || "(nội dung không xác định)";
     console.log(`[Bot] 💬 User reply: "${quoteContent}"`);
-    return PROMPTS.quote(quoteContent, userPrompt);
+    return quoteContent;
   }
-  return userPrompt;
+  return null;
 }
 
 /**
@@ -247,7 +201,6 @@ async function prepareMediaParts(
         mimeType: item.mimeType || "image/jpeg",
       });
     } else if (item.type === "video") {
-      // Video dưới 20MB → gửi video thật, không thì dùng thumbnail
       if (item.url && item.fileSize && item.fileSize < 20 * 1024 * 1024) {
         media.push({ type: "video", url: item.url, mimeType: "video/mp4" });
       } else if (item.thumbUrl) {
@@ -300,6 +253,7 @@ async function prepareMediaParts(
 
 /**
  * Handler CHÍNH - xử lý TẤT CẢ loại tin nhắn
+ * Sử dụng Chat API của Gemini để quản lý multi-turn conversation
  */
 export async function handleMixedContent(
   api: any,
@@ -335,6 +289,7 @@ export async function handleMixedContent(
   logStep("handleMixedContent", { threadId, counts, total: messages.length });
 
   try {
+    // Lưu tin nhắn vào history (để Gemini Chat API có context)
     for (const msg of messages) {
       await saveToHistory(threadId, msg);
     }
@@ -345,6 +300,16 @@ export async function handleMixedContent(
     }
 
     await api.sendTypingEvent(threadId, ThreadType.User);
+
+    // Lấy history cho Chat session (nếu thread mới khởi tạo)
+    const history = getHistory(threadId);
+    const needsReset = !isThreadInitialized(threadId);
+    if (needsReset && history.length > 0) {
+      resetChatSession(threadId, history);
+    }
+
+    const lastMsg = messages[messages.length - 1];
+    const quoteContent = getQuoteContent(lastMsg);
 
     // ========== TEXT-ONLY ==========
     if (isTextOnly) {
@@ -358,7 +323,7 @@ export async function handleMixedContent(
       if (!shouldProcess) {
         if (CONFIG.requirePrefix) {
           await api.sendMessage(
-            `💡 Cú pháp: ${CONFIG.prefix} <câu hỏi>`,
+            PROMPTS.prefixHint(CONFIG.prefix),
             threadId,
             ThreadType.User
           );
@@ -366,22 +331,18 @@ export async function handleMixedContent(
         return;
       }
 
-      const lastMsg = messages[messages.length - 1];
-      let finalPrompt = processQuoteInText(lastMsg, userPrompt);
-
-      const historyContext = getHistoryContext(threadId);
-      if (historyContext) {
-        finalPrompt = `Lịch sử chat gần đây:\n${historyContext}\n\nTin nhắn mới từ User: ${finalPrompt}`;
-      }
+      // Build prompt với quote context nếu có
+      let finalPrompt = quoteContent
+        ? userPrompt + PROMPTS.quoteContext(quoteContent)
+        : userPrompt;
 
       // Check YouTube
       const youtubeUrls = extractYouTubeUrls(combinedText);
       let ytMedia: MediaPart[] | undefined;
-      let promptToUse = finalPrompt;
 
       if (youtubeUrls.length > 0) {
         console.log(`[Bot] 🎬 Phát hiện ${youtubeUrls.length} YouTube video`);
-        promptToUse = PROMPTS.youtube(youtubeUrls, combinedText);
+        finalPrompt = PROMPTS.youtube(youtubeUrls, combinedText);
         ytMedia = youtubeUrls.map((url) => ({ type: "youtube", url }));
       }
 
@@ -393,7 +354,7 @@ export async function handleMixedContent(
         const waitSec = Math.ceil(waitTime / 1000);
         console.log(`[Bot] ⏳ Rate limit: chờ ${waitSec}s`);
         await api.sendMessage(
-          `⏳ Đợi ${waitSec}s nữa AI mới trả lời nhé...`,
+          PROMPTS.rateLimit(waitSec),
           threadId,
           ThreadType.User
         );
@@ -411,10 +372,10 @@ export async function handleMixedContent(
           messages
         );
         callbacks.signal = signal;
-        await generateContentStream(promptToUse, callbacks, ytMedia);
+        await generateContentStream(finalPrompt, callbacks, ytMedia, threadId);
         console.log(`[Bot] ✅ Đã trả lời text (streaming)!`);
       } else {
-        const aiReply = await generateContent(promptToUse, ytMedia);
+        const aiReply = await generateContent(finalPrompt, ytMedia, threadId);
         if (signal?.aborted) return;
         await sendResponse(api, aiReply, threadId, lastMsg, messages);
         const responseText = aiReply.messages
@@ -432,9 +393,39 @@ export async function handleMixedContent(
 
     if (signal?.aborted) return;
 
-    let prompt = buildMixedPrompt(classified);
-    if (extraPrompts.length > 0) {
-      prompt += "\n\nLưu ý: " + extraPrompts.join(", ");
+    // Build prompt từ PROMPTS
+    const classifiedItems = classified.map((c) => ({
+      type: c.type,
+      text: c.text,
+      url: c.url,
+      duration: c.duration,
+      fileName: c.fileName,
+    }));
+
+    let prompt = PROMPTS.mixedContent(classifiedItems);
+    prompt += PROMPTS.mediaNote(extraPrompts);
+
+    // Thêm quote context nếu có
+    if (quoteContent) {
+      prompt += PROMPTS.quoteContext(quoteContent);
+    }
+
+    // Check YouTube trong các text messages
+    const allTexts = classified
+      .filter((c) => c.type === "text" || c.type === "link")
+      .map((c) => c.text || c.url || "")
+      .filter(Boolean);
+    const combinedText = allTexts.join(" ");
+    const youtubeUrls = extractYouTubeUrls(combinedText);
+
+    if (youtubeUrls.length > 0) {
+      console.log(
+        `[Bot] 🎬 Phát hiện ${youtubeUrls.length} YouTube video (trong media batch)`
+      );
+      prompt += PROMPTS.youtubeInBatch(youtubeUrls);
+      youtubeUrls.forEach((url) => {
+        media.push({ type: "youtube", url });
+      });
     }
 
     debugLog("MIXED", `Prompt: ${prompt.substring(0, 200)}...`);
@@ -446,7 +437,7 @@ export async function handleMixedContent(
       const waitSec = Math.ceil(waitTime / 1000);
       console.log(`[Bot] ⏳ Rate limit: chờ ${waitSec}s`);
       await api.sendMessage(
-        `⏳ Đợi ${waitSec}s nữa AI mới trả lời nhé...`,
+        PROMPTS.rateLimit(waitSec),
         threadId,
         ThreadType.User
       );
@@ -457,17 +448,13 @@ export async function handleMixedContent(
 
     // Dùng streaming nếu bật
     if (CONFIG.useStreaming) {
-      const callbacks = createStreamCallbacks(
-        api,
-        threadId,
-        messages[messages.length - 1],
-        messages
-      );
+      const callbacks = createStreamCallbacks(api, threadId, lastMsg, messages);
       callbacks.signal = signal;
       await generateContentStream(
         prompt,
         callbacks,
-        media.length > 0 ? media : undefined
+        media.length > 0 ? media : undefined,
+        threadId
       );
       console.log(
         `[Bot] ✅ Đã trả lời ${messages.length} tin nhắn (streaming)!`
@@ -475,16 +462,11 @@ export async function handleMixedContent(
     } else {
       const aiReply = await generateContent(
         prompt,
-        media.length > 0 ? media : undefined
+        media.length > 0 ? media : undefined,
+        threadId
       );
       if (signal?.aborted) return;
-      await sendResponse(
-        api,
-        aiReply,
-        threadId,
-        messages[messages.length - 1],
-        messages
-      );
+      await sendResponse(api, aiReply, threadId, lastMsg, messages);
       const responseText = aiReply.messages
         .map((m) => m.text)
         .filter(Boolean)
