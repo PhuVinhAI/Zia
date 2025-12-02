@@ -37,15 +37,19 @@ export async function sendResponse(
   threadId: string,
   originalMessage?: any
 ): Promise<void> {
-  // Thả reaction
-  if (response.reaction !== "none" && originalMessage) {
-    const reaction = reactionMap[response.reaction];
-    if (reaction) {
-      try {
-        await api.addReaction(reaction, originalMessage);
-        console.log(`[Bot] 💖 Đã thả reaction: ${response.reaction}`);
-      } catch (e) {
-        console.error("[Bot] Lỗi thả reaction:", e);
+  // Thả nhiều reaction
+  if (response.reactions.length > 0 && originalMessage) {
+    for (const r of response.reactions) {
+      const reaction = reactionMap[r];
+      if (reaction) {
+        try {
+          await api.addReaction(reaction, originalMessage);
+          console.log(`[Bot] 💖 Đã thả reaction: ${r}`);
+          // Delay nhỏ giữa các reaction
+          await new Promise((resolve) => setTimeout(resolve, 300));
+        } catch (e) {
+          console.error("[Bot] Lỗi thả reaction:", e);
+        }
       }
     }
   }

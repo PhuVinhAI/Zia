@@ -1,4 +1,6 @@
 // TypeScript interface
+export type ReactionType = "heart" | "haha" | "wow" | "sad" | "angry" | "like";
+
 export interface AIMessage {
   text: string;
   sticker: string;
@@ -6,38 +8,38 @@ export interface AIMessage {
 }
 
 export interface AIResponse {
-  reaction: "heart" | "haha" | "wow" | "sad" | "angry" | "like" | "none";
+  reactions: ReactionType[]; // Nhiều reaction
   messages: AIMessage[];
 }
 
 // Default response khi parse lỗi
 export const DEFAULT_RESPONSE: AIResponse = {
-  reaction: "like",
+  reactions: ["like"],
   messages: [
     { text: "Xin lỗi, mình gặp lỗi rồi!", sticker: "", quoteIndex: -1 },
   ],
 };
 
+const VALID_REACTIONS = ["heart", "haha", "wow", "sad", "angry", "like"];
+
 // Parse AI response từ text với tag []
 export function parseAIResponse(text: string): AIResponse {
   try {
     const result: AIResponse = {
-      reaction: "none",
+      reactions: [],
       messages: [],
     };
 
-    // Parse [reaction:xxx]
-    const reactionMatch = text.match(/\[reaction:(\w+)\]/i);
-    if (reactionMatch) {
-      const r = reactionMatch[1].toLowerCase();
-      if (
-        ["heart", "haha", "wow", "sad", "angry", "like", "none"].includes(r)
-      ) {
-        result.reaction = r as AIResponse["reaction"];
+    // Parse tất cả [reaction:xxx] - hỗ trợ nhiều reaction
+    const reactionMatches = text.matchAll(/\[reaction:(\w+)\]/gi);
+    for (const match of reactionMatches) {
+      const r = match[1].toLowerCase();
+      if (VALID_REACTIONS.includes(r) && r !== "none") {
+        result.reactions.push(r as ReactionType);
       }
     }
 
-    // Parse [sticker:xxx]
+    // Parse [sticker:xxx] - hỗ trợ nhiều sticker
     const stickerMatches = text.matchAll(/\[sticker:(\w+)\]/gi);
     for (const match of stickerMatches) {
       result.messages.push({
@@ -59,14 +61,25 @@ export function parseAIResponse(text: string): AIResponse {
       });
     }
 
+    // Parse [msg]nội dung[/msg] - nhiều tin nhắn riêng biệt
+    const msgMatches = text.matchAll(/\[msg\]([\s\S]*?)\[\/msg\]/gi);
+    for (const match of msgMatches) {
+      result.messages.push({
+        text: match[1].trim(),
+        sticker: "",
+        quoteIndex: -1,
+      });
+    }
+
     // Lấy text thuần (loại bỏ các tag)
     let plainText = text
       .replace(/\[reaction:\w+\]/gi, "")
       .replace(/\[sticker:\w+\]/gi, "")
       .replace(/\[quote:\d+\][\s\S]*?\[\/quote\]/gi, "")
+      .replace(/\[msg\][\s\S]*?\[\/msg\]/gi, "")
       .trim();
 
-    // Nếu có text thuần, thêm vào messages
+    // Nếu có text thuần, thêm vào messages đầu tiên
     if (plainText) {
       result.messages.unshift({
         text: plainText,
@@ -75,8 +88,8 @@ export function parseAIResponse(text: string): AIResponse {
       });
     }
 
-    // Nếu không có message nào, trả về default
-    if (result.messages.length === 0 && result.reaction === "none") {
+    // Nếu không có gì, trả về default
+    if (result.messages.length === 0 && result.reactions.length === 0) {
       return DEFAULT_RESPONSE;
     }
 

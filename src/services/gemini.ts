@@ -116,7 +116,7 @@ export async function generateWithImage(
     const base64Image = await fetchAsBase64(imageUrl);
     if (!base64Image) {
       return {
-        reaction: "sad",
+        reactions: ["sad"],
         messages: [
           { text: "Không tải được hình ảnh.", sticker: "", quoteIndex: -1 },
         ],
@@ -151,7 +151,7 @@ export async function generateWithAudio(
     const base64Audio = await fetchAsBase64(audioUrl);
     if (!base64Audio) {
       return {
-        reaction: "sad",
+        reactions: ["sad"],
         messages: [
           { text: "Không tải được audio.", sticker: "", quoteIndex: -1 },
         ],
@@ -186,7 +186,7 @@ export async function generateWithFile(
     const base64File = await fetchAsBase64(fileUrl);
     if (!base64File) {
       return {
-        reaction: "sad",
+        reactions: ["sad"],
         messages: [
           { text: "Không tải được file.", sticker: "", quoteIndex: -1 },
         ],
@@ -264,7 +264,7 @@ export async function generateWithVideo(
     const base64Video = await fetchAsBase64(videoUrl);
     if (!base64Video) {
       return {
-        reaction: "sad",
+        reactions: ["sad"],
         messages: [
           { text: "Không tải được video.", sticker: "", quoteIndex: -1 },
         ],
