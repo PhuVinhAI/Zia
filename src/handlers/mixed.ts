@@ -196,13 +196,29 @@ async function prepareMediaParts(
  * Parse quote attachment để lấy media URL
  */
 interface QuoteMedia {
-  type: "image" | "video" | "file" | "none";
+  type: "image" | "video" | "audio" | "file" | "sticker" | "none";
   url?: string;
   thumbUrl?: string;
   title?: string;
+  mimeType?: string;
+  stickerId?: string;
+  duration?: number;
+  fileExt?: string;
 }
 
 function parseQuoteAttachment(quote: any): QuoteMedia {
+  // Check sticker từ cliMsgType (32 = photo, 5 = sticker, etc.)
+  const cliMsgType = quote?.cliMsgType;
+
+  // Sticker: cliMsgType = 5 hoặc có sticker pattern trong msg
+  if (cliMsgType === 5 || (quote?.msg && /^\[\^[\d.]+\^\]$/.test(quote.msg))) {
+    // Parse sticker ID từ msg pattern [^cateId.stickerId^]
+    const match = quote.msg?.match(/\[\^(\d+)\.(\d+)\^\]/);
+    if (match) {
+      return { type: "sticker", stickerId: match[2] };
+    }
+  }
+
   if (!quote?.attach) return { type: "none" };
 
   try {
@@ -213,11 +229,65 @@ function parseQuoteAttachment(quote: any): QuoteMedia {
 
     const href = attach?.href || attach?.hdUrl;
     const thumb = attach?.thumb;
+    const params = attach?.params
+      ? typeof attach.params === "string"
+        ? JSON.parse(attach.params)
+        : attach.params
+      : {};
 
     if (!href && !thumb) return { type: "none" };
 
-    // Check if it's an image (common image extensions or photo URLs)
     const url = href || thumb;
+
+    // Check audio/voice
+    if (
+      url &&
+      (url.includes("/voice/") ||
+        url.includes("/audio/") ||
+        /\.(aac|mp3|m4a|wav|ogg)$/i.test(url))
+    ) {
+      const duration = params?.duration
+        ? Math.round(params.duration / 1000)
+        : 0;
+      return { type: "audio", url, mimeType: "audio/aac", duration };
+    }
+
+    // Check video
+    if (
+      url &&
+      (url.includes("/video/") ||
+        /\.(mp4|mov|avi|webm)$/i.test(url) ||
+        params?.duration) // Video thường có duration
+    ) {
+      const duration = params?.duration
+        ? Math.round(params.duration / 1000)
+        : 0;
+      return {
+        type: "video",
+        url,
+        thumbUrl: thumb,
+        mimeType: "video/mp4",
+        duration,
+      };
+    }
+
+    // Check file (có fileExt hoặc title với extension)
+    const fileExt =
+      params?.fileExt || attach?.title?.split(".").pop()?.toLowerCase();
+    if (
+      fileExt &&
+      !["jpg", "jpeg", "png", "gif", "webp", "jxl"].includes(fileExt)
+    ) {
+      return {
+        type: "file",
+        url: href,
+        title: attach?.title,
+        fileExt,
+        mimeType: CONFIG.mimeTypes[fileExt] || "application/octet-stream",
+      };
+    }
+
+    // Check image (common image extensions or photo URLs)
     if (
       url &&
       (url.includes("/jpg/") ||
@@ -227,21 +297,23 @@ function parseQuoteAttachment(quote: any): QuoteMedia {
         url.includes("photo") ||
         /\.(jpg|jpeg|png|gif|webp|jxl)$/i.test(url))
     ) {
-      return { type: "image", url, thumbUrl: thumb, title: attach?.title };
+      return {
+        type: "image",
+        url,
+        thumbUrl: thumb,
+        title: attach?.title,
+        mimeType: "image/jpeg",
+      };
     }
 
-    // Check if it's a video
-    if (url && (url.includes("/video/") || /\.(mp4|mov|avi)$/i.test(url))) {
-      return { type: "video", url, thumbUrl: thumb, title: attach?.title };
-    }
-
-    // Default to image if has href
+    // Default to image if has href (most common case)
     if (href) {
       return {
         type: "image",
         url: href,
         thumbUrl: thumb,
         title: attach?.title,
+        mimeType: "image/jpeg",
       };
     }
 
@@ -260,6 +332,7 @@ function buildPrompt(
   userText: string,
   quoteContent: string | null,
   quoteHasMedia: boolean,
+  quoteMediaType: string | undefined,
   youtubeUrls: string[],
   mediaNotes: string[]
 ): string {
@@ -288,7 +361,7 @@ function buildPrompt(
       quoteContent && quoteContent !== "(nội dung không xác định)"
         ? quoteContent
         : undefined;
-    prompt += PROMPTS.quoteMedia(quoteText);
+    prompt += PROMPTS.quoteMedia(quoteText, quoteMediaType);
   } else {
     // Text only → dùng userText trực tiếp
     prompt = userText;
@@ -408,16 +481,77 @@ export async function handleMixedContent(
       media.push({
         type: "image",
         url: quoteMedia.url,
-        mimeType: "image/jpeg",
+        mimeType: quoteMedia.mimeType || "image/jpeg",
       });
-    } else if (quoteMedia.type === "video" && quoteMedia.thumbUrl) {
-      console.log(`[Bot] 📎 Đang fetch thumbnail video từ quote...`);
+    } else if (quoteMedia.type === "video") {
+      if (quoteMedia.url) {
+        console.log(`[Bot] 📎 Đang fetch video từ quote...`);
+        media.push({
+          type: "video",
+          url: quoteMedia.url,
+          mimeType: "video/mp4",
+        });
+      } else if (quoteMedia.thumbUrl) {
+        console.log(`[Bot] 📎 Đang fetch thumbnail video từ quote...`);
+        media.push({
+          type: "image",
+          url: quoteMedia.thumbUrl,
+          mimeType: "image/jpeg",
+        });
+        notes.push(
+          `(Video ${quoteMedia.duration || 0}s từ tin cũ, chỉ có thumbnail)`
+        );
+      }
+    } else if (quoteMedia.type === "audio" && quoteMedia.url) {
+      console.log(`[Bot] 📎 Đang fetch audio từ quote...`);
       media.push({
-        type: "image",
-        url: quoteMedia.thumbUrl,
-        mimeType: "image/jpeg",
+        type: "audio",
+        url: quoteMedia.url,
+        mimeType: quoteMedia.mimeType || "audio/aac",
       });
-      notes.push("(Video từ tin nhắn cũ, chỉ có thumbnail)");
+    } else if (quoteMedia.type === "sticker" && quoteMedia.stickerId) {
+      console.log(
+        `[Bot] 📎 Đang fetch sticker từ quote: ${quoteMedia.stickerId}`
+      );
+      try {
+        const details = await api.getStickersDetail(quoteMedia.stickerId);
+        const stickerUrl =
+          details?.[0]?.stickerUrl || details?.[0]?.stickerSpriteUrl;
+        if (stickerUrl) {
+          media.push({ type: "image", url: stickerUrl, mimeType: "image/png" });
+        }
+      } catch (e) {
+        debugLog(
+          "QUOTE",
+          `Failed to get sticker ${quoteMedia.stickerId}: ${e}`
+        );
+        notes.push("(Không thể load sticker từ tin cũ)");
+      }
+    } else if (quoteMedia.type === "file" && quoteMedia.url) {
+      console.log(
+        `[Bot] 📎 Đang fetch file từ quote: ${
+          quoteMedia.title || quoteMedia.fileExt
+        }`
+      );
+      const ext = quoteMedia.fileExt || "";
+      if (isGeminiSupported(ext)) {
+        media.push({
+          type: "file",
+          url: quoteMedia.url,
+          mimeType: quoteMedia.mimeType || "application/octet-stream",
+        });
+      } else if (isTextConvertible(ext)) {
+        const base64 = await fetchAndConvertToTextBase64(quoteMedia.url);
+        if (base64) {
+          media.push({ type: "file", base64, mimeType: "text/plain" });
+        } else {
+          notes.push(`(File "${quoteMedia.title}" từ tin cũ không đọc được)`);
+        }
+      } else {
+        notes.push(
+          `(File "${quoteMedia.title}" định dạng .${ext} không hỗ trợ)`
+        );
+      }
     }
 
     // 7. Check YouTube
@@ -429,11 +563,13 @@ export async function handleMixedContent(
 
     // 8. Build prompt thống nhất
     const quoteHasMedia = quoteMedia.type !== "none";
+    const quoteMediaType = quoteHasMedia ? quoteMedia.type : undefined;
     const prompt = buildPrompt(
       classified,
       userText,
       quoteContent,
       quoteHasMedia,
+      quoteMediaType,
       youtubeUrls,
       notes
     );

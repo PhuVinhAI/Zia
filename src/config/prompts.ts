@@ -202,10 +202,17 @@ export const PROMPTS = {
   quoteContext: (quoteContent: string) =>
     `\n[QUOTE CONTEXT] Người dùng đang reply tin nhắn cũ: "${quoteContent}"`,
 
-  // Quote có media (ảnh/video từ tin cũ)
-  quoteMedia: (quoteText?: string) => {
-    let prompt =
-      "\n\n[QUOTE MEDIA] Người dùng đang reply/hỏi về hình ảnh/media từ tin nhắn cũ (xem hình đính kèm).";
+  // Quote có media (ảnh/video/audio/sticker/file từ tin cũ)
+  quoteMedia: (quoteText?: string, mediaType?: string) => {
+    const typeDesc: Record<string, string> = {
+      image: "hình ảnh",
+      video: "video",
+      audio: "tin nhắn thoại/audio",
+      sticker: "sticker",
+      file: "file",
+    };
+    const desc = typeDesc[mediaType || "image"] || "media";
+    let prompt = `\n\n[QUOTE MEDIA] Người dùng đang reply/hỏi về ${desc} từ tin nhắn cũ (xem nội dung đính kèm).`;
     if (quoteText) {
       prompt += `\nNội dung text của tin nhắn được quote: "${quoteText}"`;
     }
