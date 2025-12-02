@@ -8,11 +8,16 @@
     "selfListen": true,
     "logging": true,
     "useStreaming": true,
+    "useCharacter": true,
     "fileLogging": true,
     "logFile": "logs/bot.log",
     "unauthorizedLogFile": "logs/unauthorized.json"
   },
-  "allowedUserIds": ["4779843125887605364", "5013616206173690802"],
+  "allowedUserIds": [
+    "4779843125887605364",
+    "5013616206173690802",
+    "2635887951774596533"
+  ],
   "stickers": {
     "keywords": [
       "hello",

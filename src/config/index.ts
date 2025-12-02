@@ -90,6 +90,7 @@ export const CONFIG = {
   selfListen: settings.bot.selfListen,
   logging: settings.bot.logging,
   useStreaming: settings.bot.useStreaming ?? true, // Bật streaming mặc định
+  useCharacter: settings.bot.useCharacter ?? true, // Bật character roleplay
   fileLogging: settings.bot.fileLogging ?? false, // Ghi log ra file
   logFile: settings.bot.logFile || "logs/bot.log", // Đường dẫn file log
   unauthorizedLogFile:
@@ -145,6 +146,6 @@ export const CONFIG = {
   } as Record<string, string>,
 };
 
-export { SYSTEM_PROMPT, PROMPTS } from "./prompts.js";
+export { SYSTEM_PROMPT, PROMPTS, getSystemPrompt } from "./prompts.js";
 export { DEFAULT_RESPONSE, parseAIResponse } from "./schema.js";
 export type { AIResponse, AIMessage } from "./schema.js";

@@ -12,18 +12,7 @@ import {
   logError,
   getCurrentLogFile,
 } from "./utils/logger.js";
-import {
-  handleSticker,
-  handleImage,
-  handleVideo,
-  handleVoice,
-  handleFile,
-  handleText,
-  handleTextStream,
-  handleMultipleImages,
-  handleMixedContent,
-  classifyMessageDetailed,
-} from "./handlers/index.js";
+import { handleMixedContent } from "./handlers/index.js";
 import { setupSelfMessageListener } from "./handlers/streamResponse.js";
 import { startTask, abortTask } from "./utils/taskManager.js";
 
@@ -59,110 +48,7 @@ interface ThreadBuffer {
 const threadBuffers = new Map<string, ThreadBuffer>();
 const BUFFER_DELAY_MS = 2500; // Chờ 2.5s để user nhắn hết câu
 
-// Xử lý một tin nhắn
-async function processMessage(
-  api: any,
-  message: any,
-  threadId: string,
-  signal?: AbortSignal
-) {
-  const content = message.data?.content;
-  const msgType = message.data?.msgType;
-
-  debugLog(
-    "PROCESS",
-    `Processing message: msgType=${msgType}, thread=${threadId}`
-  );
-  logStep("processMessage", { msgType, threadId, contentType: typeof content });
-
-  if (msgType === "chat.sticker" && content?.id) {
-    debugLog("PROCESS", `Routing to handleSticker: stickerId=${content.id}`);
-    await handleSticker(api, message, threadId);
-  } else if (msgType === "share.file" && content?.href) {
-    debugLog("PROCESS", `Routing to handleFile: ${content?.title}`);
-    await handleFile(api, message, threadId);
-  } else if (
-    msgType === "chat.photo" ||
-    (msgType === "webchat" && content?.href)
-  ) {
-    debugLog("PROCESS", `Routing to handleImage`);
-    await handleImage(api, message, threadId);
-  } else if (msgType === "chat.video.msg" && content?.thumb) {
-    debugLog("PROCESS", `Routing to handleVideo`);
-    await handleVideo(api, message, threadId);
-  } else if (msgType === "chat.voice" && content?.href) {
-    debugLog("PROCESS", `Routing to handleVoice`);
-    await handleVoice(api, message, threadId);
-  } else if (msgType === "chat.recommended") {
-    // Link được Zalo preview (YouTube, website...)
-    // Zalo đôi khi gửi link trong content.href, đôi khi trong params
-    let url = content?.href;
-    if (!url && content?.params) {
-      try {
-        const params = JSON.parse(content.params);
-        url = params?.href;
-      } catch {}
-    }
-    if (url) {
-      debugLog("PROCESS", `Routing to handleLink: ${url}`);
-      const linkMessage = {
-        ...message,
-        data: {
-          ...message.data,
-          content: url,
-          msgType: "webchat",
-        },
-      };
-      if (CONFIG.useStreaming) {
-        await handleTextStream(api, linkMessage, threadId, signal);
-      } else {
-        await handleText(api, linkMessage, threadId);
-      }
-    } else {
-      debugLog("PROCESS", `chat.recommended without URL`, content);
-    }
-  } else if (typeof content === "string") {
-    // Sử dụng streaming handler nếu bật
-    if (CONFIG.useStreaming) {
-      debugLog(
-        "PROCESS",
-        `Routing to handleTextStream: "${content.substring(0, 50)}..."`
-      );
-      await handleTextStream(api, message, threadId, signal);
-    } else {
-      debugLog(
-        "PROCESS",
-        `Routing to handleText: "${content.substring(0, 50)}..."`
-      );
-      await handleText(api, message, threadId);
-    }
-  } else {
-    console.log(
-      `[DEBUG] msgType: ${msgType}, content:`,
-      JSON.stringify(content, null, 2)
-    );
-    debugLog("PROCESS", `Unknown message type: ${msgType}`, content);
-  }
-}
-
-// Helper: Kiểm tra tin nhắn có phải chỉ là text thuần không
-function isTextOnly(msg: any): boolean {
-  const content = msg.data?.content;
-  const msgType = msg.data?.msgType || "";
-  return typeof content === "string" && !msgType.includes("sticker");
-}
-
-// Helper: Kiểm tra có media (ảnh, video, voice, file, sticker) không
-function hasMedia(messages: any[]): boolean {
-  return messages.some((msg) => {
-    const classified = classifyMessageDetailed(msg);
-    return ["image", "video", "voice", "file", "sticker"].includes(
-      classified.type
-    );
-  });
-}
-
-// Xử lý queue của một thread
+// Xử lý queue của một thread - LUÔN dùng handleMixedContent
 async function processQueue(api: any, threadId: string, signal?: AbortSignal) {
   if (processingThreads.has(threadId)) {
     debugLog("QUEUE", `Thread ${threadId} already processing, skipping`);
@@ -197,55 +83,22 @@ async function processQueue(api: any, threadId: string, signal?: AbortSignal) {
     debugLog("QUEUE", `Processing ${allMessages.length} messages`);
     logStep("processQueue:messages", { count: allMessages.length });
 
-    // Kiểm tra có media không
-    const containsMedia = hasMedia(allMessages);
-
-    if (containsMedia) {
-      // CÓ MEDIA: Gộp tất cả thành 1 request mixed content
-      debugLog(
-        "QUEUE",
-        `Using handleMixedContent for ${allMessages.length} messages`
-      );
-      await handleMixedContent(api, allMessages, threadId, signal);
-    } else {
-      // CHỈ CÓ TEXT: Gộp text và xử lý như cũ
-      const textMessages = allMessages.filter(isTextOnly);
-
-      if (textMessages.length === 0) {
-        debugLog("QUEUE", "No processable messages");
-        continue;
-      }
-
-      if (signal?.aborted) {
-        debugLog("QUEUE", `Aborted before processing text messages`);
-        break;
-      }
-
-      if (textMessages.length === 1) {
-        await processMessage(api, textMessages[0], threadId, signal);
-      } else {
-        // Gộp nhiều tin nhắn text thành một
-        const combinedContent = textMessages
-          .map((m) => m.data.content)
-          .join("\n");
-        const combinedMessage = {
-          ...textMessages[textMessages.length - 1],
-          data: {
-            ...textMessages[textMessages.length - 1].data,
-            content: combinedContent,
-          },
-          _originalMessages: textMessages,
-        };
-        console.log(`[Bot] 📦 Gộp ${textMessages.length} tin nhắn text`);
-        debugLog(
-          "QUEUE",
-          `Combined ${
-            textMessages.length
-          } text messages: "${combinedContent.substring(0, 100)}..."`
-        );
-        await processMessage(api, combinedMessage, threadId, signal);
-      }
+    if (allMessages.length === 0) {
+      debugLog("QUEUE", "No processable messages");
+      continue;
     }
+
+    if (signal?.aborted) {
+      debugLog("QUEUE", `Aborted before processing messages`);
+      break;
+    }
+
+    // LUÔN dùng handleMixedContent cho mọi loại tin nhắn
+    debugLog(
+      "QUEUE",
+      `Using handleMixedContent for ${allMessages.length} messages`
+    );
+    await handleMixedContent(api, allMessages, threadId, signal);
   }
 
   processingThreads.delete(threadId);

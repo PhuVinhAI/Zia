@@ -1,8 +1,7 @@
 import { ThreadType, Reactions } from "../services/zalo.js";
 import { getRawHistory } from "../utils/history.js";
 import { createRichMessage } from "../utils/richText.js";
-import { ReactionType } from "../config/schema.js";
-import { StreamCallbacks } from "../services/streaming.js";
+import { StreamCallbacks } from "../services/gemini.js";
 import {
   saveSentMessage,
   getSentMessage,
@@ -75,12 +74,6 @@ async function sendSticker(api: any, keyword: string, threadId: string) {
   }
 }
 
-// Lưu tin nhắn pending để lấy ID khi selfListen nhận được
-const pendingMessages = new Map<
-  string,
-  (msgId: string, cliMsgId: string) => void
->();
-
 /**
  * Đăng ký listener để bắt tin nhắn của chính mình (selfListen)
  * Gọi 1 lần khi khởi động
@@ -109,17 +102,6 @@ export function setupSelfMessageListener(api: any) {
     const contentStr =
       typeof content === "string" ? content : JSON.stringify(content);
 
-    // Tìm pending message và resolve (chỉ cho text)
-    if (typeof content === "string") {
-      const key = `${threadId}:${content}`;
-      const resolver = pendingMessages.get(key);
-      if (resolver) {
-        debugLog("SELF_LISTEN", `Resolved pending message: ${key}`);
-        resolver(msgId, cliMsgId);
-        pendingMessages.delete(key);
-      }
-    }
-
     // Lưu vào store để có thể thu hồi sau (mọi loại tin nhắn)
     saveSentMessage(threadId, msgId, cliMsgId, contentStr);
     debugLog(
@@ -134,37 +116,69 @@ export function setupSelfMessageListener(api: any) {
 
 /**
  * Tạo streaming callbacks để gửi response real-time
+ * @param messages - Array tin nhắn gốc (cho việc quote/react đúng tin trong batch)
  */
 export function createStreamCallbacks(
   api: any,
   threadId: string,
-  originalMessage?: any
+  originalMessage?: any,
+  messages?: any[]
 ): StreamCallbacks {
   let messageCount = 0;
   const pendingStickers: string[] = []; // Queue sticker để gửi sau cùng
 
-  debugLog("STREAM_CB", `Creating stream callbacks for thread: ${threadId}`);
-  logStep("createStreamCallbacks", { threadId });
+  debugLog(
+    "STREAM_CB",
+    `Creating stream callbacks for thread: ${threadId}, messages=${
+      messages?.length || 0
+    }`
+  );
+  logStep("createStreamCallbacks", {
+    threadId,
+    messagesCount: messages?.length,
+  });
 
   return {
     // Gửi reaction ngay khi phát hiện
-    onReaction: async (reaction: ReactionType) => {
+    // Hỗ trợ: "heart" (tin cuối) hoặc "0:heart" (tin index 0 trong batch)
+    onReaction: async (reaction: string) => {
       debugLog("STREAM_CB", `onReaction: ${reaction}`);
-      const reactionObj = reactionMap[reaction];
-      if (reactionObj && originalMessage) {
+
+      // Parse reaction: "heart" hoặc "0:heart"
+      let reactionType = reaction;
+      let targetMsg = originalMessage;
+
+      if (reaction.includes(":")) {
+        const [indexStr, type] = reaction.split(":");
+        reactionType = type;
+        const index = parseInt(indexStr);
+        if (messages && index >= 0 && index < messages.length) {
+          targetMsg = messages[index];
+          debugLog("STREAM_CB", `Reaction target: message index ${index}`);
+        }
+      }
+
+      const reactionObj = reactionMap[reactionType];
+      if (reactionObj && targetMsg) {
         try {
-          // API: addReaction
-          const result = await api.addReaction(reactionObj, originalMessage);
+          const result = await api.addReaction(reactionObj, targetMsg);
           logZaloAPI(
             "addReaction",
-            { reaction, reactionObj, msgId: originalMessage?.data?.msgId },
+            { reaction: reactionType, msgId: targetMsg?.data?.msgId },
             result
           );
-
-          console.log(`[Bot] 💖 Streaming: Đã thả reaction: ${reaction}`);
-          logMessage("OUT", threadId, { type: "reaction", reaction });
+          console.log(`[Bot] 💖 Streaming: Đã thả reaction: ${reactionType}`);
+          logMessage("OUT", threadId, {
+            type: "reaction",
+            reaction: reactionType,
+          });
         } catch (e: any) {
-          logZaloAPI("addReaction", { reaction, threadId }, null, e);
+          logZaloAPI(
+            "addReaction",
+            { reaction: reactionType, threadId },
+            null,
+            e
+          );
           logError("onReaction", e);
           console.error("[Bot] Lỗi thả reaction:", e);
         }
