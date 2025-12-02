@@ -57,10 +57,12 @@ interface ThreadBuffer {
   isTyping: boolean; // Bot đang typing
   userTyping: boolean; // User đang typing
   userTypingTimer: NodeJS.Timeout | null; // Timer để detect user dừng typing
+  firstMessageTime: number | null; // Thời điểm nhận tin nhắn đầu tiên trong buffer
 }
 const threadBuffers = new Map<string, ThreadBuffer>();
 const BUFFER_DELAY_MS = 2500; // Chờ 2.5s để user nhắn hết câu
 const USER_TYPING_TIMEOUT_MS = 3000; // Sau 3s không thấy typing event thì coi như user dừng gõ
+const MAX_WAIT_MS = 15000; // Tối đa chờ 15s dù user vẫn đang typing
 
 // Xử lý một tin nhắn
 async function processMessage(
@@ -258,12 +260,31 @@ async function processQueue(api: any, threadId: string, signal?: AbortSignal) {
 
 // ========== XỬ LÝ BUFFER - HUMAN-LIKE ==========
 // Khi buffer timeout, gom tất cả tin nhắn và đưa vào queue xử lý
-async function processBufferedMessages(api: any, threadId: string) {
+async function processBufferedMessages(
+  api: any,
+  threadId: string,
+  forceProcess = false
+) {
   const buffer = threadBuffers.get(threadId);
-  if (!buffer || buffer.messages.length === 0) return;
+  if (!buffer || buffer.messages.length === 0) {
+    // Không có tin nhắn, tắt typing nếu đang bật
+    if (buffer?.isTyping) {
+      buffer.isTyping = false;
+      debugLog(
+        "BUFFER",
+        `Cleared typing indicator (no messages) for ${threadId}`
+      );
+    }
+    return;
+  }
 
-  // Nếu user vẫn đang typing, chờ thêm
-  if (buffer.userTyping) {
+  // Kiểm tra đã chờ quá lâu chưa (15s)
+  const waitedTooLong =
+    buffer.firstMessageTime &&
+    Date.now() - buffer.firstMessageTime >= MAX_WAIT_MS;
+
+  // Nếu user vẫn đang typing VÀ chưa chờ quá lâu, chờ thêm
+  if (buffer.userTyping && !forceProcess && !waitedTooLong) {
     debugLog("BUFFER", `User still typing, waiting... (${threadId})`);
     // Reset timer để chờ user gõ xong
     if (buffer.timer) clearTimeout(buffer.timer);
@@ -273,11 +294,26 @@ async function processBufferedMessages(api: any, threadId: string) {
     return;
   }
 
+  // Log nếu force process do chờ quá lâu
+  if (waitedTooLong && buffer.userTyping) {
+    debugLog(
+      "BUFFER",
+      `Force processing - waited ${MAX_WAIT_MS}ms (${threadId})`
+    );
+    console.log(`[Bot] ⏰ Đã chờ quá lâu, xử lý tin nhắn dù user vẫn đang gõ`);
+  }
+
   // Lấy tin nhắn và clear buffer ngay để đón tin mới
   const messagesToProcess = [...buffer.messages];
   buffer.messages = [];
   buffer.timer = null;
-  buffer.isTyping = false;
+  buffer.firstMessageTime = null; // Reset thời gian
+  buffer.userTyping = false; // Reset trạng thái typing
+  if (buffer.userTypingTimer) {
+    clearTimeout(buffer.userTypingTimer);
+    buffer.userTypingTimer = null;
+  }
+  // Giữ isTyping = true trong khi xử lý, sẽ tắt sau khi xong
 
   debugLog(
     "BUFFER",
@@ -309,6 +345,13 @@ async function processBufferedMessages(api: any, threadId: string) {
     logError("processBufferedMessages", e);
     console.error("[Bot] Lỗi xử lý buffer:", e);
     processingThreads.delete(threadId);
+  } finally {
+    // Tắt typing indicator sau khi xử lý xong (dù thành công hay lỗi)
+    const buf = threadBuffers.get(threadId);
+    if (buf) {
+      buf.isTyping = false;
+      debugLog("BUFFER", `Stopped typing indicator for ${threadId}`);
+    }
   }
 }
 
@@ -389,9 +432,15 @@ async function main() {
         isTyping: false,
         userTyping: false,
         userTypingTimer: null,
+        firstMessageTime: null,
       });
     }
     const buffer = threadBuffers.get(threadId)!;
+
+    // Ghi nhận thời điểm tin nhắn đầu tiên trong buffer
+    if (buffer.messages.length === 0) {
+      buffer.firstMessageTime = Date.now();
+    }
 
     // Reset trạng thái userTyping khi nhận được tin nhắn thực (user đã gửi xong)
     buffer.userTyping = false;
@@ -451,6 +500,7 @@ async function main() {
         isTyping: false,
         userTyping: false,
         userTypingTimer: null,
+        firstMessageTime: null,
       });
     }
     const buffer = threadBuffers.get(threadId)!;
