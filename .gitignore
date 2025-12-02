@@ -4,4 +4,4 @@ dist/
 temp/
 qr.png
 credentials.json
-*.txt
+logs/

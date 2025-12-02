@@ -14,7 +14,7 @@ import {
   debugLog,
   logStep,
   logError,
-  getCurrentLogFile,
+  getSessionDir,
 } from "./utils/logger.js";
 import {
   handleMixedContent,
@@ -224,7 +224,7 @@ async function main() {
   );
   console.log(`📝 Streaming: ${CONFIG.useStreaming ? "ON" : "OFF"}`);
   if (CONFIG.fileLogging) {
-    console.log(`📄 Log file: ${getCurrentLogFile()}`);
+    console.log(`📄 Session: ${getSessionDir()}`);
   }
   console.log("─".repeat(50));
 
