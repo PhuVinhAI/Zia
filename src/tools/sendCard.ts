@@ -3,6 +3,7 @@
  */
 import { ToolDefinition, ToolContext, ToolResult } from "./types.js";
 import { ThreadType } from "../services/zalo.js";
+import { debugLog, logZaloAPI } from "../utils/logger.js";
 
 export const sendCardTool: ToolDefinition = {
   name: "sendCard",
@@ -40,12 +41,22 @@ export const sendCardTool: ToolDefinition = {
         targetUserId = context.api.getContext().uid;
       }
 
+      debugLog(
+        "TOOL:sendCard",
+        `Sending card for userId=${targetUserId}, threadId=${context.threadId}`
+      );
+
       // Gửi tin nhắn kèm theo nếu có
       if (params.message) {
-        await context.api.sendMessage(
+        const msgResult = await context.api.sendMessage(
           params.message,
           context.threadId,
           ThreadType.User
+        );
+        logZaloAPI(
+          "tool:sendCard:message",
+          { message: params.message, threadId: context.threadId },
+          msgResult
         );
       }
 
@@ -58,7 +69,18 @@ export const sendCardTool: ToolDefinition = {
       }
 
       // Gửi card
-      await context.api.sendCard(cardData, context.threadId, ThreadType.User);
+      debugLog("TOOL:sendCard", `Card data: ${JSON.stringify(cardData)}`);
+      const cardResult = await context.api.sendCard(
+        cardData,
+        context.threadId,
+        ThreadType.User
+      );
+      logZaloAPI(
+        "tool:sendCard",
+        { cardData, threadId: context.threadId },
+        cardResult
+      );
+      debugLog("TOOL:sendCard", `Raw response: ${JSON.stringify(cardResult)}`);
 
       // Lấy thông tin người được gửi card để trả về
       let displayName = "Không xác định";

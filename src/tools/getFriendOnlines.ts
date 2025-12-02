@@ -2,6 +2,7 @@
  * Tool: getFriendOnlines - Lấy danh sách bạn bè đang online
  */
 import { ToolDefinition, ToolContext, ToolResult } from "./types.js";
+import { debugLog, logZaloAPI } from "../utils/logger.js";
 
 export const getFriendOnlinesTool: ToolDefinition = {
   name: "getFriendOnlines",
@@ -31,9 +32,29 @@ export const getFriendOnlinesTool: ToolDefinition = {
       const limit = Math.min(params.limit || 10, 50);
       const includeNames = params.includeNames !== false;
 
+      debugLog(
+        "TOOL:getFriendOnlines",
+        `Calling API with limit=${limit}, includeNames=${includeNames}`
+      );
       const result = await context.api.getFriendOnlines();
+      logZaloAPI(
+        "tool:getFriendOnlines",
+        { limit, includeNames },
+        { count: result?.onlines?.length, sample: result?.onlines?.slice(0, 3) }
+      );
+
+      debugLog(
+        "TOOL:getFriendOnlines",
+        `Raw response type: ${typeof result}, onlines count: ${
+          result?.onlines?.length
+        }`
+      );
 
       if (!result || !result.onlines || !Array.isArray(result.onlines)) {
+        debugLog(
+          "TOOL:getFriendOnlines",
+          `Invalid response: ${JSON.stringify(result)?.substring(0, 500)}`
+        );
         return { success: false, error: "Không lấy được danh sách online" };
       }
 

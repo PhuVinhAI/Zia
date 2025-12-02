@@ -2,6 +2,7 @@
  * Tool: getAllFriends - Lấy danh sách tất cả bạn bè
  */
 import { ToolDefinition, ToolContext, ToolResult } from "./types.js";
+import { debugLog, logZaloAPI } from "../utils/logger.js";
 
 export const getAllFriendsTool: ToolDefinition = {
   name: "getAllFriends",
@@ -24,9 +25,25 @@ export const getAllFriendsTool: ToolDefinition = {
     try {
       const limit = Math.min(params.limit || 50, 200);
 
+      debugLog("TOOL:getAllFriends", `Calling API with limit=${limit}`);
       const friends = await context.api.getAllFriends();
+      logZaloAPI(
+        "tool:getAllFriends",
+        { limit },
+        { count: friends?.length, sample: friends?.slice(0, 3) }
+      );
+      debugLog(
+        "TOOL:getAllFriends",
+        `Raw response type: ${typeof friends}, isArray: ${Array.isArray(
+          friends
+        )}, length: ${friends?.length}`
+      );
 
       if (!friends || !Array.isArray(friends)) {
+        debugLog(
+          "TOOL:getAllFriends",
+          `Invalid response: ${JSON.stringify(friends)?.substring(0, 500)}`
+        );
         return { success: false, error: "Không lấy được danh sách bạn bè" };
       }
 

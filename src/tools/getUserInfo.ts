@@ -2,6 +2,7 @@
  * Tool: getUserInfo - Lấy thông tin chi tiết của user đã là bạn bè
  */
 import { ToolDefinition, ToolContext, ToolResult } from "./types.js";
+import { debugLog, logZaloAPI } from "../utils/logger.js";
 
 export const getUserInfoTool: ToolDefinition = {
   name: "getUserInfo",
@@ -27,7 +28,11 @@ export const getUserInfoTool: ToolDefinition = {
         return { success: false, error: "Không có userId để lấy thông tin" };
       }
 
+      debugLog("TOOL:getUserInfo", `Calling API with userId=${userId}`);
       const result = await context.api.getUserInfo(userId);
+      logZaloAPI("tool:getUserInfo", { userId }, result);
+      debugLog("TOOL:getUserInfo", `Raw response: ${JSON.stringify(result)}`);
+
       const profile = result?.changed_profiles?.[userId];
 
       if (!profile) {
