@@ -10,7 +10,7 @@
     "useStreaming": true,
     "useCharacter": false,
     "fileLogging": true,
-    "logFile": "logs/bot.log",
+    "logFile": "logs/bot.txt",
     "unauthorizedLogFile": "logs/unauthorized.json"
   },
   "allowedUserIds": [

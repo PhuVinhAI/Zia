@@ -88,7 +88,7 @@ export const CONFIG = {
   useStreaming: settings.bot.useStreaming ?? true, // Bật streaming mặc định
   useCharacter: settings.bot.useCharacter ?? true, // Bật character roleplay
   fileLogging: settings.bot.fileLogging ?? false, // Ghi log ra file
-  logFile: settings.bot.logFile || "logs/bot.log", // Đường dẫn file log
+  logFile: settings.bot.logFile || "logs/bot.txt", // Đường dẫn file log
   unauthorizedLogFile:
     settings.bot.unauthorizedLogFile || "logs/unauthorized.json", // File log user chưa được cấp phép
 
