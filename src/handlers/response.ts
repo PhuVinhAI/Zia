@@ -69,42 +69,79 @@ async function sendSticker(api: any, keyword: string, threadId: string) {
   }
 }
 
+/**
+ * Gửi response từ AI
+ * @param allMessages - Danh sách tất cả tin nhắn trong batch (để quote/react đúng tin)
+ */
 export async function sendResponse(
   api: any,
   response: AIResponse,
   threadId: string,
-  originalMessage?: any
+  originalMessage?: any,
+  allMessages?: any[]
 ): Promise<void> {
   debugLog(
     "RESPONSE",
-    `sendResponse: thread=${threadId}, reactions=${response.reactions.length}, messages=${response.messages.length}`
+    `sendResponse: thread=${threadId}, reactions=${
+      response.reactions.length
+    }, messages=${response.messages.length}, batchSize=${
+      allMessages?.length || 1
+    }`
   );
   logStep("sendResponse:start", {
     threadId,
     reactions: response.reactions,
     messageCount: response.messages.length,
+    batchSize: allMessages?.length || 1,
   });
 
   // Thả nhiều reaction
-  if (response.reactions.length > 0 && originalMessage) {
+  if (response.reactions.length > 0) {
     for (const r of response.reactions) {
-      const reaction = reactionMap[r];
-      if (reaction) {
+      // Kiểm tra xem có phải reaction với index không (format: "0:heart" hoặc "heart")
+      let reactionType = r;
+      let targetMessage = originalMessage;
+
+      if (r.includes(":")) {
+        const [indexStr, type] = r.split(":");
+        const index = parseInt(indexStr);
+        reactionType = type;
+
+        // Nếu có allMessages và index hợp lệ, lấy tin nhắn tương ứng
+        if (allMessages && index >= 0 && index < allMessages.length) {
+          targetMessage = allMessages[index];
+          debugLog(
+            "RESPONSE",
+            `Reaction ${type} targeting message index ${index}`
+          );
+        }
+      }
+
+      const reaction = reactionMap[reactionType];
+      if (reaction && targetMessage) {
         try {
-          debugLog("RESPONSE", `Sending reaction: ${r}`);
-          const result = await api.addReaction(reaction, originalMessage);
+          debugLog("RESPONSE", `Sending reaction: ${reactionType}`);
+          const result = await api.addReaction(reaction, targetMessage);
           logZaloAPI(
             "addReaction",
-            { reaction: r, msgId: originalMessage?.data?.msgId },
+            { reaction: reactionType, msgId: targetMessage?.data?.msgId },
             result
           );
 
-          console.log(`[Bot] 💖 Đã thả reaction: ${r}`);
-          logMessage("OUT", threadId, { type: "reaction", reaction: r });
+          console.log(`[Bot] 💖 Đã thả reaction: ${reactionType}`);
+          logMessage("OUT", threadId, {
+            type: "reaction",
+            reaction: reactionType,
+          });
 
           await new Promise((resolve) => setTimeout(resolve, 300));
         } catch (e: any) {
-          logZaloAPI("addReaction", { reaction: r, threadId }, null, e);
+          logZaloAPI(
+            "addReaction",
+            { reaction: reactionType, threadId },
+            null,
+            e
+          );
           logError("sendResponse:reaction", e);
           console.error("[Bot] Lỗi thả reaction:", e);
         }
@@ -127,16 +164,30 @@ export async function sendResponse(
     // Xác định quote message
     let quoteData: any = undefined;
     if (msg.quoteIndex >= 0) {
-      const rawHistory = getRawHistory(threadId);
-      if (msg.quoteIndex < rawHistory.length) {
-        const historyMsg = rawHistory[msg.quoteIndex];
-        if (historyMsg?.data?.msgId) {
-          quoteData = historyMsg.data;
-          console.log(`[Bot] 📎 Quote tin nhắn #${msg.quoteIndex}`);
+      // Ưu tiên quote từ batch messages (nếu có)
+      if (allMessages && msg.quoteIndex < allMessages.length) {
+        const batchMsg = allMessages[msg.quoteIndex];
+        if (batchMsg?.data?.msgId) {
+          quoteData = batchMsg.data;
+          console.log(`[Bot] 📎 Quote tin nhắn batch #${msg.quoteIndex}`);
           debugLog(
             "RESPONSE",
-            `Quote message #${msg.quoteIndex}: msgId=${quoteData.msgId}`
+            `Quote batch message #${msg.quoteIndex}: msgId=${quoteData.msgId}`
           );
+        }
+      } else {
+        // Fallback: quote từ history
+        const rawHistory = getRawHistory(threadId);
+        if (msg.quoteIndex < rawHistory.length) {
+          const historyMsg = rawHistory[msg.quoteIndex];
+          if (historyMsg?.data?.msgId) {
+            quoteData = historyMsg.data;
+            console.log(`[Bot] 📎 Quote tin nhắn history #${msg.quoteIndex}`);
+            debugLog(
+              "RESPONSE",
+              `Quote history message #${msg.quoteIndex}: msgId=${quoteData.msgId}`
+            );
+          }
         }
       }
     }

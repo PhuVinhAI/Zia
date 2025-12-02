@@ -456,10 +456,16 @@ async function main() {
     const buffer = threadBuffers.get(threadId)!;
 
     // Đánh dấu user đang typing
+    const wasTyping = buffer.userTyping;
     buffer.userTyping = true;
 
-    // Hủy task đang chạy nếu có (bot đang trả lời thì dừng lại vì user đang gõ)
-    abortTask(threadId);
+    // CHỈ abort task nếu:
+    // 1. Có tin nhắn trong buffer (user đang gõ thêm tin mới)
+    // 2. HOẶC user đã typing liên tục (không phải chỉ 1 event đơn lẻ)
+    if (buffer.messages.length > 0 || wasTyping) {
+      abortTask(threadId);
+      debugLog("TYPING", `Aborted task - user is actively typing`);
+    }
 
     // Reset buffer timer nếu có (chờ user gõ xong)
     if (buffer.timer) {

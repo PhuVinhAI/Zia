@@ -139,41 +139,53 @@ function getMimeType(ext: string): string {
 }
 
 /**
- * Tạo prompt mô tả nội dung mixed
+ * Tạo prompt mô tả nội dung mixed với INDEX để AI có thể quote/react đúng tin
  */
 function buildMixedPrompt(classified: ClassifiedMessage[]): string {
   const parts: string[] = [];
 
-  for (const item of classified) {
+  classified.forEach((item, index) => {
     switch (item.type) {
       case "text":
-        parts.push(`[Tin nhắn]: "${item.text}"`);
+        parts.push(`[${index}] Tin nhắn: "${item.text}"`);
         break;
       case "sticker":
-        parts.push(`[Sticker]: (xem hình sticker đính kèm)`);
+        parts.push(`[${index}] Sticker: (xem hình sticker đính kèm)`);
         break;
       case "image":
-        parts.push(`[Ảnh]: (xem hình ảnh đính kèm)`);
+        parts.push(`[${index}] Ảnh: (xem hình ảnh đính kèm)`);
         break;
       case "video":
-        parts.push(`[Video ${item.duration || 0}s]: (xem video đính kèm)`);
+        parts.push(
+          `[${index}] Video ${item.duration || 0}s: (xem video đính kèm)`
+        );
         break;
       case "voice":
         parts.push(
-          `[Tin nhắn thoại ${item.duration || 0}s]: (nghe audio đính kèm)`
+          `[${index}] Tin nhắn thoại ${
+            item.duration || 0
+          }s: (nghe audio đính kèm)`
         );
         break;
       case "file":
-        parts.push(`[File "${item.fileName}"]: (đọc file đính kèm)`);
+        parts.push(`[${index}] File "${item.fileName}": (đọc file đính kèm)`);
         break;
       case "link":
-        parts.push(`[Link]: ${item.url}`);
+        parts.push(`[${index}] Link: ${item.url}`);
         break;
     }
-  }
+  });
 
   const summary = parts.join("\n");
-  return `Người dùng gửi ${classified.length} nội dung theo thứ tự:\n${summary}\n\nHãy XEM/NGHE tất cả nội dung đính kèm và phản hồi phù hợp. Nếu có câu hỏi trong tin nhắn text thì trả lời câu hỏi đó.`;
+  return `Người dùng gửi ${classified.length} nội dung theo thứ tự (số trong ngoặc vuông là INDEX):
+${summary}
+
+HƯỚNG DẪN:
+- Dùng [quote:INDEX]nội dung[/quote] để reply vào tin nhắn cụ thể (ví dụ: [quote:0]trả lời tin đầu tiên[/quote])
+- Dùng [reaction:INDEX:loại] để thả reaction vào tin cụ thể (ví dụ: [reaction:0:heart] thả tim vào tin đầu tiên)
+- Nếu không cần quote/react tin cụ thể, cứ trả lời bình thường
+
+Hãy XEM/NGHE tất cả nội dung đính kèm và phản hồi phù hợp.`;
 }
 
 /**
@@ -300,7 +312,14 @@ export async function handleMixedContent(
       return;
     }
 
-    await sendResponse(api, aiReply, threadId, messages[messages.length - 1]);
+    // Truyền toàn bộ danh sách messages để sendResponse có thể quote/react đúng tin
+    await sendResponse(
+      api,
+      aiReply,
+      threadId,
+      messages[messages.length - 1],
+      messages
+    );
 
     // Lưu response
     const responseText = aiReply.messages

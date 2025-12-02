@@ -1,5 +1,6 @@
 // TypeScript interface
-export type ReactionType = "heart" | "haha" | "wow" | "sad" | "angry" | "like";
+// ReactionType có thể là "heart" hoặc "0:heart" (với index)
+export type ReactionType = string;
 
 export interface AIMessage {
   text: string;
@@ -37,12 +38,23 @@ export function parseAIResponse(text: string): AIResponse {
       undoIndexes: [],
     };
 
-    // Parse tất cả [reaction:xxx] - hỗ trợ nhiều reaction
-    const reactionMatches = text.matchAll(/\[reaction:(\w+)\]/gi);
+    // Parse [reaction:xxx] hoặc [reaction:INDEX:xxx] - hỗ trợ nhiều reaction
+    // Format 1: [reaction:heart] - thả vào tin cuối
+    // Format 2: [reaction:0:heart] - thả vào tin index 0 trong batch
+    const reactionMatches = text.matchAll(/\[reaction:(\d+:)?(\w+)\]/gi);
     for (const match of reactionMatches) {
-      const r = match[1].toLowerCase();
-      if (VALID_REACTIONS.includes(r) && r !== "none") {
-        result.reactions.push(r as ReactionType);
+      const indexPart = match[1]; // "0:" hoặc undefined
+      const reactionType = match[2].toLowerCase();
+
+      if (VALID_REACTIONS.includes(reactionType) && reactionType !== "none") {
+        if (indexPart) {
+          // Có index: "0:heart" -> lưu dạng "0:heart"
+          const index = indexPart.replace(":", "");
+          result.reactions.push(`${index}:${reactionType}` as ReactionType);
+        } else {
+          // Không có index: "heart" -> lưu bình thường
+          result.reactions.push(reactionType as ReactionType);
+        }
       }
     }
 
@@ -86,7 +98,7 @@ export function parseAIResponse(text: string): AIResponse {
 
     // Lấy text thuần (loại bỏ các tag)
     let plainText = text
-      .replace(/\[reaction:\w+\]/gi, "")
+      .replace(/\[reaction:(\d+:)?\w+\]/gi, "") // Hỗ trợ cả [reaction:heart] và [reaction:0:heart]
       .replace(/\[sticker:\w+\]/gi, "")
       .replace(/\[quote:\d+\][\s\S]*?\[\/quote\]/gi, "")
       .replace(/\[msg\][\s\S]*?\[\/msg\]/gi, "")
