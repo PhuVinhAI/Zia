@@ -107,6 +107,14 @@ export const CONFIG = {
   // Sticker keywords
   stickerKeywords: settings.stickers.keywords as string[],
 
+  // History loader config (pagination với anti-ban)
+  historyLoader: {
+    defaultLimit: settings.historyLoader?.defaultLimit ?? 100,
+    minDelayMs: settings.historyLoader?.minDelayMs ?? 2000,
+    maxDelayMs: settings.historyLoader?.maxDelayMs ?? 5000,
+    pageTimeoutMs: settings.historyLoader?.pageTimeoutMs ?? 10000,
+  },
+
   // MIME types mapping
   mimeTypes: {
     // Documents

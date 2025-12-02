@@ -15,6 +15,24 @@ let isPreloaded = false;
 
 const GEMINI_MODEL = "gemini-2.5-flash";
 
+// ========== PAGINATION HISTORY LOADER ==========
+// Cơ chế cào lịch sử tin nhắn theo trang với delay anti-ban
+
+/** Ngủ (Delay) */
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/** Random delay từ min đến max (để không bị máy móc) */
+const randomDelay = (min: number, max: number) =>
+  Math.floor(Math.random() * (max - min + 1) + min);
+
+/** Lấy config pagination từ settings */
+const getPaginationConfig = () => ({
+  defaultLimit: CONFIG.historyLoader?.defaultLimit ?? 100,
+  minDelay: CONFIG.historyLoader?.minDelayMs ?? 2000,
+  maxDelay: CONFIG.historyLoader?.maxDelayMs ?? 5000,
+  pageTimeout: CONFIG.historyLoader?.pageTimeoutMs ?? 10000,
+});
+
 // MIME types mà Gemini API hỗ trợ cho countTokens
 const SUPPORTED_MIME_PREFIXES = [
   "image/",
@@ -178,8 +196,121 @@ async function toGeminiContent(msg: any): Promise<Content> {
 }
 
 /**
+ * Tải lịch sử tin nhắn phân trang an toàn (Pagination với Anti-Ban)
+ * Giống hành vi con người: kéo lên xem tin cũ -> dừng đọc -> kéo tiếp
+ *
+ * @param api Đối tượng API Zalo
+ * @param type Loại trò chuyện (0 = User, 1 = Group)
+ * @param limit Tổng số lượng tin nhắn muốn lấy tối đa
+ */
+export async function fetchFullHistory(
+  api: any,
+  type: number,
+  limit?: number
+): Promise<any[]> {
+  const config = getPaginationConfig();
+  const targetLimit = limit ?? config.defaultLimit;
+
+  let allMessages: any[] = [];
+  let lastMsgId: string | null = null; // null = bắt đầu từ tin mới nhất
+  let hasMore = true;
+  let pageCount = 0;
+
+  console.log(
+    `[History] ⏳ Bắt đầu tải lịch sử (Type: ${
+      type === 0 ? "User" : "Group"
+    }, Mục tiêu: ~${targetLimit} tin)...`
+  );
+  debugLog("HISTORY", `fetchFullHistory: type=${type}, limit=${targetLimit}`);
+
+  while (hasMore && allMessages.length < targetLimit) {
+    pageCount++;
+
+    // 1. Tạo Promise để chờ sự kiện trả về từ Zalo
+    const batchMessages = await new Promise<any[]>((resolve) => {
+      // Handler khi có dữ liệu về
+      const handler = (msgs: any[], msgType: number) => {
+        if (msgType !== type) return; // Bỏ qua nếu sai loại
+
+        // Hủy đăng ký ngay để không bị trùng lặp ở vòng lặp sau
+        api.listener.off("old_messages", handler);
+        resolve(msgs);
+      };
+
+      // Đăng ký lắng nghe
+      api.listener.on("old_messages", handler);
+
+      // Gửi yêu cầu lấy tin (Scroll lên)
+      // lastMsgId là ID của tin nhắn CŨ NHẤT hiện tại -> Zalo sẽ lấy các tin cũ hơn nó
+      api.listener.requestOldMessages(type, lastMsgId);
+
+      // Timeout an toàn: Nếu 10s Zalo không trả lời thì coi như hết tin hoặc lỗi
+      setTimeout(() => {
+        api.listener.off("old_messages", handler);
+        resolve([]);
+      }, config.pageTimeout);
+    });
+
+    // 2. Xử lý dữ liệu nhận được
+    if (batchMessages.length === 0) {
+      console.log("[History] ⚠️ Không còn tin nhắn cũ hơn hoặc bị timeout.");
+      debugLog("HISTORY", `Page ${pageCount}: No more messages or timeout`);
+      hasMore = false;
+      break;
+    }
+
+    // 3. Sắp xếp tin nhắn trong batch này (để tìm ra tin cũ nhất)
+    batchMessages.sort(
+      (a, b) => parseInt(b.data.msgId) - parseInt(a.data.msgId)
+    ); // Mới nhất -> Cũ nhất
+
+    // Thêm vào danh sách tổng
+    allMessages = [...allMessages, ...batchMessages];
+
+    // Cập nhật con trỏ lastMsgId = tin nhắn cũ nhất trong đám vừa lấy
+    const oldestMessageInBatch = batchMessages[batchMessages.length - 1];
+    lastMsgId = oldestMessageInBatch.data.msgId;
+
+    console.log(
+      `[History]    + Trang ${pageCount}: Lấy được ${batchMessages.length} tin. (Tổng: ${allMessages.length})`
+    );
+    debugLog(
+      "HISTORY",
+      `Page ${pageCount}: ${batchMessages.length} messages, total=${allMessages.length}, lastMsgId=${lastMsgId}`
+    );
+
+    // 4. Kiểm tra điều kiện dừng
+    if (allMessages.length >= targetLimit) break;
+
+    // 5. DELAY QUAN TRỌNG (Anti-Ban)
+    // Nghỉ ngẫu nhiên từ 2s đến 5s giữa các lần kéo
+    const waitTime = randomDelay(config.minDelay, config.maxDelay);
+    console.log(
+      `[History]    💤 Nghỉ ${(waitTime / 1000).toFixed(
+        1
+      )}s cho đỡ bị nghi là Bot...`
+    );
+    debugLog("HISTORY", `Sleeping ${waitTime}ms before next page`);
+    await sleep(waitTime);
+  }
+
+  // Sắp xếp lại toàn bộ theo thời gian (Cũ -> Mới) để AI đọc hiểu
+  allMessages.sort((a, b) => parseInt(a.data.ts) - parseInt(b.data.ts));
+
+  console.log(
+    `[History] ✅ Hoàn tất! Đã tải tổng cộng ${allMessages.length} tin nhắn.`
+  );
+  debugLog(
+    "HISTORY",
+    `fetchFullHistory complete: ${allMessages.length} messages in ${pageCount} pages`
+  );
+
+  return allMessages;
+}
+
+/**
  * Preload tất cả tin nhắn cũ từ Zalo khi bot start
- * Gọi hàm này ngay sau khi login thành công
+ * Sử dụng pagination với delay anti-ban
  */
 export async function preloadAllHistory(api: any): Promise<void> {
   if (isPreloaded) {
@@ -187,88 +318,64 @@ export async function preloadAllHistory(api: any): Promise<void> {
     return;
   }
 
-  console.log("[History] 📥 Đang preload lịch sử chat...");
-  debugLog("HISTORY", "Starting preload all history");
+  console.log("[History] 📥 Đang preload lịch sử chat (Pagination mode)...");
+  debugLog("HISTORY", "Starting preload all history with pagination");
 
-  return new Promise((resolve) => {
-    let userDone = false;
-    let groupDone = false;
+  try {
+    const config = getPaginationConfig();
 
-    // Timeout sau 10s
-    const timeout = setTimeout(() => {
-      if (isPreloaded) return; // Đã xong rồi, bỏ qua
-      console.log("[History] ⚠️ Preload timeout, tiếp tục với dữ liệu hiện có");
-      debugLog("HISTORY", "Preload timeout");
-      userDone = true;
-      groupDone = true;
-      isPreloaded = true;
-      resolve();
-    }, 10000);
+    // Load User messages với pagination
+    const userMessages = await fetchFullHistory(api, 0);
 
-    const checkDone = () => {
-      if (userDone && groupDone) {
-        clearTimeout(timeout); // Clear timeout khi đã xong
-        isPreloaded = true;
-        const threadCount = preloadedMessages.size;
-        const totalMsgs = Array.from(preloadedMessages.values()).reduce(
-          (sum, msgs) => sum + msgs.length,
-          0
-        );
-        console.log(
-          `[History] ✅ Preload xong: ${totalMsgs} tin nhắn từ ${threadCount} cuộc trò chuyện`
-        );
-        debugLog(
-          "HISTORY",
-          `Preload complete: ${totalMsgs} messages from ${threadCount} threads`
-        );
-        resolve();
+    // Group messages theo threadId
+    for (const msg of userMessages) {
+      const threadId = msg.threadId;
+      if (!preloadedMessages.has(threadId)) {
+        preloadedMessages.set(threadId, []);
       }
-    };
+      preloadedMessages.get(threadId)!.push(msg);
+    }
+    debugLog("HISTORY", `Preloaded ${userMessages.length} user messages`);
 
-    // Handler cho User messages
-    const userHandler = (messages: any[], msgType: number) => {
-      if (msgType !== 0) return; // 0 = User
-      api.listener.off("old_messages", userHandler);
+    // Delay trước khi load Group messages
+    if (userMessages.length > 0) {
+      const waitTime = randomDelay(config.minDelay, config.maxDelay);
+      console.log(
+        `[History] 💤 Nghỉ ${(waitTime / 1000).toFixed(
+          1
+        )}s trước khi load Group...`
+      );
+      await sleep(waitTime);
+    }
 
-      // Group messages theo threadId
-      for (const msg of messages) {
-        const threadId = msg.threadId;
-        if (!preloadedMessages.has(threadId)) {
-          preloadedMessages.set(threadId, []);
-        }
-        preloadedMessages.get(threadId)!.push(msg);
+    // Load Group messages với pagination
+    const groupMessages = await fetchFullHistory(api, 1);
+
+    for (const msg of groupMessages) {
+      const threadId = msg.threadId;
+      if (!preloadedMessages.has(threadId)) {
+        preloadedMessages.set(threadId, []);
       }
+      preloadedMessages.get(threadId)!.push(msg);
+    }
+    debugLog("HISTORY", `Preloaded ${groupMessages.length} group messages`);
 
-      debugLog("HISTORY", `Preloaded ${messages.length} user messages`);
-      userDone = true;
-      checkDone();
-    };
+    isPreloaded = true;
+    const threadCount = preloadedMessages.size;
+    const totalMsgs = userMessages.length + groupMessages.length;
 
-    // Handler cho Group messages
-    const groupHandler = (messages: any[], msgType: number) => {
-      if (msgType !== 1) return; // 1 = Group
-      api.listener.off("old_messages", groupHandler);
-
-      for (const msg of messages) {
-        const threadId = msg.threadId;
-        if (!preloadedMessages.has(threadId)) {
-          preloadedMessages.set(threadId, []);
-        }
-        preloadedMessages.get(threadId)!.push(msg);
-      }
-
-      debugLog("HISTORY", `Preloaded ${messages.length} group messages`);
-      groupDone = true;
-      checkDone();
-    };
-
-    api.listener.on("old_messages", userHandler);
-    api.listener.on("old_messages", groupHandler);
-
-    // Request cả User và Group messages
-    api.listener.requestOldMessages(0, null); // User
-    api.listener.requestOldMessages(1, null); // Group
-  });
+    console.log(
+      `[History] ✅ Preload xong: ${totalMsgs} tin nhắn từ ${threadCount} cuộc trò chuyện`
+    );
+    debugLog(
+      "HISTORY",
+      `Preload complete: ${totalMsgs} messages from ${threadCount} threads`
+    );
+  } catch (error) {
+    logError("preloadAllHistory", error);
+    console.log("[History] ⚠️ Preload gặp lỗi, tiếp tục với dữ liệu hiện có");
+    isPreloaded = true;
+  }
 }
 
 /**

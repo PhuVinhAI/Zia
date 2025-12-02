@@ -13,6 +13,12 @@
     "logFile": "logs/bot.txt",
     "unauthorizedLogFile": "logs/unauthorized.json"
   },
+  "historyLoader": {
+    "defaultLimit": 100,
+    "minDelayMs": 2000,
+    "maxDelayMs": 5000,
+    "pageTimeoutMs": 10000
+  },
   "retry": {
     "maxRetries": 3,
     "baseDelayMs": 2000,
