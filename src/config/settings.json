@@ -12,7 +12,7 @@
     "logFile": "logs/bot.log",
     "unauthorizedLogFile": "logs/unauthorized.json"
   },
-  "allowedUserIds": [],
+  "allowedUserIds": ["4779843125887605364"],
   "stickers": {
     "keywords": [
       "hello",
