@@ -129,7 +129,8 @@ async function buildMessageParts(
   for (const item of media) {
     try {
       if (item.type === "youtube" && item.url) {
-        parts.push({ fileData: { fileUri: item.url } });
+        // YouTube URL được Gemini xử lý trực tiếp qua fileData
+        parts.push({ fileData: { fileUri: item.url, mimeType: "video/mp4" } });
         debugLog("GEMINI", `Added YouTube: ${item.url}`);
       } else if (item.base64) {
         parts.push({
