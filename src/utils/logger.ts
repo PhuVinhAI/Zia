@@ -1,15 +1,13 @@
 import * as fs from "fs";
 import * as path from "path";
 
-let logFile: string | null = null;
 let logStream: fs.WriteStream | null = null;
+let fileLoggingEnabled = false;
 
 /**
  * Khởi tạo file logger
  */
 export function initFileLogger(filePath: string): void {
-  logFile = filePath;
-
   // Tạo thư mục logs nếu chưa có
   const dir = path.dirname(filePath);
   if (!fs.existsSync(dir)) {
@@ -21,8 +19,8 @@ export function initFileLogger(filePath: string): void {
 
   // Ghi header khi khởi động
   const startMsg = `\n${"=".repeat(
-    60
-  )}\n[${new Date().toISOString()}] Bot started\n${"=".repeat(60)}\n`;
+    80
+  )}\n[${new Date().toISOString()}] 🚀 BOT STARTED\n${"=".repeat(80)}\n`;
   logStream.write(startMsg);
 
   console.log(`[Logger] 📝 Ghi log ra file: ${filePath}`);
@@ -56,6 +54,8 @@ const originalConsole = {
  * Override console để ghi ra cả file
  */
 export function enableFileLogging(): void {
+  fileLoggingEnabled = true;
+
   console.log = (...args: any[]) => {
     originalConsole.log(...args);
     writeToFile("LOG", ...args);
@@ -78,6 +78,13 @@ export function enableFileLogging(): void {
 }
 
 /**
+ * Kiểm tra file logging có bật không
+ */
+export function isFileLoggingEnabled(): boolean {
+  return fileLoggingEnabled;
+}
+
+/**
  * Đóng file logger
  */
 export function closeFileLogger(): void {
@@ -91,6 +98,7 @@ export function closeFileLogger(): void {
  * Ghi log debug chi tiết (chỉ ghi vào file, không hiện console)
  */
 export function debugLog(category: string, ...args: any[]): void {
+  if (!fileLoggingEnabled) return;
   writeToFile(`DEBUG:${category}`, ...args);
 }
 
@@ -102,5 +110,73 @@ export function logMessage(
   threadId: string,
   data: any
 ): void {
+  if (!fileLoggingEnabled) return;
   writeToFile(`MSG:${direction}`, `Thread: ${threadId}`, data);
+}
+
+/**
+ * Log bước xử lý (để debug flow)
+ */
+export function logStep(step: string, details?: any): void {
+  if (!fileLoggingEnabled) return;
+  writeToFile("STEP", `>>> ${step}`, details || "");
+}
+
+/**
+ * Log API call (Gemini, Zalo...)
+ */
+export function logAPI(
+  service: string,
+  action: string,
+  request?: any,
+  response?: any
+): void {
+  if (!fileLoggingEnabled) return;
+  writeToFile(`API:${service}`, action, { request, response });
+}
+
+/**
+ * Log AI response đầy đủ
+ */
+export function logAIResponse(prompt: string, rawResponse: string): void {
+  if (!fileLoggingEnabled) return;
+  writeToFile("AI", "─".repeat(40));
+  writeToFile(
+    "AI:PROMPT",
+    prompt.substring(0, 500) + (prompt.length > 500 ? "..." : "")
+  );
+  writeToFile("AI:RESPONSE", rawResponse);
+  writeToFile("AI", "─".repeat(40));
+}
+
+/**
+ * Log error với stack trace
+ */
+export function logError(context: string, error: any): void {
+  if (!fileLoggingEnabled) return;
+  writeToFile("ERROR", `[${context}]`, {
+    message: error?.message || String(error),
+    stack: error?.stack,
+  });
+}
+
+/**
+ * Log Zalo API call với request và response
+ */
+export function logZaloAPI(
+  action: string,
+  request: any,
+  response?: any,
+  error?: any
+): void {
+  if (!fileLoggingEnabled) return;
+
+  if (error) {
+    writeToFile(`ZALO:${action}`, "❌ ERROR", {
+      request,
+      error: error?.message || error,
+    });
+  } else {
+    writeToFile(`ZALO:${action}`, { request, response });
+  }
 }

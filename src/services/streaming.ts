@@ -1,6 +1,7 @@
 import { ai, GEMINI_MODEL, GEMINI_CONFIG } from "./gemini.js";
 import { SYSTEM_PROMPT } from "../config/index.js";
 import { ReactionType } from "../config/schema.js";
+import { logAIResponse, logError, debugLog } from "../utils/logger.js";
 
 // Callback types cho streaming
 export interface StreamCallbacks {
@@ -145,6 +146,14 @@ export async function generateContentStream(
       }
     }
 
+    // Log full response
+    logAIResponse(`[STREAM] ${prompt}`, state.buffer);
+    debugLog("STREAM", "Parsed:", {
+      reactions: Array.from(state.sentReactions),
+      stickers: Array.from(state.sentStickers),
+      messages: Array.from(state.sentMessages),
+    });
+
     // Xử lý plain text còn lại (nếu có)
     const plainText = getPlainText(state.buffer);
     if (plainText && callbacks.onMessage) {
@@ -153,6 +162,7 @@ export async function generateContentStream(
 
     await callbacks.onComplete?.();
   } catch (error) {
+    logError("generateContentStream", error);
     console.error("[Streaming] Error:", error);
     callbacks.onError?.(error as Error);
   }
@@ -197,6 +207,14 @@ export async function chatStream(
       }
     }
 
+    // Log full response
+    logAIResponse(`[CHAT] ${message}`, state.buffer);
+    debugLog("CHAT", "Parsed:", {
+      reactions: Array.from(state.sentReactions),
+      stickers: Array.from(state.sentStickers),
+      messages: Array.from(state.sentMessages),
+    });
+
     // Xử lý plain text còn lại
     const plainText = getPlainText(state.buffer);
     if (plainText && callbacks.onMessage) {
@@ -205,6 +223,7 @@ export async function chatStream(
 
     await callbacks.onComplete?.();
   } catch (error) {
+    logError("chatStream", error);
     console.error("[Chat Streaming] Error:", error);
     callbacks.onError?.(error as Error);
   }

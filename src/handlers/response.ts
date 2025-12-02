@@ -2,6 +2,7 @@ import { ThreadType, Reactions } from "../services/zalo.js";
 import { getRawHistory } from "../utils/history.js";
 import { createRichMessage } from "../utils/richText.js";
 import { AIResponse } from "../config/schema.js";
+import { logZaloAPI, logMessage } from "../utils/logger.js";
 
 const reactionMap: Record<string, any> = {
   heart: Reactions.HEART,
@@ -16,17 +17,39 @@ const reactionMap: Record<string, any> = {
 async function sendSticker(api: any, keyword: string, threadId: string) {
   try {
     console.log(`[Bot] 🎨 Tìm sticker: "${keyword}"`);
+
     const stickerIds = await api.getStickers(keyword);
+    logZaloAPI("getStickers", { keyword }, stickerIds);
+
     if (stickerIds?.length > 0) {
       const randomId =
         stickerIds[Math.floor(Math.random() * stickerIds.length)];
+
       const stickerDetails = await api.getStickersDetail(randomId);
+      logZaloAPI("getStickersDetail", { stickerId: randomId }, stickerDetails);
+
       if (stickerDetails?.[0]) {
-        await api.sendSticker(stickerDetails[0], threadId, ThreadType.User);
+        const result = await api.sendSticker(
+          stickerDetails[0],
+          threadId,
+          ThreadType.User
+        );
+        logZaloAPI(
+          "sendSticker",
+          { sticker: stickerDetails[0], threadId },
+          result
+        );
+
         console.log(`[Bot] ✅ Đã gửi sticker!`);
+        logMessage("OUT", threadId, {
+          type: "sticker",
+          keyword,
+          stickerId: randomId,
+        });
       }
     }
-  } catch (e) {
+  } catch (e: any) {
+    logZaloAPI("sendSticker", { keyword, threadId }, null, e);
     console.error("[Bot] Lỗi gửi sticker:", e);
   }
 }
@@ -43,11 +66,19 @@ export async function sendResponse(
       const reaction = reactionMap[r];
       if (reaction) {
         try {
-          await api.addReaction(reaction, originalMessage);
+          const result = await api.addReaction(reaction, originalMessage);
+          logZaloAPI(
+            "addReaction",
+            { reaction: r, msgId: originalMessage?.data?.msgId },
+            result
+          );
+
           console.log(`[Bot] 💖 Đã thả reaction: ${r}`);
-          // Delay nhỏ giữa các reaction
+          logMessage("OUT", threadId, { type: "reaction", reaction: r });
+
           await new Promise((resolve) => setTimeout(resolve, 300));
-        } catch (e) {
+        } catch (e: any) {
+          logZaloAPI("addReaction", { reaction: r, threadId }, null, e);
           console.error("[Bot] Lỗi thả reaction:", e);
         }
       }
@@ -75,8 +106,19 @@ export async function sendResponse(
     if (msg.text) {
       try {
         const richMsg = createRichMessage(`🤖 AI: ${msg.text}`, quoteData);
-        await api.sendMessage(richMsg, threadId, ThreadType.User);
-      } catch (e) {
+        const result = await api.sendMessage(
+          richMsg,
+          threadId,
+          ThreadType.User
+        );
+        logZaloAPI("sendMessage", { message: richMsg, threadId }, result);
+        logMessage("OUT", threadId, {
+          type: "text",
+          text: msg.text,
+          quoteIndex: msg.quoteIndex,
+        });
+      } catch (e: any) {
+        logZaloAPI("sendMessage", { text: msg.text, threadId }, null, e);
         console.error("[Bot] Lỗi gửi tin nhắn:", e);
         await api.sendMessage(`🤖 AI: ${msg.text}`, threadId, ThreadType.User);
       }

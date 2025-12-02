@@ -191,14 +191,9 @@ async function main() {
     const threadId = message.threadId;
     const isSelf = message.isSelf;
 
-    // Log tin nhắn đến (chi tiết trong file log)
+    // Log RAW message từ Zalo (đầy đủ để debug)
     if (CONFIG.fileLogging) {
-      logMessage("IN", threadId, {
-        msgType: message.data?.msgType,
-        content: message.data?.content,
-        sender: message.data?.dName,
-        isSelf,
-      });
+      logMessage("IN", threadId, message); // Log toàn bộ raw message
     }
 
     if (isSelf) return;

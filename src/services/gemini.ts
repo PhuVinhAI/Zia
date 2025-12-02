@@ -6,6 +6,7 @@ import {
   parseAIResponse,
 } from "../config/schema.js";
 import { fetchAsBase64 } from "../utils/fetch.js";
+import { logAIResponse, logError } from "../utils/logger.js";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
 
@@ -113,6 +114,7 @@ export async function generateWithImage(
   imageUrl: string
 ): Promise<AIResponse> {
   try {
+    console.log(`[Gemini] 🖼️ Xử lý ảnh: ${imageUrl.substring(0, 80)}...`);
     const base64Image = await fetchAsBase64(imageUrl);
     if (!base64Image) {
       return {
@@ -133,8 +135,11 @@ export async function generateWithImage(
       config: GEMINI_CONFIG,
     });
 
-    return parseAIResponse(response.text || "{}");
+    const rawText = response.text || "{}";
+    logAIResponse(`[IMAGE] ${prompt}`, rawText);
+    return parseAIResponse(rawText);
   } catch (error) {
+    logError("generateWithImage", error);
     console.error("Gemini Image Error:", error);
     return DEFAULT_RESPONSE;
   }
@@ -222,8 +227,11 @@ export async function generateContent(prompt: string): Promise<AIResponse> {
       contents: `${SYSTEM_PROMPT}\n\nUser: ${prompt}`,
       config: GEMINI_CONFIG,
     });
-    return parseAIResponse(response.text || "{}");
+    const rawText = response.text || "{}";
+    logAIResponse(prompt, rawText);
+    return parseAIResponse(rawText);
   } catch (error) {
+    logError("generateContent", error);
     console.error("Gemini Error:", error);
     return DEFAULT_RESPONSE;
   }
@@ -262,6 +270,7 @@ export async function generateWithMultipleImages(
   imageUrls: string[]
 ): Promise<AIResponse> {
   try {
+    console.log(`[Gemini] 🖼️ Xử lý ${imageUrls.length} ảnh`);
     const contents: any[] = [{ text: `${SYSTEM_PROMPT}\n\n${prompt}` }];
 
     for (const url of imageUrls) {
@@ -290,8 +299,11 @@ export async function generateWithMultipleImages(
       config: GEMINI_CONFIG,
     });
 
-    return parseAIResponse(response.text || "{}");
+    const rawText = response.text || "{}";
+    logAIResponse(`[${imageUrls.length} IMAGES] ${prompt}`, rawText);
+    return parseAIResponse(rawText);
   } catch (error) {
+    logError("generateWithMultipleImages", error);
     console.error("Gemini Multiple Images Error:", error);
     return DEFAULT_RESPONSE;
   }

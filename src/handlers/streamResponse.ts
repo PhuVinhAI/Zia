@@ -8,6 +8,7 @@ import {
   getSentMessage,
   removeSentMessage,
 } from "../utils/messageStore.js";
+import { logMessage, logZaloAPI } from "../utils/logger.js";
 
 const reactionMap: Record<string, any> = {
   heart: Reactions.HEART,
@@ -22,17 +23,42 @@ const reactionMap: Record<string, any> = {
 async function sendSticker(api: any, keyword: string, threadId: string) {
   try {
     console.log(`[Bot] 🎨 Tìm sticker: "${keyword}"`);
+
+    // API: getStickers
     const stickerIds = await api.getStickers(keyword);
+    logZaloAPI("getStickers", { keyword }, stickerIds);
+
     if (stickerIds?.length > 0) {
       const randomId =
         stickerIds[Math.floor(Math.random() * stickerIds.length)];
+
+      // API: getStickersDetail
       const stickerDetails = await api.getStickersDetail(randomId);
+      logZaloAPI("getStickersDetail", { stickerId: randomId }, stickerDetails);
+
       if (stickerDetails?.[0]) {
-        await api.sendSticker(stickerDetails[0], threadId, ThreadType.User);
+        // API: sendSticker
+        const result = await api.sendSticker(
+          stickerDetails[0],
+          threadId,
+          ThreadType.User
+        );
+        logZaloAPI(
+          "sendSticker",
+          { sticker: stickerDetails[0], threadId },
+          result
+        );
+
         console.log(`[Bot] ✅ Đã gửi sticker!`);
+        logMessage("OUT", threadId, {
+          type: "sticker",
+          keyword,
+          stickerId: randomId,
+        });
       }
     }
-  } catch (e) {
+  } catch (e: any) {
+    logZaloAPI("sendSticker", { keyword, threadId }, null, e);
     console.error("[Bot] Lỗi gửi sticker:", e);
   }
 }
@@ -96,9 +122,18 @@ export function createStreamCallbacks(
       const reactionObj = reactionMap[reaction];
       if (reactionObj && originalMessage) {
         try {
-          await api.addReaction(reactionObj, originalMessage);
+          // API: addReaction
+          const result = await api.addReaction(reactionObj, originalMessage);
+          logZaloAPI(
+            "addReaction",
+            { reaction, reactionObj, msgId: originalMessage?.data?.msgId },
+            result
+          );
+
           console.log(`[Bot] 💖 Streaming: Đã thả reaction: ${reaction}`);
-        } catch (e) {
+          logMessage("OUT", threadId, { type: "reaction", reaction });
+        } catch (e: any) {
+          logZaloAPI("addReaction", { reaction, threadId }, null, e);
           console.error("[Bot] Lỗi thả reaction:", e);
         }
       }
@@ -145,9 +180,23 @@ export function createStreamCallbacks(
 
       try {
         const richMsg = createRichMessage(`🤖 AI: ${text}`, quoteData);
-        await api.sendMessage(richMsg, threadId, ThreadType.User);
+
+        // API: sendMessage
+        const result = await api.sendMessage(
+          richMsg,
+          threadId,
+          ThreadType.User
+        );
+        logZaloAPI(
+          "sendMessage",
+          { message: richMsg, threadId, quoteData },
+          result
+        );
+
         console.log(`[Bot] 📤 Streaming: Đã gửi tin nhắn #${messageCount}`);
-      } catch (e) {
+        logMessage("OUT", threadId, { type: "text", text, quoteIndex });
+      } catch (e: any) {
+        logZaloAPI("sendMessage", { text, threadId }, null, e);
         console.error("[Bot] Lỗi gửi tin nhắn:", e);
         await api.sendMessage(`🤖 AI: ${text}`, threadId, ThreadType.User);
       }
@@ -167,16 +216,19 @@ export function createStreamCallbacks(
       }
 
       try {
-        await api.undo(
-          { msgId: msg.msgId, cliMsgId: msg.cliMsgId },
-          threadId,
-          ThreadType.User
-        );
+        const undoData = { msgId: msg.msgId, cliMsgId: msg.cliMsgId };
+
+        // API: undo
+        const result = await api.undo(undoData, threadId, ThreadType.User);
+        logZaloAPI("undo", { undoData, threadId }, result);
+
         removeSentMessage(threadId, msg.msgId);
         console.log(
           `[Bot] 🗑️ Đã thu hồi tin nhắn: "${msg.content.substring(0, 30)}..."`
         );
-      } catch (e) {
+        logMessage("OUT", threadId, { type: "undo", msgId: msg.msgId });
+      } catch (e: any) {
+        logZaloAPI("undo", { msgId: msg.msgId, threadId }, null, e);
         console.error("[Bot] Lỗi thu hồi tin nhắn:", e);
       }
     },
