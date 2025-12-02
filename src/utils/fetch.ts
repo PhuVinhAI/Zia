@@ -1,9 +1,15 @@
+import { debugLog, logError } from "./logger.js";
+
 export async function fetchAsBase64(url: string): Promise<string | null> {
   try {
+    debugLog("FETCH", `Fetching: ${url.substring(0, 80)}...`);
     const response = await fetch(url);
     const buffer = await response.arrayBuffer();
-    return Buffer.from(buffer).toString("base64");
-  } catch (e) {
+    const base64 = Buffer.from(buffer).toString("base64");
+    debugLog("FETCH", `Success: ${base64.length} chars base64`);
+    return base64;
+  } catch (e: any) {
+    logError("fetchAsBase64", e);
     console.error("Lỗi tải file:", e);
     return null;
   }
@@ -11,15 +17,21 @@ export async function fetchAsBase64(url: string): Promise<string | null> {
 
 export async function fetchAsText(url: string): Promise<string | null> {
   try {
+    debugLog("FETCH", `Fetching text: ${url.substring(0, 80)}...`);
     const response = await fetch(url);
     const buffer = await response.arrayBuffer();
     // Thử decode với UTF-8, nếu lỗi thì dùng latin1
     try {
-      return new TextDecoder("utf-8", { fatal: true }).decode(buffer);
+      const text = new TextDecoder("utf-8", { fatal: true }).decode(buffer);
+      debugLog("FETCH", `Text success: ${text.length} chars (UTF-8)`);
+      return text;
     } catch {
-      return new TextDecoder("latin1").decode(buffer);
+      const text = new TextDecoder("latin1").decode(buffer);
+      debugLog("FETCH", `Text success: ${text.length} chars (latin1)`);
+      return text;
     }
-  } catch (e) {
+  } catch (e: any) {
+    logError("fetchAsText", e);
     console.error("Lỗi tải file text:", e);
     return null;
   }

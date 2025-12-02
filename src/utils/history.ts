@@ -2,6 +2,7 @@ import { Content, Part } from "@google/genai";
 import { CONFIG } from "../config/index.js";
 import { ai } from "../services/gemini.js";
 import { fetchAsBase64 } from "./fetch.js";
+import { debugLog, logError } from "./logger.js";
 
 const messageHistory = new Map<string, Content[]>();
 const rawMessageHistory = new Map<string, any[]>(); // Lưu raw Zalo messages cho quote
@@ -67,8 +68,9 @@ export async function countTokens(contents: Content[]): Promise<number> {
       contents: filteredContents,
     });
     return result.totalTokens || 0;
-  } catch (error) {
+  } catch (error: any) {
     // Fallback: ước tính dựa trên text length
+    logError("countTokens", error);
     console.error("[History] Token count error (fallback):", error);
     const text = contents
       .flatMap(
@@ -76,7 +78,9 @@ export async function countTokens(contents: Content[]): Promise<number> {
           c.parts?.filter((p) => "text" in p).map((p) => (p as any).text) || []
       )
       .join(" ");
-    return Math.ceil(text.length / 4) + contents.length * 100; // +100 per media item
+    const estimated = Math.ceil(text.length / 4) + contents.length * 100;
+    debugLog("HISTORY", `Token fallback estimate: ${estimated}`);
+    return estimated;
   }
 }
 
@@ -319,6 +323,11 @@ export async function saveToHistory(
   threadId: string,
   message: any
 ): Promise<void> {
+  debugLog(
+    "HISTORY",
+    `saveToHistory: thread=${threadId}, msgType=${message.data?.msgType}`
+  );
+
   const history = messageHistory.get(threadId) || [];
   const rawHistory = rawMessageHistory.get(threadId) || [];
 
@@ -328,6 +337,8 @@ export async function saveToHistory(
 
   messageHistory.set(threadId, history);
   rawMessageHistory.set(threadId, rawHistory);
+
+  debugLog("HISTORY", `History size: ${history.length} messages`);
   await trimHistoryByTokens(threadId);
 }
 

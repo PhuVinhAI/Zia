@@ -24,8 +24,12 @@ export const DEFAULT_RESPONSE: AIResponse = {
 
 const VALID_REACTIONS = ["heart", "haha", "wow", "sad", "angry", "like"];
 
+import { debugLog } from "../utils/logger.js";
+
 // Parse AI response từ text với tag []
 export function parseAIResponse(text: string): AIResponse {
+  debugLog("PARSE", `Input text length: ${text.length}`);
+
   try {
     const result: AIResponse = {
       reactions: [],
@@ -100,12 +104,18 @@ export function parseAIResponse(text: string): AIResponse {
 
     // Nếu không có gì, trả về default
     if (result.messages.length === 0 && result.reactions.length === 0) {
+      debugLog("PARSE", "Empty result, returning default");
       return DEFAULT_RESPONSE;
     }
 
+    debugLog(
+      "PARSE",
+      `Parsed: ${result.reactions.length} reactions, ${result.messages.length} messages, ${result.undoIndexes.length} undos`
+    );
     return result;
   } catch (e) {
     console.error("[Parser] Error:", e, "Text:", text);
+    debugLog("PARSE", `Error parsing: ${e}`);
     return DEFAULT_RESPONSE;
   }
 }
