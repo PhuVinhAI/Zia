@@ -30,7 +30,7 @@ debugLog("GEMINI", "Initializing Gemini API...");
 export const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
 
 // ============ GEMINI CONFIG ============
-export const GEMINI_MODEL = "gemini-2.5-flash";
+export const GEMINI_MODEL = "models/gemini-flash-latest";
 
 export const GEMINI_CONFIG = {
   temperature: 1,

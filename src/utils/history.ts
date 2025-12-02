@@ -13,7 +13,7 @@ const initializedThreads = new Set<string>();
 const preloadedMessages = new Map<string, any[]>();
 let isPreloaded = false;
 
-const GEMINI_MODEL = "gemini-2.5-flash";
+const GEMINI_MODEL = "models/gemini-flash-latest";
 
 // ========== PAGINATION HISTORY LOADER ==========
 // Cơ chế cào lịch sử tin nhắn theo trang với delay anti-ban
