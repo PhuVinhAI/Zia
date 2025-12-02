@@ -172,15 +172,30 @@ export async function handleFile(api: any, message: any, threadId: string) {
     );
 
     let aiReply;
+    const mimeType = CONFIG.mimeTypes[fileExt] || "application/octet-stream";
+
     // 1. Nếu Gemini hỗ trợ native → gửi trực tiếp
     if (isGeminiSupported(fileExt)) {
-      const mimeType = CONFIG.mimeTypes[fileExt] || "application/octet-stream";
       console.log(`[Bot] ✅ Gemini hỗ trợ native: ${fileExt}`);
-      aiReply = await generateWithFile(
-        PROMPTS.file(fileName, fileSize),
-        fileUrl,
-        mimeType
-      );
+
+      // Dùng prompt phù hợp với loại file
+      let prompt: string;
+      if (mimeType.startsWith("video/")) {
+        // Video file → dùng prompt video
+        const duration = 0; // Không biết duration từ file attachment
+        prompt = PROMPTS.video(duration);
+        console.log(`[Bot] 🎬 Xử lý như video`);
+      } else if (mimeType.startsWith("audio/")) {
+        // Audio file → dùng prompt voice
+        const duration = 0;
+        prompt = PROMPTS.voice(duration);
+        console.log(`[Bot] 🎤 Xử lý như audio`);
+      } else {
+        // Các file khác (PDF, HTML, text...)
+        prompt = PROMPTS.file(fileName, fileSize);
+      }
+
+      aiReply = await generateWithFile(prompt, fileUrl, mimeType);
     }
     // 2. Nếu có thể convert sang text → convert sang .txt và gửi như file thường
     else if (isTextConvertible(fileExt)) {
