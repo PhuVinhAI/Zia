@@ -21,6 +21,18 @@ import {
   tvuNotificationsTool,
 } from "./tvu/index.js";
 
+// Jikan Tools (MyAnimeList API)
+import {
+  jikanSearchTool,
+  jikanDetailsTool,
+  jikanTopTool,
+  jikanSeasonTool,
+  jikanCharactersTool,
+  jikanRecommendationsTool,
+  jikanGenresTool,
+  jikanEpisodesTool,
+} from "./jikan/index.js";
+
 // ═══════════════════════════════════════════════════
 // TOOL REGISTRY
 // ═══════════════════════════════════════════════════
@@ -44,6 +56,16 @@ toolRegistry.set("tvuGrades", tvuGradesTool);
 toolRegistry.set("tvuTuition", tvuTuitionTool);
 toolRegistry.set("tvuCurriculum", tvuCurriculumTool);
 toolRegistry.set("tvuNotifications", tvuNotificationsTool);
+
+// Register Jikan tools (Anime/Manga)
+toolRegistry.set("jikanSearch", jikanSearchTool);
+toolRegistry.set("jikanDetails", jikanDetailsTool);
+toolRegistry.set("jikanTop", jikanTopTool);
+toolRegistry.set("jikanSeason", jikanSeasonTool);
+toolRegistry.set("jikanCharacters", jikanCharactersTool);
+toolRegistry.set("jikanRecommendations", jikanRecommendationsTool);
+toolRegistry.set("jikanGenres", jikanGenresTool);
+toolRegistry.set("jikanEpisodes", jikanEpisodesTool);
 
 // Export danh sách tools
 export const registeredTools = Array.from(toolRegistry.values());
