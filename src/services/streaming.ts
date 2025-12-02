@@ -11,6 +11,7 @@ export interface StreamCallbacks {
   onUndo?: (index: number) => Promise<void>;
   onComplete?: () => void | Promise<void>;
   onError?: (error: Error) => void;
+  signal?: AbortSignal; // Signal để hủy streaming khi bị ngắt lời
 }
 
 // Parser state để track các tag đang mở
@@ -30,11 +31,17 @@ const VALID_REACTIONS = ["heart", "haha", "wow", "sad", "angry", "like"];
 /**
  * Parse và xử lý streaming content
  * Gửi ngay khi phát hiện tag hoàn chỉnh
+ * @throws Error("Aborted") nếu signal bị abort
  */
 async function processStreamChunk(
   state: ParserState,
   callbacks: StreamCallbacks
 ): Promise<void> {
+  // Kiểm tra abort signal trước khi xử lý
+  if (callbacks.signal?.aborted) {
+    throw new Error("Aborted");
+  }
+
   const { buffer } = state;
 
   // 1. Parse [reaction:xxx] - gửi ngay khi phát hiện
@@ -146,6 +153,12 @@ export async function generateContentStream(
 
     let chunkCount = 0;
     for await (const chunk of response) {
+      // Kiểm tra abort signal mỗi chunk
+      if (callbacks.signal?.aborted) {
+        debugLog("STREAM", `Aborted at chunk #${chunkCount}`);
+        throw new Error("Aborted");
+      }
+
       if (chunk.text) {
         chunkCount++;
         state.buffer += chunk.text;
@@ -185,7 +198,12 @@ export async function generateContentStream(
       chunkCount,
       bufferLength: state.buffer.length,
     });
-  } catch (error) {
+  } catch (error: any) {
+    // Nếu bị abort thì không log lỗi đỏ
+    if (error.message === "Aborted" || callbacks.signal?.aborted) {
+      debugLog("STREAM", "Stream aborted by user interruption");
+      return;
+    }
     logError("generateContentStream", error);
     console.error("[Streaming] Error:", error);
     callbacks.onError?.(error as Error);

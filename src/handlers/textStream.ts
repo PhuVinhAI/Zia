@@ -7,7 +7,8 @@ import {
   getHistoryContext,
 } from "../utils/history.js";
 import { CONFIG, PROMPTS } from "../config/index.js";
-import { logStep, logError } from "../utils/logger.js";
+import { logStep, logError, debugLog } from "../utils/logger.js";
+import { completeTask } from "../utils/taskManager.js";
 
 /**
  * Giữ trạng thái Typing liên tục cho đến khi dừng
@@ -29,11 +30,13 @@ function startTyping(api: any, threadId: string, type: any) {
 
 /**
  * Handler text với streaming - gửi response ngay khi có tag hoàn chỉnh
+ * @param signal - AbortSignal để hủy khi bị ngắt lời
  */
 export async function handleTextStream(
   api: any,
   message: any,
-  threadId: string
+  threadId: string,
+  signal?: AbortSignal
 ) {
   const content = message.data?.content;
   let userPrompt = content;
@@ -84,10 +87,20 @@ export async function handleTextStream(
   // Tạo callbacks cho streaming
   const callbacks = createStreamCallbacks(api, threadId, message);
 
+  // Gắn signal vào callbacks để streaming service kiểm tra
+  if (signal) {
+    callbacks.signal = signal;
+  }
+
   // Buffer để lưu full response cho history
   let fullResponse = "";
   const originalOnMessage = callbacks.onMessage;
   callbacks.onMessage = async (text: string, quoteIndex?: number) => {
+    // Kiểm tra abort trước khi gửi tin nhắn
+    if (signal?.aborted) {
+      debugLog("TEXTSTREAM", "Aborted: Skipping message send");
+      throw new Error("Aborted");
+    }
     fullResponse += text + " ";
     await originalOnMessage?.(text, quoteIndex);
   };
@@ -111,12 +124,23 @@ export async function handleTextStream(
     await generateContentStream(promptWithHistory, callbacks);
   } catch (error: any) {
     stopTyping();
+    // Nếu bị abort thì không log lỗi đỏ, chỉ log info
+    if (error.message === "Aborted" || signal?.aborted) {
+      console.log(`[Bot] 🛑 Đã dừng trả lời thread ${threadId} do có tin mới.`);
+      debugLog("TEXTSTREAM", `Aborted for thread ${threadId}`);
+      return; // Thoát sớm, không lưu history
+    }
     logError("handleTextStream", error);
     throw error;
+  } finally {
+    // Đánh dấu task hoàn thành (nếu không bị abort)
+    if (!signal?.aborted) {
+      completeTask(threadId);
+    }
   }
 
-  // Lưu response vào history
-  if (fullResponse.trim()) {
+  // Lưu response vào history (chỉ khi không bị abort)
+  if (fullResponse.trim() && !signal?.aborted) {
     await saveResponseToHistory(threadId, fullResponse.trim());
     logStep("savedResponse", { responseLength: fullResponse.length });
   }
