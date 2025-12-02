@@ -31,10 +31,14 @@ CÁCH TRẢ LỜI - Dùng các tag:
 [reaction:INDEX:xxx] - Thả reaction vào tin cụ thể trong batch (ví dụ: [reaction:0:heart] thả tim vào tin đầu tiên)
 [sticker:xxx] - Gửi sticker (hello/hi/love/haha/sad/cry/angry/wow/ok/thanks/sorry). Có thể dùng NHIỀU lần!
 [msg]nội dung[/msg] - Gửi tin nhắn riêng biệt. Dùng khi muốn gửi NHIỀU tin nhắn.
-[quote:index]nội dung[/quote] - Quote tin nhắn trong batch (index từ 0). Ví dụ: [quote:0]trả lời tin đầu[/quote]
-[quote:-1]nội dung[/quote] - Quote tin nhắn của CHÍNH BẠN đã gửi (-1 = mới nhất, -2 = áp chót)
+[quote:INDEX]câu trả lời[/quote] - Reply vào tin nhắn INDEX (CHỈ viết câu trả lời, KHÔNG lặp lại nội dung tin gốc!)
+[quote:-1]câu trả lời[/quote] - Reply vào tin nhắn của CHÍNH BẠN đã gửi (-1 = mới nhất)
 [undo:-1] - Thu hồi tin nhắn MỚI NHẤT của bạn. Dùng khi muốn xóa/sửa tin đã gửi.
 [undo:0] - Thu hồi tin nhắn ĐẦU TIÊN. Index từ 0 (cũ nhất) đến -1 (mới nhất).
+
+⚠️ QUAN TRỌNG VỀ QUOTE: Khi dùng [quote:INDEX], CHỈ viết câu trả lời của bạn bên trong tag, KHÔNG BAO GIỜ lặp lại nội dung tin nhắn gốc!
+- SAI: [quote:0]Giống con dán hả[/quote] Không, đó là con kiến! ← Lặp lại tin gốc
+- ĐÚNG: [quote:0]Không, đó là con kiến![/quote] ← Chỉ có câu trả lời
 
 VÍ DỤ TỰ NHIÊN:
 - User: "Hôm nay buồn quá" → AI: [reaction:sad] [sticker:sad] [msg]Sao vậy? Kể mình nghe đi.[/msg]
@@ -42,7 +46,7 @@ VÍ DỤ TỰ NHIÊN:
 - User: "Ok bye nhé" → AI: [reaction:heart] [sticker:ok]
 - User gửi batch [0]"Alo" [1]"Có đó ko" [2]"Giúp mình với" → AI: [reaction:0:like][reaction:2:heart] Có đây! Bạn cần gì?
 - Nhiều reaction vào nhiều tin: [reaction:0:heart][reaction:1:haha][reaction:2:wow]
-- Quote tin trong batch: [quote:0]Trả lời tin đầu tiên[/quote]
+- Quote tin trong batch: [quote:0]Đây là câu trả lời cho tin đầu tiên![/quote]
 - Nhiều sticker: [sticker:hello] [sticker:love]
 - Nhiều tin nhắn: [msg]Tin 1[/msg] [msg]Tin 2[/msg] [msg]Tin 3[/msg]
 - Text đơn giản: Chào bạn! (không cần tag)
@@ -87,10 +91,14 @@ CÁCH TRẢ LỜI - Dùng các tag:
 [reaction:INDEX:xxx] - Thả reaction vào tin cụ thể trong batch (ví dụ: [reaction:0:heart] thả tim vào tin đầu tiên)
 [sticker:xxx] - Gửi sticker (hello/hi/love/haha/sad/cry/angry/wow/ok/thanks/sorry). Có thể dùng NHIỀU lần!
 [msg]nội dung[/msg] - Gửi tin nhắn riêng biệt. Dùng khi muốn gửi NHIỀU tin nhắn.
-[quote:index]nội dung[/quote] - Quote tin nhắn trong batch (index từ 0). Ví dụ: [quote:0]trả lời tin đầu[/quote]
-[quote:-1]nội dung[/quote] - Quote tin nhắn của CHÍNH BẠN đã gửi (-1 = mới nhất, -2 = áp chót)
+[quote:INDEX]câu trả lời[/quote] - Reply vào tin nhắn INDEX (CHỈ viết câu trả lời, KHÔNG lặp lại nội dung tin gốc!)
+[quote:-1]câu trả lời[/quote] - Reply vào tin nhắn của CHÍNH BẠN đã gửi (-1 = mới nhất)
 [undo:-1] - Thu hồi tin nhắn MỚI NHẤT của bạn. Dùng khi muốn xóa/sửa tin đã gửi.
 [undo:0] - Thu hồi tin nhắn ĐẦU TIÊN. Index từ 0 (cũ nhất) đến -1 (mới nhất).
+
+⚠️ QUAN TRỌNG VỀ QUOTE: Khi dùng [quote:INDEX], CHỈ viết câu trả lời của bạn bên trong tag, KHÔNG BAO GIỜ lặp lại nội dung tin nhắn gốc!
+- SAI: [quote:0]Giống con dán hả[/quote] Không, đó là con kiến! ← Lặp lại tin gốc
+- ĐÚNG: [quote:0]Không, đó là con kiến![/quote] ← Chỉ có câu trả lời
 
 VÍ DỤ TỰ NHIÊN:
 - User: "Hôm nay buồn quá" → AI: [reaction:sad] [sticker:sad] [msg]Sao vậy? Kể mình nghe đi.[/msg]
@@ -98,7 +106,7 @@ VÍ DỤ TỰ NHIÊN:
 - User: "Ok bye nhé" → AI: [reaction:heart] [sticker:ok]
 - User gửi batch [0]"Alo" [1]"Có đó ko" [2]"Giúp mình với" → AI: [reaction:0:like][reaction:2:heart] Có đây! Bạn cần gì?
 - Nhiều reaction vào nhiều tin: [reaction:0:heart][reaction:1:haha][reaction:2:wow]
-- Quote tin trong batch: [quote:0]Trả lời tin đầu tiên[/quote]
+- Quote tin trong batch: [quote:0]Đây là câu trả lời cho tin đầu tiên![/quote]
 - Nhiều sticker: [sticker:hello] [sticker:love]
 - Nhiều tin nhắn: [msg]Tin 1[/msg] [msg]Tin 2[/msg] [msg]Tin 3[/msg]
 - Text đơn giản: Chào bạn! (không cần tag)
@@ -200,7 +208,7 @@ export const PROMPTS = {
 ${parts.join("\n")}
 
 HƯỚNG DẪN:
-- Dùng [quote:INDEX]nội dung[/quote] để reply vào tin nhắn cụ thể
+- Dùng [quote:INDEX]câu trả lời[/quote] để reply vào tin nhắn cụ thể (CHỈ viết câu trả lời, KHÔNG lặp lại nội dung tin gốc!)
 - Dùng [reaction:INDEX:loại] để thả reaction vào tin cụ thể
 - Nếu không cần quote/react tin cụ thể, cứ trả lời bình thường
 
