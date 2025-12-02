@@ -17,7 +17,9 @@
     "defaultLimit": 100,
     "minDelayMs": 2000,
     "maxDelayMs": 5000,
-    "pageTimeoutMs": 10000
+    "pageTimeoutMs": 10000,
+    "loadUser": true,
+    "loadGroup": false
   },
   "retry": {
     "maxRetries": 3,

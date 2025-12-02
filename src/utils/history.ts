@@ -323,46 +323,55 @@ export async function preloadAllHistory(api: any): Promise<void> {
 
   try {
     const config = getPaginationConfig();
+    let totalMsgs = 0;
 
-    // Load User messages với pagination
-    const userMessages = await fetchFullHistory(api, 0);
+    // Load User messages nếu được bật
+    if (CONFIG.historyLoader.loadUser) {
+      const userMessages = await fetchFullHistory(api, 0);
 
-    // Group messages theo threadId
-    for (const msg of userMessages) {
-      const threadId = msg.threadId;
-      if (!preloadedMessages.has(threadId)) {
-        preloadedMessages.set(threadId, []);
+      for (const msg of userMessages) {
+        const threadId = msg.threadId;
+        if (!preloadedMessages.has(threadId)) {
+          preloadedMessages.set(threadId, []);
+        }
+        preloadedMessages.get(threadId)!.push(msg);
       }
-      preloadedMessages.get(threadId)!.push(msg);
-    }
-    debugLog("HISTORY", `Preloaded ${userMessages.length} user messages`);
+      debugLog("HISTORY", `Preloaded ${userMessages.length} user messages`);
+      totalMsgs += userMessages.length;
 
-    // Delay trước khi load Group messages
-    if (userMessages.length > 0) {
-      const waitTime = randomDelay(config.minDelay, config.maxDelay);
-      console.log(
-        `[History] 💤 Nghỉ ${(waitTime / 1000).toFixed(
-          1
-        )}s trước khi load Group...`
-      );
-      await sleep(waitTime);
-    }
-
-    // Load Group messages với pagination
-    const groupMessages = await fetchFullHistory(api, 1);
-
-    for (const msg of groupMessages) {
-      const threadId = msg.threadId;
-      if (!preloadedMessages.has(threadId)) {
-        preloadedMessages.set(threadId, []);
+      // Delay trước khi load Group messages (nếu cần)
+      if (userMessages.length > 0 && CONFIG.historyLoader.loadGroup) {
+        const waitTime = randomDelay(config.minDelay, config.maxDelay);
+        console.log(
+          `[History] 💤 Nghỉ ${(waitTime / 1000).toFixed(
+            1
+          )}s trước khi load Group...`
+        );
+        await sleep(waitTime);
       }
-      preloadedMessages.get(threadId)!.push(msg);
+    } else {
+      console.log("[History] ⏭️ Bỏ qua load User messages (disabled)");
     }
-    debugLog("HISTORY", `Preloaded ${groupMessages.length} group messages`);
+
+    // Load Group messages nếu được bật
+    if (CONFIG.historyLoader.loadGroup) {
+      const groupMessages = await fetchFullHistory(api, 1);
+
+      for (const msg of groupMessages) {
+        const threadId = msg.threadId;
+        if (!preloadedMessages.has(threadId)) {
+          preloadedMessages.set(threadId, []);
+        }
+        preloadedMessages.get(threadId)!.push(msg);
+      }
+      debugLog("HISTORY", `Preloaded ${groupMessages.length} group messages`);
+      totalMsgs += groupMessages.length;
+    } else {
+      console.log("[History] ⏭️ Bỏ qua load Group messages (disabled)");
+    }
 
     isPreloaded = true;
     const threadCount = preloadedMessages.size;
-    const totalMsgs = userMessages.length + groupMessages.length;
 
     console.log(
       `[History] ✅ Preload xong: ${totalMsgs} tin nhắn từ ${threadCount} cuộc trò chuyện`

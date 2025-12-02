@@ -113,6 +113,8 @@ export const CONFIG = {
     minDelayMs: settings.historyLoader?.minDelayMs ?? 2000,
     maxDelayMs: settings.historyLoader?.maxDelayMs ?? 5000,
     pageTimeoutMs: settings.historyLoader?.pageTimeoutMs ?? 10000,
+    loadUser: settings.historyLoader?.loadUser ?? true,
+    loadGroup: settings.historyLoader?.loadGroup ?? false,
   },
 
   // MIME types mapping
