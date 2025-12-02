@@ -12,6 +12,7 @@ import {
   handleText,
   handleTextStream,
 } from "./handlers/index.js";
+import { setupSelfMessageListener } from "./handlers/streamResponse.js";
 
 // Queue tin nhắn theo thread để xử lý tuần tự
 const messageQueues = new Map<string, any[]>();
@@ -132,6 +133,9 @@ async function main() {
   console.log("─".repeat(50));
 
   const { api } = await loginWithQR();
+
+  // Setup listener để bắt tin nhắn của chính mình (cho tính năng thu hồi)
+  setupSelfMessageListener(api);
 
   api.listener.on("message", async (message: any) => {
     const threadId = message.threadId;

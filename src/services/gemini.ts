@@ -120,6 +120,7 @@ export async function generateWithImage(
         messages: [
           { text: "Không tải được hình ảnh.", sticker: "", quoteIndex: -1 },
         ],
+        undoIndexes: [],
       };
     }
 
@@ -155,6 +156,7 @@ export async function generateWithAudio(
         messages: [
           { text: "Không tải được audio.", sticker: "", quoteIndex: -1 },
         ],
+        undoIndexes: [],
       };
     }
 
@@ -190,6 +192,7 @@ export async function generateWithFile(
         messages: [
           { text: "Không tải được file.", sticker: "", quoteIndex: -1 },
         ],
+        undoIndexes: [],
       };
     }
 
@@ -268,6 +271,7 @@ export async function generateWithVideo(
         messages: [
           { text: "Không tải được video.", sticker: "", quoteIndex: -1 },
         ],
+        undoIndexes: [],
       };
     }
 

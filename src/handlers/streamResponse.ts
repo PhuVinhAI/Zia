@@ -3,6 +3,11 @@ import { getRawHistory } from "../utils/history.js";
 import { createRichMessage } from "../utils/richText.js";
 import { ReactionType } from "../config/schema.js";
 import { StreamCallbacks } from "../services/streaming.js";
+import {
+  saveSentMessage,
+  getSentMessage,
+  removeSentMessage,
+} from "../utils/messageStore.js";
 
 const reactionMap: Record<string, any> = {
   heart: Reactions.HEART,
@@ -30,6 +35,40 @@ async function sendSticker(api: any, keyword: string, threadId: string) {
   } catch (e) {
     console.error("[Bot] Lỗi gửi sticker:", e);
   }
+}
+
+// Lưu tin nhắn pending để lấy ID khi selfListen nhận được
+const pendingMessages = new Map<
+  string,
+  (msgId: string, cliMsgId: string) => void
+>();
+
+/**
+ * Đăng ký listener để bắt tin nhắn của chính mình (selfListen)
+ * Gọi 1 lần khi khởi động
+ */
+export function setupSelfMessageListener(api: any) {
+  api.listener.on("message", (message: any) => {
+    if (!message.isSelf) return;
+
+    const content = message.data?.content;
+    const threadId = message.threadId;
+    const msgId = message.data?.msgId;
+    const cliMsgId = message.data?.cliMsgId;
+
+    if (!msgId || !cliMsgId) return;
+
+    // Tìm pending message và resolve
+    const key = `${threadId}:${content}`;
+    const resolver = pendingMessages.get(key);
+    if (resolver) {
+      resolver(msgId, cliMsgId);
+      pendingMessages.delete(key);
+    }
+
+    // Lưu vào store để có thể thu hồi sau
+    saveSentMessage(threadId, msgId, cliMsgId, content);
+  });
 }
 
 /**
@@ -89,6 +128,31 @@ export function createStreamCallbacks(
 
       // Delay nhỏ giữa các tin nhắn để tự nhiên hơn
       await new Promise((r) => setTimeout(r, 300));
+    },
+
+    // Thu hồi tin nhắn theo index
+    onUndo: async (index: number) => {
+      const msg = getSentMessage(threadId, index);
+      if (!msg) {
+        console.log(
+          `[Bot] ⚠️ Không tìm thấy tin nhắn index ${index} để thu hồi`
+        );
+        return;
+      }
+
+      try {
+        await api.undo(
+          { msgId: msg.msgId, cliMsgId: msg.cliMsgId },
+          threadId,
+          ThreadType.User
+        );
+        removeSentMessage(threadId, msg.msgId);
+        console.log(
+          `[Bot] 🗑️ Đã thu hồi tin nhắn: "${msg.content.substring(0, 30)}..."`
+        );
+      } catch (e) {
+        console.error("[Bot] Lỗi thu hồi tin nhắn:", e);
+      }
     },
 
     onComplete: () => {

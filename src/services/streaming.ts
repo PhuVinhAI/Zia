@@ -7,6 +7,7 @@ export interface StreamCallbacks {
   onReaction?: (reaction: ReactionType) => Promise<void>;
   onSticker?: (keyword: string) => Promise<void>;
   onMessage?: (text: string, quoteIndex?: number) => Promise<void>;
+  onUndo?: (index: number) => Promise<void>;
   onComplete?: () => void;
   onError?: (error: Error) => void;
 }
@@ -17,6 +18,7 @@ interface ParserState {
   sentReactions: Set<string>;
   sentStickers: Set<string>;
   sentMessages: Set<string>;
+  sentUndos: Set<string>;
   inMsgTag: boolean;
   inQuoteTag: boolean;
   quoteIndex: number;
@@ -84,6 +86,17 @@ async function processStreamChunk(
       await callbacks.onMessage(text);
     }
   }
+
+  // 5. Parse [undo:index] - thu hồi tin nhắn
+  const undoMatches = buffer.matchAll(/\[undo:(-?\d+)\]/gi);
+  for (const match of undoMatches) {
+    const index = parseInt(match[1]);
+    const key = `undo:${index}`;
+    if (!state.sentUndos.has(key) && callbacks.onUndo) {
+      state.sentUndos.add(key);
+      await callbacks.onUndo(index);
+    }
+  }
 }
 
 /**
@@ -95,6 +108,7 @@ function getPlainText(buffer: string): string {
     .replace(/\[sticker:\w+\]/gi, "")
     .replace(/\[quote:\d+\][\s\S]*?\[\/quote\]/gi, "")
     .replace(/\[msg\][\s\S]*?\[\/msg\]/gi, "")
+    .replace(/\[undo:-?\d+\]/gi, "")
     .trim();
 }
 
@@ -110,6 +124,7 @@ export async function generateContentStream(
     sentReactions: new Set(),
     sentStickers: new Set(),
     sentMessages: new Set(),
+    sentUndos: new Set(),
     inMsgTag: false,
     inQuoteTag: false,
     quoteIndex: -1,
@@ -147,7 +162,7 @@ export async function generateContentStream(
  * Chat streaming với history (multi-turn)
  */
 export async function chatStream(
-  threadId: string,
+  _threadId: string,
   message: string,
   callbacks: StreamCallbacks,
   history: any[] = []
@@ -157,6 +172,7 @@ export async function chatStream(
     sentReactions: new Set(),
     sentStickers: new Set(),
     sentMessages: new Set(),
+    sentUndos: new Set(),
     inMsgTag: false,
     inQuoteTag: false,
     quoteIndex: -1,

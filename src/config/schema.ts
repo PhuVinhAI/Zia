@@ -10,6 +10,7 @@ export interface AIMessage {
 export interface AIResponse {
   reactions: ReactionType[]; // Nhiều reaction
   messages: AIMessage[];
+  undoIndexes: number[]; // Index tin nhắn cần thu hồi (-1 = tin mới nhất)
 }
 
 // Default response khi parse lỗi
@@ -18,6 +19,7 @@ export const DEFAULT_RESPONSE: AIResponse = {
   messages: [
     { text: "Xin lỗi, mình gặp lỗi rồi!", sticker: "", quoteIndex: -1 },
   ],
+  undoIndexes: [],
 };
 
 const VALID_REACTIONS = ["heart", "haha", "wow", "sad", "angry", "like"];
@@ -28,6 +30,7 @@ export function parseAIResponse(text: string): AIResponse {
     const result: AIResponse = {
       reactions: [],
       messages: [],
+      undoIndexes: [],
     };
 
     // Parse tất cả [reaction:xxx] - hỗ trợ nhiều reaction
@@ -71,12 +74,19 @@ export function parseAIResponse(text: string): AIResponse {
       });
     }
 
+    // Parse [undo:index] - thu hồi tin nhắn đã gửi (-1 = tin mới nhất)
+    const undoMatches = text.matchAll(/\[undo:(-?\d+)\]/gi);
+    for (const match of undoMatches) {
+      result.undoIndexes.push(parseInt(match[1]));
+    }
+
     // Lấy text thuần (loại bỏ các tag)
     let plainText = text
       .replace(/\[reaction:\w+\]/gi, "")
       .replace(/\[sticker:\w+\]/gi, "")
       .replace(/\[quote:\d+\][\s\S]*?\[\/quote\]/gi, "")
       .replace(/\[msg\][\s\S]*?\[\/msg\]/gi, "")
+      .replace(/\[undo:-?\d+\]/gi, "")
       .trim();
 
     // Nếu có text thuần, thêm vào messages đầu tiên
