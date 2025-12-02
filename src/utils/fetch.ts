@@ -63,7 +63,7 @@ export async function fetchAndConvertToTextBase64(
 }
 
 // Các định dạng Gemini hỗ trợ native
-export const GEMINI_SUPPORTED_FORMATS = [
+const GEMINI_SUPPORTED_FORMATS = new Set([
   // Documents
   "pdf",
   "txt",
@@ -112,46 +112,40 @@ export const GEMINI_SUPPORTED_FORMATS = [
   "webm",
   "wmv",
   "3gp",
-];
+]);
 
 // Các định dạng có thể convert sang text
-export const TEXT_CONVERTIBLE_FORMATS = [
+const TEXT_CONVERTIBLE_FORMATS = new Set([
   "doc",
   "docx",
   "rtf",
-  "odt", // Word documents (chỉ extract text cơ bản)
+  "odt",
   "csv",
-  "tsv", // Spreadsheet text
+  "tsv",
   "log",
   "ini",
   "cfg",
-  "conf", // Config files
+  "conf",
   "sql",
   "sh",
   "bat",
-  "ps1", // Scripts
+  "ps1",
   "jsx",
   "tsx",
   "vue",
-  "svelte", // Frontend
+  "svelte",
   "scss",
   "sass",
-  "less", // CSS preprocessors
+  "less",
   "env",
   "gitignore",
-  "dockerfile", // Dev files
-];
+  "dockerfile",
+]);
 
-/**
- * Kiểm tra file có được Gemini hỗ trợ native không
- */
-export function isGeminiSupported(ext: string): boolean {
-  return GEMINI_SUPPORTED_FORMATS.includes(ext.toLowerCase());
-}
+/** Kiểm tra file có được Gemini hỗ trợ native không */
+export const isGeminiSupported = (ext: string) =>
+  GEMINI_SUPPORTED_FORMATS.has(ext.toLowerCase());
 
-/**
- * Kiểm tra file có thể convert sang text không
- */
-export function isTextConvertible(ext: string): boolean {
-  return TEXT_CONVERTIBLE_FORMATS.includes(ext.toLowerCase());
-}
+/** Kiểm tra file có thể convert sang text không */
+export const isTextConvertible = (ext: string) =>
+  TEXT_CONVERTIBLE_FORMATS.has(ext.toLowerCase());

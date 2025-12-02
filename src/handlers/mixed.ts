@@ -254,15 +254,11 @@ export async function handleMixedContent(
   // 1. Phân loại tất cả tin nhắn
   const classified = messages.map(classifyMessageDetailed);
 
-  const counts = {
-    text: classified.filter((c) => c.type === "text").length,
-    image: classified.filter((c) => c.type === "image").length,
-    video: classified.filter((c) => c.type === "video").length,
-    voice: classified.filter((c) => c.type === "voice").length,
-    file: classified.filter((c) => c.type === "file").length,
-    sticker: classified.filter((c) => c.type === "sticker").length,
-    link: classified.filter((c) => c.type === "link").length,
-  };
+  // Đếm số lượng từng loại
+  const counts = classified.reduce(
+    (acc, c) => ({ ...acc, [c.type]: (acc[c.type] || 0) + 1 }),
+    {} as Record<string, number>
+  );
 
   console.log(
     `[Bot] 📦 Xử lý ${messages.length} tin nhắn: ` +

@@ -44,12 +44,9 @@ const YOUTUBE_REGEX =
   /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|v\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/gi;
 
 export function extractYouTubeUrls(text: string): string[] {
-  const matches = text.matchAll(YOUTUBE_REGEX);
-  const urls: string[] = [];
-  for (const match of matches) {
-    urls.push(`https://www.youtube.com/watch?v=${match[1]}`);
-  }
-  return urls;
+  return [...text.matchAll(YOUTUBE_REGEX)].map(
+    (m) => `https://www.youtube.com/watch?v=${m[1]}`
+  );
 }
 
 // ═══════════════════════════════════════════════════
@@ -91,15 +88,6 @@ export function getChatSession(threadId: string, history?: Content[]): Chat {
   }
 
   return chat;
-}
-
-/**
- * Reset chat session (khi cần reload history)
- */
-export function resetChatSession(threadId: string, history?: Content[]): Chat {
-  debugLog("GEMINI", `Resetting chat session for thread ${threadId}`);
-  chatSessions.delete(threadId);
-  return getChatSession(threadId, history);
 }
 
 /**
@@ -249,7 +237,14 @@ interface ParserState {
   sentUndos: Set<string>;
 }
 
-const VALID_REACTIONS = ["heart", "haha", "wow", "sad", "angry", "like"];
+const VALID_REACTIONS = new Set([
+  "heart",
+  "haha",
+  "wow",
+  "sad",
+  "angry",
+  "like",
+]);
 
 async function processStreamChunk(
   state: ParserState,
@@ -268,7 +263,7 @@ async function processStreamChunk(
       ? `reaction:${indexPart}${reaction}`
       : `reaction:${reaction}`;
     if (
-      VALID_REACTIONS.includes(reaction) &&
+      VALID_REACTIONS.has(reaction) &&
       !state.sentReactions.has(key) &&
       callbacks.onReaction
     ) {
@@ -327,14 +322,20 @@ async function processStreamChunk(
   }
 }
 
+// Regex patterns để strip tags
+const TAG_PATTERNS = [
+  /\[reaction:(\d+:)?\w+\]/gi,
+  /\[sticker:\w+\]/gi,
+  /\[quote:-?\d+\][\s\S]*?\[\/quote\]/gi,
+  /\[msg\][\s\S]*?\[\/msg\]/gi,
+  /\[undo:-?\d+\]/gi,
+];
+
 function getPlainText(buffer: string): string {
-  return buffer
-    .replace(/\[reaction:(\d+:)?\w+\]/gi, "")
-    .replace(/\[sticker:\w+\]/gi, "")
-    .replace(/\[quote:-?\d+\][\s\S]*?\[\/quote\]/gi, "")
-    .replace(/\[msg\][\s\S]*?\[\/msg\]/gi, "")
-    .replace(/\[undo:-?\d+\]/gi, "")
-    .trim();
+  return TAG_PATTERNS.reduce(
+    (text, pattern) => text.replace(pattern, ""),
+    buffer
+  ).trim();
 }
 
 /**

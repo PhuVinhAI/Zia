@@ -115,13 +115,6 @@ export function removeSentMessage(threadId: string, msgId: string): void {
 }
 
 /**
- * Lấy tất cả tin nhắn đã gửi của một thread
- */
-export function getAllSentMessages(threadId: string): SentMessage[] {
-  return sentMessages.get(threadId) || [];
-}
-
-/**
  * Clear tin nhắn cũ (quá 1 giờ)
  */
 export function cleanupOldMessages(): void {

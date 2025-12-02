@@ -23,7 +23,14 @@ export const DEFAULT_RESPONSE: AIResponse = {
   undoIndexes: [],
 };
 
-const VALID_REACTIONS = ["heart", "haha", "wow", "sad", "angry", "like"];
+const VALID_REACTIONS = new Set([
+  "heart",
+  "haha",
+  "wow",
+  "sad",
+  "angry",
+  "like",
+]);
 
 import { debugLog } from "../utils/logger.js";
 
@@ -46,7 +53,7 @@ export function parseAIResponse(text: string): AIResponse {
       const indexPart = match[1]; // "0:" hoặc undefined
       const reactionType = match[2].toLowerCase();
 
-      if (VALID_REACTIONS.includes(reactionType) && reactionType !== "none") {
+      if (VALID_REACTIONS.has(reactionType) && reactionType !== "none") {
         if (indexPart) {
           // Có index: "0:heart" -> lưu dạng "0:heart"
           const index = indexPart.replace(":", "");

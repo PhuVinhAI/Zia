@@ -1,11 +1,6 @@
 export { fetchAsBase64 } from "./fetch.js";
 export { checkRateLimit } from "./rateLimit.js";
-export {
-  saveToHistory,
-  getHistory,
-  getHistoryContext,
-  clearHistory,
-} from "./history.js";
+export { saveToHistory, getHistory, clearHistory } from "./history.js";
 export {
   isAllowedUser,
   addAllowedUserId,

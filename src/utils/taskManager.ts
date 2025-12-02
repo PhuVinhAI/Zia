@@ -24,23 +24,6 @@ export function startTask(threadId: string): AbortSignal {
 }
 
 /**
- * Xóa tác vụ khi đã hoàn thành xong xuôi
- */
-export function completeTask(threadId: string): void {
-  if (activeTasks.has(threadId)) {
-    activeTasks.delete(threadId);
-    debugLog("TASK", `Task completed for thread ${threadId}`);
-  }
-}
-
-/**
- * Kiểm tra xem thread có đang có tác vụ chạy không
- */
-export function hasActiveTask(threadId: string): boolean {
-  return activeTasks.has(threadId);
-}
-
-/**
  * Hủy tác vụ của thread (nếu có)
  */
 export function abortTask(threadId: string): boolean {

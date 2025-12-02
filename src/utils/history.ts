@@ -12,28 +12,19 @@ const initializedThreads = new Set<string>();
 const GEMINI_MODEL = "gemini-2.5-flash";
 
 // MIME types mà Gemini API hỗ trợ cho countTokens
-const SUPPORTED_MIME_TYPES = [
-  "image/png",
-  "image/jpeg",
-  "image/webp",
-  "image/gif",
-  "video/mp4",
-  "video/webm",
-  "audio/mp3",
-  "audio/wav",
-  "audio/aac",
-  "audio/ogg",
-  "audio/flac",
+const SUPPORTED_MIME_PREFIXES = [
+  "image/",
+  "video/",
+  "audio/",
   "application/pdf",
-  "text/plain",
-  "text/html",
-  "text/css",
-  "text/javascript",
+  "text/",
 ];
 
-/**
- * Lọc bỏ các inline data có MIME type không được hỗ trợ
- */
+/** Kiểm tra MIME type có được hỗ trợ không */
+const isSupportedMime = (mime: string) =>
+  SUPPORTED_MIME_PREFIXES.some((p) => mime.startsWith(p.split("/")[0]));
+
+/** Lọc bỏ các inline data có MIME type không được hỗ trợ */
 function filterUnsupportedMedia(contents: Content[]): Content[] {
   return contents.map((content) => ({
     ...content,
@@ -41,37 +32,26 @@ function filterUnsupportedMedia(contents: Content[]): Content[] {
       content.parts?.map((part) => {
         if ("inlineData" in part && part.inlineData) {
           const mimeType = part.inlineData.mimeType || "";
-          // Nếu MIME type không được hỗ trợ, thay bằng text mô tả
-          if (
-            !SUPPORTED_MIME_TYPES.some((t) =>
-              mimeType.startsWith(t.split("/")[0])
-            )
-          ) {
+          if (!isSupportedMime(mimeType))
             return { text: `[File: ${mimeType}]` };
-          }
         }
         return part;
       }) || [],
   }));
 }
 
-/**
- * Đếm token của một content array
- */
+/** Đếm token của một content array */
 export async function countTokens(contents: Content[]): Promise<number> {
   if (contents.length === 0) return 0;
   try {
-    // Lọc bỏ media không hỗ trợ trước khi đếm
-    const filteredContents = filterUnsupportedMedia(contents);
     const result = await ai.models.countTokens({
       model: GEMINI_MODEL,
-      contents: filteredContents,
+      contents: filterUnsupportedMedia(contents),
     });
     return result.totalTokens || 0;
   } catch (error: any) {
-    // Fallback: ước tính dựa trên text length
     logError("countTokens", error);
-    console.error("[History] Token count error (fallback):", error);
+    // Fallback: ước tính dựa trên text length
     const text = contents
       .flatMap(
         (c) =>
@@ -84,20 +64,15 @@ export async function countTokens(contents: Content[]): Promise<number> {
   }
 }
 
-/**
- * Lấy URL media từ message content
- */
-function getMediaUrl(content: any): string | null {
-  if (!content) return null;
-  return (
-    content.href || content.hdUrl || content.thumbUrl || content.thumb || null
-  );
-}
+/** Lấy URL media từ message content */
+const getMediaUrl = (content: any): string | null =>
+  content?.href ||
+  content?.hdUrl ||
+  content?.thumbUrl ||
+  content?.thumb ||
+  null;
 
-/**
- * Lấy MIME type từ msgType
- * Trả về null nếu không hỗ trợ (để skip việc lưu media vào history)
- */
+/** Lấy MIME type từ msgType */
 function getMimeType(msgType: string, content: any): string | null {
   if (msgType?.includes("photo") || msgType === "webchat") return "image/png";
   if (msgType?.includes("video")) return "video/mp4";
@@ -107,14 +82,7 @@ function getMimeType(msgType: string, content: any): string | null {
     const params = content?.params ? JSON.parse(content.params) : {};
     const ext = params?.fileExt?.toLowerCase()?.replace(".", "") || "";
     const mimeType = CONFIG.mimeTypes[ext];
-    // Chỉ trả về nếu là MIME type được Gemini hỗ trợ
-    if (
-      mimeType &&
-      SUPPORTED_MIME_TYPES.some((t) => mimeType.startsWith(t.split("/")[0]))
-    ) {
-      return mimeType;
-    }
-    return null; // Không hỗ trợ
+    return mimeType && isSupportedMime(mimeType) ? mimeType : null;
   }
   return null;
 }
@@ -406,32 +374,9 @@ export async function saveResponseToHistory(
   await trimHistoryByTokens(threadId);
 }
 
-/**
- * Lấy history dạng Gemini Content[]
- */
-export function getHistory(threadId: string): Content[] {
-  return messageHistory.get(threadId) || [];
-}
-
-/**
- * Lấy history dạng text context (cho debug/logging) - chỉ lấy text parts
- * NOTE: Không còn dùng để nhét vào prompt, Chat API tự quản lý history
- */
-export function getHistoryContext(threadId: string): string {
-  const history = getHistory(threadId);
-  if (history.length === 0) return "";
-
-  return history
-    .map((msg, index) => {
-      const sender = msg.role === "model" ? "Bot" : "User";
-      const textParts = msg.parts
-        ?.filter((p): p is { text: string } => "text" in p)
-        .map((p) => p.text)
-        .join(" ");
-      return `[${index}] ${sender}: ${textParts || "(media)"}`;
-    })
-    .join("\n");
-}
+/** Lấy history dạng Gemini Content[] */
+export const getHistory = (threadId: string): Content[] =>
+  messageHistory.get(threadId) || [];
 
 /**
  * Lấy số token hiện tại (từ cache)
@@ -451,16 +396,10 @@ export function clearHistory(threadId: string): void {
   initializedThreads.delete(threadId);
 }
 
-/**
- * Lấy raw Zalo messages (cho quote feature)
- */
-export function getRawHistory(threadId: string): any[] {
-  return rawMessageHistory.get(threadId) || [];
-}
+/** Lấy raw Zalo messages (cho quote feature) */
+export const getRawHistory = (threadId: string): any[] =>
+  rawMessageHistory.get(threadId) || [];
 
-/**
- * Kiểm tra thread đã được khởi tạo chưa
- */
-export function isThreadInitialized(threadId: string): boolean {
-  return initializedThreads.has(threadId);
-}
+/** Kiểm tra thread đã được khởi tạo chưa */
+export const isThreadInitialized = (threadId: string): boolean =>
+  initializedThreads.has(threadId);

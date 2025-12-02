@@ -111,10 +111,7 @@ function logUnauthorizedUser(userId: string, userName: string): void {
  * Thêm user ID vào danh sách được phép
  */
 export function addAllowedUserId(userId: string): boolean {
-  if (CONFIG.allowedUserIds.includes(userId)) {
-    return false;
-  }
-
+  if (CONFIG.allowedUserIds.includes(userId)) return false;
   CONFIG.allowedUserIds.push(userId);
   saveSettings();
   return true;
@@ -125,10 +122,7 @@ export function addAllowedUserId(userId: string): boolean {
  */
 export function removeAllowedUserId(userId: string): boolean {
   const index = CONFIG.allowedUserIds.indexOf(userId);
-  if (index === -1) {
-    return false;
-  }
-
+  if (index === -1) return false;
   CONFIG.allowedUserIds.splice(index, 1);
   saveSettings();
   return true;

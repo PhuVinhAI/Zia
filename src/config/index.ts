@@ -3,18 +3,14 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { debugLog, logError } from "../utils/logger.js";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// Tìm đường dẫn settings.json - ưu tiên src/config, fallback về cùng thư mục
-const srcSettingsPath = path.resolve(
-  __dirname,
-  "../../src/config/settings.json"
-);
-const localSettingsPath = path.join(__dirname, "settings.json");
-const settingsPath = fs.existsSync(srcSettingsPath)
-  ? srcSettingsPath
-  : localSettingsPath;
+// Tìm đường dẫn settings.json
+const settingsPath =
+  [
+    path.resolve(__dirname, "../../src/config/settings.json"),
+    path.join(__dirname, "settings.json"),
+  ].find((p) => fs.existsSync(p)) || path.join(__dirname, "settings.json");
 
 // Load settings từ JSON
 function loadSettings() {

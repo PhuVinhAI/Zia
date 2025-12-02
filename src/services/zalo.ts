@@ -1,6 +1,5 @@
 import * as zcajs from "zca-js";
 import fs from "fs";
-import path from "path";
 import { CONFIG } from "../config/index.js";
 import { debugLog, logStep, logError } from "../utils/logger.js";
 

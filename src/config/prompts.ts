@@ -116,42 +116,14 @@ LƯU Ý: Viết text bình thường, KHÔNG cần JSON. Các tag có thể đ�
 // ═══════════════════════════════════════════════════
 // EXPORT - Chọn prompt dựa trên config
 // ═══════════════════════════════════════════════════
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Load settings để check useCharacter
-function getUseCharacter(): boolean {
-  try {
-    const srcSettingsPath = path.resolve(
-      __dirname,
-      "../../src/config/settings.json"
-    );
-    const localSettingsPath = path.join(__dirname, "settings.json");
-    const settingsPath = fs.existsSync(srcSettingsPath)
-      ? srcSettingsPath
-      : localSettingsPath;
-    const data = fs.readFileSync(settingsPath, "utf-8");
-    const settings = JSON.parse(data);
-    return settings.bot.useCharacter ?? true;
-  } catch {
-    return true; // Default: bật character
-  }
+// Export function để lấy prompt động
+export function getSystemPrompt(useCharacter: boolean = true): string {
+  return useCharacter ? CHARACTER_SYSTEM_PROMPT : ASSISTANT_SYSTEM_PROMPT;
 }
 
-// Export SYSTEM_PROMPT dựa trên config
-export const SYSTEM_PROMPT = getUseCharacter()
-  ? CHARACTER_SYSTEM_PROMPT
-  : ASSISTANT_SYSTEM_PROMPT;
-
-// Export function để lấy prompt động (cho hot reload)
-export function getSystemPrompt(useCharacter?: boolean): string {
-  const shouldUseCharacter = useCharacter ?? getUseCharacter();
-  return shouldUseCharacter ? CHARACTER_SYSTEM_PROMPT : ASSISTANT_SYSTEM_PROMPT;
-}
+// Default export (sẽ được override bởi CONFIG.useCharacter)
+export const SYSTEM_PROMPT = CHARACTER_SYSTEM_PROMPT;
 
 // ═══════════════════════════════════════════════════
 // MESSAGE PROMPTS - Các template prompt cho tin nhắn
