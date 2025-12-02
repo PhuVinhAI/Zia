@@ -2,7 +2,11 @@ import "./env.js";
 import { loginWithQR, ThreadType } from "./services/zalo.js";
 import { CONFIG } from "./config/index.js";
 import { isAllowedUser } from "./utils/userFilter.js";
-import { initThreadHistory, isThreadInitialized } from "./utils/history.js";
+import {
+  initThreadHistory,
+  isThreadInitialized,
+  preloadAllHistory,
+} from "./utils/history.js";
 import {
   initFileLogger,
   enableFileLogging,
@@ -233,6 +237,34 @@ async function main() {
   setupSelfMessageListener(api);
   debugLog("INIT", "Self message listener setup complete");
 
+  // START LISTENER và chờ WebSocket ready
+  api.listener.start();
+  debugLog("INIT", "Listener starting...");
+
+  // Chờ WebSocket connect (listener emit 'connected' khi ready)
+  await new Promise<void>((resolve) => {
+    const checkReady = () => {
+      // Kiểm tra WebSocket state hoặc chờ 2s
+      setTimeout(resolve, 2000);
+    };
+    // Thử listen event connected nếu có
+    if (api.listener.on) {
+      api.listener.once("connected", () => {
+        debugLog("INIT", "WebSocket connected");
+        resolve();
+      });
+      // Fallback timeout nếu không có event
+      setTimeout(resolve, 2000);
+    } else {
+      checkReady();
+    }
+  });
+  debugLog("INIT", "Listener ready");
+
+  // Preload lịch sử chat (cần listener đã start để nhận event)
+  await preloadAllHistory(api);
+  debugLog("INIT", "History preload complete");
+
   api.listener.on("message", async (message: any) => {
     const threadId = message.threadId;
     const isSelf = message.isSelf;
@@ -309,7 +341,6 @@ async function main() {
     }, BUFFER_DELAY_MS);
   });
 
-  api.listener.start();
   console.log("👂 Bot đang lắng nghe...");
   logStep("main:listening", "Bot is now listening for messages");
 }

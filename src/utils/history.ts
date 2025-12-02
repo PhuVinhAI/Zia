@@ -9,6 +9,10 @@ const rawMessageHistory = new Map<string, any[]>(); // Lưu raw Zalo messages ch
 const tokenCache = new Map<string, number>();
 const initializedThreads = new Set<string>();
 
+// Cache tin nhắn cũ từ Zalo khi bot start
+const preloadedMessages = new Map<string, any[]>();
+let isPreloaded = false;
+
 const GEMINI_MODEL = "gemini-2.5-flash";
 
 // MIME types mà Gemini API hỗ trợ cho countTokens
@@ -174,7 +178,101 @@ async function toGeminiContent(msg: any): Promise<Content> {
 }
 
 /**
- * Lấy lịch sử chat cũ từ Zalo API và convert sang format Gemini
+ * Preload tất cả tin nhắn cũ từ Zalo khi bot start
+ * Gọi hàm này ngay sau khi login thành công
+ */
+export async function preloadAllHistory(api: any): Promise<void> {
+  if (isPreloaded) {
+    debugLog("HISTORY", "Already preloaded, skipping");
+    return;
+  }
+
+  console.log("[History] 📥 Đang preload lịch sử chat...");
+  debugLog("HISTORY", "Starting preload all history");
+
+  return new Promise((resolve) => {
+    let userDone = false;
+    let groupDone = false;
+
+    // Timeout sau 10s
+    const timeout = setTimeout(() => {
+      if (isPreloaded) return; // Đã xong rồi, bỏ qua
+      console.log("[History] ⚠️ Preload timeout, tiếp tục với dữ liệu hiện có");
+      debugLog("HISTORY", "Preload timeout");
+      userDone = true;
+      groupDone = true;
+      isPreloaded = true;
+      resolve();
+    }, 10000);
+
+    const checkDone = () => {
+      if (userDone && groupDone) {
+        clearTimeout(timeout); // Clear timeout khi đã xong
+        isPreloaded = true;
+        const threadCount = preloadedMessages.size;
+        const totalMsgs = Array.from(preloadedMessages.values()).reduce(
+          (sum, msgs) => sum + msgs.length,
+          0
+        );
+        console.log(
+          `[History] ✅ Preload xong: ${totalMsgs} tin nhắn từ ${threadCount} cuộc trò chuyện`
+        );
+        debugLog(
+          "HISTORY",
+          `Preload complete: ${totalMsgs} messages from ${threadCount} threads`
+        );
+        resolve();
+      }
+    };
+
+    // Handler cho User messages
+    const userHandler = (messages: any[], msgType: number) => {
+      if (msgType !== 0) return; // 0 = User
+      api.listener.off("old_messages", userHandler);
+
+      // Group messages theo threadId
+      for (const msg of messages) {
+        const threadId = msg.threadId;
+        if (!preloadedMessages.has(threadId)) {
+          preloadedMessages.set(threadId, []);
+        }
+        preloadedMessages.get(threadId)!.push(msg);
+      }
+
+      debugLog("HISTORY", `Preloaded ${messages.length} user messages`);
+      userDone = true;
+      checkDone();
+    };
+
+    // Handler cho Group messages
+    const groupHandler = (messages: any[], msgType: number) => {
+      if (msgType !== 1) return; // 1 = Group
+      api.listener.off("old_messages", groupHandler);
+
+      for (const msg of messages) {
+        const threadId = msg.threadId;
+        if (!preloadedMessages.has(threadId)) {
+          preloadedMessages.set(threadId, []);
+        }
+        preloadedMessages.get(threadId)!.push(msg);
+      }
+
+      debugLog("HISTORY", `Preloaded ${messages.length} group messages`);
+      groupDone = true;
+      checkDone();
+    };
+
+    api.listener.on("old_messages", userHandler);
+    api.listener.on("old_messages", groupHandler);
+
+    // Request cả User và Group messages
+    api.listener.requestOldMessages(0, null); // User
+    api.listener.requestOldMessages(1, null); // Group
+  });
+}
+
+/**
+ * Lấy lịch sử chat cũ từ cache hoặc Zalo API
  */
 export async function loadOldMessages(
   api: any,
@@ -183,12 +281,47 @@ export async function loadOldMessages(
 ): Promise<Content[]> {
   debugLog("HISTORY", `loadOldMessages: thread=${threadId}, type=${type}`);
 
+  // Ưu tiên lấy từ preloaded cache
+  if (preloadedMessages.has(threadId)) {
+    const cachedMessages = preloadedMessages.get(threadId)!;
+    cachedMessages.sort((a, b) => parseInt(a.data.ts) - parseInt(b.data.ts));
+
+    console.log(
+      `[History] 📚 Thread ${threadId}: Đang load ${cachedMessages.length} tin nhắn từ cache...`
+    );
+    debugLog(
+      "HISTORY",
+      `Loading ${cachedMessages.length} cached messages for thread ${threadId}`
+    );
+
+    const history: Content[] = [];
+    for (const msg of cachedMessages) {
+      const content = await toGeminiContent(msg);
+      history.push(content);
+    }
+
+    console.log(
+      `[History] ✅ Thread ${threadId}: Đã load ${history.length} tin nhắn từ cache`
+    );
+    debugLog(
+      "HISTORY",
+      `Loaded ${history.length} messages from cache for thread ${threadId}`
+    );
+    return history;
+  }
+
+  // Fallback: request từ Zalo API (có thể không có kết quả)
+  debugLog(
+    "HISTORY",
+    `No cached messages for ${threadId}, requesting from API`
+  );
+
   return new Promise((resolve) => {
     const timeout = setTimeout(() => {
       console.log(`[History] ⚠️ Timeout lấy lịch sử thread ${threadId}`);
       debugLog("HISTORY", `Timeout loading history for thread ${threadId}`);
       resolve([]);
-    }, 10000); // Tăng timeout vì cần fetch media
+    }, 10000);
 
     const handler = async (messages: any[], msgType: number) => {
       if (msgType !== type) return;
@@ -207,7 +340,6 @@ export async function loadOldMessages(
         `Loading ${threadMessages.length} old messages for thread ${threadId}`
       );
 
-      // Convert tất cả messages (bao gồm media)
       const history: Content[] = [];
       for (const msg of threadMessages) {
         const content = await toGeminiContent(msg);
