@@ -7,9 +7,16 @@
     "maxTokenHistory": 300000,
     "selfListen": true,
     "logging": true,
-    "useStreaming": true
+    "useStreaming": true,
+    "fileLogging": true,
+    "logFile": "logs/bot.log"
   },
-  "allowedUsers": ["Nguyễn Huỳnh Thuật", "Phú Vinh", "Quang Vinh Phạm"],
+  "allowedUsers": [
+    "Nguyễn Huỳnh Thuật",
+    "Phú Vinh",
+    "Quang Vinh Phạm",
+    "Kiện An"
+  ],
   "stickers": {
     "keywords": [
       "hello",

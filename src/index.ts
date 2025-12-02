@@ -4,6 +4,11 @@ import { CONFIG } from "./config/index.js";
 import { checkRateLimit, isAllowedUser } from "./utils/index.js";
 import { initThreadHistory, isThreadInitialized } from "./utils/history.js";
 import {
+  initFileLogger,
+  enableFileLogging,
+  logMessage,
+} from "./utils/logger.js";
+import {
   handleSticker,
   handleImage,
   handleVideo,
@@ -14,6 +19,12 @@ import {
   handleMultipleImages,
 } from "./handlers/index.js";
 import { setupSelfMessageListener } from "./handlers/streamResponse.js";
+
+// Khởi tạo file logging nếu bật
+if (CONFIG.fileLogging) {
+  initFileLogger(CONFIG.logFile);
+  enableFileLogging();
+}
 
 // Queue tin nhắn theo thread để xử lý tuần tự
 const messageQueues = new Map<string, any[]>();
@@ -179,6 +190,16 @@ async function main() {
   api.listener.on("message", async (message: any) => {
     const threadId = message.threadId;
     const isSelf = message.isSelf;
+
+    // Log tin nhắn đến (chi tiết trong file log)
+    if (CONFIG.fileLogging) {
+      logMessage("IN", threadId, {
+        msgType: message.data?.msgType,
+        content: message.data?.content,
+        sender: message.data?.dName,
+        isSelf,
+      });
+    }
 
     if (isSelf) return;
 

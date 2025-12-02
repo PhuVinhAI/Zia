@@ -53,6 +53,8 @@ export const CONFIG = {
   selfListen: settings.bot.selfListen,
   logging: settings.bot.logging,
   useStreaming: settings.bot.useStreaming ?? true, // Bật streaming mặc định
+  fileLogging: settings.bot.fileLogging ?? false, // Ghi log ra file
+  logFile: settings.bot.logFile || "logs/bot.log", // Đường dẫn file log
 
   // Allowed users (empty = allow all)
   allowedUsers: settings.allowedUsers as string[],
