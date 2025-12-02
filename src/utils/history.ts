@@ -318,6 +318,14 @@ export async function preloadAllHistory(api: any): Promise<void> {
     return;
   }
 
+  // Kiểm tra config enabled
+  if (CONFIG.historyLoader?.enabled === false) {
+    console.log("[History] ⏭️ Preload history đã bị tắt trong config");
+    debugLog("HISTORY", "Preload disabled in config, skipping");
+    isPreloaded = true;
+    return;
+  }
+
   console.log("[History] 📥 Đang preload lịch sử chat (Pagination mode)...");
   debugLog("HISTORY", "Starting preload all history with pagination");
 

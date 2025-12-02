@@ -109,6 +109,7 @@ export const CONFIG = {
 
   // History loader config (pagination với anti-ban)
   historyLoader: {
+    enabled: settings.historyLoader?.enabled ?? true,
     defaultLimit: settings.historyLoader?.defaultLimit ?? 100,
     minDelayMs: settings.historyLoader?.minDelayMs ?? 2000,
     maxDelayMs: settings.historyLoader?.maxDelayMs ?? 5000,
