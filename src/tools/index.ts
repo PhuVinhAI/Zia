@@ -6,6 +6,7 @@ import { getUserInfoTool } from "./getUserInfo.js";
 import { getAllFriendsTool } from "./getAllFriends.js";
 import { getFriendOnlinesTool } from "./getFriendOnlines.js";
 import { sendCardTool } from "./sendCard.js";
+import { sendLinkTool } from "./sendLink.js";
 import { debugLog } from "../utils/logger.js";
 
 // ═══════════════════════════════════════════════════
@@ -20,6 +21,7 @@ toolRegistry.set("getUserInfo", getUserInfoTool);
 toolRegistry.set("getAllFriends", getAllFriendsTool);
 toolRegistry.set("getFriendOnlines", getFriendOnlinesTool);
 toolRegistry.set("sendCard", sendCardTool);
+toolRegistry.set("sendLink", sendLinkTool);
 
 // Export danh sách tools
 export const registeredTools = Array.from(toolRegistry.values());
