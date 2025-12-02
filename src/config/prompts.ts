@@ -202,6 +202,16 @@ export const PROMPTS = {
   quoteContext: (quoteContent: string) =>
     `\n[QUOTE CONTEXT] Người dùng đang reply tin nhắn cũ: "${quoteContent}"`,
 
+  // Quote có media (ảnh/video từ tin cũ)
+  quoteMedia: (quoteText?: string) => {
+    let prompt =
+      "\n\n[QUOTE MEDIA] Người dùng đang reply/hỏi về hình ảnh/media từ tin nhắn cũ (xem hình đính kèm).";
+    if (quoteText) {
+      prompt += `\nNội dung text của tin nhắn được quote: "${quoteText}"`;
+    }
+    return prompt;
+  },
+
   // YouTube video
   youtube: (urls: string[], content: string) =>
     `Người dùng gửi ${urls.length} video YouTube:\n${urls.join(

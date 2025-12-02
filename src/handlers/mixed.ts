@@ -193,23 +193,85 @@ async function prepareMediaParts(
 }
 
 /**
+ * Parse quote attachment để lấy media URL
+ */
+interface QuoteMedia {
+  type: "image" | "video" | "file" | "none";
+  url?: string;
+  thumbUrl?: string;
+  title?: string;
+}
+
+function parseQuoteAttachment(quote: any): QuoteMedia {
+  if (!quote?.attach) return { type: "none" };
+
+  try {
+    const attach =
+      typeof quote.attach === "string"
+        ? JSON.parse(quote.attach)
+        : quote.attach;
+
+    const href = attach?.href || attach?.hdUrl;
+    const thumb = attach?.thumb;
+
+    if (!href && !thumb) return { type: "none" };
+
+    // Check if it's an image (common image extensions or photo URLs)
+    const url = href || thumb;
+    if (
+      url &&
+      (url.includes("/jpg/") ||
+        url.includes("/png/") ||
+        url.includes("/jxl/") ||
+        url.includes("/webp/") ||
+        url.includes("photo") ||
+        /\.(jpg|jpeg|png|gif|webp|jxl)$/i.test(url))
+    ) {
+      return { type: "image", url, thumbUrl: thumb, title: attach?.title };
+    }
+
+    // Check if it's a video
+    if (url && (url.includes("/video/") || /\.(mp4|mov|avi)$/i.test(url))) {
+      return { type: "video", url, thumbUrl: thumb, title: attach?.title };
+    }
+
+    // Default to image if has href
+    if (href) {
+      return {
+        type: "image",
+        url: href,
+        thumbUrl: thumb,
+        title: attach?.title,
+      };
+    }
+
+    return { type: "none" };
+  } catch (e) {
+    debugLog("QUOTE", `Failed to parse quote attach: ${e}`);
+    return { type: "none" };
+  }
+}
+
+/**
  * Build prompt thống nhất cho mọi loại tin nhắn
  */
 function buildPrompt(
   classified: ClassifiedMessage[],
   userText: string,
   quoteContent: string | null,
+  quoteHasMedia: boolean,
   youtubeUrls: string[],
   mediaNotes: string[]
 ): string {
-  const hasMedia = classified.some((c) =>
-    ["image", "video", "voice", "file", "sticker"].includes(c.type)
-  );
+  const hasMedia =
+    classified.some((c) =>
+      ["image", "video", "voice", "file", "sticker"].includes(c.type)
+    ) || quoteHasMedia;
 
   let prompt: string;
 
-  if (hasMedia) {
-    // Có media → dùng mixedContent prompt
+  if (hasMedia && !quoteHasMedia) {
+    // Có media từ tin nhắn mới → dùng mixedContent prompt
     const items = classified.map((c) => ({
       type: c.type,
       text: c.text,
@@ -219,13 +281,21 @@ function buildPrompt(
     }));
     prompt = PROMPTS.mixedContent(items);
     prompt += PROMPTS.mediaNote(mediaNotes);
+  } else if (quoteHasMedia) {
+    // Quote có media → thêm context đặc biệt
+    prompt = userText || "(người dùng không nhập text)";
+    const quoteText =
+      quoteContent && quoteContent !== "(nội dung không xác định)"
+        ? quoteContent
+        : undefined;
+    prompt += PROMPTS.quoteMedia(quoteText);
   } else {
     // Text only → dùng userText trực tiếp
     prompt = userText;
   }
 
-  // Thêm quote context
-  if (quoteContent) {
+  // Thêm quote context (chỉ khi không có media trong quote)
+  if (quoteContent && !quoteHasMedia) {
     prompt += PROMPTS.quoteContext(quoteContent);
   }
 
@@ -282,12 +352,29 @@ export async function handleMixedContent(
     // 3. Lấy history và context
     const history = getHistory(threadId);
     const lastMsg = messages[messages.length - 1];
-    const quoteContent = lastMsg.data?.quote
-      ? lastMsg.data.quote.msg ||
-        lastMsg.data.quote.content ||
-        "(nội dung không xác định)"
-      : null;
-    if (quoteContent) console.log(`[Bot] 💬 User reply: "${quoteContent}"`);
+    const quote = lastMsg.data?.quote;
+
+    // Parse quote content và media
+    let quoteContent: string | null = null;
+    let quoteMedia: QuoteMedia = { type: "none" };
+
+    if (quote) {
+      quoteContent = quote.msg || quote.content || null;
+      quoteMedia = parseQuoteAttachment(quote);
+
+      if (quoteMedia.type !== "none") {
+        console.log(
+          `[Bot] 💬 User reply tin có ${
+            quoteMedia.type
+          }: ${quoteMedia.url?.substring(0, 50)}...`
+        );
+      } else if (quoteContent) {
+        console.log(`[Bot] 💬 User reply: "${quoteContent}"`);
+      } else {
+        quoteContent = "(nội dung không xác định)";
+        console.log(`[Bot] 💬 User reply: "${quoteContent}"`);
+      }
+    }
 
     // 4. Lấy text từ tất cả tin nhắn
     const allTexts = classified
@@ -315,6 +402,24 @@ export async function handleMixedContent(
     const { media, notes } = await prepareMediaParts(api, classified);
     if (signal?.aborted) return;
 
+    // 6.1. Thêm media từ quote nếu có
+    if (quoteMedia.type === "image" && quoteMedia.url) {
+      console.log(`[Bot] 📎 Đang fetch ảnh từ quote...`);
+      media.push({
+        type: "image",
+        url: quoteMedia.url,
+        mimeType: "image/jpeg",
+      });
+    } else if (quoteMedia.type === "video" && quoteMedia.thumbUrl) {
+      console.log(`[Bot] 📎 Đang fetch thumbnail video từ quote...`);
+      media.push({
+        type: "image",
+        url: quoteMedia.thumbUrl,
+        mimeType: "image/jpeg",
+      });
+      notes.push("(Video từ tin nhắn cũ, chỉ có thumbnail)");
+    }
+
     // 7. Check YouTube
     const youtubeUrls = extractYouTubeUrls(combinedText);
     if (youtubeUrls.length > 0) {
@@ -323,10 +428,12 @@ export async function handleMixedContent(
     }
 
     // 8. Build prompt thống nhất
+    const quoteHasMedia = quoteMedia.type !== "none";
     const prompt = buildPrompt(
       classified,
       userText,
       quoteContent,
+      quoteHasMedia,
       youtubeUrls,
       notes
     );
