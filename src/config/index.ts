@@ -1,19 +1,24 @@
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { debugLog, logError } from "../utils/logger.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const settingsPath = path.join(__dirname, "settings.json");
 
 // Load settings từ JSON
 function loadSettings() {
+  debugLog("CONFIG", `Loading settings from ${settingsPath}`);
   const data = fs.readFileSync(settingsPath, "utf-8");
-  return JSON.parse(data);
+  const settings = JSON.parse(data);
+  debugLog("CONFIG", `Settings loaded: ${JSON.stringify(settings.bot)}`);
+  return settings;
 }
 
 // Reload settings (hot reload)
 export function reloadSettings() {
   try {
+    debugLog("CONFIG", "Reloading settings...");
     const settings = loadSettings();
     Object.assign(CONFIG, {
       ...settings.bot,
@@ -21,8 +26,18 @@ export function reloadSettings() {
       stickerKeywords: settings.stickers.keywords,
     });
     console.log("[Config] ✅ Đã reload settings");
+    debugLog(
+      "CONFIG",
+      `Settings reloaded: ${JSON.stringify({
+        name: CONFIG.name,
+        prefix: CONFIG.prefix,
+        useStreaming: CONFIG.useStreaming,
+        allowedUsers: CONFIG.allowedUsers,
+      })}`
+    );
   } catch (error) {
     console.error("[Config] ❌ Lỗi reload settings:", error);
+    logError("reloadSettings", error);
   }
 }
 
@@ -34,12 +49,14 @@ fs.watch(settingsPath, (eventType) => {
     if (debounceTimer) clearTimeout(debounceTimer);
     debounceTimer = setTimeout(() => {
       console.log("[Config] 🔄 Phát hiện thay đổi settings.json...");
+      debugLog("CONFIG", "settings.json changed, triggering reload");
       reloadSettings();
     }, 100);
   }
 });
 
 console.log("[Config] 👀 Đang watch settings.json để auto reload");
+debugLog("CONFIG", `Watching ${settingsPath} for changes`);
 
 const settings = loadSettings();
 

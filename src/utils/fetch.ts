@@ -45,11 +45,18 @@ export async function fetchAndConvertToTextBase64(
   url: string
 ): Promise<string | null> {
   try {
+    debugLog("FETCH", `Converting to text base64: ${url.substring(0, 80)}...`);
     const textContent = await fetchAsText(url);
-    if (!textContent) return null;
+    if (!textContent) {
+      debugLog("FETCH", "Text conversion failed: no content");
+      return null;
+    }
     // Convert text content thành base64 (như file .txt)
-    return Buffer.from(textContent, "utf-8").toString("base64");
-  } catch (e) {
+    const base64 = Buffer.from(textContent, "utf-8").toString("base64");
+    debugLog("FETCH", `Text to base64 success: ${base64.length} chars`);
+    return base64;
+  } catch (e: any) {
+    logError("fetchAndConvertToTextBase64", e);
     console.error("Lỗi convert file sang text:", e);
     return null;
   }

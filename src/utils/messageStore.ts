@@ -63,13 +63,30 @@ export function getSentMessage(
   index: number
 ): SentMessage | null {
   const messages = sentMessages.get(threadId);
-  if (!messages || messages.length === 0) return null;
+  if (!messages || messages.length === 0) {
+    debugLog("MSG_STORE", `getSentMessage: thread=${threadId} has no messages`);
+    return null;
+  }
 
   // Hỗ trợ index âm (-1 = cuối cùng)
   const actualIndex = index < 0 ? messages.length + index : index;
 
-  if (actualIndex < 0 || actualIndex >= messages.length) return null;
-  return messages[actualIndex];
+  if (actualIndex < 0 || actualIndex >= messages.length) {
+    debugLog(
+      "MSG_STORE",
+      `getSentMessage: index ${index} (actual: ${actualIndex}) out of range [0, ${
+        messages.length - 1
+      }]`
+    );
+    return null;
+  }
+
+  const msg = messages[actualIndex];
+  debugLog(
+    "MSG_STORE",
+    `getSentMessage: found msgId=${msg.msgId} at index ${actualIndex}`
+  );
+  return msg;
 }
 
 /**
@@ -77,11 +94,23 @@ export function getSentMessage(
  */
 export function removeSentMessage(threadId: string, msgId: string): void {
   const messages = sentMessages.get(threadId);
-  if (!messages) return;
+  if (!messages) {
+    debugLog("MSG_STORE", `removeSentMessage: thread=${threadId} not found`);
+    return;
+  }
 
   const index = messages.findIndex((m) => m.msgId === msgId);
   if (index !== -1) {
     messages.splice(index, 1);
+    debugLog(
+      "MSG_STORE",
+      `removeSentMessage: removed msgId=${msgId} from thread=${threadId}`
+    );
+  } else {
+    debugLog(
+      "MSG_STORE",
+      `removeSentMessage: msgId=${msgId} not found in thread=${threadId}`
+    );
   }
 }
 
@@ -97,14 +126,26 @@ export function getAllSentMessages(threadId: string): SentMessage[] {
  */
 export function cleanupOldMessages(): void {
   const oneHourAgo = Date.now() - 60 * 60 * 1000;
+  let totalRemoved = 0;
 
   for (const [threadId, messages] of sentMessages) {
+    const beforeCount = messages.length;
     const filtered = messages.filter((m) => m.timestamp > oneHourAgo);
+    const removed = beforeCount - filtered.length;
+    totalRemoved += removed;
+
     if (filtered.length === 0) {
       sentMessages.delete(threadId);
     } else {
       sentMessages.set(threadId, filtered);
     }
+  }
+
+  if (totalRemoved > 0) {
+    debugLog(
+      "MSG_STORE",
+      `cleanupOldMessages: removed ${totalRemoved} old messages`
+    );
   }
 }
 
