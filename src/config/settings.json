@@ -22,8 +22,8 @@
     "loadGroup": false
   },
   "retry": {
-    "maxRetries": 3,
-    "baseDelayMs": 2000,
+    "maxRetries": 10,
+    "baseDelayMs": 1000,
     "retryableStatusCodes": [503, 429, 500, 502, 504]
   },
   "allowedUserIds": [

@@ -7,7 +7,13 @@ import {
   parseAIResponse,
 } from "../config/schema.js";
 import { fetchAsBase64 } from "../utils/fetch.js";
-import { logAIResponse, logError, debugLog, logStep } from "../utils/logger.js";
+import {
+  logAIResponse,
+  logError,
+  debugLog,
+  logStep,
+  logAIHistory,
+} from "../utils/logger.js";
 
 // Lấy SYSTEM_PROMPT động dựa trên config
 const getPrompt = () => getSystemPrompt(CONFIG.useCharacter);
@@ -205,6 +211,11 @@ export async function generateContent(
         "GEMINI",
         `Using chat session: ${sessionId}, history=${history?.length || 0}`
       );
+
+      // Log history trước khi gửi request
+      if (history && history.length > 0) {
+        logAIHistory(sessionId, history);
+      }
 
       const response = await chat.sendMessage({ message: parts });
       const rawText = response.text || "{}";
@@ -444,6 +455,12 @@ export async function generateContentStream(
 
     try {
       const chat = getChatSession(sessionId, history);
+
+      // Log history trước khi gửi request (stream)
+      if (history && history.length > 0) {
+        logAIHistory(sessionId, history);
+      }
+
       const response = await chat.sendMessageStream({ message: parts });
 
       for await (const chunk of response) {

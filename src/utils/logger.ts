@@ -3,62 +3,55 @@ import * as path from "path";
 
 let logStream: fs.WriteStream | null = null;
 let fileLoggingEnabled = false;
-let currentLogFile: string = "";
+let sessionDir: string = ""; // Thư mục phiên hiện tại
 
 /**
- * Tạo tên file log với timestamp
+ * Tạo timestamp cho tên thư mục/file
  */
-function generateLogFileName(basePath: string): string {
-  const dir = path.dirname(basePath);
-  const ext = path.extname(basePath);
-  const name = path.basename(basePath, ext);
-
-  const now = new Date();
-  const timestamp = now
+function getTimestamp(): string {
+  return new Date()
     .toISOString()
     .replace(/[:.]/g, "-")
     .replace("T", "_")
     .slice(0, 19);
-
-  return path.join(dir, `${name}_${timestamp}${ext}`);
 }
 
 /**
- * Khởi tạo file logger - tạo file mới mỗi lần chạy
+ * Khởi tạo file logger - tạo thư mục phiên mới mỗi lần chạy
+ * Cấu trúc: logs/2025-12-02_12-55-03/bot.txt
  */
 export function initFileLogger(basePath: string): void {
-  // Tạo thư mục logs nếu chưa có
-  const dir = path.dirname(basePath);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
+  const logsRoot = path.dirname(basePath);
+
+  // Tạo thư mục phiên với timestamp
+  sessionDir = path.join(logsRoot, getTimestamp());
+  if (!fs.existsSync(sessionDir)) {
+    fs.mkdirSync(sessionDir, { recursive: true });
   }
 
-  // Tạo file log mới với timestamp
-  currentLogFile = generateLogFileName(basePath);
+  // Tạo file log chính
+  const logFile = path.join(sessionDir, "bot.txt");
+  logStream = fs.createWriteStream(logFile, { flags: "w" });
 
-  // Mở stream để ghi log
-  logStream = fs.createWriteStream(currentLogFile, { flags: "w" });
-
-  // Ghi header khi khởi động
   const startMsg =
     `${"=".repeat(80)}\n` +
     `[${new Date().toISOString()}] 🚀 BOT STARTED\n` +
-    `Log file: ${currentLogFile}\n` +
+    `Session: ${sessionDir}\n` +
     `${"=".repeat(80)}\n\n`;
   logStream.write(startMsg);
 
-  console.log(`[Logger] 📝 Ghi log ra file: ${currentLogFile}`);
+  console.log(`[Logger] 📝 Session dir: ${sessionDir}`);
 }
 
 /**
- * Lấy đường dẫn file log hiện tại
+ * Lấy đường dẫn thư mục phiên hiện tại
  */
-export function getCurrentLogFile(): string {
-  return currentLogFile;
+export function getSessionDir(): string {
+  return sessionDir;
 }
 
 /**
- * Ghi log ra file
+ * Ghi log ra file bot.txt
  */
 function writeToFile(level: string, ...args: any[]): void {
   if (!logStream) return;
@@ -108,9 +101,6 @@ export function enableFileLogging(): void {
   };
 }
 
-/**
- * Kiểm tra file logging có bật không
- */
 export function isFileLoggingEnabled(): boolean {
   return fileLoggingEnabled;
 }
@@ -125,17 +115,11 @@ export function closeFileLogger(): void {
   }
 }
 
-/**
- * Ghi log debug chi tiết (chỉ ghi vào file, không hiện console)
- */
 export function debugLog(category: string, ...args: any[]): void {
   if (!fileLoggingEnabled) return;
   writeToFile(`DEBUG:${category}`, ...args);
 }
 
-/**
- * Ghi log message đầy đủ (để debug)
- */
 export function logMessage(
   direction: "IN" | "OUT",
   threadId: string,
@@ -145,17 +129,11 @@ export function logMessage(
   writeToFile(`MSG:${direction}`, `Thread: ${threadId}`, data);
 }
 
-/**
- * Log bước xử lý (để debug flow)
- */
 export function logStep(step: string, details?: any): void {
   if (!fileLoggingEnabled) return;
   writeToFile("STEP", `>>> ${step}`, details || "");
 }
 
-/**
- * Log API call (Gemini, Zalo...)
- */
 export function logAPI(
   service: string,
   action: string,
@@ -166,9 +144,6 @@ export function logAPI(
   writeToFile(`API:${service}`, action, { request, response });
 }
 
-/**
- * Log AI response đầy đủ
- */
 export function logAIResponse(prompt: string, rawResponse: string): void {
   if (!fileLoggingEnabled) return;
   writeToFile("AI", "─".repeat(40));
@@ -180,9 +155,6 @@ export function logAIResponse(prompt: string, rawResponse: string): void {
   writeToFile("AI", "─".repeat(40));
 }
 
-/**
- * Log error với stack trace
- */
 export function logError(context: string, error: any): void {
   if (!fileLoggingEnabled) return;
   writeToFile("ERROR", `[${context}]`, {
@@ -192,8 +164,47 @@ export function logError(context: string, error: any): void {
 }
 
 /**
- * Log Zalo API call với request và response
+ * Log full history của thread (ghi raw JSON)
  */
+export function logAIHistory(threadId: string, history: any[]): void {
+  if (!fileLoggingEnabled || !sessionDir) return;
+
+  // Ghi vào bot.txt (summary)
+  writeToFile("AI:HISTORY", `Thread ${threadId}: ${history.length} messages`);
+
+  // Ghi raw JSON vào file history riêng
+  const historyFile = path.join(sessionDir, `history_${threadId}.json`);
+
+  const data = {
+    threadId,
+    updatedAt: new Date().toISOString(),
+    messageCount: history.length,
+    history: history.map((content, index) => {
+      // Clone và xử lý inlineData (base64 quá dài thì cắt bớt để file không quá nặng)
+      const processedParts = content.parts?.map((part: any) => {
+        if (part.inlineData?.data) {
+          return {
+            ...part,
+            inlineData: {
+              ...part.inlineData,
+              data: part.inlineData.data.substring(0, 100) + "...[truncated]",
+            },
+          };
+        }
+        return part;
+      });
+
+      return {
+        index,
+        role: content.role,
+        parts: processedParts || content.parts,
+      };
+    }),
+  };
+
+  fs.writeFileSync(historyFile, JSON.stringify(data, null, 2), "utf-8");
+}
+
 export function logZaloAPI(
   action: string,
   request: any,
