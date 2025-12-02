@@ -10,21 +10,73 @@ const initializedThreads = new Set<string>();
 
 const GEMINI_MODEL = "gemini-2.5-flash";
 
+// MIME types mà Gemini API hỗ trợ cho countTokens
+const SUPPORTED_MIME_TYPES = [
+  "image/png",
+  "image/jpeg",
+  "image/webp",
+  "image/gif",
+  "video/mp4",
+  "video/webm",
+  "audio/mp3",
+  "audio/wav",
+  "audio/aac",
+  "audio/ogg",
+  "audio/flac",
+  "application/pdf",
+  "text/plain",
+  "text/html",
+  "text/css",
+  "text/javascript",
+];
+
+/**
+ * Lọc bỏ các inline data có MIME type không được hỗ trợ
+ */
+function filterUnsupportedMedia(contents: Content[]): Content[] {
+  return contents.map((content) => ({
+    ...content,
+    parts:
+      content.parts?.map((part) => {
+        if ("inlineData" in part && part.inlineData) {
+          const mimeType = part.inlineData.mimeType || "";
+          // Nếu MIME type không được hỗ trợ, thay bằng text mô tả
+          if (
+            !SUPPORTED_MIME_TYPES.some((t) =>
+              mimeType.startsWith(t.split("/")[0])
+            )
+          ) {
+            return { text: `[File: ${mimeType}]` };
+          }
+        }
+        return part;
+      }) || [],
+  }));
+}
+
 /**
  * Đếm token của một content array
  */
 export async function countTokens(contents: Content[]): Promise<number> {
   if (contents.length === 0) return 0;
   try {
+    // Lọc bỏ media không hỗ trợ trước khi đếm
+    const filteredContents = filterUnsupportedMedia(contents);
     const result = await ai.models.countTokens({
       model: GEMINI_MODEL,
-      contents,
+      contents: filteredContents,
     });
     return result.totalTokens || 0;
   } catch (error) {
-    console.error("[History] Token count error:", error);
-    const text = JSON.stringify(contents);
-    return Math.ceil(text.length / 4);
+    // Fallback: ước tính dựa trên text length
+    console.error("[History] Token count error (fallback):", error);
+    const text = contents
+      .flatMap(
+        (c) =>
+          c.parts?.filter((p) => "text" in p).map((p) => (p as any).text) || []
+      )
+      .join(" ");
+    return Math.ceil(text.length / 4) + contents.length * 100; // +100 per media item
   }
 }
 
@@ -40,8 +92,9 @@ function getMediaUrl(content: any): string | null {
 
 /**
  * Lấy MIME type từ msgType
+ * Trả về null nếu không hỗ trợ (để skip việc lưu media vào history)
  */
-function getMimeType(msgType: string, content: any): string {
+function getMimeType(msgType: string, content: any): string | null {
   if (msgType?.includes("photo") || msgType === "webchat") return "image/png";
   if (msgType?.includes("video")) return "video/mp4";
   if (msgType?.includes("voice")) return "audio/aac";
@@ -49,9 +102,17 @@ function getMimeType(msgType: string, content: any): string {
   if (msgType?.includes("file")) {
     const params = content?.params ? JSON.parse(content.params) : {};
     const ext = params?.fileExt?.toLowerCase()?.replace(".", "") || "";
-    return CONFIG.mimeTypes[ext] || "application/octet-stream";
+    const mimeType = CONFIG.mimeTypes[ext];
+    // Chỉ trả về nếu là MIME type được Gemini hỗ trợ
+    if (
+      mimeType &&
+      SUPPORTED_MIME_TYPES.some((t) => mimeType.startsWith(t.split("/")[0]))
+    ) {
+      return mimeType;
+    }
+    return null; // Không hỗ trợ
   }
-  return "application/octet-stream";
+  return null;
 }
 
 /**
@@ -108,18 +169,25 @@ async function toGeminiContent(msg: any): Promise<Content> {
       }
 
       // Fetch và thêm media data
-      const base64Data = await fetchAsBase64(mediaUrl);
-      if (base64Data) {
-        const mimeType = getMimeType(msgType, content);
-        parts.push({
-          inlineData: {
-            data: base64Data,
-            mimeType,
-          },
-        });
-        console.log(`[History] 📎 Loaded media: ${description} (${mimeType})`);
+      const mimeType = getMimeType(msgType, content);
+      if (mimeType) {
+        const base64Data = await fetchAsBase64(mediaUrl);
+        if (base64Data) {
+          parts.push({
+            inlineData: {
+              data: base64Data,
+              mimeType,
+            },
+          });
+          console.log(
+            `[History] 📎 Loaded media: ${description} (${mimeType})`
+          );
+        } else {
+          parts.push({ text: `${description} (không tải được)` });
+        }
       } else {
-        parts.push({ text: `${description} (không tải được)` });
+        // MIME type không được hỗ trợ, chỉ lưu text mô tả
+        console.log(`[History] ⚠️ Skipped unsupported media: ${description}`);
       }
     } catch (e) {
       console.error("[History] Error loading media:", e);
@@ -212,12 +280,31 @@ async function trimHistoryByTokens(threadId: string): Promise<void> {
   );
 
   const rawHistory = rawMessageHistory.get(threadId) || [];
+  let trimCount = 0;
+  const maxTrimAttempts = 50; // Giới hạn số lần trim để tránh vòng lặp vô hạn
 
-  while (currentTokens > maxTokens && history.length > 2) {
+  while (
+    currentTokens > maxTokens &&
+    history.length > 2 &&
+    trimCount < maxTrimAttempts
+  ) {
     history.shift();
     rawHistory.shift();
-    currentTokens = await countTokens(history);
-    console.log(`[History] Trimmed -> ${currentTokens} tokens`);
+    trimCount++;
+
+    // Chỉ đếm lại token mỗi 5 lần trim để tối ưu performance
+    if (trimCount % 5 === 0 || history.length <= 2) {
+      currentTokens = await countTokens(history);
+      console.log(
+        `[History] Trimmed ${trimCount} messages -> ${currentTokens} tokens`
+      );
+    }
+  }
+
+  if (trimCount >= maxTrimAttempts) {
+    console.warn(
+      `[History] ⚠️ Max trim attempts reached for thread ${threadId}`
+    );
   }
 
   messageHistory.set(threadId, history);
