@@ -9,6 +9,18 @@ import { sendCardTool } from "./sendCard.js";
 import { sendLinkTool } from "./sendLink.js";
 import { debugLog } from "../utils/logger.js";
 
+// TVU Tools
+import {
+  tvuLoginTool,
+  tvuStudentInfoTool,
+  tvuSemestersTool,
+  tvuScheduleTool,
+  tvuGradesTool,
+  tvuTuitionTool,
+  tvuCurriculumTool,
+  tvuNotificationsTool,
+} from "./tvu/index.js";
+
 // ═══════════════════════════════════════════════════
 // TOOL REGISTRY
 // ═══════════════════════════════════════════════════
@@ -16,12 +28,22 @@ import { debugLog } from "../utils/logger.js";
 // Đăng ký tất cả tools ở đây
 const toolRegistry: Map<string, ToolDefinition> = new Map();
 
-// Register tools
+// Register Zalo tools
 toolRegistry.set("getUserInfo", getUserInfoTool);
 toolRegistry.set("getAllFriends", getAllFriendsTool);
 toolRegistry.set("getFriendOnlines", getFriendOnlinesTool);
 toolRegistry.set("sendCard", sendCardTool);
 toolRegistry.set("sendLink", sendLinkTool);
+
+// Register TVU tools
+toolRegistry.set("tvuLogin", tvuLoginTool);
+toolRegistry.set("tvuStudentInfo", tvuStudentInfoTool);
+toolRegistry.set("tvuSemesters", tvuSemestersTool);
+toolRegistry.set("tvuSchedule", tvuScheduleTool);
+toolRegistry.set("tvuGrades", tvuGradesTool);
+toolRegistry.set("tvuTuition", tvuTuitionTool);
+toolRegistry.set("tvuCurriculum", tvuCurriculumTool);
+toolRegistry.set("tvuNotifications", tvuNotificationsTool);
 
 // Export danh sách tools
 export const registeredTools = Array.from(toolRegistry.values());
