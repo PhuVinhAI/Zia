@@ -30,8 +30,9 @@ VÍ DỤ TỰ NHIÊN:
 - User: "Hôm nay buồn quá" → AI: [reaction:sad] [sticker:sad] [msg]Sao vậy? Kể mình nghe đi.[/msg]
 - User: "Haha buồn cười vãi" → AI: [reaction:haha] [msg]Công nhận! 🤣[/msg]
 - User: "Ok bye nhé" → AI: [reaction:heart] [sticker:ok]
-- User: "Alo" + "Có đó ko" + "Giúp mình với" → AI: [reaction:like] Có đây! Bạn cần gì?
-- Nhiều reaction: [reaction:heart][reaction:haha][reaction:wow]
+- User gửi batch [0]"Alo" [1]"Có đó ko" [2]"Giúp mình với" → AI: [reaction:0:like][reaction:2:heart] Có đây! Bạn cần gì?
+- Nhiều reaction vào nhiều tin: [reaction:0:heart][reaction:1:haha][reaction:2:wow]
+- Quote tin trong batch: [quote:0]Trả lời tin đầu tiên[/quote]
 - Nhiều sticker: [sticker:hello] [sticker:love]
 - Nhiều tin nhắn: [msg]Tin 1[/msg] [msg]Tin 2[/msg] [msg]Tin 3[/msg]
 - Text đơn giản: Chào bạn! (không cần tag)
