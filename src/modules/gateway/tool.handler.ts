@@ -73,6 +73,7 @@ export function formatAllToolResults(
 /**
  * Gửi thông báo đang gọi tool lên Zalo
  * Dùng Zalo rich text format: *bold* _italic_
+ * Chỉ gửi khi CONFIG.showToolCalls = true
  */
 export async function notifyToolCall(
   api: any,
@@ -80,6 +81,17 @@ export async function notifyToolCall(
   toolCalls: ToolCall[]
 ): Promise<void> {
   const toolNames = toolCalls.map((c) => c.toolName).join(", ");
+
+  // Import CONFIG để check setting
+  const { CONFIG } = await import("../../shared/constants/config.js");
+
+  // Nếu tắt showToolCalls, chỉ log console, không gửi tin nhắn
+  if (!CONFIG.showToolCalls) {
+    console.log(`[Tool] 🔧 Gọi tool (silent): ${toolNames}`);
+    debugLog("TOOL", `Silent tool call: ${toolNames}`);
+    return;
+  }
+
   // Zalo format: *bold* _italic_ (không phải markdown)
   const message = `🔧 *Đang gọi tool:* _${toolNames}_...`;
 

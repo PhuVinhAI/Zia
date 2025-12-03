@@ -23,6 +23,7 @@
     "logFile": "logs/bot.txt",
     "unauthorizedLogFile": "logs/unauthorized.json",
     "maxToolDepth": 10,
+    "showToolCalls": false,
     "cloudDebug": {
       "enabled": true,
       "prefix": "#b"
@@ -30,7 +31,7 @@
   },
   "historyLoader": {
     "enabled": false,
-    "loadFromDb": false,
+    "loadFromDb": true,
     "defaultLimit": 1000,
     "minDelayMs": 2000,
     "maxDelayMs": 5000,

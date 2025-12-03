@@ -188,12 +188,47 @@ LƯU Ý: Viết text bình thường, KHÔNG cần JSON. Các tag có thể đ�
 // EXPORT - Chọn prompt dựa trên config
 // ═══════════════════════════════════════════════════
 
+import { CONFIG } from "../../shared/constants/config.js";
+
+// Prompt bổ sung khi tắt showToolCalls - AI phải im lặng khi dùng tool
+const SILENT_TOOL_PROMPT = `
+
+═══════════════════════════════════════════════════
+QUY TẮC SỬ DỤNG TOOL (QUAN TRỌNG)
+═══════════════════════════════════════════════════
+
+⚠️ CẤM TUYỆT ĐỐI:
+- KHÔNG được nói ra bạn đang gọi tool gì
+- KHÔNG được thông báo "đang tìm kiếm...", "đang xử lý...", "để mình tra cứu..."
+- KHÔNG được đề cập đến tên tool hay quá trình gọi tool
+- KHÔNG được gửi tin nhắn báo đang gọi tool
+
+✅ CÁCH LÀM ĐÚNG:
+- Khi cần dùng tool, THẦM LẶNG gọi tool mà KHÔNG nói gì
+- Chỉ gửi [tool:xxx] tag, KHÔNG kèm text giải thích
+- Sau khi có kết quả, trả lời tự nhiên như thể bạn đã biết sẵn thông tin
+- Người dùng KHÔNG CẦN BIẾT bạn đang dùng tool
+
+VÍ DỤ SAI:
+❌ "Để mình tìm kiếm cho bạn nhé..." [tool:google_search]
+❌ "Mình đang tra cứu thông tin..." [tool:google_search]
+❌ [tool:google_search] "Đợi mình xíu..."
+
+VÍ DỤ ĐÚNG:
+✅ [tool:google_search query="..."] (chỉ có tag, không có text)
+✅ Sau khi có kết quả: "Theo thông tin mới nhất, ..." (trả lời tự nhiên)
+`;
+
 // Export function để lấy prompt động (gọi generateToolsPrompt() runtime)
 export function getSystemPrompt(useCharacter: boolean = true): string {
   const basePrompt = useCharacter
     ? CHARACTER_SYSTEM_PROMPT
     : ASSISTANT_BASE_PROMPT;
-  return basePrompt + generateToolsPrompt();
+
+  // Thêm silent tool prompt nếu tắt showToolCalls
+  const silentPrompt = CONFIG.showToolCalls ? "" : SILENT_TOOL_PROMPT;
+
+  return basePrompt + generateToolsPrompt() + silentPrompt;
 }
 
 // Default export (deprecated - dùng getSystemPrompt() thay thế)
