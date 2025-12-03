@@ -1,97 +1,54 @@
 /**
- * Message Buffer - Cơ chế đệm tin nhắn để gom nhiều tin thành 1 context
+ * Message Buffer - Sử dụng RxJS để gom tin nhắn theo stream
+ * Thay thế logic setTimeout/clearTimeout bằng bufferTime + debounceTime
  */
 
+import { Subject, type Subscription } from 'rxjs';
+import { bufferWhen, debounceTime, filter, groupBy, mergeMap, tap } from 'rxjs/operators';
 import { debugLog, logError, logStep } from '../../core/logger/logger.js';
 import { ThreadType } from '../../infrastructure/zalo/zalo.service.js';
 import { CONFIG } from '../../shared/constants/config.js';
 import { startTask } from '../../shared/utils/taskManager.js';
 import { handleMixedContent } from './gateway.module.js';
 
-// Queue tin nhắn theo thread
-const messageQueues = new Map<string, any[]>();
-const processingThreads = new Set<string>();
-
 // Buffer config từ settings.json
 const getBufferDelayMs = () => CONFIG.buffer?.delayMs ?? 2500;
 const getTypingRefreshMs = () => CONFIG.buffer?.typingRefreshMs ?? 3000;
 
-// Buffer storage
-interface ThreadBuffer {
-  timer: NodeJS.Timeout | null;
-  messages: any[];
+// Typing state management
+interface TypingState {
   isTyping: boolean;
-  typingInterval: NodeJS.Timeout | null;
+  interval: NodeJS.Timeout | null;
 }
-const threadBuffers = new Map<string, ThreadBuffer>();
+const typingStates = new Map<string, TypingState>();
 
-/**
- * Xử lý queue của một thread
- */
-async function processQueue(api: any, threadId: string, signal?: AbortSignal) {
-  if (processingThreads.has(threadId)) {
-    debugLog('QUEUE', `Thread ${threadId} already processing, skipping`);
-    return;
-  }
-
-  const queue = messageQueues.get(threadId);
-  if (!queue || queue.length === 0) {
-    debugLog('QUEUE', `Thread ${threadId} queue empty`);
-    return;
-  }
-
-  processingThreads.add(threadId);
-  debugLog('QUEUE', `Processing queue for thread ${threadId}: ${queue.length} messages`);
-  logStep('processQueue:start', { threadId, queueLength: queue.length });
-
-  while (queue.length > 0) {
-    if (signal?.aborted) {
-      debugLog('QUEUE', `Queue processing aborted for thread ${threadId}`);
-      processingThreads.delete(threadId);
-      return;
-    }
-
-    const allMessages = [...queue];
-    queue.length = 0;
-
-    debugLog('QUEUE', `Processing ${allMessages.length} messages`);
-    logStep('processQueue:messages', { count: allMessages.length });
-
-    if (allMessages.length === 0) {
-      debugLog('QUEUE', 'No processable messages');
-      continue;
-    }
-
-    if (signal?.aborted) {
-      debugLog('QUEUE', `Aborted before processing messages`);
-      break;
-    }
-
-    debugLog('QUEUE', `Using handleMixedContent for ${allMessages.length} messages`);
-    await handleMixedContent(api, allMessages, threadId, signal);
-  }
-
-  processingThreads.delete(threadId);
-  debugLog('QUEUE', `Finished processing queue for thread ${threadId}`);
-  logStep('processQueue:end', { threadId });
+// RxJS Stream
+interface BufferedMessage {
+  threadId: string;
+  message: any;
+  api: any;
 }
+
+const messageSubject = new Subject<BufferedMessage>();
+let subscription: Subscription | null = null;
 
 /**
  * Bắt đầu typing với auto-refresh
  */
-export function startTypingWithRefresh(api: any, threadId: string) {
-  const buffer = threadBuffers.get(threadId);
-  if (!buffer) return;
-
-  api.sendTypingEvent(threadId, ThreadType.User).catch(() => {});
-  buffer.isTyping = true;
-
-  if (buffer.typingInterval) {
-    clearInterval(buffer.typingInterval);
+function startTypingWithRefresh(api: any, threadId: string) {
+  let state = typingStates.get(threadId);
+  if (!state) {
+    state = { isTyping: false, interval: null };
+    typingStates.set(threadId, state);
   }
 
-  buffer.typingInterval = setInterval(() => {
-    if (buffer.isTyping) {
+  if (state.isTyping) return;
+
+  api.sendTypingEvent(threadId, ThreadType.User).catch(() => {});
+  state.isTyping = true;
+
+  state.interval = setInterval(() => {
+    if (state?.isTyping) {
       api.sendTypingEvent(threadId, ThreadType.User).catch(() => {});
       debugLog('TYPING', `Refreshed typing for ${threadId}`);
     }
@@ -104,96 +61,109 @@ export function startTypingWithRefresh(api: any, threadId: string) {
  * Dừng typing và clear interval
  */
 export function stopTyping(threadId: string) {
-  const buffer = threadBuffers.get(threadId);
-  if (!buffer) return;
+  const state = typingStates.get(threadId);
+  if (!state) return;
 
-  buffer.isTyping = false;
-  if (buffer.typingInterval) {
-    clearInterval(buffer.typingInterval);
-    buffer.typingInterval = null;
+  state.isTyping = false;
+  if (state.interval) {
+    clearInterval(state.interval);
+    state.interval = null;
   }
   debugLog('BUFFER', `Stopped typing for ${threadId}`);
 }
 
 /**
- * Xử lý buffer khi timeout
+ * Xử lý batch tin nhắn đã gom
  */
-async function processBufferedMessages(api: any, threadId: string) {
-  const buffer = threadBuffers.get(threadId);
-  if (!buffer || buffer.messages.length === 0) {
-    if (buffer?.isTyping) {
-      stopTyping(threadId);
-    }
-    return;
-  }
+async function processBatch(batch: BufferedMessage[]) {
+  if (batch.length === 0) return;
 
-  const messagesToProcess = [...buffer.messages];
-  buffer.messages = [];
-  buffer.timer = null;
+  const threadId = batch[0].threadId;
+  const api = batch[0].api;
+  const messages = batch.map((b) => b.message);
 
-  debugLog('BUFFER', `Processing batch of ${messagesToProcess.length} messages for ${threadId}`);
-  logStep('buffer:process', {
-    threadId,
-    messageCount: messagesToProcess.length,
-  });
+  debugLog('BUFFER', `Processing batch of ${messages.length} messages for ${threadId}`);
+  logStep('buffer:process', { threadId, messageCount: messages.length });
 
   const abortSignal = startTask(threadId);
 
-  if (!messageQueues.has(threadId)) {
-    messageQueues.set(threadId, []);
-  }
-  const queue = messageQueues.get(threadId)!;
-  messagesToProcess.forEach((msg) => queue.push(msg));
-
   try {
-    await processQueue(api, threadId, abortSignal);
+    await handleMixedContent(api, messages, threadId, abortSignal);
   } catch (e: any) {
-    if (e.message === 'Aborted' || abortSignal.aborted) {
+    if (e.message === 'Aborted' || abortSignal?.aborted) {
       debugLog('BUFFER', `Task aborted for thread ${threadId}`);
       return;
     }
-    logError('processBufferedMessages', e);
+    logError('processBatch', e);
     console.error('[Bot] Lỗi xử lý buffer:', e);
-    processingThreads.delete(threadId);
   } finally {
     stopTyping(threadId);
   }
 }
 
 /**
- * Thêm tin nhắn vào buffer
+ * Khởi tạo RxJS pipeline
+ */
+export function initMessageBuffer() {
+  if (subscription) {
+    subscription.unsubscribe();
+  }
+
+  subscription = messageSubject
+    .pipe(
+      // Gom nhóm theo threadId
+      groupBy((data) => data.threadId),
+      // Với mỗi nhóm thread
+      mergeMap((group$) => {
+        const threadId = group$.key;
+
+        return group$.pipe(
+          // Bắt đầu typing khi có tin mới
+          tap((data) => startTypingWithRefresh(data.api, threadId)),
+          // Debounce: đợi user ngừng gửi tin trong BUFFER_DELAY_MS
+          bufferWhen(() => group$.pipe(debounceTime(getBufferDelayMs()))),
+          // Chỉ xử lý khi có tin
+          filter((msgs) => msgs.length > 0),
+        );
+      }),
+    )
+    .subscribe({
+      next: (batch) => processBatch(batch),
+      error: (err) => logError('messageBuffer:stream', err),
+    });
+
+  debugLog('BUFFER', 'RxJS message buffer initialized');
+}
+
+/**
+ * Thêm tin nhắn vào buffer stream
  */
 export function addToBuffer(api: any, threadId: string, message: any) {
-  // Lấy hoặc tạo buffer
-  if (!threadBuffers.has(threadId)) {
-    threadBuffers.set(threadId, {
-      timer: null,
-      messages: [],
-      isTyping: false,
-      typingInterval: null,
-    });
-  }
-  const buffer = threadBuffers.get(threadId)!;
-
-  // Thêm tin nhắn
-  buffer.messages.push(message);
-  debugLog('BUFFER', `Added to buffer: thread=${threadId}, bufferSize=${buffer.messages.length}`);
-
-  // Hiển thị typing
-  if (!buffer.isTyping) {
-    startTypingWithRefresh(api, threadId);
+  // Auto-init nếu chưa có
+  if (!subscription) {
+    initMessageBuffer();
   }
 
-  // Reset timer (Debounce)
-  if (buffer.timer) {
-    clearTimeout(buffer.timer);
-    debugLog('BUFFER', `Debounced: User still typing... (${threadId})`);
+  debugLog('BUFFER', `Added to stream: thread=${threadId}`);
+  messageSubject.next({ threadId, message, api });
+}
+
+/**
+ * Cleanup khi shutdown
+ */
+export function destroyMessageBuffer() {
+  if (subscription) {
+    subscription.unsubscribe();
+    subscription = null;
   }
 
-  // Đặt timer mới
-  buffer.timer = setTimeout(() => {
-    processBufferedMessages(api, threadId);
-  }, getBufferDelayMs());
+  // Clear all typing states
+  for (const [threadId] of typingStates) {
+    stopTyping(threadId);
+  }
+  typingStates.clear();
+
+  debugLog('BUFFER', 'Message buffer destroyed');
 }
 
 /**
