@@ -122,6 +122,12 @@ export const CONFIG = {
     loadGroup: settings.historyLoader?.loadGroup ?? false,
   },
 
+  // Buffer config cho message batching
+  buffer: {
+    delayMs: settings.buffer?.delayMs ?? 2500,
+    typingRefreshMs: settings.buffer?.typingRefreshMs ?? 3000,
+  },
+
   // MIME types mapping
   mimeTypes: {
     // Documents

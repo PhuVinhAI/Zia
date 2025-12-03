@@ -1,4 +1,8 @@
 {
+  "buffer": {
+    "delayMs": 2500,
+    "typingRefreshMs": 3000
+  },
   "bot": {
     "name": "Trợ lý AI Zalo",
     "prefix": "#bot",

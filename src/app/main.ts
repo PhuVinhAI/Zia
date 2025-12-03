@@ -36,7 +36,7 @@ import {
   processCloudMessage,
   shouldSkipMessage,
 } from "./botSetup.js";
-import { addToBuffer } from "./messageBuffer.js";
+import { addToBuffer } from "../modules/gateway/message.buffer.js";
 
 async function main() {
   // 1. Khởi tạo logging

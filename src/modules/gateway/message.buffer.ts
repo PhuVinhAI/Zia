@@ -1,18 +1,19 @@
 /**
  * Message Buffer - Cơ chế đệm tin nhắn để gom nhiều tin thành 1 context
  */
-import { ThreadType } from "../infrastructure/zalo/zalo.service.js";
-import { handleMixedContent } from "../modules/gateway/gateway.module.js";
-import { startTask } from "../shared/utils/taskManager.js";
-import { debugLog, logStep, logError } from "../core/logger/logger.js";
+import { ThreadType } from "../../infrastructure/zalo/zalo.service.js";
+import { handleMixedContent } from "./gateway.module.js";
+import { startTask } from "../../shared/utils/taskManager.js";
+import { debugLog, logStep, logError } from "../../core/logger/logger.js";
+import { CONFIG } from "../../shared/constants/config.js";
 
 // Queue tin nhắn theo thread
 const messageQueues = new Map<string, any[]>();
 const processingThreads = new Set<string>();
 
-// Buffer config
-const BUFFER_DELAY_MS = 2500; // Chờ 2.5s để user nhắn hết câu
-const TYPING_REFRESH_MS = 3000; // Refresh typing mỗi 3s
+// Buffer config từ settings.json
+const getBufferDelayMs = () => CONFIG.buffer?.delayMs ?? 2500;
+const getTypingRefreshMs = () => CONFIG.buffer?.typingRefreshMs ?? 3000;
 
 // Buffer storage
 interface ThreadBuffer {
@@ -99,7 +100,7 @@ export function startTypingWithRefresh(api: any, threadId: string) {
       api.sendTypingEvent(threadId, ThreadType.User).catch(() => {});
       debugLog("TYPING", `Refreshed typing for ${threadId}`);
     }
-  }, TYPING_REFRESH_MS);
+  }, getTypingRefreshMs());
 
   debugLog("BUFFER", `Started typing with refresh for ${threadId}`);
 }
@@ -203,12 +204,15 @@ export function addToBuffer(api: any, threadId: string, message: any) {
   // Đặt timer mới
   buffer.timer = setTimeout(() => {
     processBufferedMessages(api, threadId);
-  }, BUFFER_DELAY_MS);
+  }, getBufferDelayMs());
 }
 
 /**
  * Lấy buffer config
  */
 export function getBufferConfig() {
-  return { BUFFER_DELAY_MS, TYPING_REFRESH_MS };
+  return {
+    BUFFER_DELAY_MS: getBufferDelayMs(),
+    TYPING_REFRESH_MS: getTypingRefreshMs(),
+  };
 }
