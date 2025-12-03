@@ -1,5 +1,6 @@
 /**
  * History Store - Lưu trữ và quản lý history
+ * Hybrid: In-memory cache + SQLite persistence
  */
 import { Content } from "@google/genai";
 import { CONFIG } from "../constants/config.js";
@@ -11,8 +12,9 @@ import {
   fetchFullHistory,
   getPaginationConfig,
 } from "./historyLoader.js";
+import { historyRepository } from "../../infrastructure/database/index.js";
 
-// Storage
+// In-memory cache (primary storage for fast access)
 const messageHistory = new Map<string, Content[]>();
 const rawMessageHistory = new Map<string, any[]>();
 const tokenCache = new Map<string, number>();
@@ -20,12 +22,25 @@ const initializedThreads = new Set<string>();
 const preloadedMessages = new Map<string, any[]>();
 let isPreloaded = false;
 
-/** Ngủ (Delay) */
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
-/** Random delay từ min đến max */
 const randomDelay = (min: number, max: number) =>
   Math.floor(Math.random() * (max - min + 1) + min);
+
+/**
+ * Persist message to database (async, non-blocking)
+ */
+async function persistToDb(
+  threadId: string,
+  role: "user" | "model",
+  content: Content
+): Promise<void> {
+  try {
+    const serialized = JSON.stringify(content.parts);
+    await historyRepository.addMessage(threadId, role, serialized);
+  } catch (err) {
+    debugLog("HISTORY", `DB persist error: ${err}`);
+  }
+}
 
 /**
  * Xóa lịch sử cũ từ từ cho đến khi dưới ngưỡng token
@@ -42,7 +57,7 @@ async function trimHistoryByTokens(threadId: string): Promise<void> {
   );
   debugLog(
     "HISTORY",
-    `trimHistoryByTokens: thread=${threadId}, tokens=${currentTokens}, max=${maxTokens}, messages=${history.length}`
+    `trimHistoryByTokens: thread=${threadId}, tokens=${currentTokens}, max=${maxTokens}`
   );
 
   const rawHistory = rawMessageHistory.get(threadId) || [];
@@ -63,53 +78,27 @@ async function trimHistoryByTokens(threadId: string): Promise<void> {
       console.log(
         `[History] Trimmed ${trimCount} messages -> ${currentTokens} tokens`
       );
-      debugLog(
-        "HISTORY",
-        `Trimmed ${trimCount} messages, now ${currentTokens} tokens, ${history.length} messages`
-      );
     }
-  }
-
-  if (trimCount >= maxTrimAttempts) {
-    console.warn(
-      `[History] ⚠️ Max trim attempts reached for thread ${threadId}`
-    );
-    debugLog(
-      "HISTORY",
-      `WARNING: Max trim attempts (${maxTrimAttempts}) reached for thread ${threadId}`
-    );
   }
 
   messageHistory.set(threadId, history);
   rawMessageHistory.set(threadId, rawHistory);
   tokenCache.set(threadId, currentTokens);
-
-  if (trimCount > 0) {
-    debugLog(
-      "HISTORY",
-      `Trim complete: removed ${trimCount} messages, final=${history.length} messages, ${currentTokens} tokens`
-    );
-  }
 }
 
 /**
  * Preload tất cả tin nhắn cũ từ Zalo khi bot start
  */
 export async function preloadAllHistory(api: any): Promise<void> {
-  if (isPreloaded) {
-    debugLog("HISTORY", "Already preloaded, skipping");
-    return;
-  }
+  if (isPreloaded) return;
 
   if (CONFIG.historyLoader?.enabled === false) {
     console.log("[History] ⏭️ Preload history đã bị tắt trong config");
-    debugLog("HISTORY", "Preload disabled in config, skipping");
     isPreloaded = true;
     return;
   }
 
   console.log("[History] 📥 Đang preload lịch sử chat (Pagination mode)...");
-  debugLog("HISTORY", "Starting preload all history with pagination");
 
   try {
     const config = getPaginationConfig();
@@ -118,19 +107,11 @@ export async function preloadAllHistory(api: any): Promise<void> {
     // Load User messages
     if (CONFIG.historyLoader.loadUser) {
       const userMessages = await fetchFullHistory(api, 0);
-
       const allowedIds = CONFIG.allowedUserIds;
       const filteredMessages =
         allowedIds.length > 0
           ? userMessages.filter((msg) => allowedIds.includes(msg.threadId))
           : userMessages;
-
-      const skippedCount = userMessages.length - filteredMessages.length;
-      if (skippedCount > 0) {
-        console.log(
-          `[History] 🔒 Bỏ qua ${skippedCount} tin từ user không được phép`
-        );
-      }
 
       for (const msg of filteredMessages) {
         const threadId = msg.threadId;
@@ -139,29 +120,18 @@ export async function preloadAllHistory(api: any): Promise<void> {
         }
         preloadedMessages.get(threadId)!.push(msg);
       }
-      debugLog(
-        "HISTORY",
-        `Preloaded ${filteredMessages.length} user messages (filtered from ${userMessages.length})`
-      );
       totalMsgs += filteredMessages.length;
 
       if (userMessages.length > 0 && CONFIG.historyLoader.loadGroup) {
         const waitTime = randomDelay(config.minDelay, config.maxDelay);
-        console.log(
-          `[History] 💤 Nghỉ ${(waitTime / 1000).toFixed(
-            1
-          )}s trước khi load Group...`
-        );
+        console.log(`[History] 💤 Nghỉ ${(waitTime / 1000).toFixed(1)}s...`);
         await sleep(waitTime);
       }
-    } else {
-      console.log("[History] ⏭️ Bỏ qua load User messages (disabled)");
     }
 
     // Load Group messages
     if (CONFIG.historyLoader.loadGroup) {
       const groupMessages = await fetchFullHistory(api, 1);
-
       for (const msg of groupMessages) {
         const threadId = msg.threadId;
         if (!preloadedMessages.has(threadId)) {
@@ -169,21 +139,12 @@ export async function preloadAllHistory(api: any): Promise<void> {
         }
         preloadedMessages.get(threadId)!.push(msg);
       }
-      debugLog("HISTORY", `Preloaded ${groupMessages.length} group messages`);
       totalMsgs += groupMessages.length;
-    } else {
-      console.log("[History] ⏭️ Bỏ qua load Group messages (disabled)");
     }
 
     isPreloaded = true;
-    const threadCount = preloadedMessages.size;
-
     console.log(
-      `[History] ✅ Preload xong: ${totalMsgs} tin nhắn từ ${threadCount} cuộc trò chuyện`
-    );
-    debugLog(
-      "HISTORY",
-      `Preload complete: ${totalMsgs} messages from ${threadCount} threads`
+      `[History] ✅ Preload xong: ${totalMsgs} tin từ ${preloadedMessages.size} threads`
     );
   } catch (error) {
     console.log("[History] ⚠️ Preload gặp lỗi, tiếp tục với dữ liệu hiện có");
@@ -199,13 +160,23 @@ export async function initThreadHistory(
   threadId: string,
   type: number
 ): Promise<void> {
-  if (initializedThreads.has(threadId)) {
-    debugLog("HISTORY", `Thread ${threadId} already initialized, skipping`);
-    return;
-  }
+  if (initializedThreads.has(threadId)) return;
 
   debugLog("HISTORY", `Initializing history for thread ${threadId}`);
   initializedThreads.add(threadId);
+
+  // Thử load từ database trước
+  const dbHistory = await historyRepository.getHistoryForAI(threadId);
+  if (dbHistory.length > 0) {
+    console.log(
+      `[History] 📚 Thread ${threadId}: Loaded ${dbHistory.length} messages from DB`
+    );
+    messageHistory.set(threadId, dbHistory as Content[]);
+    await trimHistoryByTokens(threadId);
+    return;
+  }
+
+  // Fallback: load từ Zalo API
   const oldHistory = await loadOldMessages(
     api,
     threadId,
@@ -215,13 +186,12 @@ export async function initThreadHistory(
 
   if (oldHistory.length > 0) {
     messageHistory.set(threadId, oldHistory);
-    debugLog(
-      "HISTORY",
-      `Set ${oldHistory.length} messages for thread ${threadId}`
-    );
     await trimHistoryByTokens(threadId);
-  } else {
-    debugLog("HISTORY", `No old messages found for thread ${threadId}`);
+
+    // Persist to DB (async)
+    for (const content of oldHistory) {
+      persistToDb(threadId, content.role as "user" | "model", content);
+    }
   }
 }
 
@@ -232,10 +202,7 @@ export async function saveToHistory(
   threadId: string,
   message: any
 ): Promise<void> {
-  debugLog(
-    "HISTORY",
-    `saveToHistory: thread=${threadId}, msgType=${message.data?.msgType}`
-  );
+  debugLog("HISTORY", `saveToHistory: thread=${threadId}`);
 
   const history = messageHistory.get(threadId) || [];
   const rawHistory = rawMessageHistory.get(threadId) || [];
@@ -247,7 +214,9 @@ export async function saveToHistory(
   messageHistory.set(threadId, history);
   rawMessageHistory.set(threadId, rawHistory);
 
-  debugLog("HISTORY", `History size: ${history.length} messages`);
+  // Persist to DB
+  persistToDb(threadId, "user", content);
+
   await trimHistoryByTokens(threadId);
 }
 
@@ -261,17 +230,20 @@ export async function saveResponseToHistory(
   const history = messageHistory.get(threadId) || [];
   const rawHistory = rawMessageHistory.get(threadId) || [];
 
-  history.push({
+  const content: Content = {
     role: "model",
     parts: [{ text: responseText }],
-  });
-  rawHistory.push({
-    isSelf: true,
-    data: { content: responseText },
-  });
+  };
+
+  history.push(content);
+  rawHistory.push({ isSelf: true, data: { content: responseText } });
 
   messageHistory.set(threadId, history);
   rawMessageHistory.set(threadId, rawHistory);
+
+  // Persist to DB
+  persistToDb(threadId, "model", content);
+
   await trimHistoryByTokens(threadId);
 }
 
@@ -285,10 +257,12 @@ export async function saveToolResultToHistory(
   const history = messageHistory.get(threadId) || [];
   const rawHistory = rawMessageHistory.get(threadId) || [];
 
-  history.push({
+  const content: Content = {
     role: "user",
     parts: [{ text: toolResultPrompt }],
-  });
+  };
+
+  history.push(content);
   rawHistory.push({
     isSelf: false,
     isToolResult: true,
@@ -298,10 +272,9 @@ export async function saveToolResultToHistory(
   messageHistory.set(threadId, history);
   rawMessageHistory.set(threadId, rawHistory);
 
-  debugLog(
-    "HISTORY",
-    `Saved tool result to history: ${toolResultPrompt.substring(0, 100)}...`
-  );
+  // Persist to DB
+  persistToDb(threadId, "user", content);
+
   await trimHistoryByTokens(threadId);
 }
 
@@ -322,6 +295,11 @@ export function clearHistory(threadId: string): void {
   rawMessageHistory.delete(threadId);
   tokenCache.delete(threadId);
   initializedThreads.delete(threadId);
+
+  // Clear from DB (async)
+  historyRepository.clearHistory(threadId).catch((err) => {
+    debugLog("HISTORY", `DB clear error: ${err}`);
+  });
 }
 
 /** Lấy raw Zalo messages (cho quote feature) */
