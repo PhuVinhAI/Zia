@@ -1,0 +1,12 @@
+node_modules
+dist
+.git
+.gitignore
+.vscode
+*.md
+*.png
+.env.example
+logs/*
+data/*
+!data/.gitkeep
+!logs/.gitkeep

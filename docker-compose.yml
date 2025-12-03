@@ -1,0 +1,14 @@
+services:
+  zalopi:
+    build: .
+    container_name: zalopi-bot
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./settings.json:/app/settings.json:ro
+    # Uncomment if you need to expose any ports
+    # ports:
+    #   - "3000:3000"
