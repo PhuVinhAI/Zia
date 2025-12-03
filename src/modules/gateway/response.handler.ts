@@ -32,6 +32,49 @@ const reactionMap: Record<string, any> = {
   like: Reactions.LIKE,
 };
 
+async function sendLink(
+  api: any,
+  link: string,
+  message: string | undefined,
+  threadId: string
+) {
+  try {
+    debugLog("LINK", `Sending link: ${link}, message: ${message || "(none)"}`);
+
+    const linkData: any = { link };
+    if (message) linkData.msg = message;
+
+    const result = await api.sendLink(linkData, threadId, ThreadType.User);
+    logZaloAPI("sendLink", { linkData, threadId }, result);
+    console.log(`[Bot] 🔗 Đã gửi link với preview!`);
+    logMessage("OUT", threadId, { type: "link", link, message });
+  } catch (e: any) {
+    logZaloAPI("sendLink", { link, threadId }, null, e);
+    logError("sendLink", e);
+  }
+}
+
+async function sendCard(
+  api: any,
+  userId: string | undefined,
+  threadId: string
+) {
+  try {
+    // Nếu không có userId, gửi card của bot
+    const targetUserId = userId || String(api.getContext().uid);
+    debugLog("CARD", `Sending card for userId=${targetUserId}`);
+
+    const cardData = { userId: targetUserId };
+    const result = await api.sendCard(cardData, threadId, ThreadType.User);
+    logZaloAPI("sendCard", { cardData, threadId }, result);
+    console.log(`[Bot] 📇 Đã gửi danh thiếp!`);
+    logMessage("OUT", threadId, { type: "card", userId: targetUserId });
+  } catch (e: any) {
+    logZaloAPI("sendCard", { userId, threadId }, null, e);
+    logError("sendCard", e);
+  }
+}
+
 async function sendSticker(api: any, keyword: string, threadId: string) {
   try {
     console.log(`[Bot] 🎨 Tìm sticker: "${keyword}"`);
@@ -237,6 +280,17 @@ export async function sendResponse(
       await sendSticker(api, msg.sticker, threadId);
     }
 
+    if (msg.link) {
+      if (msg.text || msg.sticker) await new Promise((r) => setTimeout(r, 500));
+      await sendLink(api, msg.link, msg.text || undefined, threadId);
+    }
+
+    if (msg.card !== undefined) {
+      if (msg.text || msg.sticker || msg.link)
+        await new Promise((r) => setTimeout(r, 500));
+      await sendCard(api, msg.card || undefined, threadId);
+    }
+
     if (i < response.messages.length - 1) {
       await new Promise((r) => setTimeout(r, 500 + Math.random() * 500));
     }
@@ -294,6 +348,18 @@ export function createStreamCallbacks(
     onSticker: async (keyword: string) => {
       pendingStickers.push(keyword);
       console.log(`[Bot] 🎨 Queue sticker: "${keyword}"`);
+    },
+
+    onLink: async (link: string, message?: string) => {
+      messageCount++;
+      await sendLink(api, link, message, threadId);
+      await new Promise((r) => setTimeout(r, 300));
+    },
+
+    onCard: async (userId?: string) => {
+      messageCount++;
+      await sendCard(api, userId, threadId);
+      await new Promise((r) => setTimeout(r, 300));
     },
 
     onMessage: async (text: string, quoteIndex?: number) => {

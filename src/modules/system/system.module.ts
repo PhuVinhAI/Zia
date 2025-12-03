@@ -11,8 +11,6 @@ import {
 import { getUserInfoTool } from "./tools/getUserInfo.js";
 import { getAllFriendsTool } from "./tools/getAllFriends.js";
 import { getFriendOnlinesTool } from "./tools/getFriendOnlines.js";
-import { sendCardTool } from "./tools/sendCard.js";
-import { sendLinkTool } from "./tools/sendLink.js";
 
 export class SystemModule extends BaseModule {
   readonly metadata: ModuleMetadata = {
@@ -25,8 +23,6 @@ export class SystemModule extends BaseModule {
     getUserInfoTool,
     getAllFriendsTool,
     getFriendOnlinesTool,
-    sendCardTool,
-    sendLinkTool,
   ];
 
   get tools(): ITool[] {

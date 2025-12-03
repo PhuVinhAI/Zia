@@ -22,6 +22,8 @@ export interface StreamCallbacks {
   onReaction?: (reaction: string) => Promise<void>;
   onSticker?: (keyword: string) => Promise<void>;
   onMessage?: (text: string, quoteIndex?: number) => Promise<void>;
+  onLink?: (link: string, message?: string) => Promise<void>;
+  onCard?: (userId?: string) => Promise<void>;
   onUndo?: (index: number) => Promise<void>;
   onComplete?: () => void | Promise<void>;
   onError?: (error: Error) => void;
@@ -33,6 +35,8 @@ interface ParserState {
   sentReactions: Set<string>;
   sentStickers: Set<string>;
   sentMessages: Set<string>;
+  sentLinks: Set<string>;
+  sentCards: Set<string>;
   sentUndos: Set<string>;
 }
 
@@ -52,6 +56,8 @@ const TAG_PATTERNS = [
   /\[quote:-?\d+\][\s\S]*?\[\/quote\]/gi,
   /\[msg\][\s\S]*?\[\/msg\]/gi,
   /\[undo:-?\d+\]/gi,
+  /\[link:https?:\/\/[^\]]+\][\s\S]*?\[\/link\]/gi,
+  /\[card(?::\d+)?\]/gi,
   /\[tool:\w+(?:\s+[^\]]*?)?\](?:\s*\{[\s\S]*?\}\s*\[\/tool\])?/gi,
 ];
 
@@ -136,6 +142,31 @@ async function processStreamChunk(
       await callbacks.onUndo(index);
     }
   }
+
+  // Parse [link:url]caption[/link]
+  const linkMatches = buffer.matchAll(
+    /\[link:(https?:\/\/[^\]]+)\]([\s\S]*?)\[\/link\]/gi
+  );
+  for (const match of linkMatches) {
+    const link = match[1];
+    const message = match[2].trim();
+    const key = `link:${link}`;
+    if (!state.sentLinks.has(key) && callbacks.onLink) {
+      state.sentLinks.add(key);
+      await callbacks.onLink(link, message || undefined);
+    }
+  }
+
+  // Parse [card:userId] hoặc [card]
+  const cardMatches = buffer.matchAll(/\[card(?::(\d+))?\]/gi);
+  for (const match of cardMatches) {
+    const userId = match[1] || "";
+    const key = `card:${userId}`;
+    if (!state.sentCards.has(key) && callbacks.onCard) {
+      state.sentCards.add(key);
+      await callbacks.onCard(userId || undefined);
+    }
+  }
 }
 
 /**
@@ -153,6 +184,8 @@ export async function generateContentStream(
     sentReactions: new Set(),
     sentStickers: new Set(),
     sentMessages: new Set(),
+    sentLinks: new Set(),
+    sentCards: new Set(),
     sentUndos: new Set(),
   };
 
@@ -176,6 +209,8 @@ export async function generateContentStream(
       state.sentReactions.clear();
       state.sentStickers.clear();
       state.sentMessages.clear();
+      state.sentLinks.clear();
+      state.sentCards.clear();
       state.sentUndos.clear();
       hasPartialResponse = false;
 
