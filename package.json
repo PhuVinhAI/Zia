@@ -1,7 +1,7 @@
 {
-  "name": "zalo-ai-bot",
+  "name": "zalopi",
   "version": "1.0.0",
-  "description": "Zalo AI Bot using zca-js and Google Gemini",
+  "description": "ZaloPi - Zalo AI Bot using zca-js and Google Gemini",
   "main": "dist/index.js",
   "type": "module",
   "scripts": {
