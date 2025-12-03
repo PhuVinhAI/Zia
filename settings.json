@@ -68,5 +68,10 @@
       "sorry",
       "goodnight"
     ]
+  },
+  "modules": {
+    "system": true,
+    "academic": false,
+    "entertainment": false
   }
 }

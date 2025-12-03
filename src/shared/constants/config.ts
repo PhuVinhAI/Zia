@@ -138,6 +138,13 @@ export const CONFIG = {
     maxTextConvertSizeMB: settings.fetch?.maxTextConvertSizeMB ?? 20,
   },
 
+  // Modules config - bật/tắt từng loại tool
+  modules: {
+    system: settings.modules?.system ?? true, // Tools hệ thống (getUserInfo, getAllFriends,...)
+    academic: settings.modules?.academic ?? true, // Tools TVU (tvuLogin, tvuGrades,...)
+    entertainment: settings.modules?.entertainment ?? true, // Tools Jikan (jikanSearch, jikanTop,...)
+  } as Record<string, boolean>,
+
   // MIME types mapping
   mimeTypes: {
     // Documents
