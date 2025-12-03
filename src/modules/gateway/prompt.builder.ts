@@ -1,7 +1,7 @@
 /**
  * Prompt Builder - Xây dựng prompt cho Gemini API
  */
-import { PROMPTS } from "../../shared/constants/config.js";
+import { PROMPTS } from "../../infrastructure/gemini/prompts.js";
 import { ClassifiedMessage } from "./classifier.js";
 
 /**

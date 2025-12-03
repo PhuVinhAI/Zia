@@ -17,7 +17,8 @@ import {
   getHistory,
 } from "../../shared/utils/history.js";
 import { logStep, logError, debugLog } from "../../core/logger/logger.js";
-import { CONFIG, PROMPTS } from "../../shared/constants/config.js";
+import { CONFIG } from "../../shared/constants/config.js";
+import { PROMPTS } from "../../infrastructure/gemini/prompts.js";
 import { checkRateLimit, markApiCall } from "./rate-limit.guard.js";
 
 // Import từ các module mới

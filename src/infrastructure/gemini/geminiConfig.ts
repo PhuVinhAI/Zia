@@ -3,6 +3,7 @@
  */
 import { GoogleGenAI } from "@google/genai";
 import { debugLog } from "../../core/logger/logger.js";
+import { setAIService } from "../../shared/types/ai.types.js";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
 
@@ -14,6 +15,11 @@ if (!GEMINI_API_KEY || GEMINI_API_KEY === "your_gemini_api_key_here") {
 debugLog("GEMINI", "Initializing Gemini API...");
 
 export const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+
+// Register AI service cho shared layer (dependency inversion)
+setAIService({
+  countTokens: (params) => ai.models.countTokens(params),
+});
 
 export const GEMINI_MODEL = "models/gemini-flash-latest";
 

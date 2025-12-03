@@ -172,10 +172,5 @@ export const CONFIG = {
   } as Record<string, string>,
 };
 
-export {
-  SYSTEM_PROMPT,
-  PROMPTS,
-  getSystemPrompt,
-} from "../../infrastructure/gemini/prompts.js";
 export { DEFAULT_RESPONSE, parseAIResponse } from "../types/config.schema.js";
 export type { AIResponse, AIMessage } from "../types/config.schema.js";

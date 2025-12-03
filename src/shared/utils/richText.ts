@@ -1,4 +1,4 @@
-import { TextStyle } from "../../infrastructure/zalo/zalo.service.js";
+import { TextStyle } from "../types/zalo.types.js";
 import { debugLog } from "../../core/logger/logger.js";
 
 interface StyleItem {

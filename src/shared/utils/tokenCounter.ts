@@ -2,7 +2,7 @@
  * Token Counter - Đếm token cho Gemini API
  */
 import { Content, Part } from "@google/genai";
-import { ai } from "../../infrastructure/gemini/gemini.provider.js";
+import { getAIService } from "../types/ai.types.js";
 import { debugLog, logError } from "../../core/logger/logger.js";
 
 const GEMINI_MODEL = "models/gemini-flash-latest";
@@ -41,7 +41,8 @@ export function filterUnsupportedMedia(contents: Content[]): Content[] {
 export async function countTokens(contents: Content[]): Promise<number> {
   if (contents.length === 0) return 0;
   try {
-    const result = await ai.models.countTokens({
+    const ai = getAIService();
+    const result = await ai.countTokens({
       model: GEMINI_MODEL,
       contents: filterUnsupportedMedia(contents),
     });
