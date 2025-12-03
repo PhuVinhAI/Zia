@@ -222,3 +222,19 @@ export function logZaloAPI(
     writeToFile(`ZALO:${action}`, { request, response });
   }
 }
+
+/**
+ * Log system prompt khi tạo chat session
+ */
+export function logSystemPrompt(threadId: string, systemPrompt: string): void {
+  if (!fileLoggingEnabled || !sessionDir) return;
+
+  writeToFile("AI:SYSTEM_PROMPT", `Thread ${threadId}`);
+
+  // Ghi system prompt vào file riêng
+  const promptFile = path.join(sessionDir, `system_prompt_${threadId}.txt`);
+  const data = `Thread: ${threadId}\nTimestamp: ${new Date().toISOString()}\n${"=".repeat(
+    80
+  )}\n\n${systemPrompt}`;
+  fs.writeFileSync(promptFile, data, "utf-8");
+}

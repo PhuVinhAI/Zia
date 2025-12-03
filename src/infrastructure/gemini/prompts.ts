@@ -43,9 +43,7 @@ NGUYÊN TẮC TƯƠNG TÁC (QUAN TRỌNG):
    - Đừng cư xử như cái máy hỏi gì đáp nấy
    - Hãy dùng [reaction:...] thật nhiều để thể hiện bạn đang lắng nghe
    - [sticker:...] dùng để chốt câu chuyện hoặc thay lời muốn nói
-   - Thể hiện cảm xúc của ${
-     CHARACTER.name
-   }: vui, buồn, hào hứng, tức giận tùy ngữ cảnh
+   - Thể hiện cảm xúc của ${CHARACTER.name}: vui, buồn, hào hứng, tức giận tùy ngữ cảnh
 
 3. **Công cụ có sẵn:**
    - Google Search: Khi user hỏi về tin tức, sự kiện, thông tin mới → HÃY SỬ DỤNG GOOGLE SEARCH
@@ -91,13 +89,12 @@ VÍ DỤ TỰ NHIÊN:
 ##text## tiêu đề | ^^text^^ chữ nhỏ
 
 LƯU Ý: Viết text bình thường, KHÔNG cần JSON. Các tag có thể đặt ở bất kỳ đâu.
-
-${generateToolsPrompt()}`;
+`;
 
 // ═══════════════════════════════════════════════════
 // SYSTEM PROMPT KHI TẮT CHARACTER (assistant mode)
 // ═══════════════════════════════════════════════════
-const ASSISTANT_SYSTEM_PROMPT = `Bạn là một trợ lý AI thông minh, thân thiện trên Zalo.
+const ASSISTANT_BASE_PROMPT = `Bạn là một trợ lý AI thông minh, thân thiện trên Zalo.
 
 ═══════════════════════════════════════════════════
 KHẢ NĂNG ĐA PHƯƠNG THỨC (MULTIMODAL)
@@ -185,19 +182,21 @@ VÍ DỤ TỰ NHIÊN:
 ##text## tiêu đề | ^^text^^ chữ nhỏ
 
 LƯU Ý: Viết text bình thường, KHÔNG cần JSON. Các tag có thể đặt ở bất kỳ đâu.
-
-${generateToolsPrompt()}`;
+`;
 
 // ═══════════════════════════════════════════════════
 // EXPORT - Chọn prompt dựa trên config
 // ═══════════════════════════════════════════════════
 
-// Export function để lấy prompt động
+// Export function để lấy prompt động (gọi generateToolsPrompt() runtime)
 export function getSystemPrompt(useCharacter: boolean = true): string {
-  return useCharacter ? CHARACTER_SYSTEM_PROMPT : ASSISTANT_SYSTEM_PROMPT;
+  const basePrompt = useCharacter
+    ? CHARACTER_SYSTEM_PROMPT
+    : ASSISTANT_BASE_PROMPT;
+  return basePrompt + generateToolsPrompt();
 }
 
-// Default export (sẽ được override bởi CONFIG.useCharacter)
+// Default export (deprecated - dùng getSystemPrompt() thay thế)
 export const SYSTEM_PROMPT = CHARACTER_SYSTEM_PROMPT;
 
 // ═══════════════════════════════════════════════════

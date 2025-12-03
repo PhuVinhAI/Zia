@@ -16,7 +16,9 @@ import {
   logError,
   debugLog,
   logAIHistory,
+  logSystemPrompt,
 } from "../../core/logger/logger.js";
+import { getSystemPrompt } from "./prompts.js";
 
 export interface StreamCallbacks {
   onReaction?: (reaction: string) => Promise<void>;
@@ -226,6 +228,11 @@ export async function generateContentStream(
 
     try {
       const chat = getChatSession(sessionId, history);
+
+      // Log system prompt khi tạo session mới
+      if (attempt === 0) {
+        logSystemPrompt(sessionId, getSystemPrompt(CONFIG.useCharacter));
+      }
 
       if (history && history.length > 0) {
         logAIHistory(sessionId, history);
