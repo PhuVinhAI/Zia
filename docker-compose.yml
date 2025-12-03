@@ -1,7 +1,7 @@
 services:
-  zalopi:
+  zia:
     build: .
-    container_name: zalopi-bot
+    container_name: zia-bot
     restart: unless-stopped
     env_file:
       - .env

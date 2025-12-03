@@ -1,7 +1,7 @@
 {
-  "name": "zalopi",
+  "name": "zia",
   "version": "1.0.0",
-  "description": "ZaloPi - Zalo AI Bot using zca-js and Google Gemini",
+  "description": "Zia - Zalo AI Bot using zca-js and Google Gemini",
   "main": "src/index.ts",
   "type": "module",
   "scripts": {
