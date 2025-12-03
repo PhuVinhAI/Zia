@@ -59,7 +59,7 @@ export function initFileLogger(basePath: string): void {
           file: path.join(logsRoot, "bot"),
           frequency: "daily",
           mkdir: true,
-          extension: ".log",
+          extension: ".txt",
           limit: { count: 7 }, // Giữ 7 ngày
         },
       },
