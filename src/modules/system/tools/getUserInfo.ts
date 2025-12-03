@@ -7,6 +7,10 @@ import {
   ToolResult,
 } from "../../../shared/types/tools.types.js";
 import { debugLog, logZaloAPI } from "../../../core/logger/logger.js";
+import {
+  GetUserInfoSchema,
+  validateParams,
+} from "../../../shared/schemas/tools.schema.js";
 
 export const getUserInfoTool: ToolDefinition = {
   name: "getUserInfo",
@@ -25,15 +29,21 @@ export const getUserInfoTool: ToolDefinition = {
     params: Record<string, any>,
     context: ToolContext
   ): Promise<ToolResult> => {
+    // Validate với Zod
+    const validation = validateParams(GetUserInfoSchema, params);
+    if (!validation.success) {
+      return { success: false, error: validation.error };
+    }
+    const data = validation.data;
+
     try {
-      // Đảm bảo userId luôn là string (API Zalo yêu cầu string)
-      let userId = params.userId || context.senderId;
+      // Đảm bảo userId luôn là string
+      let userId = data.userId || context.senderId;
 
       if (!userId) {
         return { success: false, error: "Không có userId để lấy thông tin" };
       }
 
-      // Convert to string nếu cần (phòng trường hợp bị parse thành number)
       userId = String(userId);
 
       debugLog("TOOL:getUserInfo", `Calling API with userId=${userId}`);
@@ -50,7 +60,6 @@ export const getUserInfoTool: ToolDefinition = {
         };
       }
 
-      // Format thông tin user
       const genderStr =
         profile.gender === 0
           ? "Nam"

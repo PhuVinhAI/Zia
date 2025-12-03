@@ -6,6 +6,10 @@ import {
   ToolResult,
 } from "../../../shared/types/tools.types.js";
 import { jikanFetch, JikanPagination } from "../services/jikanClient.js";
+import {
+  JikanEpisodesSchema,
+  validateParams,
+} from "../../../shared/schemas/tools.schema.js";
 
 interface EpisodesResponse {
   data: {
@@ -41,13 +45,16 @@ export const jikanEpisodesTool: ToolDefinition = {
     },
   ],
   execute: async (params): Promise<ToolResult> => {
-    try {
-      if (!params.id) {
-        return { success: false, error: "Thiếu ID anime" };
-      }
+    // Validate với Zod
+    const validation = validateParams(JikanEpisodesSchema, params);
+    if (!validation.success) {
+      return { success: false, error: validation.error };
+    }
+    const data = validation.data;
 
-      const endpoint = `/anime/${params.id}/episodes`;
-      const queryParams = { page: params.page || 1 };
+    try {
+      const endpoint = `/anime/${data.id}/episodes`;
+      const queryParams = { page: data.page };
 
       const response = await jikanFetch<EpisodesResponse>(
         endpoint,
@@ -68,7 +75,7 @@ export const jikanEpisodesTool: ToolDefinition = {
       return {
         success: true,
         data: {
-          animeId: params.id,
+          animeId: data.id,
           episodes,
           pagination: {
             currentPage: response.pagination.current_page,

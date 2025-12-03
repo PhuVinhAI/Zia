@@ -11,6 +11,10 @@ import {
   JikanManga,
   JikanSingleResponse,
 } from "../services/jikanClient.js";
+import {
+  JikanDetailsSchema,
+  validateParams,
+} from "../../../shared/schemas/tools.schema.js";
 
 export const jikanDetailsTool: ToolDefinition = {
   name: "jikanDetails",
@@ -31,13 +35,15 @@ export const jikanDetailsTool: ToolDefinition = {
     },
   ],
   execute: async (params): Promise<ToolResult> => {
-    try {
-      if (!params.id) {
-        return { success: false, error: "Thiếu ID anime/manga" };
-      }
+    // Validate với Zod
+    const validation = validateParams(JikanDetailsSchema, params);
+    if (!validation.success) {
+      return { success: false, error: validation.error };
+    }
+    const data = validation.data;
 
-      const mediaType = params.mediaType || "anime";
-      const endpoint = `/${mediaType}/${params.id}/full`;
+    try {
+      const endpoint = `/${data.mediaType}/${data.id}/full`;
 
       const response = await jikanFetch<
         JikanSingleResponse<JikanAnime | JikanManga>
@@ -65,7 +71,7 @@ export const jikanDetailsTool: ToolDefinition = {
           item.images?.jpg?.large_image_url,
       };
 
-      if (mediaType === "anime") {
+      if (data.mediaType === "anime") {
         const anime = item as JikanAnime;
         return {
           success: true,

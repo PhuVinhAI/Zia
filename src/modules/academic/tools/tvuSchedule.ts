@@ -7,6 +7,10 @@ import {
 } from "../../../shared/types/tools.types.js";
 import { tvuRequest } from "../services/tvuClient.js";
 import { debugLog } from "../../../core/logger/logger.js";
+import {
+  TvuScheduleSchema,
+  validateParams,
+} from "../../../shared/schemas/tools.schema.js";
 
 interface ScheduleData {
   ds_tuan_tkb: Array<{
@@ -38,19 +42,20 @@ export const tvuScheduleTool: ToolDefinition = {
     },
   ],
   execute: async (params: Record<string, any>): Promise<ToolResult> => {
+    // Validate với Zod
+    const validation = validateParams(TvuScheduleSchema, params);
+    if (!validation.success) {
+      return { success: false, error: validation.error };
+    }
+    const data = validation.data;
+
     try {
-      const { hocKy } = params;
-
-      if (!hocKy) {
-        return { success: false, error: "Thiếu mã học kỳ (hocKy)" };
-      }
-
-      debugLog("TVU:Schedule", `Fetching schedule for semester ${hocKy}`);
+      debugLog("TVU:Schedule", `Fetching schedule for semester ${data.hocKy}`);
 
       const response = await tvuRequest<ScheduleData>(
         "/api/sch/w-locdstkbtuanusertheohocky",
         {
-          filter: { hoc_ky: hocKy, ten_hoc_ky: "" },
+          filter: { hoc_ky: data.hocKy, ten_hoc_ky: "" },
           additional: {
             paging: { limit: 100, page: 1 },
             ordering: [{ name: null, order_type: null }],
@@ -92,7 +97,7 @@ export const tvuScheduleTool: ToolDefinition = {
 
       return {
         success: true,
-        data: { hocKy, danhSachTuan: weeks },
+        data: { hocKy: data.hocKy, danhSachTuan: weeks },
       };
     } catch (error: any) {
       return {

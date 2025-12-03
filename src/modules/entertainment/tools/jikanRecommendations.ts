@@ -6,6 +6,10 @@ import {
   ToolResult,
 } from "../../../shared/types/tools.types.js";
 import { jikanFetch } from "../services/jikanClient.js";
+import {
+  JikanRecommendationsSchema,
+  validateParams,
+} from "../../../shared/schemas/tools.schema.js";
 
 interface RecommendationResponse {
   data: {
@@ -47,31 +51,33 @@ export const jikanRecommendationsTool: ToolDefinition = {
     },
   ],
   execute: async (params): Promise<ToolResult> => {
+    // Validate với Zod
+    const validation = validateParams(JikanRecommendationsSchema, params);
+    if (!validation.success) {
+      return { success: false, error: validation.error };
+    }
+    const data = validation.data;
+
     try {
-      if (!params.id) {
-        return { success: false, error: "Thiếu ID anime/manga" };
-      }
-
-      const mediaType = params.mediaType || "anime";
-      const endpoint = `/${mediaType}/${params.id}/recommendations`;
-      const limit = params.limit || 10;
-
+      const endpoint = `/${data.mediaType}/${data.id}/recommendations`;
       const response = await jikanFetch<RecommendationResponse>(endpoint);
 
-      const recommendations = response.data.slice(0, limit).map((item) => ({
-        id: item.entry.mal_id,
-        title: item.entry.title,
-        votes: item.votes,
-        image:
-          item.entry.images?.webp?.large_image_url ||
-          item.entry.images?.jpg?.large_image_url,
-        url: item.entry.url,
-      }));
+      const recommendations = response.data
+        .slice(0, data.limit)
+        .map((item) => ({
+          id: item.entry.mal_id,
+          title: item.entry.title,
+          votes: item.votes,
+          image:
+            item.entry.images?.webp?.large_image_url ||
+            item.entry.images?.jpg?.large_image_url,
+          url: item.entry.url,
+        }));
 
       return {
         success: true,
         data: {
-          sourceId: params.id,
+          sourceId: data.id,
           totalRecommendations: response.data.length,
           recommendations,
         },

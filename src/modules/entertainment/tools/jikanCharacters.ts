@@ -6,6 +6,10 @@ import {
   ToolResult,
 } from "../../../shared/types/tools.types.js";
 import { jikanFetch } from "../services/jikanClient.js";
+import {
+  JikanCharactersSchema,
+  validateParams,
+} from "../../../shared/schemas/tools.schema.js";
 
 interface CharacterResponse {
   data: {
@@ -52,18 +56,19 @@ export const jikanCharactersTool: ToolDefinition = {
     },
   ],
   execute: async (params): Promise<ToolResult> => {
-    try {
-      if (!params.id) {
-        return { success: false, error: "Thiếu ID anime/manga" };
-      }
+    // Validate với Zod
+    const validation = validateParams(JikanCharactersSchema, params);
+    if (!validation.success) {
+      return { success: false, error: validation.error };
+    }
+    const data = validation.data;
 
-      const mediaType = params.mediaType || "anime";
-      const endpoint = `/${mediaType}/${params.id}/characters`;
-      const limit = params.limit || 10;
+    try {
+      const endpoint = `/${data.mediaType}/${data.id}/characters`;
 
       const response = await jikanFetch<CharacterResponse>(endpoint);
 
-      const characters = response.data.slice(0, limit).map((item) => ({
+      const characters = response.data.slice(0, data.limit).map((item) => ({
         id: item.character.mal_id,
         name: item.character.name,
         role: item.role,
@@ -84,7 +89,7 @@ export const jikanCharactersTool: ToolDefinition = {
       return {
         success: true,
         data: {
-          animeId: params.id,
+          animeId: data.id,
           totalCharacters: response.data.length,
           characters,
         },

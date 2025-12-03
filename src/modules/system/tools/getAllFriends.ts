@@ -7,6 +7,10 @@ import {
   ToolResult,
 } from "../../../shared/types/tools.types.js";
 import { debugLog, logZaloAPI } from "../../../core/logger/logger.js";
+import {
+  GetAllFriendsSchema,
+  validateParams,
+} from "../../../shared/schemas/tools.schema.js";
 
 export const getAllFriendsTool: ToolDefinition = {
   name: "getAllFriends",
@@ -26,14 +30,19 @@ export const getAllFriendsTool: ToolDefinition = {
     params: Record<string, any>,
     context: ToolContext
   ): Promise<ToolResult> => {
-    try {
-      const limit = Math.min(params.limit || 50, 200);
+    // Validate với Zod
+    const validation = validateParams(GetAllFriendsSchema, params);
+    if (!validation.success) {
+      return { success: false, error: validation.error };
+    }
+    const data = validation.data;
 
-      debugLog("TOOL:getAllFriends", `Calling API with limit=${limit}`);
+    try {
+      debugLog("TOOL:getAllFriends", `Calling API with limit=${data.limit}`);
       const friends = await context.api.getAllFriends();
       logZaloAPI(
         "tool:getAllFriends",
-        { limit },
+        { limit: data.limit },
         { count: friends?.length, sample: friends?.slice(0, 3) }
       );
       debugLog(
@@ -52,16 +61,18 @@ export const getAllFriendsTool: ToolDefinition = {
       }
 
       // Giới hạn và format danh sách
-      const limitedFriends = friends.slice(0, limit).map((friend: any) => ({
-        userId: friend.userId,
-        displayName: friend.displayName || friend.zaloName || "Không tên",
-        gender:
-          friend.gender === 0
-            ? "Nam"
-            : friend.gender === 1
-            ? "Nữ"
-            : "Không xác định",
-      }));
+      const limitedFriends = friends
+        .slice(0, data.limit)
+        .map((friend: any) => ({
+          userId: friend.userId,
+          displayName: friend.displayName || friend.zaloName || "Không tên",
+          gender:
+            friend.gender === 0
+              ? "Nam"
+              : friend.gender === 1
+              ? "Nữ"
+              : "Không xác định",
+        }));
 
       return {
         success: true,

@@ -7,6 +7,10 @@ import {
   ToolResult,
 } from "../../../shared/types/tools.types.js";
 import { debugLog, logZaloAPI } from "../../../core/logger/logger.js";
+import {
+  GetFriendOnlinesSchema,
+  validateParams,
+} from "../../../shared/schemas/tools.schema.js";
 
 export const getFriendOnlinesTool: ToolDefinition = {
   name: "getFriendOnlines",
@@ -32,23 +36,24 @@ export const getFriendOnlinesTool: ToolDefinition = {
     params: Record<string, any>,
     context: ToolContext
   ): Promise<ToolResult> => {
-    try {
-      const limit = Math.min(params.limit || 10, 50);
-      const includeNames = params.includeNames !== false;
+    // Validate với Zod
+    const validation = validateParams(GetFriendOnlinesSchema, params);
+    if (!validation.success) {
+      return { success: false, error: validation.error };
+    }
+    const data = validation.data;
 
+    try {
       debugLog(
         "TOOL:getFriendOnlines",
-        `Calling API with limit=${limit}, includeNames=${includeNames}`
+        `Calling API with limit=${data.limit}, includeNames=${data.includeNames}`
       );
 
       let result: any;
       try {
         result = await context.api.getFriendOnlines();
       } catch (apiError: any) {
-        // API có thể throw error khi không có ai online hoặc response rỗng
         debugLog("TOOL:getFriendOnlines", `API error: ${apiError.message}`);
-
-        // Nếu lỗi JSON parse, có thể không có ai online
         if (
           apiError.message?.includes("JSON") ||
           apiError.message?.includes("Unexpected")
@@ -68,7 +73,7 @@ export const getFriendOnlinesTool: ToolDefinition = {
 
       logZaloAPI(
         "tool:getFriendOnlines",
-        { limit, includeNames },
+        { limit: data.limit, includeNames: data.includeNames },
         { count: result?.onlines?.length, sample: result?.onlines?.slice(0, 3) }
       );
 
@@ -79,7 +84,6 @@ export const getFriendOnlinesTool: ToolDefinition = {
         }`
       );
 
-      // Handle trường hợp result null/undefined hoặc onlines rỗng
       if (!result || !result.onlines || !Array.isArray(result.onlines)) {
         debugLog(
           "TOOL:getFriendOnlines",
@@ -95,7 +99,7 @@ export const getFriendOnlinesTool: ToolDefinition = {
         };
       }
 
-      const onlineList = result.onlines.slice(0, limit);
+      const onlineList = result.onlines.slice(0, data.limit);
 
       if (onlineList.length === 0) {
         return {
@@ -108,15 +112,11 @@ export const getFriendOnlinesTool: ToolDefinition = {
         };
       }
 
-      // Format danh sách
       const friends: any[] = [];
       for (const user of onlineList) {
-        const friendData: any = {
-          userId: user.userId,
-        };
+        const friendData: any = { userId: user.userId };
 
-        // Lấy tên nếu cần
-        if (includeNames) {
+        if (data.includeNames) {
           try {
             const info = await context.api.getUserInfo(user.userId);
             const profile = info?.changed_profiles?.[user.userId];

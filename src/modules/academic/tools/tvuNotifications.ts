@@ -7,6 +7,10 @@ import {
 } from "../../../shared/types/tools.types.js";
 import { tvuRequest } from "../services/tvuClient.js";
 import { debugLog } from "../../../core/logger/logger.js";
+import {
+  TvuNotificationsSchema,
+  validateParams,
+} from "../../../shared/schemas/tools.schema.js";
 
 interface NotificationData {
   notification: number;
@@ -36,16 +40,22 @@ export const tvuNotificationsTool: ToolDefinition = {
     },
   ],
   execute: async (params: Record<string, any>): Promise<ToolResult> => {
+    // Validate với Zod
+    const validation = validateParams(TvuNotificationsSchema, params);
+    if (!validation.success) {
+      return { success: false, error: validation.error };
+    }
+    const data = validation.data;
+
     try {
-      const limit = params.limit || 20;
-      debugLog("TVU:Notifications", `Fetching ${limit} notifications`);
+      debugLog("TVU:Notifications", `Fetching ${data.limit} notifications`);
 
       const response = await tvuRequest<NotificationData>(
         "/api/web/w-locdsthongbao",
         {
           filter: { id: null, is_noi_dung: true, is_web: true },
           additional: {
-            paging: { limit, page: 1 },
+            paging: { limit: data.limit, page: 1 },
             ordering: [{ name: "ngay_gui", order_type: 1 }],
           },
         }
@@ -59,8 +69,6 @@ export const tvuNotificationsTool: ToolDefinition = {
       }
 
       const d = response.data;
-
-      // Strip HTML tags từ nội dung
       const stripHtml = (html: string) => html.replace(/<[^>]*>/g, "").trim();
 
       const notifications = d.ds_thong_bao.map((tb) => ({

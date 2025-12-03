@@ -10,6 +10,10 @@ import {
   JikanAnime,
   JikanListResponse,
 } from "../services/jikanClient.js";
+import {
+  JikanSeasonSchema,
+  validateParams,
+} from "../../../shared/schemas/tools.schema.js";
 
 export const jikanSeasonTool: ToolDefinition = {
   name: "jikanSeason",
@@ -44,11 +48,16 @@ export const jikanSeasonTool: ToolDefinition = {
     },
   ],
   execute: async (params): Promise<ToolResult> => {
-    try {
-      const mode = params.mode || "now";
-      let endpoint: string;
+    // Validate với Zod
+    const validation = validateParams(JikanSeasonSchema, params);
+    if (!validation.success) {
+      return { success: false, error: validation.error };
+    }
+    const data = validation.data;
 
-      switch (mode) {
+    try {
+      let endpoint: string;
+      switch (data.mode) {
         case "upcoming":
           endpoint = "/seasons/upcoming";
           break;
@@ -60,12 +69,12 @@ export const jikanSeasonTool: ToolDefinition = {
       }
 
       const queryParams: Record<string, any> = {
-        page: params.page || 1,
-        limit: Math.min(params.limit || 10, 25),
+        page: data.page,
+        limit: data.limit,
       };
 
-      if (mode === "schedule" && params.day) {
-        queryParams.filter = params.day.toLowerCase();
+      if (data.mode === "schedule" && data.day) {
+        queryParams.filter = data.day.toLowerCase();
       }
 
       const response = await jikanFetch<JikanListResponse<JikanAnime>>(
@@ -95,8 +104,8 @@ export const jikanSeasonTool: ToolDefinition = {
       return {
         success: true,
         data: {
-          mode,
-          day: params.day,
+          mode: data.mode,
+          day: data.day,
           results,
           pagination: {
             currentPage: response.pagination.current_page,

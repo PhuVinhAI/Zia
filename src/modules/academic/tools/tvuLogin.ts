@@ -5,8 +5,12 @@ import {
   ToolDefinition,
   ToolResult,
 } from "../../../shared/types/tools.types.js";
-import { tvuLogin, setTvuToken } from "../services/tvuClient.js";
+import { tvuLogin } from "../services/tvuClient.js";
 import { debugLog } from "../../../core/logger/logger.js";
+import {
+  TvuLoginSchema,
+  validateParams,
+} from "../../../shared/schemas/tools.schema.js";
 
 export const tvuLoginTool: ToolDefinition = {
   name: "tvuLogin",
@@ -27,18 +31,16 @@ export const tvuLoginTool: ToolDefinition = {
     },
   ],
   execute: async (params: Record<string, any>): Promise<ToolResult> => {
+    // Validate với Zod
+    const validation = validateParams(TvuLoginSchema, params);
+    if (!validation.success) {
+      return { success: false, error: validation.error };
+    }
+    const data = validation.data;
+
     try {
-      const { username, password } = params;
-
-      if (!username || !password) {
-        return {
-          success: false,
-          error: "Thiếu mã số sinh viên hoặc mật khẩu",
-        };
-      }
-
-      debugLog("TVU:Login", `Attempting login for ${username}`);
-      const result = await tvuLogin(username, password);
+      debugLog("TVU:Login", `Attempting login for ${data.username}`);
+      const result = await tvuLogin(data.username, data.password);
 
       return {
         success: true,

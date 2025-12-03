@@ -11,6 +11,10 @@ import {
   JikanManga,
   JikanListResponse,
 } from "../services/jikanClient.js";
+import {
+  JikanSearchSchema,
+  validateParams,
+} from "../../../shared/schemas/tools.schema.js";
 
 export const jikanSearchTool: ToolDefinition = {
   name: "jikanSearch",
@@ -82,20 +86,26 @@ export const jikanSearchTool: ToolDefinition = {
     },
   ],
   execute: async (params): Promise<ToolResult> => {
+    // Validate với Zod
+    const validation = validateParams(JikanSearchSchema, params);
+    if (!validation.success) {
+      return { success: false, error: validation.error };
+    }
+    const data = validation.data;
+
     try {
-      const mediaType = params.mediaType || "anime";
-      const endpoint = mediaType === "manga" ? "/manga" : "/anime";
+      const endpoint = data.mediaType === "manga" ? "/manga" : "/anime";
 
       const queryParams: Record<string, any> = {
-        q: params.q,
-        type: params.type,
-        status: params.status,
-        min_score: params.minScore,
-        genres: params.genres,
-        order_by: params.orderBy,
-        sort: params.sort,
-        page: params.page || 1,
-        limit: Math.min(params.limit || 10, 25),
+        q: data.q,
+        type: data.type,
+        status: data.status,
+        min_score: data.minScore,
+        genres: data.genres,
+        order_by: data.orderBy,
+        sort: data.sort,
+        page: data.page,
+        limit: data.limit,
       };
 
       const response = await jikanFetch<

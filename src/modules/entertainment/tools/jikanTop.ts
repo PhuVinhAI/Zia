@@ -11,6 +11,10 @@ import {
   JikanManga,
   JikanListResponse,
 } from "../services/jikanClient.js";
+import {
+  JikanTopSchema,
+  validateParams,
+} from "../../../shared/schemas/tools.schema.js";
 
 export const jikanTopTool: ToolDefinition = {
   name: "jikanTop",
@@ -51,15 +55,21 @@ export const jikanTopTool: ToolDefinition = {
     },
   ],
   execute: async (params): Promise<ToolResult> => {
+    // Validate với Zod
+    const validation = validateParams(JikanTopSchema, params);
+    if (!validation.success) {
+      return { success: false, error: validation.error };
+    }
+    const data = validation.data;
+
     try {
-      const mediaType = params.mediaType || "anime";
-      const endpoint = `/top/${mediaType}`;
+      const endpoint = `/top/${data.mediaType}`;
 
       const queryParams: Record<string, any> = {
-        type: params.type,
-        filter: params.filter,
-        page: params.page || 1,
-        limit: Math.min(params.limit || 10, 25),
+        type: data.type,
+        filter: data.filter,
+        page: data.page,
+        limit: data.limit,
       };
 
       const response = await jikanFetch<
@@ -69,9 +79,7 @@ export const jikanTopTool: ToolDefinition = {
       const results = response.data.map((item, index) => ({
         rank:
           item.rank ||
-          (response.pagination.current_page - 1) * queryParams.limit +
-            index +
-            1,
+          (response.pagination.current_page - 1) * data.limit + index + 1,
         id: item.mal_id,
         title: item.title,
         titleEnglish: item.title_english,

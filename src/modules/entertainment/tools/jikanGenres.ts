@@ -6,6 +6,10 @@ import {
   ToolResult,
 } from "../../../shared/types/tools.types.js";
 import { jikanFetch } from "../services/jikanClient.js";
+import {
+  JikanGenresSchema,
+  validateParams,
+} from "../../../shared/schemas/tools.schema.js";
 
 interface GenresResponse {
   data: {
@@ -29,9 +33,15 @@ export const jikanGenresTool: ToolDefinition = {
     },
   ],
   execute: async (params): Promise<ToolResult> => {
+    // Validate với Zod
+    const validation = validateParams(JikanGenresSchema, params);
+    if (!validation.success) {
+      return { success: false, error: validation.error };
+    }
+    const data = validation.data;
+
     try {
-      const mediaType = params.mediaType || "anime";
-      const endpoint = `/genres/${mediaType}`;
+      const endpoint = `/genres/${data.mediaType}`;
 
       const response = await jikanFetch<GenresResponse>(endpoint);
 
@@ -44,7 +54,7 @@ export const jikanGenresTool: ToolDefinition = {
       return {
         success: true,
         data: {
-          mediaType,
+          mediaType: data.mediaType,
           totalGenres: genres.length,
           genres,
         },
