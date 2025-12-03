@@ -5,16 +5,9 @@ import { debugLog, logError } from "../../core/logger/logger.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// Tìm đường dẫn settings.json - ưu tiên từ thư mục gốc project
+// Đường dẫn settings.json ở root project
 const projectRoot = path.resolve(__dirname, "../../../");
-const settingsPath =
-  [
-    // Thư mục gốc project (src/shared/constants/settings.json)
-    path.join(projectRoot, "src/shared/constants/settings.json"),
-    // Fallback: cùng thư mục với file này
-    path.resolve(__dirname, "settings.json"),
-  ].find((p) => fs.existsSync(p)) ||
-  path.join(projectRoot, "src/shared/constants/settings.json");
+const settingsPath = path.join(projectRoot, "settings.json");
 
 // Load settings từ JSON
 function loadSettings() {

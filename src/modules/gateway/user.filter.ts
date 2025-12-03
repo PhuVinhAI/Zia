@@ -6,10 +6,7 @@ import { debugLog } from "../../core/logger/logger.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, "../../../");
-const settingsPath = path.join(
-  projectRoot,
-  "src/shared/constants/settings.json"
-);
+const settingsPath = path.join(projectRoot, "settings.json");
 
 /**
  * Kiểm tra user có được phép không
