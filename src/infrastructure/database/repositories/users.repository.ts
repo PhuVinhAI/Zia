@@ -4,6 +4,7 @@
  */
 import { eq } from 'drizzle-orm';
 import { debugLog } from '../../../core/logger/logger.js';
+import { nowDate } from '../../../shared/utils/datetime.js';
 import { getDatabase } from '../connection.js';
 import { type User, users } from '../schema.js';
 
@@ -38,7 +39,7 @@ export class UsersRepository {
       userId,
       name: data.name || null,
       role: data.role || 'user',
-      createdAt: new Date(),
+      createdAt: nowDate(),
     });
 
     debugLog('USERS', `Created user ${userId}`);

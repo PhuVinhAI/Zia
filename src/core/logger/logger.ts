@@ -6,6 +6,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import pino from 'pino';
+import { formatFileTimestamp, now } from '../../shared/utils/datetime.js';
 
 let logger: pino.Logger;
 let sessionDir: string = '';
@@ -15,7 +16,7 @@ let fileLoggingEnabled = false;
  * Tạo timestamp cho tên thư mục
  */
 function getTimestamp(): string {
-  return new Date().toISOString().replace(/[:.]/g, '-').replace('T', '_').slice(0, 19);
+  return formatFileTimestamp();
 }
 
 /**
@@ -184,7 +185,7 @@ export function logAIHistory(threadId: string, history: any[]): void {
   const historyFile = path.join(sessionDir, `history_${threadId}.json`);
   const data = {
     threadId,
-    updatedAt: new Date().toISOString(),
+    updatedAt: now(),
     messageCount: history.length,
     history: history.map((content, index) => {
       const processedParts = content.parts?.map((part: any) => {
@@ -231,10 +232,8 @@ export function logSystemPrompt(threadId: string, systemPrompt: string): void {
   logger.debug({ threadId }, 'System prompt set');
 
   const promptFile = path.join(sessionDir, `system_prompt_${threadId}.txt`);
-  const data = `Thread: ${threadId}\nTimestamp: ${new Date().toISOString()}\n${'='.repeat(
-    80,
-  )}\n\n${systemPrompt}`;
-  fs.writeFileSync(promptFile, data, 'utf-8');
+  const promptData = `Thread: ${threadId}\nTimestamp: ${now()}\n${'='.repeat(80)}\n\n${systemPrompt}`;
+  fs.writeFileSync(promptFile, promptData, 'utf-8');
 }
 
 // ═══════════════════════════════════════════════════

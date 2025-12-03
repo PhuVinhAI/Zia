@@ -4,11 +4,9 @@
  */
 import { desc, eq, lt } from 'drizzle-orm';
 import { debugLog } from '../../../core/logger/logger.js';
+import { nowDate, subtract } from '../../../shared/utils/datetime.js';
 import { getDatabase } from '../connection.js';
 import { type SentMessage, sentMessages } from '../schema.js';
-
-// Thời gian giữ tin nhắn (24 giờ)
-const MESSAGE_RETENTION_MS = 24 * 60 * 60 * 1000;
 
 export class SentMessagesRepository {
   private get db() {
@@ -29,7 +27,7 @@ export class SentMessagesRepository {
       cliMsgId: data.cliMsgId || null,
       threadId: data.threadId,
       content: data.content || null,
-      timestamp: new Date(),
+      timestamp: nowDate(),
     });
 
     debugLog('SENT_MSG', `Saved message ${data.msgId} for thread ${data.threadId}`);
@@ -104,7 +102,7 @@ export class SentMessagesRepository {
    * Nên chạy định kỳ (cronjob)
    */
   async cleanup(): Promise<number> {
-    const cutoff = new Date(Date.now() - MESSAGE_RETENTION_MS);
+    const cutoff = subtract(nowDate(), 24, 'hour');
 
     const result = await this.db
       .delete(sentMessages)

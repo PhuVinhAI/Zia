@@ -4,6 +4,7 @@
  */
 import { asc, desc, eq } from 'drizzle-orm';
 import { debugLog } from '../../../core/logger/logger.js';
+import { nowDate } from '../../../shared/utils/datetime.js';
 import { getDatabase } from '../connection.js';
 import { type History, history } from '../schema.js';
 
@@ -31,7 +32,7 @@ export class HistoryRepository {
       threadId,
       role,
       content: serializedContent,
-      timestamp: new Date(),
+      timestamp: nowDate(),
     });
 
     // Pruning: Cắt tỉa nếu vượt quá giới hạn

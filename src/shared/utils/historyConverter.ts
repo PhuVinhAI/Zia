@@ -3,7 +3,7 @@
  */
 import type { Content, Part } from '@google/genai';
 import { CONFIG } from '../constants/config.js';
-import { fetchAsBase64 } from './fetch.js';
+import { fetchAsBase64 } from './httpClient.js';
 import { isSupportedMime } from './tokenCounter.js';
 
 /** Lấy URL media từ message content */

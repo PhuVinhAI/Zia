@@ -3,6 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { debugLog } from '../../core/logger/logger.js';
 import { CONFIG } from '../../shared/constants/config.js';
+import { now } from '../../shared/utils/datetime.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, '../../../');
@@ -89,19 +90,19 @@ function logUnauthorizedUser(userId: string, userName: string): void {
 
   // Kiểm tra xem user đã có trong list chưa
   const existingIndex = unauthorizedList.findIndex((u) => u.id === userId);
-  const now = new Date().toISOString();
+  const currentTime = now();
 
   if (existingIndex >= 0) {
     // Cập nhật lastSeen và name (có thể đổi tên)
-    unauthorizedList[existingIndex].lastSeen = now;
+    unauthorizedList[existingIndex].lastSeen = currentTime;
     unauthorizedList[existingIndex].name = userName;
   } else {
     // Thêm mới
     unauthorizedList.push({
       id: userId,
       name: userName,
-      firstSeen: now,
-      lastSeen: now,
+      firstSeen: currentTime,
+      lastSeen: currentTime,
     });
     console.log(`[UserFilter] 📝 Ghi nhận user mới chưa được cấp phép: ${userName} (${userId})`);
   }

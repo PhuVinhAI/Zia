@@ -4,7 +4,7 @@
 import type { Chat, Content, Part } from '@google/genai';
 import { debugLog } from '../../core/logger/logger.js';
 import { CONFIG } from '../../shared/constants/config.js';
-import { fetchAsBase64 } from '../../shared/utils/fetch.js';
+import { fetchAsBase64 } from '../../shared/utils/httpClient.js';
 import { ai, GEMINI_CONFIG, GEMINI_MODEL, type MediaPart } from './geminiConfig.js';
 import { getSystemPrompt } from './prompts.js';
 

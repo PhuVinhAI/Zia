@@ -1,21 +1,16 @@
 /**
- * TVU API Client - HTTP client cho TVU Student Portal API
+ * TVU API Client - Ky-based HTTP client cho TVU Student Portal
  */
 
+import ky, { type KyInstance } from 'ky';
 import { debugLog, logError } from '../../../core/logger/logger.js';
 
 // ═══════════════════════════════════════════════════
-// CONSTANTS
+// CONFIG
 // ═══════════════════════════════════════════════════
 
 const TVU_BASE_URL = 'https://ttsv.tvu.edu.vn';
 const TVU_TIMEOUT = 10000;
-
-const TVU_HEADERS = {
-  'Content-Type': 'application/json',
-  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-  Referer: 'https://ttsv.tvu.edu.vn',
-};
 
 // ═══════════════════════════════════════════════════
 // TYPES
@@ -38,15 +33,14 @@ export interface TvuLoginResponse {
   user_name: string;
 }
 
-// Token storage (in-memory, có thể mở rộng sang file/db)
-let cachedToken: string | null = null;
-let tokenExpiry: number = 0;
-
 // ═══════════════════════════════════════════════════
 // TOKEN MANAGEMENT
 // ═══════════════════════════════════════════════════
 
-export function setTvuToken(token: string, expiresIn: number = 3600): void {
+let cachedToken: string | null = null;
+let tokenExpiry = 0;
+
+export function setTvuToken(token: string, expiresIn = 3600): void {
   cachedToken = token;
   tokenExpiry = Date.now() + expiresIn * 1000;
   debugLog('TVU', `Token set, expires in ${expiresIn}s`);
@@ -65,7 +59,76 @@ export function clearTvuToken(): void {
 }
 
 // ═══════════════════════════════════════════════════
-// HTTP CLIENT
+// KY INSTANCES
+// ═══════════════════════════════════════════════════
+
+const tvuHeaders = {
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+  Referer: 'https://ttsv.tvu.edu.vn',
+};
+
+// Public client (for login)
+const tvuPublicApi: KyInstance = ky.create({
+  prefixUrl: TVU_BASE_URL,
+  timeout: TVU_TIMEOUT,
+  retry: {
+    limit: 2,
+    methods: ['post'],
+    statusCodes: [408, 500, 502, 503, 504],
+  },
+  headers: tvuHeaders,
+  hooks: {
+    beforeRequest: [
+      (request) => {
+        debugLog('TVU', `→ ${request.method} ${request.url}`);
+      },
+    ],
+    afterResponse: [
+      (_request, _options, response) => {
+        debugLog('TVU', `← ${response.status}`);
+        return response;
+      },
+    ],
+  },
+});
+
+// Authenticated client (for API calls)
+function createAuthenticatedClient(): KyInstance {
+  return ky.create({
+    prefixUrl: TVU_BASE_URL,
+    timeout: TVU_TIMEOUT,
+    retry: {
+      limit: 2,
+      methods: ['post'],
+      statusCodes: [408, 500, 502, 503, 504],
+    },
+    headers: {
+      ...tvuHeaders,
+      'Content-Type': 'application/json',
+    },
+    hooks: {
+      beforeRequest: [
+        (request) => {
+          const token = getTvuToken();
+          if (!token) {
+            throw new Error('Chưa đăng nhập TVU. Vui lòng đăng nhập trước.');
+          }
+          request.headers.set('Authorization', `Bearer ${token}`);
+          debugLog('TVU', `→ ${request.method} ${request.url}`);
+        },
+      ],
+      afterResponse: [
+        (_request, _options, response) => {
+          debugLog('TVU', `← ${response.status}`);
+          return response;
+        },
+      ],
+    },
+  });
+}
+
+// ═══════════════════════════════════════════════════
+// API FUNCTIONS
 // ═══════════════════════════════════════════════════
 
 /**
@@ -74,42 +137,29 @@ export function clearTvuToken(): void {
 export async function tvuLogin(username: string, password: string): Promise<TvuLoginResponse> {
   debugLog('TVU', `Logging in as ${username}`);
 
-  const params = new URLSearchParams();
-  params.append('username', username);
-  params.append('password', password);
-  params.append('grant_type', 'password');
-
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), TVU_TIMEOUT);
-
   try {
-    const response = await fetch(`${TVU_BASE_URL}/api/auth/login`, {
-      method: 'POST',
-      headers: {
-        ...TVU_HEADERS,
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: params.toString(),
-      signal: controller.signal,
-    });
+    const params = new URLSearchParams();
+    params.append('username', username);
+    params.append('password', password);
+    params.append('grant_type', 'password');
 
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      throw new Error(`Login failed: ${response.status} ${response.statusText}`);
-    }
-
-    const data = await response.json();
+    const data = await tvuPublicApi
+      .post('api/auth/login', {
+        body: params.toString(),
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+      })
+      .json<TvuLoginResponse>();
 
     // Lưu token
     if (data.access_token) {
       setTvuToken(data.access_token, data.expires_in || 3600);
     }
 
-    debugLog('TVU', `Login success for ${username}`);
+    debugLog('TVU', `✓ Login success for ${username}`);
     return data;
   } catch (error: any) {
-    clearTimeout(timeoutId);
     logError('tvuLogin', error);
     throw error;
   }
@@ -121,41 +171,23 @@ export async function tvuLogin(username: string, password: string): Promise<TvuL
 export async function tvuRequest<T>(
   endpoint: string,
   body: any = {},
-  extraHeaders: Record<string, string> = {},
+  extraHeaders?: Record<string, string>,
 ): Promise<TvuResponse<T>> {
-  const token = getTvuToken();
-  if (!token) {
-    throw new Error('Chưa đăng nhập TVU. Vui lòng đăng nhập trước.');
-  }
-
-  debugLog('TVU', `Request: ${endpoint}`);
-
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), TVU_TIMEOUT);
-
   try {
-    const response = await fetch(`${TVU_BASE_URL}${endpoint}`, {
-      method: 'POST',
-      headers: {
-        ...TVU_HEADERS,
-        Authorization: `Bearer ${token}`,
-        ...extraHeaders,
-      },
-      body: JSON.stringify(body),
-      signal: controller.signal,
-    });
+    const client = createAuthenticatedClient();
+    // Remove leading slash
+    const path = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
 
-    clearTimeout(timeoutId);
+    const data = await client
+      .post(path, {
+        json: body,
+        headers: extraHeaders,
+      })
+      .json<TvuResponse<T>>();
 
-    if (!response.ok) {
-      throw new Error(`Request failed: ${response.status} ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    debugLog('TVU', `Response: ${JSON.stringify(data).substring(0, 200)}`);
+    debugLog('TVU', `✓ Response: ${JSON.stringify(data).substring(0, 200)}`);
     return data;
   } catch (error: any) {
-    clearTimeout(timeoutId);
     logError('tvuRequest', error);
     throw error;
   }

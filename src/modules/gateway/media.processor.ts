@@ -9,7 +9,7 @@ import {
   fetchAndConvertToTextBase64,
   isGeminiSupported,
   isTextConvertible,
-} from '../../shared/utils/fetch.js';
+} from '../../shared/utils/httpClient.js';
 import type { ClassifiedMessage } from './classifier.js';
 import type { QuoteMedia } from './quote.parser.js';
 

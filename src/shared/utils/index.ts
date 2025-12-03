@@ -2,15 +2,24 @@
  * Utils - Export tất cả utilities
  */
 
-// Fetch utilities
+// DateTime (Day.js-based)
 export {
-  fetchAndConvertToTextBase64,
-  fetchAsBase64,
-  fetchAsText,
-  isGeminiSupported,
-  isTextConvertible,
-} from './fetch.js';
-
+  add,
+  dayjs,
+  diff,
+  diffMs,
+  formatDate,
+  formatDateTime,
+  formatFileTimestamp,
+  formatTime,
+  fromNow,
+  isValid,
+  now,
+  nowDate,
+  parse,
+  subtract,
+  toNow,
+} from './datetime.js';
 // History (re-exports từ sub-modules)
 export {
   clearHistory,
@@ -30,6 +39,16 @@ export {
   getMimeType,
   toGeminiContent,
 } from './historyConverter.js';
+// HTTP Client (Ky-based)
+export {
+  createHttpClient,
+  fetchAndConvertToTextBase64,
+  fetchAsBase64,
+  fetchAsText,
+  http,
+  isGeminiSupported,
+  isTextConvertible,
+} from './httpClient.js';
 
 // Message store
 export {

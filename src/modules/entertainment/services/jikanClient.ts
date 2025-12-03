@@ -1,17 +1,24 @@
 /**
- * Jikan API Client - Base client cho Jikan v4 API
+ * Jikan API Client - Ky-based client cho Jikan v4 API
  * https://api.jikan.moe/v4
  */
-import { debugLog, logError } from '../../../core/logger/logger.js';
+
+import ky, { type KyInstance } from 'ky';
+import { debugLog } from '../../../core/logger/logger.js';
+
+// ═══════════════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════════════
 
 const BASE_URL = 'https://api.jikan.moe/v4';
-const RATE_LIMIT_DELAY = 350; // 3 requests/giây = ~333ms giữa mỗi request
+const RATE_LIMIT_DELAY = 350; // 3 requests/giây
 
 let lastRequestTime = 0;
 
-/**
- * Rate limiter - đảm bảo không vượt quá 3 req/s
- */
+// ═══════════════════════════════════════════════════
+// RATE LIMITER
+// ═══════════════════════════════════════════════════
+
 async function rateLimitWait(): Promise<void> {
   const now = Date.now();
   const elapsed = now - lastRequestTime;
@@ -21,50 +28,63 @@ async function rateLimitWait(): Promise<void> {
   lastRequestTime = Date.now();
 }
 
+// ═══════════════════════════════════════════════════
+// KY INSTANCE
+// ═══════════════════════════════════════════════════
+
+const jikanApi: KyInstance = ky.create({
+  prefixUrl: BASE_URL,
+  timeout: 15000,
+  retry: {
+    limit: 3,
+    methods: ['get'],
+    statusCodes: [408, 500, 502, 503, 504],
+    backoffLimit: 3000,
+  },
+  hooks: {
+    beforeRequest: [
+      async (request) => {
+        await rateLimitWait();
+        debugLog('JIKAN', `→ ${request.url}`);
+      },
+    ],
+    afterResponse: [
+      async (_request, _options, response) => {
+        // Handle 429 rate limit
+        if (response.status === 429) {
+          debugLog('JIKAN', '⚠ Rate limited (429), waiting 2s...');
+          await new Promise((r) => setTimeout(r, 2000));
+          throw new Error('Rate limited');
+        }
+        debugLog('JIKAN', `← ${response.status}`);
+        return response;
+      },
+    ],
+  },
+});
+
+// ═══════════════════════════════════════════════════
+// API FUNCTIONS
+// ═══════════════════════════════════════════════════
+
 /**
- * Fetch với retry khi gặp 429
+ * Fetch Jikan API
  */
 export async function jikanFetch<T>(endpoint: string, params?: Record<string, any>): Promise<T> {
-  await rateLimitWait();
-
-  const url = new URL(`${BASE_URL}${endpoint}`);
+  // Build search params
+  const searchParams = new URLSearchParams();
   if (params) {
-    Object.entries(params).forEach(([key, value]) => {
+    for (const [key, value] of Object.entries(params)) {
       if (value !== undefined && value !== null && value !== '') {
-        url.searchParams.append(key, String(value));
+        searchParams.append(key, String(value));
       }
-    });
-  }
-
-  debugLog('JIKAN', `Fetching: ${url.toString()}`);
-
-  let retries = 3;
-  while (retries > 0) {
-    try {
-      const response = await fetch(url.toString());
-
-      if (response.status === 429) {
-        debugLog('JIKAN', 'Rate limited (429), waiting 2s...');
-        await new Promise((r) => setTimeout(r, 2000));
-        retries--;
-        continue;
-      }
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      return data as T;
-    } catch (error: any) {
-      logError('jikanFetch', error);
-      if (retries <= 1) throw error;
-      retries--;
-      await new Promise((r) => setTimeout(r, 1000));
     }
   }
 
-  throw new Error('Max retries exceeded');
+  // Remove leading slash if present
+  const path = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
+
+  return jikanApi.get(path, { searchParams }).json<T>();
 }
 
 // ═══════════════════════════════════════════════════
