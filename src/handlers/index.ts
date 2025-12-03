@@ -1,3 +1,8 @@
+/**
+ * Handlers - Export tất cả handlers
+ */
+
+// Response handler
 export {
   sendResponse,
   createStreamCallbacks,
@@ -20,3 +25,27 @@ export {
   notifyToolCall,
   type ToolHandlerResult,
 } from "./toolHandler.js";
+
+// Message classifier
+export {
+  classifyMessage,
+  classifyMessages,
+  countMessageTypes,
+} from "./classifier.js";
+
+// Media processor
+export { prepareMediaParts, addQuoteMedia } from "./mediaProcessor.js";
+
+// Quote parser
+export {
+  parseQuoteAttachment,
+  extractQuoteInfo,
+  type QuoteMedia,
+} from "./quoteParser.js";
+
+// Prompt builder
+export {
+  buildPrompt,
+  extractTextFromMessages,
+  processPrefix,
+} from "./promptBuilder.js";
