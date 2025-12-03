@@ -63,11 +63,22 @@ export async function prepareMediaParts(
           mimeType: item.mimeType || "application/octet-stream",
         });
       } else if (isTextConvertible(item.fileExt)) {
-        console.log(`[Bot] 📝 Convert file sang text: ${item.fileExt}`);
-        const base64 = await fetchAndConvertToTextBase64(item.url);
-        if (base64)
-          media.push({ type: "file", base64, mimeType: "text/plain" });
-        else notes.push(`(File "${item.fileName}" không đọc được)`);
+        // Check file size trước khi convert (từ config)
+        const maxSizeMB = CONFIG.fetch?.maxTextConvertSizeMB ?? 20;
+        const maxSize = maxSizeMB * 1024 * 1024;
+        if (item.fileSize && item.fileSize > maxSize) {
+          const sizeMB = (item.fileSize / 1024 / 1024).toFixed(1);
+          console.log(`[Bot] ⚠️ File quá lớn để convert: ${sizeMB}MB`);
+          notes.push(
+            `(File "${item.fileName}" quá lớn ${sizeMB}MB, max ${maxSizeMB}MB)`
+          );
+        } else {
+          console.log(`[Bot] 📝 Convert file sang text: ${item.fileExt}`);
+          const base64 = await fetchAndConvertToTextBase64(item.url);
+          if (base64)
+            media.push({ type: "file", base64, mimeType: "text/plain" });
+          else notes.push(`(File "${item.fileName}" không đọc được)`);
+        }
       } else {
         notes.push(
           `(File "${item.fileName}" định dạng .${item.fileExt} không hỗ trợ)`

@@ -128,6 +128,14 @@ export const CONFIG = {
     typingRefreshMs: settings.buffer?.typingRefreshMs ?? 3000,
   },
 
+  // Fetch config cho download file
+  fetch: {
+    timeoutMs: settings.fetch?.timeoutMs ?? 60000,
+    maxRetries: settings.fetch?.maxRetries ?? 3,
+    retryDelayMs: settings.fetch?.retryDelayMs ?? 2000,
+    maxTextConvertSizeMB: settings.fetch?.maxTextConvertSizeMB ?? 20,
+  },
+
   // MIME types mapping
   mimeTypes: {
     // Documents

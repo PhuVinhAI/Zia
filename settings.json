@@ -1,4 +1,10 @@
 {
+  "fetch": {
+    "timeoutMs": 60000,
+    "maxRetries": 3,
+    "retryDelayMs": 2000,
+    "maxTextConvertSizeMB": 20
+  },
   "buffer": {
     "delayMs": 2500,
     "typingRefreshMs": 3000
