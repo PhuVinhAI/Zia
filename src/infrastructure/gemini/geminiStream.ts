@@ -60,14 +60,40 @@ function getPlainText(buffer: string): string {
   return TAG_PATTERNS.reduce((text, pattern) => text.replace(pattern, ''), buffer).trim();
 }
 
-async function processStreamChunk(state: ParserState, callbacks: StreamCallbacks): Promise<void> {
-  if (callbacks.signal?.aborted) throw new Error('Aborted');
+// Inline tag patterns để strip khỏi text content
+const INLINE_TAG_PATTERNS = [
+  /\[reaction:(\d+:)?\w+\]/gi,
+  /\[sticker:\w+\]/gi,
+  /\[undo:-?\d+\]/gi,
+  /\[link:https?:\/\/[^\]]+\][\s\S]*?\[\/link\]/gi,
+  /\[card(?::\d+)?\]/gi,
+];
 
-  const { buffer } = state;
+function cleanInlineTags(text: string): string {
+  return INLINE_TAG_PATTERNS.reduce((t, pattern) => t.replace(pattern, ''), text).trim();
+}
 
-  // Parse [reaction:xxx] hoặc [reaction:INDEX:xxx]
-  const reactionMatches = buffer.matchAll(/\[reaction:(\d+:)?(\w+)\]/gi);
-  for (const match of reactionMatches) {
+/**
+ * Xử lý các inline tags bên trong text block ([msg] hoặc [quote])
+ * Extract và gửi sticker, reaction, link, card, undo trước khi gửi text
+ */
+async function processInlineTags(
+  rawText: string,
+  state: ParserState,
+  callbacks: StreamCallbacks,
+): Promise<void> {
+  // Extract stickers
+  for (const match of rawText.matchAll(/\[sticker:(\w+)\]/gi)) {
+    const keyword = match[1];
+    const key = `sticker:${keyword}`;
+    if (!state.sentStickers.has(key) && callbacks.onSticker) {
+      state.sentStickers.add(key);
+      await callbacks.onSticker(keyword);
+    }
+  }
+
+  // Extract reactions (không có index vì đang trong msg block)
+  for (const match of rawText.matchAll(/\[reaction:(\d+:)?(\w+)\]/gi)) {
     const indexPart = match[1];
     const reaction = match[2].toLowerCase();
     const key = indexPart ? `reaction:${indexPart}${reaction}` : `reaction:${reaction}`;
@@ -79,54 +105,8 @@ async function processStreamChunk(state: ParserState, callbacks: StreamCallbacks
     }
   }
 
-  // Parse [sticker:xxx]
-  const stickerMatches = buffer.matchAll(/\[sticker:(\w+)\]/gi);
-  for (const match of stickerMatches) {
-    const keyword = match[1];
-    const key = `sticker:${keyword}`;
-    if (!state.sentStickers.has(key) && callbacks.onSticker) {
-      state.sentStickers.add(key);
-      await callbacks.onSticker(keyword);
-    }
-  }
-
-  // Parse [quote:index]...[/quote]
-  const quoteMatches = buffer.matchAll(/\[quote:(-?\d+)\]([\s\S]*?)\[\/quote\]/gi);
-  for (const match of quoteMatches) {
-    const quoteIndex = parseInt(match[1], 10);
-    const text = match[2].trim();
-    const key = `quote:${quoteIndex}:${text}`;
-    if (text && !state.sentMessages.has(key) && callbacks.onMessage) {
-      state.sentMessages.add(key);
-      await callbacks.onMessage(text, quoteIndex);
-    }
-  }
-
-  // Parse [msg]...[/msg]
-  const msgMatches = buffer.matchAll(/\[msg\]([\s\S]*?)\[\/msg\]/gi);
-  for (const match of msgMatches) {
-    const text = match[1].trim();
-    const key = `msg:${text}`;
-    if (text && !state.sentMessages.has(key) && callbacks.onMessage) {
-      state.sentMessages.add(key);
-      await callbacks.onMessage(text);
-    }
-  }
-
-  // Parse [undo:index]
-  const undoMatches = buffer.matchAll(/\[undo:(-?\d+)\]/gi);
-  for (const match of undoMatches) {
-    const index = parseInt(match[1], 10);
-    const key = `undo:${index}`;
-    if (!state.sentUndos.has(key) && callbacks.onUndo) {
-      state.sentUndos.add(key);
-      await callbacks.onUndo(index);
-    }
-  }
-
-  // Parse [link:url]caption[/link]
-  const linkMatches = buffer.matchAll(/\[link:(https?:\/\/[^\]]+)\]([\s\S]*?)\[\/link\]/gi);
-  for (const match of linkMatches) {
+  // Extract links
+  for (const match of rawText.matchAll(/\[link:(https?:\/\/[^\]]+)\]([\s\S]*?)\[\/link\]/gi)) {
     const link = match[1];
     const message = match[2].trim();
     const key = `link:${link}`;
@@ -136,9 +116,107 @@ async function processStreamChunk(state: ParserState, callbacks: StreamCallbacks
     }
   }
 
-  // Parse [card:userId] hoặc [card]
-  const cardMatches = buffer.matchAll(/\[card(?::(\d+))?\]/gi);
-  for (const match of cardMatches) {
+  // Extract cards
+  for (const match of rawText.matchAll(/\[card(?::(\d+))?\]/gi)) {
+    const userId = match[1] || '';
+    const key = `card:${userId}`;
+    if (!state.sentCards.has(key) && callbacks.onCard) {
+      state.sentCards.add(key);
+      await callbacks.onCard(userId || undefined);
+    }
+  }
+
+  // Extract undos
+  for (const match of rawText.matchAll(/\[undo:(-?\d+)\]/gi)) {
+    const index = parseInt(match[1], 10);
+    const key = `undo:${index}`;
+    if (!state.sentUndos.has(key) && callbacks.onUndo) {
+      state.sentUndos.add(key);
+      await callbacks.onUndo(index);
+    }
+  }
+}
+
+async function processStreamChunk(state: ParserState, callbacks: StreamCallbacks): Promise<void> {
+  if (callbacks.signal?.aborted) throw new Error('Aborted');
+
+  const { buffer } = state;
+
+  // Parse top-level [reaction:xxx] hoặc [reaction:INDEX:xxx]
+  for (const match of buffer.matchAll(/\[reaction:(\d+:)?(\w+)\]/gi)) {
+    const indexPart = match[1];
+    const reaction = match[2].toLowerCase();
+    const key = indexPart ? `reaction:${indexPart}${reaction}` : `reaction:${reaction}`;
+    if (VALID_REACTIONS.has(reaction) && !state.sentReactions.has(key) && callbacks.onReaction) {
+      state.sentReactions.add(key);
+      await callbacks.onReaction(
+        indexPart ? `${indexPart.replace(':', '')}:${reaction}` : reaction,
+      );
+    }
+  }
+
+  // Parse top-level [sticker:xxx]
+  for (const match of buffer.matchAll(/\[sticker:(\w+)\]/gi)) {
+    const keyword = match[1];
+    const key = `sticker:${keyword}`;
+    if (!state.sentStickers.has(key) && callbacks.onSticker) {
+      state.sentStickers.add(key);
+      await callbacks.onSticker(keyword);
+    }
+  }
+
+  // Parse [quote:index]...[/quote]
+  for (const match of buffer.matchAll(/\[quote:(-?\d+)\]([\s\S]*?)\[\/quote\]/gi)) {
+    const quoteIndex = parseInt(match[1], 10);
+    const rawText = match[2].trim();
+    const key = `quote:${quoteIndex}:${rawText}`;
+    if (rawText && !state.sentMessages.has(key)) {
+      state.sentMessages.add(key);
+      await processInlineTags(rawText, state, callbacks);
+      const cleanText = cleanInlineTags(rawText);
+      if (cleanText && callbacks.onMessage) {
+        await callbacks.onMessage(cleanText, quoteIndex);
+      }
+    }
+  }
+
+  // Parse [msg]...[/msg]
+  for (const match of buffer.matchAll(/\[msg\]([\s\S]*?)\[\/msg\]/gi)) {
+    const rawText = match[1].trim();
+    const key = `msg:${rawText}`;
+    if (rawText && !state.sentMessages.has(key)) {
+      state.sentMessages.add(key);
+      await processInlineTags(rawText, state, callbacks);
+      const cleanText = cleanInlineTags(rawText);
+      if (cleanText && callbacks.onMessage) {
+        await callbacks.onMessage(cleanText);
+      }
+    }
+  }
+
+  // Parse top-level [undo:index]
+  for (const match of buffer.matchAll(/\[undo:(-?\d+)\]/gi)) {
+    const index = parseInt(match[1], 10);
+    const key = `undo:${index}`;
+    if (!state.sentUndos.has(key) && callbacks.onUndo) {
+      state.sentUndos.add(key);
+      await callbacks.onUndo(index);
+    }
+  }
+
+  // Parse top-level [link:url]caption[/link]
+  for (const match of buffer.matchAll(/\[link:(https?:\/\/[^\]]+)\]([\s\S]*?)\[\/link\]/gi)) {
+    const link = match[1];
+    const message = match[2].trim();
+    const key = `link:${link}`;
+    if (!state.sentLinks.has(key) && callbacks.onLink) {
+      state.sentLinks.add(key);
+      await callbacks.onLink(link, message || undefined);
+    }
+  }
+
+  // Parse top-level [card:userId] hoặc [card]
+  for (const match of buffer.matchAll(/\[card(?::(\d+))?\]/gi)) {
     const userId = match[1] || '';
     const key = `card:${userId}`;
     if (!state.sentCards.has(key) && callbacks.onCard) {

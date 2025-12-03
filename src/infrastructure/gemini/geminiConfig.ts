@@ -22,7 +22,7 @@ setAIService({
   countTokens: (params) => ai.models.countTokens(params),
 });
 
-export const GEMINI_MODEL = 'models/gemini-flash-latest';
+export const GEMINI_MODEL = 'models/gemini-2.5-pro';
 
 export const GEMINI_CONFIG = {
   temperature: 1,
