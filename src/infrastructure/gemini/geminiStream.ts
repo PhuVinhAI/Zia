@@ -220,9 +220,13 @@ export async function generateContentStream(
 
       logAIResponse(`[STREAM] ${prompt.substring(0, 50)}`, state.buffer);
 
-      const plainText = getPlainText(state.buffer);
-      if (plainText && callbacks.onMessage) {
-        await callbacks.onMessage(plainText);
+      // Chỉ gửi plainText nếu KHÔNG có [msg] hoặc [quote] tags (tức là AI không dùng tag)
+      // Nếu đã có tin nhắn được gửi qua tags, không gửi lại
+      if (state.sentMessages.size === 0) {
+        const plainText = getPlainText(state.buffer);
+        if (plainText && callbacks.onMessage) {
+          await callbacks.onMessage(plainText);
+        }
       }
 
       if (!threadId) deleteChatSession(sessionId);
