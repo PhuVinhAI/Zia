@@ -1,12 +1,17 @@
+/**
+ * Logger Module - Pino-based structured logging
+ * Auto-rotate files daily, keep 7 days
+ */
+import pino from "pino";
 import * as fs from "fs";
 import * as path from "path";
 
-let logStream: fs.WriteStream | null = null;
+let logger: pino.Logger;
+let sessionDir: string = "";
 let fileLoggingEnabled = false;
-let sessionDir: string = ""; // Thư mục phiên hiện tại
 
 /**
- * Tạo timestamp cho tên thư mục/file
+ * Tạo timestamp cho tên thư mục
  */
 function getTimestamp(): string {
   return new Date()
@@ -17,88 +22,73 @@ function getTimestamp(): string {
 }
 
 /**
- * Khởi tạo file logger - tạo thư mục phiên mới mỗi lần chạy
- * Cấu trúc: logs/2025-12-02_12-55-03/bot.txt
+ * Khởi tạo Pino logger với auto-rotation
  */
 export function initFileLogger(basePath: string): void {
   const logsRoot = path.dirname(basePath);
 
-  // Tạo thư mục phiên với timestamp
+  // Tạo thư mục logs nếu chưa có
+  if (!fs.existsSync(logsRoot)) {
+    fs.mkdirSync(logsRoot, { recursive: true });
+  }
+
+  // Session dir cho history files
   sessionDir = path.join(logsRoot, getTimestamp());
   if (!fs.existsSync(sessionDir)) {
     fs.mkdirSync(sessionDir, { recursive: true });
   }
 
-  // Tạo file log chính
-  const logFile = path.join(sessionDir, "bot.txt");
-  logStream = fs.createWriteStream(logFile, { flags: "w" });
+  // Pino transport config với pino-roll
+  const transport = pino.transport({
+    targets: [
+      // Console output (pretty)
+      {
+        target: "pino-pretty",
+        level: process.env.LOG_LEVEL || "info",
+        options: {
+          colorize: true,
+          translateTime: "SYS:standard",
+          ignore: "pid,hostname",
+        },
+      },
+      // File output với auto-rotation
+      {
+        target: "pino-roll",
+        level: "debug",
+        options: {
+          file: path.join(logsRoot, "bot"),
+          frequency: "daily",
+          mkdir: true,
+          extension: ".log",
+          limit: { count: 7 }, // Giữ 7 ngày
+        },
+      },
+    ],
+  });
 
-  const startMsg =
-    `${"=".repeat(80)}\n` +
-    `[${new Date().toISOString()}] 🚀 BOT STARTED\n` +
-    `Session: ${sessionDir}\n` +
-    `${"=".repeat(80)}\n\n`;
-  logStream.write(startMsg);
+  logger = pino(
+    {
+      level: "debug",
+      timestamp: pino.stdTimeFunctions.isoTime,
+    },
+    transport
+  );
 
-  console.log(`[Logger] 📝 Session dir: ${sessionDir}`);
+  logger.info({ session: sessionDir }, "🚀 Bot started");
 }
 
 /**
- * Lấy đường dẫn thư mục phiên hiện tại
+ * Lấy session directory
  */
 export function getSessionDir(): string {
   return sessionDir;
 }
 
 /**
- * Ghi log ra file bot.txt
- */
-function writeToFile(level: string, ...args: any[]): void {
-  if (!logStream) return;
-
-  const timestamp = new Date().toISOString();
-  const message = args
-    .map((arg) =>
-      typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg)
-    )
-    .join(" ");
-
-  logStream.write(`[${timestamp}] [${level}] ${message}\n`);
-}
-
-// Lưu console gốc
-const originalConsole = {
-  log: console.log.bind(console),
-  error: console.error.bind(console),
-  warn: console.warn.bind(console),
-  info: console.info.bind(console),
-};
-
-/**
- * Override console để ghi ra cả file
+ * Enable file logging (compatibility)
  */
 export function enableFileLogging(): void {
   fileLoggingEnabled = true;
-
-  console.log = (...args: any[]) => {
-    originalConsole.log(...args);
-    writeToFile("LOG", ...args);
-  };
-
-  console.error = (...args: any[]) => {
-    originalConsole.error(...args);
-    writeToFile("ERROR", ...args);
-  };
-
-  console.warn = (...args: any[]) => {
-    originalConsole.warn(...args);
-    writeToFile("WARN", ...args);
-  };
-
-  console.info = (...args: any[]) => {
-    originalConsole.info(...args);
-    writeToFile("INFO", ...args);
-  };
 }
 
 export function isFileLoggingEnabled(): boolean {
@@ -106,81 +96,112 @@ export function isFileLoggingEnabled(): boolean {
 }
 
 /**
- * Đóng file logger
+ * Close logger (compatibility)
  */
 export function closeFileLogger(): void {
-  if (logStream) {
-    logStream.end();
-    logStream = null;
-  }
+  // Pino handles cleanup automatically
 }
 
+// ═══════════════════════════════════════════════════
+// LOGGING FUNCTIONS
+// ═══════════════════════════════════════════════════
+
+/**
+ * Debug log với category
+ */
 export function debugLog(category: string, ...args: any[]): void {
-  if (!fileLoggingEnabled) return;
-  writeToFile(`DEBUG:${category}`, ...args);
+  if (!logger) return;
+  const message = args
+    .map((a) => (typeof a === "object" ? JSON.stringify(a) : String(a)))
+    .join(" ");
+  logger.debug({ category }, message);
 }
 
+/**
+ * Log tin nhắn IN/OUT
+ */
 export function logMessage(
   direction: "IN" | "OUT",
   threadId: string,
   data: any
 ): void {
-  if (!fileLoggingEnabled) return;
-  writeToFile(`MSG:${direction}`, `Thread: ${threadId}`, data);
+  if (!logger) return;
+  logger.info({ direction, threadId, data }, `Message ${direction}`);
 }
 
+/**
+ * Log step trong flow
+ */
 export function logStep(step: string, details?: any): void {
-  if (!fileLoggingEnabled) return;
-  writeToFile("STEP", `>>> ${step}`, details || "");
+  if (!logger) return;
+  logger.info({ step, details }, `>>> ${step}`);
 }
 
+/**
+ * Log API call
+ */
 export function logAPI(
   service: string,
   action: string,
   request?: any,
   response?: any
 ): void {
-  if (!fileLoggingEnabled) return;
-  writeToFile(`API:${service}`, action, { request, response });
-}
-
-export function logAIResponse(prompt: string, rawResponse: string): void {
-  if (!fileLoggingEnabled) return;
-  writeToFile("AI", "─".repeat(40));
-  writeToFile(
-    "AI:PROMPT",
-    prompt.substring(0, 500) + (prompt.length > 500 ? "..." : "")
-  );
-  writeToFile("AI:RESPONSE", rawResponse);
-  writeToFile("AI", "─".repeat(40));
-}
-
-export function logError(context: string, error: any): void {
-  if (!fileLoggingEnabled) return;
-  writeToFile("ERROR", `[${context}]`, {
-    message: error?.message || String(error),
-    stack: error?.stack,
-  });
+  if (!logger) return;
+  logger.debug({ service, action, request, response }, `API: ${service}`);
 }
 
 /**
- * Log full history của thread (ghi raw JSON)
+ * Log AI response
+ */
+export function logAIResponse(prompt: string, rawResponse: string): void {
+  if (!logger) return;
+  logger.debug(
+    {
+      prompt: prompt.substring(0, 500) + (prompt.length > 500 ? "..." : ""),
+      response: rawResponse,
+    },
+    "AI Response"
+  );
+}
+
+/**
+ * Log error
+ */
+export function logError(context: string, error: any): void {
+  if (!logger) {
+    console.error(`[${context}]`, error);
+    return;
+  }
+  logger.error(
+    {
+      context,
+      err: {
+        message: error?.message || String(error),
+        stack: error?.stack,
+      },
+    },
+    `Error in ${context}`
+  );
+}
+
+/**
+ * Log AI history
  */
 export function logAIHistory(threadId: string, history: any[]): void {
-  if (!fileLoggingEnabled || !sessionDir) return;
+  if (!logger || !sessionDir) return;
 
-  // Ghi vào bot.txt (summary)
-  writeToFile("AI:HISTORY", `Thread ${threadId}: ${history.length} messages`);
+  logger.debug(
+    { threadId, messageCount: history.length },
+    "AI History updated"
+  );
 
-  // Ghi raw JSON vào file history riêng
+  // Ghi raw JSON vào file riêng
   const historyFile = path.join(sessionDir, `history_${threadId}.json`);
-
   const data = {
     threadId,
     updatedAt: new Date().toISOString(),
     messageCount: history.length,
     history: history.map((content, index) => {
-      // Clone và xử lý inlineData (base64 quá dài thì cắt bớt để file không quá nặng)
       const processedParts = content.parts?.map((part: any) => {
         if (part.inlineData?.data) {
           return {
@@ -193,7 +214,6 @@ export function logAIHistory(threadId: string, history: any[]): void {
         }
         return part;
       });
-
       return {
         index,
         role: content.role,
@@ -201,40 +221,61 @@ export function logAIHistory(threadId: string, history: any[]): void {
       };
     }),
   };
-
   fs.writeFileSync(historyFile, JSON.stringify(data, null, 2), "utf-8");
 }
 
+/**
+ * Log Zalo API
+ */
 export function logZaloAPI(
   action: string,
   request: any,
   response?: any,
   error?: any
 ): void {
-  if (!fileLoggingEnabled) return;
+  if (!logger) return;
 
   if (error) {
-    writeToFile(`ZALO:${action}`, "❌ ERROR", {
-      request,
-      error: error?.message || error,
-    });
+    logger.error(
+      { action, request, error: error?.message || error },
+      `ZALO: ${action} ERROR`
+    );
   } else {
-    writeToFile(`ZALO:${action}`, { request, response });
+    logger.debug({ action, request, response }, `ZALO: ${action}`);
   }
 }
 
 /**
- * Log system prompt khi tạo chat session
+ * Log system prompt
  */
 export function logSystemPrompt(threadId: string, systemPrompt: string): void {
-  if (!fileLoggingEnabled || !sessionDir) return;
+  if (!logger || !sessionDir) return;
 
-  writeToFile("AI:SYSTEM_PROMPT", `Thread ${threadId}`);
+  logger.debug({ threadId }, "System prompt set");
 
-  // Ghi system prompt vào file riêng
   const promptFile = path.join(sessionDir, `system_prompt_${threadId}.txt`);
   const data = `Thread: ${threadId}\nTimestamp: ${new Date().toISOString()}\n${"=".repeat(
     80
   )}\n\n${systemPrompt}`;
   fs.writeFileSync(promptFile, data, "utf-8");
+}
+
+// ═══════════════════════════════════════════════════
+// DIRECT PINO ACCESS
+// ═══════════════════════════════════════════════════
+
+/**
+ * Get raw Pino logger instance
+ */
+export function getLogger(): pino.Logger | undefined {
+  return logger;
+}
+
+/**
+ * Create child logger with bindings
+ */
+export function createChildLogger(
+  bindings: Record<string, any>
+): pino.Logger | undefined {
+  return logger?.child(bindings);
 }
