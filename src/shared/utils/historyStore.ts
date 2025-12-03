@@ -165,33 +165,41 @@ export async function initThreadHistory(
   debugLog("HISTORY", `Initializing history for thread ${threadId}`);
   initializedThreads.add(threadId);
 
-  // Thử load từ database trước
-  const dbHistory = await historyRepository.getHistoryForAI(threadId);
-  if (dbHistory.length > 0) {
-    console.log(
-      `[History] 📚 Thread ${threadId}: Loaded ${dbHistory.length} messages from DB`
-    );
-    messageHistory.set(threadId, dbHistory as Content[]);
-    await trimHistoryByTokens(threadId);
-    return;
+  // Thử load từ database trước (nếu được bật)
+  if (CONFIG.historyLoader?.loadFromDb !== false) {
+    const dbHistory = await historyRepository.getHistoryForAI(threadId);
+    if (dbHistory.length > 0) {
+      console.log(
+        `[History] 📚 Thread ${threadId}: Loaded ${dbHistory.length} messages from DB`
+      );
+      messageHistory.set(threadId, dbHistory as Content[]);
+      await trimHistoryByTokens(threadId);
+      return;
+    }
+  } else {
+    debugLog("HISTORY", `Load from DB disabled, skipping DB history`);
   }
 
-  // Fallback: load từ Zalo API
-  const oldHistory = await loadOldMessages(
-    api,
-    threadId,
-    type,
-    preloadedMessages
-  );
+  // Fallback: load từ Zalo API (nếu enabled)
+  if (CONFIG.historyLoader?.enabled !== false) {
+    const oldHistory = await loadOldMessages(
+      api,
+      threadId,
+      type,
+      preloadedMessages
+    );
 
-  if (oldHistory.length > 0) {
-    messageHistory.set(threadId, oldHistory);
-    await trimHistoryByTokens(threadId);
+    if (oldHistory.length > 0) {
+      messageHistory.set(threadId, oldHistory);
+      await trimHistoryByTokens(threadId);
 
-    // Persist to DB (async)
-    for (const content of oldHistory) {
-      persistToDb(threadId, content.role as "user" | "model", content);
+      // Persist to DB (async)
+      for (const content of oldHistory) {
+        persistToDb(threadId, content.role as "user" | "model", content);
+      }
     }
+  } else {
+    debugLog("HISTORY", `Load from Zalo disabled, starting with empty history`);
   }
 }
 

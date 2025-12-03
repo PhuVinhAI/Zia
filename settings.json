@@ -30,6 +30,7 @@
   },
   "historyLoader": {
     "enabled": false,
+    "loadFromDb": false,
     "defaultLimit": 1000,
     "minDelayMs": 2000,
     "maxDelayMs": 5000,
