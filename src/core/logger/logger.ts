@@ -38,7 +38,10 @@ export function initFileLogger(basePath: string): void {
     fs.mkdirSync(sessionDir, { recursive: true });
   }
 
-  // Pino transport config với pino-roll
+  // Log file trong session dir
+  const logFile = path.join(sessionDir, "bot.txt");
+
+  // Pino transport config
   const transport = pino.transport({
     targets: [
       // Console output (pretty)
@@ -51,16 +54,13 @@ export function initFileLogger(basePath: string): void {
           ignore: "pid,hostname",
         },
       },
-      // File output với auto-rotation
+      // File output trong session dir
       {
-        target: "pino-roll",
+        target: "pino/file",
         level: "debug",
         options: {
-          file: path.join(logsRoot, "bot"),
-          frequency: "daily",
+          destination: logFile,
           mkdir: true,
-          extension: ".txt",
-          limit: { count: 7 }, // Giữ 7 ngày
         },
       },
     ],
