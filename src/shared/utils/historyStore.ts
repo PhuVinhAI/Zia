@@ -2,17 +2,13 @@
  * History Store - Lưu trữ và quản lý history
  * Hybrid: In-memory cache + SQLite persistence
  */
-import { Content } from "@google/genai";
-import { CONFIG } from "../constants/config.js";
-import { debugLog } from "../../core/logger/logger.js";
-import { countTokens } from "./tokenCounter.js";
-import { toGeminiContent } from "./historyConverter.js";
-import {
-  loadOldMessages,
-  fetchFullHistory,
-  getPaginationConfig,
-} from "./historyLoader.js";
-import { historyRepository } from "../../infrastructure/database/index.js";
+import type { Content } from '@google/genai';
+import { debugLog } from '../../core/logger/logger.js';
+import { historyRepository } from '../../infrastructure/database/index.js';
+import { CONFIG } from '../constants/config.js';
+import { toGeminiContent } from './historyConverter.js';
+import { fetchFullHistory, getPaginationConfig, loadOldMessages } from './historyLoader.js';
+import { countTokens } from './tokenCounter.js';
 
 // In-memory cache (primary storage for fast access)
 const messageHistory = new Map<string, Content[]>();
@@ -23,22 +19,21 @@ const preloadedMessages = new Map<string, any[]>();
 let isPreloaded = false;
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-const randomDelay = (min: number, max: number) =>
-  Math.floor(Math.random() * (max - min + 1) + min);
+const randomDelay = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1) + min);
 
 /**
  * Persist message to database (async, non-blocking)
  */
 async function persistToDb(
   threadId: string,
-  role: "user" | "model",
-  content: Content
+  role: 'user' | 'model',
+  content: Content,
 ): Promise<void> {
   try {
     const serialized = JSON.stringify(content.parts);
     await historyRepository.addMessage(threadId, role, serialized);
   } catch (err) {
-    debugLog("HISTORY", `DB persist error: ${err}`);
+    debugLog('HISTORY', `DB persist error: ${err}`);
   }
 }
 
@@ -52,32 +47,24 @@ async function trimHistoryByTokens(threadId: string): Promise<void> {
   const maxTokens = CONFIG.maxTokenHistory;
   let currentTokens = await countTokens(history);
 
-  console.log(
-    `[History] Thread ${threadId}: ${currentTokens} tokens (max: ${maxTokens})`
-  );
+  console.log(`[History] Thread ${threadId}: ${currentTokens} tokens (max: ${maxTokens})`);
   debugLog(
-    "HISTORY",
-    `trimHistoryByTokens: thread=${threadId}, tokens=${currentTokens}, max=${maxTokens}`
+    'HISTORY',
+    `trimHistoryByTokens: thread=${threadId}, tokens=${currentTokens}, max=${maxTokens}`,
   );
 
   const rawHistory = rawMessageHistory.get(threadId) || [];
   let trimCount = 0;
   const maxTrimAttempts = 50;
 
-  while (
-    currentTokens > maxTokens &&
-    history.length > 2 &&
-    trimCount < maxTrimAttempts
-  ) {
+  while (currentTokens > maxTokens && history.length > 2 && trimCount < maxTrimAttempts) {
     history.shift();
     rawHistory.shift();
     trimCount++;
 
     if (trimCount % 5 === 0 || history.length <= 2) {
       currentTokens = await countTokens(history);
-      console.log(
-        `[History] Trimmed ${trimCount} messages -> ${currentTokens} tokens`
-      );
+      console.log(`[History] Trimmed ${trimCount} messages -> ${currentTokens} tokens`);
     }
   }
 
@@ -93,12 +80,12 @@ export async function preloadAllHistory(api: any): Promise<void> {
   if (isPreloaded) return;
 
   if (CONFIG.historyLoader?.enabled === false) {
-    console.log("[History] ⏭️ Preload history đã bị tắt trong config");
+    console.log('[History] ⏭️ Preload history đã bị tắt trong config');
     isPreloaded = true;
     return;
   }
 
-  console.log("[History] 📥 Đang preload lịch sử chat (Pagination mode)...");
+  console.log('[History] 📥 Đang preload lịch sử chat (Pagination mode)...');
 
   try {
     const config = getPaginationConfig();
@@ -143,11 +130,9 @@ export async function preloadAllHistory(api: any): Promise<void> {
     }
 
     isPreloaded = true;
-    console.log(
-      `[History] ✅ Preload xong: ${totalMsgs} tin từ ${preloadedMessages.size} threads`
-    );
-  } catch (error) {
-    console.log("[History] ⚠️ Preload gặp lỗi, tiếp tục với dữ liệu hiện có");
+    console.log(`[History] ✅ Preload xong: ${totalMsgs} tin từ ${preloadedMessages.size} threads`);
+  } catch (_error) {
+    console.log('[History] ⚠️ Preload gặp lỗi, tiếp tục với dữ liệu hiện có');
     isPreloaded = true;
   }
 }
@@ -155,39 +140,28 @@ export async function preloadAllHistory(api: any): Promise<void> {
 /**
  * Khởi tạo history cho thread từ Zalo (chỉ chạy 1 lần)
  */
-export async function initThreadHistory(
-  api: any,
-  threadId: string,
-  type: number
-): Promise<void> {
+export async function initThreadHistory(api: any, threadId: string, type: number): Promise<void> {
   if (initializedThreads.has(threadId)) return;
 
-  debugLog("HISTORY", `Initializing history for thread ${threadId}`);
+  debugLog('HISTORY', `Initializing history for thread ${threadId}`);
   initializedThreads.add(threadId);
 
   // Thử load từ database trước (nếu được bật)
   if (CONFIG.historyLoader?.loadFromDb !== false) {
     const dbHistory = await historyRepository.getHistoryForAI(threadId);
     if (dbHistory.length > 0) {
-      console.log(
-        `[History] 📚 Thread ${threadId}: Loaded ${dbHistory.length} messages from DB`
-      );
+      console.log(`[History] 📚 Thread ${threadId}: Loaded ${dbHistory.length} messages from DB`);
       messageHistory.set(threadId, dbHistory as Content[]);
       await trimHistoryByTokens(threadId);
       return;
     }
   } else {
-    debugLog("HISTORY", `Load from DB disabled, skipping DB history`);
+    debugLog('HISTORY', `Load from DB disabled, skipping DB history`);
   }
 
   // Fallback: load từ Zalo API (nếu enabled)
   if (CONFIG.historyLoader?.enabled !== false) {
-    const oldHistory = await loadOldMessages(
-      api,
-      threadId,
-      type,
-      preloadedMessages
-    );
+    const oldHistory = await loadOldMessages(api, threadId, type, preloadedMessages);
 
     if (oldHistory.length > 0) {
       messageHistory.set(threadId, oldHistory);
@@ -195,22 +169,19 @@ export async function initThreadHistory(
 
       // Persist to DB (async)
       for (const content of oldHistory) {
-        persistToDb(threadId, content.role as "user" | "model", content);
+        persistToDb(threadId, content.role as 'user' | 'model', content);
       }
     }
   } else {
-    debugLog("HISTORY", `Load from Zalo disabled, starting with empty history`);
+    debugLog('HISTORY', `Load from Zalo disabled, starting with empty history`);
   }
 }
 
 /**
  * Lưu tin nhắn mới vào history
  */
-export async function saveToHistory(
-  threadId: string,
-  message: any
-): Promise<void> {
-  debugLog("HISTORY", `saveToHistory: thread=${threadId}`);
+export async function saveToHistory(threadId: string, message: any): Promise<void> {
+  debugLog('HISTORY', `saveToHistory: thread=${threadId}`);
 
   const history = messageHistory.get(threadId) || [];
   const rawHistory = rawMessageHistory.get(threadId) || [];
@@ -223,7 +194,7 @@ export async function saveToHistory(
   rawMessageHistory.set(threadId, rawHistory);
 
   // Persist to DB
-  persistToDb(threadId, "user", content);
+  persistToDb(threadId, 'user', content);
 
   await trimHistoryByTokens(threadId);
 }
@@ -231,15 +202,12 @@ export async function saveToHistory(
 /**
  * Lưu response text vào history
  */
-export async function saveResponseToHistory(
-  threadId: string,
-  responseText: string
-): Promise<void> {
+export async function saveResponseToHistory(threadId: string, responseText: string): Promise<void> {
   const history = messageHistory.get(threadId) || [];
   const rawHistory = rawMessageHistory.get(threadId) || [];
 
   const content: Content = {
-    role: "model",
+    role: 'model',
     parts: [{ text: responseText }],
   };
 
@@ -250,7 +218,7 @@ export async function saveResponseToHistory(
   rawMessageHistory.set(threadId, rawHistory);
 
   // Persist to DB
-  persistToDb(threadId, "model", content);
+  persistToDb(threadId, 'model', content);
 
   await trimHistoryByTokens(threadId);
 }
@@ -260,13 +228,13 @@ export async function saveResponseToHistory(
  */
 export async function saveToolResultToHistory(
   threadId: string,
-  toolResultPrompt: string
+  toolResultPrompt: string,
 ): Promise<void> {
   const history = messageHistory.get(threadId) || [];
   const rawHistory = rawMessageHistory.get(threadId) || [];
 
   const content: Content = {
-    role: "user",
+    role: 'user',
     parts: [{ text: toolResultPrompt }],
   };
 
@@ -281,7 +249,7 @@ export async function saveToolResultToHistory(
   rawMessageHistory.set(threadId, rawHistory);
 
   // Persist to DB
-  persistToDb(threadId, "user", content);
+  persistToDb(threadId, 'user', content);
 
   await trimHistoryByTokens(threadId);
 }
@@ -298,7 +266,7 @@ export function getCachedTokenCount(threadId: string): number {
 
 /** Xóa history của thread */
 export function clearHistory(threadId: string): void {
-  debugLog("HISTORY", `Clearing history for thread ${threadId}`);
+  debugLog('HISTORY', `Clearing history for thread ${threadId}`);
   messageHistory.delete(threadId);
   rawMessageHistory.delete(threadId);
   tokenCache.delete(threadId);
@@ -306,7 +274,7 @@ export function clearHistory(threadId: string): void {
 
   // Clear from DB (async)
   historyRepository.clearHistory(threadId).catch((err) => {
-    debugLog("HISTORY", `DB clear error: ${err}`);
+    debugLog('HISTORY', `DB clear error: ${err}`);
   });
 }
 

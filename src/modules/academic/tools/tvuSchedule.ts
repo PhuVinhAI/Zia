@@ -1,16 +1,11 @@
 /**
  * Tool: tvuSchedule - Lấy thời khóa biểu TVU
  */
-import {
-  ToolDefinition,
-  ToolResult,
-} from "../../../shared/types/tools.types.js";
-import { tvuRequest } from "../services/tvuClient.js";
-import { debugLog } from "../../../core/logger/logger.js";
-import {
-  TvuScheduleSchema,
-  validateParams,
-} from "../../../shared/schemas/tools.schema.js";
+
+import { debugLog } from '../../../core/logger/logger.js';
+import { TvuScheduleSchema, validateParams } from '../../../shared/schemas/tools.schema.js';
+import type { ToolDefinition, ToolResult } from '../../../shared/types/tools.types.js';
+import { tvuRequest } from '../services/tvuClient.js';
 
 interface ScheduleData {
   ds_tuan_tkb: Array<{
@@ -31,13 +26,13 @@ interface ScheduleData {
 }
 
 export const tvuScheduleTool: ToolDefinition = {
-  name: "tvuSchedule",
-  description: "Lấy thời khóa biểu của một học kỳ. Yêu cầu đã đăng nhập TVU.",
+  name: 'tvuSchedule',
+  description: 'Lấy thời khóa biểu của một học kỳ. Yêu cầu đã đăng nhập TVU.',
   parameters: [
     {
-      name: "hocKy",
-      type: "number",
-      description: "Mã học kỳ (VD: 20241). Lấy từ tool tvuSemesters.",
+      name: 'hocKy',
+      type: 'number',
+      description: 'Mã học kỳ (VD: 20241). Lấy từ tool tvuSemesters.',
       required: true,
     },
   ],
@@ -50,34 +45,31 @@ export const tvuScheduleTool: ToolDefinition = {
     const data = validation.data;
 
     try {
-      debugLog("TVU:Schedule", `Fetching schedule for semester ${data.hocKy}`);
+      debugLog('TVU:Schedule', `Fetching schedule for semester ${data.hocKy}`);
 
-      const response = await tvuRequest<ScheduleData>(
-        "/api/sch/w-locdstkbtuanusertheohocky",
-        {
-          filter: { hoc_ky: data.hocKy, ten_hoc_ky: "" },
-          additional: {
-            paging: { limit: 100, page: 1 },
-            ordering: [{ name: null, order_type: null }],
-          },
-        }
-      );
+      const response = await tvuRequest<ScheduleData>('/api/sch/w-locdstkbtuanusertheohocky', {
+        filter: { hoc_ky: data.hocKy, ten_hoc_ky: '' },
+        additional: {
+          paging: { limit: 100, page: 1 },
+          ordering: [{ name: null, order_type: null }],
+        },
+      });
 
       if (!response.result || !response.data) {
         return {
           success: false,
-          error: response.message || "Không lấy được thời khóa biểu",
+          error: response.message || 'Không lấy được thời khóa biểu',
         };
       }
 
       const thuMap: Record<number, string> = {
-        2: "Thứ 2",
-        3: "Thứ 3",
-        4: "Thứ 4",
-        5: "Thứ 5",
-        6: "Thứ 6",
-        7: "Thứ 7",
-        8: "Chủ nhật",
+        2: 'Thứ 2',
+        3: 'Thứ 3',
+        4: 'Thứ 4',
+        5: 'Thứ 5',
+        6: 'Thứ 6',
+        7: 'Thứ 7',
+        8: 'Chủ nhật',
       };
 
       const weeks = response.data.ds_tuan_tkb.map((week) => ({

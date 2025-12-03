@@ -18,27 +18,18 @@ export interface AIResponse {
 
 // Default response khi parse lỗi
 export const DEFAULT_RESPONSE: AIResponse = {
-  reactions: ["like"],
-  messages: [
-    { text: "Xin lỗi, mình gặp lỗi rồi!", sticker: "", quoteIndex: -1 },
-  ],
+  reactions: ['like'],
+  messages: [{ text: 'Xin lỗi, mình gặp lỗi rồi!', sticker: '', quoteIndex: -1 }],
   undoIndexes: [],
 };
 
-const VALID_REACTIONS = new Set([
-  "heart",
-  "haha",
-  "wow",
-  "sad",
-  "angry",
-  "like",
-]);
+const VALID_REACTIONS = new Set(['heart', 'haha', 'wow', 'sad', 'angry', 'like']);
 
-import { debugLog } from "../../core/logger/logger.js";
+import { debugLog } from '../../core/logger/logger.js';
 
 // Parse AI response từ text với tag []
 export function parseAIResponse(text: string): AIResponse {
-  debugLog("PARSE", `Input text length: ${text.length}`);
+  debugLog('PARSE', `Input text length: ${text.length}`);
 
   try {
     const result: AIResponse = {
@@ -55,10 +46,10 @@ export function parseAIResponse(text: string): AIResponse {
       const indexPart = match[1]; // "0:" hoặc undefined
       const reactionType = match[2].toLowerCase();
 
-      if (VALID_REACTIONS.has(reactionType) && reactionType !== "none") {
+      if (VALID_REACTIONS.has(reactionType) && reactionType !== 'none') {
         if (indexPart) {
           // Có index: "0:heart" -> lưu dạng "0:heart"
-          const index = indexPart.replace(":", "");
+          const index = indexPart.replace(':', '');
           result.reactions.push(`${index}:${reactionType}` as ReactionType);
         } else {
           // Không có index: "heart" -> lưu bình thường
@@ -71,21 +62,19 @@ export function parseAIResponse(text: string): AIResponse {
     const stickerMatches = text.matchAll(/\[sticker:(\w+)\]/gi);
     for (const match of stickerMatches) {
       result.messages.push({
-        text: "",
+        text: '',
         sticker: match[1],
         quoteIndex: -1,
       });
     }
 
     // Parse [quote:index]nội dung[/quote]
-    const quoteMatches = text.matchAll(
-      /\[quote:(\d+)\]([\s\S]*?)\[\/quote\]/gi
-    );
+    const quoteMatches = text.matchAll(/\[quote:(\d+)\]([\s\S]*?)\[\/quote\]/gi);
     for (const match of quoteMatches) {
       result.messages.push({
         text: match[2].trim(),
-        sticker: "",
-        quoteIndex: parseInt(match[1]),
+        sticker: '',
+        quoteIndex: parseInt(match[1], 10),
       });
     }
 
@@ -94,7 +83,7 @@ export function parseAIResponse(text: string): AIResponse {
     for (const match of msgMatches) {
       result.messages.push({
         text: match[1].trim(),
-        sticker: "",
+        sticker: '',
         quoteIndex: -1,
       });
     }
@@ -102,17 +91,15 @@ export function parseAIResponse(text: string): AIResponse {
     // Parse [undo:index] - thu hồi tin nhắn đã gửi (-1 = tin mới nhất)
     const undoMatches = text.matchAll(/\[undo:(-?\d+)\]/gi);
     for (const match of undoMatches) {
-      result.undoIndexes.push(parseInt(match[1]));
+      result.undoIndexes.push(parseInt(match[1], 10));
     }
 
     // Parse [link:url]caption[/link] - gửi link với rich preview
-    const linkMatches = text.matchAll(
-      /\[link:(https?:\/\/[^\]]+)\]([\s\S]*?)\[\/link\]/gi
-    );
+    const linkMatches = text.matchAll(/\[link:(https?:\/\/[^\]]+)\]([\s\S]*?)\[\/link\]/gi);
     for (const match of linkMatches) {
       result.messages.push({
         text: match[2].trim(),
-        sticker: "",
+        sticker: '',
         quoteIndex: -1,
         link: match[1],
       });
@@ -122,47 +109,47 @@ export function parseAIResponse(text: string): AIResponse {
     const cardMatches = text.matchAll(/\[card(?::(\d+))?\]/gi);
     for (const match of cardMatches) {
       result.messages.push({
-        text: "",
-        sticker: "",
+        text: '',
+        sticker: '',
         quoteIndex: -1,
-        card: match[1] || "", // rỗng = gửi card của bot
+        card: match[1] || '', // rỗng = gửi card của bot
       });
     }
 
     // Lấy text thuần (loại bỏ các tag)
-    let plainText = text
-      .replace(/\[reaction:(\d+:)?\w+\]/gi, "") // Hỗ trợ cả [reaction:heart] và [reaction:0:heart]
-      .replace(/\[sticker:\w+\]/gi, "")
-      .replace(/\[quote:\d+\][\s\S]*?\[\/quote\]/gi, "")
-      .replace(/\[msg\][\s\S]*?\[\/msg\]/gi, "")
-      .replace(/\[undo:-?\d+\]/gi, "")
-      .replace(/\[link:https?:\/\/[^\]]+\][\s\S]*?\[\/link\]/gi, "")
-      .replace(/\[card(?::\d+)?\]/gi, "")
+    const plainText = text
+      .replace(/\[reaction:(\d+:)?\w+\]/gi, '') // Hỗ trợ cả [reaction:heart] và [reaction:0:heart]
+      .replace(/\[sticker:\w+\]/gi, '')
+      .replace(/\[quote:\d+\][\s\S]*?\[\/quote\]/gi, '')
+      .replace(/\[msg\][\s\S]*?\[\/msg\]/gi, '')
+      .replace(/\[undo:-?\d+\]/gi, '')
+      .replace(/\[link:https?:\/\/[^\]]+\][\s\S]*?\[\/link\]/gi, '')
+      .replace(/\[card(?::\d+)?\]/gi, '')
       .trim();
 
     // Nếu có text thuần, thêm vào messages đầu tiên
     if (plainText) {
       result.messages.unshift({
         text: plainText,
-        sticker: "",
+        sticker: '',
         quoteIndex: -1,
       });
     }
 
     // Nếu không có gì, trả về default
     if (result.messages.length === 0 && result.reactions.length === 0) {
-      debugLog("PARSE", "Empty result, returning default");
+      debugLog('PARSE', 'Empty result, returning default');
       return DEFAULT_RESPONSE;
     }
 
     debugLog(
-      "PARSE",
-      `Parsed: ${result.reactions.length} reactions, ${result.messages.length} messages, ${result.undoIndexes.length} undos`
+      'PARSE',
+      `Parsed: ${result.reactions.length} reactions, ${result.messages.length} messages, ${result.undoIndexes.length} undos`,
     );
     return result;
   } catch (e) {
-    console.error("[Parser] Error:", e, "Text:", text);
-    debugLog("PARSE", `Error parsing: ${e}`);
+    console.error('[Parser] Error:', e, 'Text:', text);
+    debugLog('PARSE', `Error parsing: ${e}`);
     return DEFAULT_RESPONSE;
   }
 }

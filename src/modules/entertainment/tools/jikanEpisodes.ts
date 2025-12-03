@@ -1,15 +1,10 @@
 /**
  * Tool: jikanEpisodes - Lấy danh sách tập phim
  */
-import {
-  ToolDefinition,
-  ToolResult,
-} from "../../../shared/types/tools.types.js";
-import { jikanFetch, JikanPagination } from "../services/jikanClient.js";
-import {
-  JikanEpisodesSchema,
-  validateParams,
-} from "../../../shared/schemas/tools.schema.js";
+
+import { JikanEpisodesSchema, validateParams } from '../../../shared/schemas/tools.schema.js';
+import type { ToolDefinition, ToolResult } from '../../../shared/types/tools.types.js';
+import { type JikanPagination, jikanFetch } from '../services/jikanClient.js';
 
 interface EpisodesResponse {
   data: {
@@ -27,20 +22,20 @@ interface EpisodesResponse {
 }
 
 export const jikanEpisodesTool: ToolDefinition = {
-  name: "jikanEpisodes",
+  name: 'jikanEpisodes',
   description:
-    "Lấy danh sách các tập phim của một anime. Bao gồm tiêu đề, ngày phát sóng, điểm số từng tập.",
+    'Lấy danh sách các tập phim của một anime. Bao gồm tiêu đề, ngày phát sóng, điểm số từng tập.',
   parameters: [
     {
-      name: "id",
-      type: "number",
-      description: "MAL ID của anime",
+      name: 'id',
+      type: 'number',
+      description: 'MAL ID của anime',
       required: true,
     },
     {
-      name: "page",
-      type: "number",
-      description: "Số trang (mặc định: 1, mỗi trang 100 tập)",
+      name: 'page',
+      type: 'number',
+      description: 'Số trang (mặc định: 1, mỗi trang 100 tập)',
       required: false,
     },
   ],
@@ -56,10 +51,7 @@ export const jikanEpisodesTool: ToolDefinition = {
       const endpoint = `/anime/${data.id}/episodes`;
       const queryParams = { page: data.page };
 
-      const response = await jikanFetch<EpisodesResponse>(
-        endpoint,
-        queryParams
-      );
+      const response = await jikanFetch<EpisodesResponse>(endpoint, queryParams);
 
       const episodes = response.data.map((ep) => ({
         number: ep.mal_id,

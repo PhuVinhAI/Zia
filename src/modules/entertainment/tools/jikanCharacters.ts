@@ -1,15 +1,10 @@
 /**
  * Tool: jikanCharacters - Lấy danh sách nhân vật của Anime/Manga
  */
-import {
-  ToolDefinition,
-  ToolResult,
-} from "../../../shared/types/tools.types.js";
-import { jikanFetch } from "../services/jikanClient.js";
-import {
-  JikanCharactersSchema,
-  validateParams,
-} from "../../../shared/schemas/tools.schema.js";
+
+import { JikanCharactersSchema, validateParams } from '../../../shared/schemas/tools.schema.js';
+import type { ToolDefinition, ToolResult } from '../../../shared/types/tools.types.js';
+import { jikanFetch } from '../services/jikanClient.js';
 
 interface CharacterResponse {
   data: {
@@ -32,26 +27,25 @@ interface CharacterResponse {
 }
 
 export const jikanCharactersTool: ToolDefinition = {
-  name: "jikanCharacters",
-  description:
-    "Lấy danh sách nhân vật và diễn viên lồng tiếng (seiyuu) của một anime hoặc manga.",
+  name: 'jikanCharacters',
+  description: 'Lấy danh sách nhân vật và diễn viên lồng tiếng (seiyuu) của một anime hoặc manga.',
   parameters: [
     {
-      name: "id",
-      type: "number",
-      description: "MAL ID của anime/manga",
+      name: 'id',
+      type: 'number',
+      description: 'MAL ID của anime/manga',
       required: true,
     },
     {
-      name: "mediaType",
-      type: "string",
+      name: 'mediaType',
+      type: 'string',
       description: "Loại: 'anime' hoặc 'manga' (mặc định: anime)",
       required: false,
     },
     {
-      name: "limit",
-      type: "number",
-      description: "Số nhân vật tối đa trả về (mặc định: 10)",
+      name: 'limit',
+      type: 'number',
+      description: 'Số nhân vật tối đa trả về (mặc định: 10)',
       required: false,
     },
   ],
@@ -72,12 +66,10 @@ export const jikanCharactersTool: ToolDefinition = {
         id: item.character.mal_id,
         name: item.character.name,
         role: item.role,
-        image:
-          item.character.images?.webp?.image_url ||
-          item.character.images?.jpg?.image_url,
+        image: item.character.images?.webp?.image_url || item.character.images?.jpg?.image_url,
         url: item.character.url,
         voiceActors: item.voice_actors
-          ?.filter((va) => va.language === "Japanese")
+          ?.filter((va) => va.language === 'Japanese')
           .slice(0, 2)
           .map((va) => ({
             id: va.person.mal_id,

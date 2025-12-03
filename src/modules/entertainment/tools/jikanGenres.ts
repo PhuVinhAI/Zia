@@ -1,15 +1,10 @@
 /**
  * Tool: jikanGenres - Lấy danh sách thể loại
  */
-import {
-  ToolDefinition,
-  ToolResult,
-} from "../../../shared/types/tools.types.js";
-import { jikanFetch } from "../services/jikanClient.js";
-import {
-  JikanGenresSchema,
-  validateParams,
-} from "../../../shared/schemas/tools.schema.js";
+
+import { JikanGenresSchema, validateParams } from '../../../shared/schemas/tools.schema.js';
+import type { ToolDefinition, ToolResult } from '../../../shared/types/tools.types.js';
+import { jikanFetch } from '../services/jikanClient.js';
 
 interface GenresResponse {
   data: {
@@ -21,13 +16,13 @@ interface GenresResponse {
 }
 
 export const jikanGenresTool: ToolDefinition = {
-  name: "jikanGenres",
+  name: 'jikanGenres',
   description:
-    "Lấy danh sách tất cả thể loại (genres) của anime hoặc manga. Dùng để biết ID thể loại khi tìm kiếm.",
+    'Lấy danh sách tất cả thể loại (genres) của anime hoặc manga. Dùng để biết ID thể loại khi tìm kiếm.',
   parameters: [
     {
-      name: "mediaType",
-      type: "string",
+      name: 'mediaType',
+      type: 'string',
       description: "Loại: 'anime' hoặc 'manga' (mặc định: anime)",
       required: false,
     },

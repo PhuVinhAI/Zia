@@ -2,11 +2,12 @@
  * Database Service - Wrapper service cho database operations
  * Cung cấp interface thống nhất cho các module sử dụng
  */
-import { initDatabase, closeDatabase, getDatabase } from "./connection.js";
-import { historyRepository } from "./repositories/history.repository.js";
-import { sentMessagesRepository } from "./repositories/sent-messages.repository.js";
-import { usersRepository } from "./repositories/users.repository.js";
-import { debugLog } from "../../core/logger/logger.js";
+
+import { debugLog } from '../../core/logger/logger.js';
+import { closeDatabase, initDatabase } from './connection.js';
+import { historyRepository } from './repositories/history.repository.js';
+import { sentMessagesRepository } from './repositories/sent-messages.repository.js';
+import { usersRepository } from './repositories/users.repository.js';
 
 // Cleanup interval (1 giờ)
 const CLEANUP_INTERVAL_MS = 60 * 60 * 1000;
@@ -28,7 +29,7 @@ export class DatabaseService {
     this.startCleanupJob();
     this.initialized = true;
 
-    debugLog("DB_SERVICE", "Database service initialized");
+    debugLog('DB_SERVICE', 'Database service initialized');
   }
 
   /**
@@ -38,7 +39,7 @@ export class DatabaseService {
     this.stopCleanupJob();
     closeDatabase();
     this.initialized = false;
-    debugLog("DB_SERVICE", "Database service closed");
+    debugLog('DB_SERVICE', 'Database service closed');
   }
 
   /**
@@ -51,17 +52,14 @@ export class DatabaseService {
       try {
         const deleted = await sentMessagesRepository.cleanup();
         if (deleted > 0) {
-          debugLog(
-            "DB_SERVICE",
-            `Cleanup job: removed ${deleted} old sent messages`
-          );
+          debugLog('DB_SERVICE', `Cleanup job: removed ${deleted} old sent messages`);
         }
       } catch (error) {
-        debugLog("DB_SERVICE", `Cleanup job error: ${error}`);
+        debugLog('DB_SERVICE', `Cleanup job error: ${error}`);
       }
     }, CLEANUP_INTERVAL_MS);
 
-    debugLog("DB_SERVICE", "Cleanup job started (interval: 1 hour)");
+    debugLog('DB_SERVICE', 'Cleanup job started (interval: 1 hour)');
   }
 
   /**
@@ -71,7 +69,7 @@ export class DatabaseService {
     if (cleanupTimer) {
       clearInterval(cleanupTimer);
       cleanupTimer = null;
-      debugLog("DB_SERVICE", "Cleanup job stopped");
+      debugLog('DB_SERVICE', 'Cleanup job stopped');
     }
   }
 

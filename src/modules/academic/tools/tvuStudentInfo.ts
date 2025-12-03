@@ -1,12 +1,10 @@
 /**
  * Tool: tvuStudentInfo - Lấy thông tin cá nhân sinh viên TVU
  */
-import {
-  ToolDefinition,
-  ToolResult,
-} from "../../../shared/types/tools.types.js";
-import { tvuRequest } from "../services/tvuClient.js";
-import { debugLog } from "../../../core/logger/logger.js";
+
+import { debugLog } from '../../../core/logger/logger.js';
+import type { ToolDefinition, ToolResult } from '../../../shared/types/tools.types.js';
+import { tvuRequest } from '../services/tvuClient.js';
 
 interface StudentInfoData {
   ma_sv: string;
@@ -27,23 +25,20 @@ interface StudentInfoData {
 }
 
 export const tvuStudentInfoTool: ToolDefinition = {
-  name: "tvuStudentInfo",
+  name: 'tvuStudentInfo',
   description:
-    "Lấy thông tin cá nhân của sinh viên TVU (họ tên, lớp, khoa, ngành, email, SĐT...). Yêu cầu đã đăng nhập TVU.",
+    'Lấy thông tin cá nhân của sinh viên TVU (họ tên, lớp, khoa, ngành, email, SĐT...). Yêu cầu đã đăng nhập TVU.',
   parameters: [],
   execute: async (): Promise<ToolResult> => {
     try {
-      debugLog("TVU:StudentInfo", "Fetching student info");
+      debugLog('TVU:StudentInfo', 'Fetching student info');
 
-      const response = await tvuRequest<StudentInfoData>(
-        "/api/dkmh/w-locsinhvieninfo",
-        {}
-      );
+      const response = await tvuRequest<StudentInfoData>('/api/dkmh/w-locsinhvieninfo', {});
 
       if (!response.result || !response.data) {
         return {
           success: false,
-          error: response.message || "Không lấy được thông tin sinh viên",
+          error: response.message || 'Không lấy được thông tin sinh viên',
         };
       }
 

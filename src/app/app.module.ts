@@ -1,14 +1,13 @@
 /**
  * App Module - Đăng ký và khởi tạo các modules
  */
-import { moduleManager, container, Services, eventBus } from "../core/index.js";
-import { databaseService } from "../infrastructure/database/index.js";
-
+import { container, eventBus, moduleManager, Services } from '../core/index.js';
+import { databaseService } from '../infrastructure/database/index.js';
+import { academicModule } from '../modules/academic/academic.module.js';
+import { entertainmentModule } from '../modules/entertainment/entertainment.module.js';
+import { gatewayModule } from '../modules/gateway/gateway.module.js';
 // Import module instances
-import { systemModule } from "../modules/system/system.module.js";
-import { academicModule } from "../modules/academic/academic.module.js";
-import { entertainmentModule } from "../modules/entertainment/entertainment.module.js";
-import { gatewayModule } from "../modules/gateway/gateway.module.js";
+import { systemModule } from '../modules/system/system.module.js';
 
 /**
  * Đăng ký tất cả modules vào ModuleManager

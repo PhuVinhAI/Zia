@@ -1,35 +1,30 @@
 /**
  * Tool: jikanDetails - Lấy thông tin chi tiết Anime/Manga
  */
+
+import { JikanDetailsSchema, validateParams } from '../../../shared/schemas/tools.schema.js';
+import type { ToolDefinition, ToolResult } from '../../../shared/types/tools.types.js';
 import {
-  ToolDefinition,
-  ToolResult,
-} from "../../../shared/types/tools.types.js";
-import {
+  type JikanAnime,
+  type JikanManga,
+  type JikanSingleResponse,
   jikanFetch,
-  JikanAnime,
-  JikanManga,
-  JikanSingleResponse,
-} from "../services/jikanClient.js";
-import {
-  JikanDetailsSchema,
-  validateParams,
-} from "../../../shared/schemas/tools.schema.js";
+} from '../services/jikanClient.js';
 
 export const jikanDetailsTool: ToolDefinition = {
-  name: "jikanDetails",
+  name: 'jikanDetails',
   description:
-    "Lấy thông tin chi tiết đầy đủ của một anime hoặc manga theo MAL ID. Bao gồm synopsis, điểm số, thể loại, studio, v.v.",
+    'Lấy thông tin chi tiết đầy đủ của một anime hoặc manga theo MAL ID. Bao gồm synopsis, điểm số, thể loại, studio, v.v.',
   parameters: [
     {
-      name: "id",
-      type: "number",
-      description: "MAL ID của anime/manga",
+      name: 'id',
+      type: 'number',
+      description: 'MAL ID của anime/manga',
       required: true,
     },
     {
-      name: "mediaType",
-      type: "string",
+      name: 'mediaType',
+      type: 'string',
       description: "Loại: 'anime' hoặc 'manga' (mặc định: anime)",
       required: false,
     },
@@ -45,9 +40,7 @@ export const jikanDetailsTool: ToolDefinition = {
     try {
       const endpoint = `/${data.mediaType}/${data.id}/full`;
 
-      const response = await jikanFetch<
-        JikanSingleResponse<JikanAnime | JikanManga>
-      >(endpoint);
+      const response = await jikanFetch<JikanSingleResponse<JikanAnime | JikanManga>>(endpoint);
       const item = response.data;
 
       const baseData = {
@@ -66,12 +59,10 @@ export const jikanDetailsTool: ToolDefinition = {
         favorites: item.favorites,
         synopsis: item.synopsis,
         genres: item.genres?.map((g) => ({ id: g.mal_id, name: g.name })),
-        image:
-          item.images?.webp?.large_image_url ||
-          item.images?.jpg?.large_image_url,
+        image: item.images?.webp?.large_image_url || item.images?.jpg?.large_image_url,
       };
 
-      if (data.mediaType === "anime") {
+      if (data.mediaType === 'anime') {
         const anime = item as JikanAnime;
         return {
           success: true,

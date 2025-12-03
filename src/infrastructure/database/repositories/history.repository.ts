@@ -2,10 +2,10 @@
  * History Repository - Quản lý lịch sử hội thoại
  * Hỗ trợ context window cho AI với cơ chế pruning
  */
-import { eq, asc, desc, and, lt } from "drizzle-orm";
-import { getDatabase } from "../connection.js";
-import { history, type NewHistory, type History } from "../schema.js";
-import { debugLog } from "../../../core/logger/logger.js";
+import { asc, desc, eq } from 'drizzle-orm';
+import { debugLog } from '../../../core/logger/logger.js';
+import { getDatabase } from '../connection.js';
+import { type History, history } from '../schema.js';
 
 // Giới hạn token mặc định (có thể config)
 const MAX_CONTEXT_TOKENS = 300_000;
@@ -22,11 +22,10 @@ export class HistoryRepository {
    */
   async addMessage(
     threadId: string,
-    role: "user" | "model",
-    content: string | object
+    role: 'user' | 'model',
+    content: string | object,
   ): Promise<void> {
-    const serializedContent =
-      typeof content === "string" ? content : JSON.stringify(content);
+    const serializedContent = typeof content === 'string' ? content : JSON.stringify(content);
 
     await this.db.insert(history).values({
       threadId,
@@ -38,7 +37,7 @@ export class HistoryRepository {
     // Pruning: Cắt tỉa nếu vượt quá giới hạn
     await this.pruneIfNeeded(threadId);
 
-    debugLog("HISTORY", `Added ${role} message for thread ${threadId}`);
+    debugLog('HISTORY', `Added ${role} message for thread ${threadId}`);
   }
 
   /**
@@ -46,7 +45,7 @@ export class HistoryRepository {
    * Sắp xếp theo thời gian tăng dần
    */
   async getHistory(threadId: string, limit?: number): Promise<History[]> {
-    let query = this.db
+    const query = this.db
       .select()
       .from(history)
       .where(eq(history.threadId, threadId))
@@ -71,8 +70,8 @@ export class HistoryRepository {
    * Trả về format phù hợp cho AI SDK
    */
   async getHistoryForAI(
-    threadId: string
-  ): Promise<Array<{ role: "user" | "model"; parts: any[] }>> {
+    threadId: string,
+  ): Promise<Array<{ role: 'user' | 'model'; parts: any[] }>> {
     const records = await this.getHistory(threadId);
 
     return records.map((record) => {
@@ -97,12 +96,9 @@ export class HistoryRepository {
    * Xóa lịch sử của một thread
    */
   async clearHistory(threadId: string): Promise<number> {
-    const result = await this.db
-      .delete(history)
-      .where(eq(history.threadId, threadId))
-      .returning();
+    const result = await this.db.delete(history).where(eq(history.threadId, threadId)).returning();
 
-    debugLog("HISTORY", `Cleared ${result.length} messages for ${threadId}`);
+    debugLog('HISTORY', `Cleared ${result.length} messages for ${threadId}`);
     return result.length;
   }
 
@@ -126,8 +122,8 @@ export class HistoryRepository {
       }
 
       debugLog(
-        "HISTORY",
-        `Pruned ${deleteCount} old messages for ${threadId} (tokens: ${estimatedTokens})`
+        'HISTORY',
+        `Pruned ${deleteCount} old messages for ${threadId} (tokens: ${estimatedTokens})`,
       );
     }
   }
@@ -136,10 +132,7 @@ export class HistoryRepository {
    * Đếm số tin nhắn của một thread
    */
   async countMessages(threadId: string): Promise<number> {
-    const records = await this.db
-      .select()
-      .from(history)
-      .where(eq(history.threadId, threadId));
+    const records = await this.db.select().from(history).where(eq(history.threadId, threadId));
     return records.length;
   }
 }

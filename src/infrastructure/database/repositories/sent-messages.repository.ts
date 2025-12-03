@@ -2,14 +2,10 @@
  * Sent Messages Repository - Quản lý nhật ký tin nhắn đã gửi
  * Hỗ trợ tính năng Undo và Quote
  */
-import { eq, desc, lt, and } from "drizzle-orm";
-import { getDatabase } from "../connection.js";
-import {
-  sentMessages,
-  type NewSentMessage,
-  type SentMessage,
-} from "../schema.js";
-import { debugLog } from "../../../core/logger/logger.js";
+import { desc, eq, lt } from 'drizzle-orm';
+import { debugLog } from '../../../core/logger/logger.js';
+import { getDatabase } from '../connection.js';
+import { type SentMessage, sentMessages } from '../schema.js';
 
 // Thời gian giữ tin nhắn (24 giờ)
 const MESSAGE_RETENTION_MS = 24 * 60 * 60 * 1000;
@@ -36,10 +32,7 @@ export class SentMessagesRepository {
       timestamp: new Date(),
     });
 
-    debugLog(
-      "SENT_MSG",
-      `Saved message ${data.msgId} for thread ${data.threadId}`
-    );
+    debugLog('SENT_MSG', `Saved message ${data.msgId} for thread ${data.threadId}`);
   }
 
   /**
@@ -97,10 +90,7 @@ export class SentMessagesRepository {
   /**
    * Lấy N tin nhắn gần nhất của thread
    */
-  async getRecentMessages(
-    threadId: string,
-    limit: number = 10
-  ): Promise<SentMessage[]> {
+  async getRecentMessages(threadId: string, limit: number = 10): Promise<SentMessage[]> {
     return await this.db
       .select()
       .from(sentMessages)
@@ -122,7 +112,7 @@ export class SentMessagesRepository {
       .returning();
 
     if (result.length > 0) {
-      debugLog("SENT_MSG", `Cleaned up ${result.length} old messages`);
+      debugLog('SENT_MSG', `Cleaned up ${result.length} old messages`);
     }
 
     return result.length;

@@ -1,24 +1,18 @@
 /**
  * Token Counter - Đếm token cho Gemini API
  */
-import { Content, Part } from "@google/genai";
-import { getAIService } from "../types/ai.types.js";
-import { debugLog, logError } from "../../core/logger/logger.js";
+import type { Content } from '@google/genai';
+import { debugLog, logError } from '../../core/logger/logger.js';
+import { getAIService } from '../types/ai.types.js';
 
-const GEMINI_MODEL = "models/gemini-flash-latest";
+const GEMINI_MODEL = 'models/gemini-flash-latest';
 
 // MIME types mà Gemini API hỗ trợ cho countTokens
-const SUPPORTED_MIME_PREFIXES = [
-  "image/",
-  "video/",
-  "audio/",
-  "application/pdf",
-  "text/",
-];
+const SUPPORTED_MIME_PREFIXES = ['image/', 'video/', 'audio/', 'application/pdf', 'text/'];
 
 /** Kiểm tra MIME type có được hỗ trợ không */
 export function isSupportedMime(mime: string): boolean {
-  return SUPPORTED_MIME_PREFIXES.some((p) => mime.startsWith(p.split("/")[0]));
+  return SUPPORTED_MIME_PREFIXES.some((p) => mime.startsWith(p.split('/')[0]));
 }
 
 /** Lọc bỏ các inline data có MIME type không được hỗ trợ */
@@ -27,10 +21,9 @@ export function filterUnsupportedMedia(contents: Content[]): Content[] {
     ...content,
     parts:
       content.parts?.map((part) => {
-        if ("inlineData" in part && part.inlineData) {
-          const mimeType = part.inlineData.mimeType || "";
-          if (!isSupportedMime(mimeType))
-            return { text: `[File: ${mimeType}]` };
+        if ('inlineData' in part && part.inlineData) {
+          const mimeType = part.inlineData.mimeType || '';
+          if (!isSupportedMime(mimeType)) return { text: `[File: ${mimeType}]` };
         }
         return part;
       }) || [],
@@ -48,16 +41,13 @@ export async function countTokens(contents: Content[]): Promise<number> {
     });
     return result.totalTokens || 0;
   } catch (error: any) {
-    logError("countTokens", error);
+    logError('countTokens', error);
     // Fallback: ước tính dựa trên text length
     const text = contents
-      .flatMap(
-        (c) =>
-          c.parts?.filter((p) => "text" in p).map((p) => (p as any).text) || []
-      )
-      .join(" ");
+      .flatMap((c) => c.parts?.filter((p) => 'text' in p).map((p) => (p as any).text) || [])
+      .join(' ');
     const estimated = Math.ceil(text.length / 4) + contents.length * 100;
-    debugLog("HISTORY", `Token fallback estimate: ${estimated}`);
+    debugLog('HISTORY', `Token fallback estimate: ${estimated}`);
     return estimated;
   }
 }

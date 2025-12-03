@@ -26,7 +26,7 @@ export interface IModule extends ModuleLifecycle {
 // Tool parameter definition
 export interface ToolParameter {
   name: string;
-  type: "string" | "number" | "boolean" | "object";
+  type: 'string' | 'number' | 'boolean' | 'object';
   description: string;
   required: boolean;
   default?: any;
@@ -52,10 +52,7 @@ export interface ITool {
   readonly name: string;
   readonly description: string;
   readonly parameters: ToolParameter[];
-  execute(
-    params: Record<string, any>,
-    context: ToolContext
-  ): Promise<ToolResult>;
+  execute(params: Record<string, any>, context: ToolContext): Promise<ToolResult>;
 }
 
 // Parsed tool call from AI response

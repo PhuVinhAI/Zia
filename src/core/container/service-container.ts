@@ -1,24 +1,25 @@
 /**
  * Service Container - Dependency Injection container
  */
-import type { IServiceContainer } from "../types.js";
-import { debugLog } from "../logger/logger.js";
+
+import { debugLog } from '../logger/logger.js';
+import type { IServiceContainer } from '../types.js';
 
 export class ServiceContainer implements IServiceContainer {
   private services = new Map<string, any>();
 
   register<T>(name: string, instance: T): void {
     if (this.services.has(name)) {
-      debugLog("CONTAINER", `Overwriting service: ${name}`);
+      debugLog('CONTAINER', `Overwriting service: ${name}`);
     }
     this.services.set(name, instance);
-    debugLog("CONTAINER", `Registered service: ${name}`);
+    debugLog('CONTAINER', `Registered service: ${name}`);
   }
 
   get<T>(name: string): T | undefined {
     const service = this.services.get(name);
     if (!service) {
-      debugLog("CONTAINER", `Service not found: ${name}`);
+      debugLog('CONTAINER', `Service not found: ${name}`);
     }
     return service as T | undefined;
   }
@@ -37,7 +38,7 @@ export class ServiceContainer implements IServiceContainer {
 
   clear(): void {
     this.services.clear();
-    debugLog("CONTAINER", "Cleared all services");
+    debugLog('CONTAINER', 'Cleared all services');
   }
 
   list(): string[] {
@@ -50,11 +51,11 @@ export const container = new ServiceContainer();
 
 // Service names constants
 export const Services = {
-  ZALO_API: "zalo:api",
-  AI_PROVIDER: "ai:provider",
-  CONFIG: "config",
-  EVENT_BUS: "event:bus",
-  TOOL_REGISTRY: "tool:registry",
-  MODULE_MANAGER: "module:manager",
-  DATABASE: "database",
+  ZALO_API: 'zalo:api',
+  AI_PROVIDER: 'ai:provider',
+  CONFIG: 'config',
+  EVENT_BUS: 'event:bus',
+  TOOL_REGISTRY: 'tool:registry',
+  MODULE_MANAGER: 'module:manager',
+  DATABASE: 'database',
 } as const;

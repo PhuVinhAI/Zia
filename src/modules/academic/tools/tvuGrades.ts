@@ -1,12 +1,10 @@
 /**
  * Tool: tvuGrades - Lấy bảng điểm sinh viên TVU
  */
-import {
-  ToolDefinition,
-  ToolResult,
-} from "../../../shared/types/tools.types.js";
-import { tvuRequest } from "../services/tvuClient.js";
-import { debugLog } from "../../../core/logger/logger.js";
+
+import { debugLog } from '../../../core/logger/logger.js';
+import type { ToolDefinition, ToolResult } from '../../../shared/types/tools.types.js';
+import { tvuRequest } from '../services/tvuClient.js';
 
 interface GradesData {
   ds_diem_hocky: Array<{
@@ -38,27 +36,27 @@ interface GradesData {
 }
 
 export const tvuGradesTool: ToolDefinition = {
-  name: "tvuGrades",
+  name: 'tvuGrades',
   description:
-    "Lấy toàn bộ bảng điểm của sinh viên TVU (điểm từng môn, điểm trung bình, tín chỉ tích lũy...). Yêu cầu đã đăng nhập TVU.",
+    'Lấy toàn bộ bảng điểm của sinh viên TVU (điểm từng môn, điểm trung bình, tín chỉ tích lũy...). Yêu cầu đã đăng nhập TVU.',
   parameters: [],
   execute: async (): Promise<ToolResult> => {
     try {
-      debugLog("TVU:Grades", "Fetching grades");
+      debugLog('TVU:Grades', 'Fetching grades');
 
       const response = await tvuRequest<GradesData>(
-        "/api/srm/w-locdsdiemsinhvien",
+        '/api/srm/w-locdsdiemsinhvien',
         {
           filter: { is_tinh_diem: true },
           additional: { paging: { limit: 1000, page: 1 } },
         },
-        { hien_thi_mon_theo_hkdk: "false" }
+        { hien_thi_mon_theo_hkdk: 'false' },
       );
 
       if (!response.result || !response.data) {
         return {
           success: false,
-          error: response.message || "Không lấy được bảng điểm",
+          error: response.message || 'Không lấy được bảng điểm',
         };
       }
 
@@ -82,7 +80,7 @@ export const tvuGradesTool: ToolDefinition = {
           soTinChi: mon.so_tin_chi,
           diemTK: mon.diem_tk,
           diemChu: mon.diem_tk_chu,
-          ketQua: mon.ket_qua === 1 ? "Đạt" : "Không đạt",
+          ketQua: mon.ket_qua === 1 ? 'Đạt' : 'Không đạt',
           diemThanhPhan: mon.ds_diem_thanh_phan.map((tp) => ({
             kyHieu: tp.ky_hieu,
             ten: tp.ten_thanh_phan,

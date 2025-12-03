@@ -1,87 +1,81 @@
 /**
  * Tool: jikanSearch - Tìm kiếm Anime/Manga
  */
+
+import { JikanSearchSchema, validateParams } from '../../../shared/schemas/tools.schema.js';
+import type { ToolDefinition, ToolResult } from '../../../shared/types/tools.types.js';
 import {
-  ToolDefinition,
-  ToolResult,
-} from "../../../shared/types/tools.types.js";
-import {
+  type JikanAnime,
+  type JikanListResponse,
+  type JikanManga,
   jikanFetch,
-  JikanAnime,
-  JikanManga,
-  JikanListResponse,
-} from "../services/jikanClient.js";
-import {
-  JikanSearchSchema,
-  validateParams,
-} from "../../../shared/schemas/tools.schema.js";
+} from '../services/jikanClient.js';
 
 export const jikanSearchTool: ToolDefinition = {
-  name: "jikanSearch",
+  name: 'jikanSearch',
   description:
-    "Tìm kiếm anime hoặc manga theo từ khóa, thể loại, trạng thái, điểm số. Hỗ trợ lọc và sắp xếp kết quả.",
+    'Tìm kiếm anime hoặc manga theo từ khóa, thể loại, trạng thái, điểm số. Hỗ trợ lọc và sắp xếp kết quả.',
   parameters: [
     {
-      name: "q",
-      type: "string",
-      description: "Từ khóa tìm kiếm",
+      name: 'q',
+      type: 'string',
+      description: 'Từ khóa tìm kiếm',
       required: false,
     },
     {
-      name: "mediaType",
-      type: "string",
+      name: 'mediaType',
+      type: 'string',
       description: "Loại media: 'anime' hoặc 'manga' (mặc định: anime)",
       required: false,
     },
     {
-      name: "type",
-      type: "string",
+      name: 'type',
+      type: 'string',
       description:
-        "Loại: tv, movie, ova, special, ona, music (anime) hoặc manga, novel, lightnovel, oneshot, doujin, manhwa, manhua (manga)",
+        'Loại: tv, movie, ova, special, ona, music (anime) hoặc manga, novel, lightnovel, oneshot, doujin, manhwa, manhua (manga)',
       required: false,
     },
     {
-      name: "status",
-      type: "string",
+      name: 'status',
+      type: 'string',
       description:
-        "Trạng thái: airing, complete, upcoming (anime) hoặc publishing, complete, hiatus, discontinued (manga)",
+        'Trạng thái: airing, complete, upcoming (anime) hoặc publishing, complete, hiatus, discontinued (manga)',
       required: false,
     },
     {
-      name: "minScore",
-      type: "number",
-      description: "Điểm số tối thiểu (1-10)",
+      name: 'minScore',
+      type: 'number',
+      description: 'Điểm số tối thiểu (1-10)',
       required: false,
     },
     {
-      name: "genres",
-      type: "string",
-      description:
-        "ID thể loại, cách nhau bởi dấu phẩy (VD: 1,2 = Action, Adventure)",
+      name: 'genres',
+      type: 'string',
+      description: 'ID thể loại, cách nhau bởi dấu phẩy (VD: 1,2 = Action, Adventure)',
       required: false,
     },
     {
-      name: "orderBy",
-      type: "string",
-      description: "Sắp xếp theo: title, score, popularity, favorites, rank",
+      name: 'orderBy',
+      type: 'string',
+      description: 'Sắp xếp theo: title, score, popularity, favorites, rank',
       required: false,
     },
     {
-      name: "sort",
-      type: "string",
-      description: "Chiều sắp xếp: desc hoặc asc",
+      name: 'sort',
+      type: 'string',
+      description: 'Chiều sắp xếp: desc hoặc asc',
       required: false,
     },
     {
-      name: "page",
-      type: "number",
-      description: "Số trang (mặc định: 1)",
+      name: 'page',
+      type: 'number',
+      description: 'Số trang (mặc định: 1)',
       required: false,
     },
     {
-      name: "limit",
-      type: "number",
-      description: "Số kết quả mỗi trang (tối đa 25)",
+      name: 'limit',
+      type: 'number',
+      description: 'Số kết quả mỗi trang (tối đa 25)',
       required: false,
     },
   ],
@@ -94,7 +88,7 @@ export const jikanSearchTool: ToolDefinition = {
     const data = validation.data;
 
     try {
-      const endpoint = data.mediaType === "manga" ? "/manga" : "/anime";
+      const endpoint = data.mediaType === 'manga' ? '/manga' : '/anime';
 
       const queryParams: Record<string, any> = {
         q: data.q,
@@ -108,9 +102,10 @@ export const jikanSearchTool: ToolDefinition = {
         limit: data.limit,
       };
 
-      const response = await jikanFetch<
-        JikanListResponse<JikanAnime | JikanManga>
-      >(endpoint, queryParams);
+      const response = await jikanFetch<JikanListResponse<JikanAnime | JikanManga>>(
+        endpoint,
+        queryParams,
+      );
 
       const results = response.data.map((item) => ({
         id: item.mal_id,
@@ -119,16 +114,14 @@ export const jikanSearchTool: ToolDefinition = {
         type: item.type,
         status: item.status,
         score: item.score,
-        image:
-          item.images?.webp?.large_image_url ||
-          item.images?.jpg?.large_image_url,
+        image: item.images?.webp?.large_image_url || item.images?.jpg?.large_image_url,
         synopsis:
           item.synopsis?.substring(0, 200) +
-          (item.synopsis && item.synopsis.length > 200 ? "..." : ""),
-        genres: item.genres?.map((g) => g.name).join(", "),
+          (item.synopsis && item.synopsis.length > 200 ? '...' : ''),
+        genres: item.genres?.map((g) => g.name).join(', '),
         url: item.url,
-        ...("episodes" in item ? { episodes: item.episodes } : {}),
-        ...("chapters" in item
+        ...('episodes' in item ? { episodes: item.episodes } : {}),
+        ...('chapters' in item
           ? {
               chapters: (item as JikanManga).chapters,
               volumes: (item as JikanManga).volumes,

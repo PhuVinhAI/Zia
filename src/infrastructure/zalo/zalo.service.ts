@@ -1,11 +1,11 @@
-import * as zcajs from "zca-js";
-import fs from "fs";
-import { CONFIG } from "../../shared/constants/config.js";
-import { debugLog, logStep, logError } from "../../core/logger/logger.js";
+import fs from 'node:fs';
+import * as zcajs from 'zca-js';
+import { debugLog, logError, logStep } from '../../core/logger/logger.js';
+import { CONFIG } from '../../shared/constants/config.js';
 
 export const { Zalo, ThreadType, Reactions, TextStyle } = zcajs as any;
 
-const CREDENTIALS_PATH = "./credentials.json";
+const CREDENTIALS_PATH = './credentials.json';
 
 export const zalo = new Zalo({
   selfListen: CONFIG.selfListen,
@@ -13,8 +13,8 @@ export const zalo = new Zalo({
 });
 
 debugLog(
-  "ZALO",
-  `Zalo instance created: selfListen=${CONFIG.selfListen}, logging=${CONFIG.logging}`
+  'ZALO',
+  `Zalo instance created: selfListen=${CONFIG.selfListen}, logging=${CONFIG.logging}`,
 );
 
 /**
@@ -25,10 +25,10 @@ function saveCredentials(api: any): void {
     const ctx = api.getContext();
     fs.writeFileSync(CREDENTIALS_PATH, JSON.stringify(ctx, null, 2));
     console.log(`💾 Đã lưu phiên đăng nhập vào ${CREDENTIALS_PATH}`);
-    debugLog("ZALO", `Credentials saved to ${CREDENTIALS_PATH}`);
+    debugLog('ZALO', `Credentials saved to ${CREDENTIALS_PATH}`);
   } catch (e) {
-    console.error("⚠️ Không thể lưu credentials:", e);
-    logError("saveCredentials", e);
+    console.error('⚠️ Không thể lưu credentials:', e);
+    logError('saveCredentials', e);
   }
 }
 
@@ -38,14 +38,14 @@ function saveCredentials(api: any): void {
 function loadCredentials(): any | null {
   try {
     if (fs.existsSync(CREDENTIALS_PATH)) {
-      const data = fs.readFileSync(CREDENTIALS_PATH, "utf-8");
-      debugLog("ZALO", `Loaded credentials from ${CREDENTIALS_PATH}`);
+      const data = fs.readFileSync(CREDENTIALS_PATH, 'utf-8');
+      debugLog('ZALO', `Loaded credentials from ${CREDENTIALS_PATH}`);
       return JSON.parse(data);
     }
-    debugLog("ZALO", `No credentials file found at ${CREDENTIALS_PATH}`);
+    debugLog('ZALO', `No credentials file found at ${CREDENTIALS_PATH}`);
   } catch (e) {
-    console.error("⚠️ Không thể đọc credentials:", e);
-    logError("loadCredentials", e);
+    console.error('⚠️ Không thể đọc credentials:', e);
+    logError('loadCredentials', e);
   }
   return null;
 }
@@ -53,50 +53,50 @@ function loadCredentials(): any | null {
 /**
  * Đăng nhập với credentials đã lưu hoặc QR code
  */
-export async function loginWithQR(qrPath: string = "./qr.png") {
-  console.log("🚀 Đang khởi động Bot...");
-  logStep("loginWithQR", { qrPath });
+export async function loginWithQR(qrPath: string = './qr.png') {
+  console.log('🚀 Đang khởi động Bot...');
+  logStep('loginWithQR', { qrPath });
 
   let api: any;
 
   // Thử đăng nhập bằng credentials đã lưu
   const savedCredentials = loadCredentials();
   if (savedCredentials) {
-    console.log("🔑 Tìm thấy phiên đăng nhập cũ, đang kết nối lại...");
-    logStep("login", "Using saved credentials");
+    console.log('🔑 Tìm thấy phiên đăng nhập cũ, đang kết nối lại...');
+    logStep('login', 'Using saved credentials');
     try {
       api = await zalo.login(savedCredentials);
-      console.log("✅ Kết nối lại thành công!");
-      debugLog("ZALO", "Login with saved credentials successful");
+      console.log('✅ Kết nối lại thành công!');
+      debugLog('ZALO', 'Login with saved credentials successful');
     } catch (e) {
-      console.log("⚠️ Phiên cũ hết hạn, cần quét QR mới...");
-      logError("login", e);
+      console.log('⚠️ Phiên cũ hết hạn, cần quét QR mới...');
+      logError('login', e);
       // Xóa credentials cũ
       if (fs.existsSync(CREDENTIALS_PATH)) {
         fs.unlinkSync(CREDENTIALS_PATH);
-        debugLog("ZALO", "Deleted expired credentials");
+        debugLog('ZALO', 'Deleted expired credentials');
       }
-      logStep("login", "Requesting QR code");
+      logStep('login', 'Requesting QR code');
       api = await zalo.loginQR({ qrPath });
       saveCredentials(api);
     }
   } else {
     // Đăng nhập bằng QR
-    console.log("📱 Quét mã QR để đăng nhập...");
-    logStep("login", "No saved credentials, requesting QR code");
+    console.log('📱 Quét mã QR để đăng nhập...');
+    logStep('login', 'No saved credentials, requesting QR code');
     api = await zalo.loginQR({ qrPath });
     saveCredentials(api);
   }
 
   const myId = api.getContext().uid;
-  const userName = api.getContext()?.loginInfo?.name || "Unknown";
+  const userName = api.getContext()?.loginInfo?.name || 'Unknown';
 
   console.log(`✅ Đăng nhập thành công!`);
   console.log(`👤 Tên: ${userName}`);
   console.log(`🆔 ID: ${myId}`);
 
-  debugLog("ZALO", `Login successful: name=${userName}, uid=${myId}`);
-  logStep("loginComplete", { userName, myId });
+  debugLog('ZALO', `Login successful: name=${userName}, uid=${myId}`);
+  logStep('loginComplete', { userName, myId });
 
   return { api, myId };
 }

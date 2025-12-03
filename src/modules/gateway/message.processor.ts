@@ -1,43 +1,35 @@
 /**
  * Mixed Content Handler - Xử lý tất cả loại tin nhắn
  */
-import { ThreadType } from "../../infrastructure/zalo/zalo.service.js";
+
+import { debugLog, logError, logStep } from '../../core/logger/logger.js';
 import {
+  extractYouTubeUrls,
   generateContent,
   generateContentStream,
-  extractYouTubeUrls,
-  MediaPart,
-} from "../../infrastructure/gemini/gemini.provider.js";
-import { sendResponse, createStreamCallbacks } from "./response.handler.js";
-import { handleToolCalls, isToolOnlyResponse } from "./tool.handler.js";
+  type MediaPart,
+} from '../../infrastructure/gemini/gemini.provider.js';
+import { PROMPTS } from '../../infrastructure/gemini/prompts.js';
+import { ThreadType } from '../../infrastructure/zalo/zalo.service.js';
+import { CONFIG } from '../../shared/constants/config.js';
 import {
-  saveToHistory,
-  saveResponseToHistory,
-  saveToolResultToHistory,
   getHistory,
-} from "../../shared/utils/history.js";
-import { logStep, logError, debugLog } from "../../core/logger/logger.js";
-import { CONFIG } from "../../shared/constants/config.js";
-import { PROMPTS } from "../../infrastructure/gemini/prompts.js";
-import { checkRateLimit, markApiCall } from "./rate-limit.guard.js";
-
+  saveResponseToHistory,
+  saveToHistory,
+  saveToolResultToHistory,
+} from '../../shared/utils/history.js';
+import type { ClassifiedMessage, MessageType } from './classifier.js';
 // Import từ các module mới
-import {
-  classifyMessage,
-  classifyMessages,
-  countMessageTypes,
-} from "./classifier.js";
-import type { ClassifiedMessage, MessageType } from "./classifier.js";
-import { prepareMediaParts, addQuoteMedia } from "./media.processor.js";
-import { extractQuoteInfo, QuoteMedia } from "./quote.parser.js";
-import {
-  buildPrompt,
-  extractTextFromMessages,
-  processPrefix,
-} from "./prompt.builder.js";
+import { classifyMessage, classifyMessages, countMessageTypes } from './classifier.js';
+import { addQuoteMedia, prepareMediaParts } from './media.processor.js';
+import { buildPrompt, extractTextFromMessages, processPrefix } from './prompt.builder.js';
+import { extractQuoteInfo } from './quote.parser.js';
+import { checkRateLimit, markApiCall } from './rate-limit.guard.js';
+import { createStreamCallbacks, sendResponse } from './response.handler.js';
+import { handleToolCalls, isToolOnlyResponse } from './tool.handler.js';
 
 // Re-export types cho backward compatibility
-export { ClassifiedMessage, MessageType };
+export type { ClassifiedMessage, MessageType };
 export { classifyMessage as classifyMessageDetailed };
 
 /**
@@ -47,7 +39,7 @@ export async function handleMixedContent(
   api: any,
   messages: any[],
   threadId: string,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) {
   // 1. Phân loại tất cả tin nhắn
   const classified = classifyMessages(messages);
@@ -58,9 +50,9 @@ export async function handleMixedContent(
       Object.entries(counts)
         .filter(([_, v]) => v > 0)
         .map(([k, v]) => `${v} ${k}`)
-        .join(", ")
+        .join(', '),
   );
-  logStep("handleMixedContent", { threadId, counts, total: messages.length });
+  logStep('handleMixedContent', { threadId, counts, total: messages.length });
 
   try {
     // 2. Lưu vào history
@@ -68,7 +60,7 @@ export async function handleMixedContent(
       await saveToHistory(threadId, msg);
     }
 
-    if (signal?.aborted) return debugLog("MIXED", "Aborted before processing");
+    if (signal?.aborted) return debugLog('MIXED', 'Aborted before processing');
 
     await api.sendTypingEvent(threadId, ThreadType.User);
 
@@ -86,15 +78,11 @@ export async function handleMixedContent(
     const { shouldContinue, userText } = processPrefix(
       combinedText,
       CONFIG.requirePrefix,
-      CONFIG.prefix
+      CONFIG.prefix,
     );
 
     if (!shouldContinue) {
-      await api.sendMessage(
-        PROMPTS.prefixHint(CONFIG.prefix),
-        threadId,
-        ThreadType.User
-      );
+      await api.sendMessage(PROMPTS.prefixHint(CONFIG.prefix), threadId, ThreadType.User);
       return;
     }
 
@@ -109,11 +97,11 @@ export async function handleMixedContent(
     const youtubeUrls = extractYouTubeUrls(combinedText);
     if (youtubeUrls.length > 0) {
       console.log(`[Bot] 🎬 Phát hiện ${youtubeUrls.length} YouTube video`);
-      youtubeUrls.forEach((url) => media.push({ type: "youtube", url }));
+      youtubeUrls.forEach((url) => media.push({ type: 'youtube', url }));
     }
 
     // 10. Build prompt
-    const quoteHasMedia = quoteMedia.type !== "none";
+    const quoteHasMedia = quoteMedia.type !== 'none';
     const quoteMediaType = quoteHasMedia ? quoteMedia.type : undefined;
     const prompt = buildPrompt(
       classified,
@@ -122,21 +110,17 @@ export async function handleMixedContent(
       quoteHasMedia,
       quoteMediaType,
       youtubeUrls,
-      notes
+      notes,
     );
-    debugLog("MIXED", `Prompt: ${prompt.substring(0, 200)}...`);
-    debugLog("MIXED", `Media parts: ${media.length}`);
+    debugLog('MIXED', `Prompt: ${prompt.substring(0, 200)}...`);
+    debugLog('MIXED', `Media parts: ${media.length}`);
 
     // 11. Check rate limit
     const waitTime = checkRateLimit(threadId);
     if (waitTime > 0) {
       const waitSec = Math.ceil(waitTime / 1000);
       console.log(`[Bot] ⏳ Rate limit: chờ ${waitSec}s`);
-      await api.sendMessage(
-        PROMPTS.rateLimit(waitSec),
-        threadId,
-        ThreadType.User
-      );
+      await api.sendMessage(PROMPTS.rateLimit(waitSec), threadId, ThreadType.User);
       await new Promise((r) => setTimeout(r, waitTime));
       if (signal?.aborted) return;
     }
@@ -158,14 +142,14 @@ export async function handleMixedContent(
       senderId,
       senderName,
       signal,
-      0
+      0,
     );
   } catch (e: any) {
-    if (e.message === "Aborted" || signal?.aborted) {
-      return debugLog("MIXED", "Aborted during processing");
+    if (e.message === 'Aborted' || signal?.aborted) {
+      return debugLog('MIXED', 'Aborted during processing');
     }
-    logError("handleMixedContent", e);
-    console.error("[Bot] Lỗi xử lý:", e);
+    logError('handleMixedContent', e);
+    console.error('[Bot] Lỗi xử lý:', e);
   }
 }
 
@@ -183,7 +167,7 @@ async function processAIResponse(
   senderId: string,
   senderName: string | undefined,
   signal: AbortSignal | undefined,
-  depth: number
+  depth: number,
 ): Promise<void> {
   const MAX_TOOL_DEPTH = CONFIG.maxToolDepth || 10;
   if (depth >= MAX_TOOL_DEPTH) {
@@ -203,7 +187,7 @@ async function processAIResponse(
       senderId,
       senderName,
       signal,
-      depth
+      depth,
     );
   } else {
     await processNonStreamingResponse(
@@ -217,7 +201,7 @@ async function processAIResponse(
       senderId,
       senderName,
       signal,
-      depth
+      depth,
     );
   }
 }
@@ -236,15 +220,9 @@ async function processStreamingResponse(
   senderId: string,
   senderName: string | undefined,
   signal: AbortSignal | undefined,
-  depth: number
+  depth: number,
 ): Promise<void> {
-  const callbacks = createStreamCallbacks(
-    api,
-    threadId,
-    lastMsg,
-    messages,
-    true
-  );
+  const callbacks = createStreamCallbacks(api, threadId, lastMsg, messages, true);
   callbacks.signal = signal;
 
   const result = await generateContentStream(
@@ -252,11 +230,11 @@ async function processStreamingResponse(
     callbacks,
     currentMedia,
     threadId,
-    currentHistory
+    currentHistory,
   );
 
   if (signal?.aborted) {
-    debugLog("MIXED", `Aborted with ${result ? "partial" : "no"} response`);
+    debugLog('MIXED', `Aborted with ${result ? 'partial' : 'no'} response`);
     if (result) await saveResponseToHistory(threadId, result);
     return;
   }
@@ -264,19 +242,10 @@ async function processStreamingResponse(
   if (!result) return;
 
   // Check for tool calls
-  const toolResult = await handleToolCalls(
-    result,
-    api,
-    threadId,
-    senderId,
-    senderName
-  );
+  const toolResult = await handleToolCalls(result, api, threadId, senderId, senderName);
 
   if (toolResult.hasTools) {
-    debugLog(
-      "MIXED",
-      `Tool detected: ${toolResult.toolCalls.map((t) => t.toolName).join(", ")}`
-    );
+    debugLog('MIXED', `Tool detected: ${toolResult.toolCalls.map((t) => t.toolName).join(', ')}`);
 
     await saveResponseToHistory(threadId, result);
     await saveToolResultToHistory(threadId, toolResult.promptForAI);
@@ -293,7 +262,7 @@ async function processStreamingResponse(
       senderId,
       senderName,
       signal,
-      depth + 1
+      depth + 1,
     );
   } else {
     await saveResponseToHistory(threadId, result);
@@ -315,29 +284,18 @@ async function processNonStreamingResponse(
   senderId: string,
   senderName: string | undefined,
   signal: AbortSignal | undefined,
-  depth: number
+  depth: number,
 ): Promise<void> {
-  const aiReply = await generateContent(
-    currentPrompt,
-    currentMedia,
-    threadId,
-    currentHistory
-  );
+  const aiReply = await generateContent(currentPrompt, currentMedia, threadId, currentHistory);
 
   if (signal?.aborted) return;
 
   const responseText = aiReply.messages
     .map((m) => m.text)
     .filter(Boolean)
-    .join(" ");
+    .join(' ');
 
-  const toolResult = await handleToolCalls(
-    responseText,
-    api,
-    threadId,
-    senderId,
-    senderName
-  );
+  const toolResult = await handleToolCalls(responseText, api, threadId, senderId, senderName);
 
   if (toolResult.hasTools) {
     if (!isToolOnlyResponse(responseText)) {
@@ -352,7 +310,7 @@ async function processNonStreamingResponse(
         },
         threadId,
         lastMsg,
-        messages
+        messages,
       );
     }
 
@@ -371,7 +329,7 @@ async function processNonStreamingResponse(
       senderId,
       senderName,
       signal,
-      depth + 1
+      depth + 1,
     );
   } else {
     await sendResponse(api, aiReply, threadId, lastMsg, messages);

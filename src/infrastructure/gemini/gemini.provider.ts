@@ -6,41 +6,41 @@
  * - geminiChat.ts: Quản lý chat sessions
  * - geminiStream.ts: Xử lý streaming
  */
-import { Content } from "@google/genai";
-import { CONFIG } from "../../shared/constants/config.js";
+import type { Content } from '@google/genai';
 import {
-  getChatSession,
-  deleteChatSession,
-  buildMessageParts,
-  isRetryableError,
-  sleep,
-} from "./geminiChat.js";
-import { MediaPart } from "./geminiConfig.js";
-import {
-  AIResponse,
-  DEFAULT_RESPONSE,
-  parseAIResponse,
-} from "../../shared/types/config.schema.js";
-import {
+  debugLog,
+  logAIHistory,
   logAIResponse,
   logError,
-  debugLog,
   logStep,
-  logAIHistory,
-} from "../../core/logger/logger.js";
+} from '../../core/logger/logger.js';
+import { CONFIG } from '../../shared/constants/config.js';
+import {
+  type AIResponse,
+  DEFAULT_RESPONSE,
+  parseAIResponse,
+} from '../../shared/types/config.schema.js';
+import {
+  buildMessageParts,
+  deleteChatSession,
+  getChatSession,
+  isRetryableError,
+  sleep,
+} from './geminiChat.js';
+import type { MediaPart } from './geminiConfig.js';
 
+export { parseAIResponse } from '../../shared/types/config.schema.js';
+export { deleteChatSession, getChatSession } from './geminiChat.js';
+export type { MediaPart, MediaType } from './geminiConfig.js';
 // Re-exports
 export {
   ai,
-  GEMINI_MODEL,
-  GEMINI_CONFIG,
   extractYouTubeUrls,
-} from "./geminiConfig.js";
-export type { MediaType, MediaPart } from "./geminiConfig.js";
-export { getChatSession, deleteChatSession } from "./geminiChat.js";
-export { generateContentStream } from "./geminiStream.js";
-export type { StreamCallbacks } from "./geminiStream.js";
-export { parseAIResponse } from "../../shared/types/config.schema.js";
+  GEMINI_CONFIG,
+  GEMINI_MODEL,
+} from './geminiConfig.js';
+export type { StreamCallbacks } from './geminiStream.js';
+export { generateContentStream } from './geminiStream.js';
 
 /**
  * Generate content sử dụng Chat session (non-streaming)
@@ -49,11 +49,11 @@ export async function generateContent(
   prompt: string,
   media?: MediaPart[],
   threadId?: string,
-  history?: Content[]
+  history?: Content[],
 ): Promise<AIResponse> {
   const mediaTypes = media?.map((m) => m.type) || [];
-  logStep("generateContent", {
-    type: media?.length ? "with-media" : "text-only",
+  logStep('generateContent', {
+    type: media?.length ? 'with-media' : 'text-only',
     mediaCount: media?.length || 0,
     mediaTypes,
     promptLength: prompt.length,
@@ -65,9 +65,7 @@ export async function generateContent(
 
   if (media?.length) {
     console.log(
-      `[Gemini] 📦 Xử lý: ${media.length} media (${[
-        ...new Set(mediaTypes),
-      ].join(", ")})`
+      `[Gemini] 📦 Xử lý: ${media.length} media (${[...new Set(mediaTypes)].join(', ')})`,
     );
   }
 
@@ -76,11 +74,9 @@ export async function generateContent(
   // Retry loop
   for (let attempt = 0; attempt <= CONFIG.retry.maxRetries; attempt++) {
     if (attempt > 0) {
-      const delayMs = CONFIG.retry.baseDelayMs * Math.pow(2, attempt - 1);
-      console.log(
-        `[Gemini] 🔄 Retry ${attempt}/${CONFIG.retry.maxRetries} sau ${delayMs}ms...`
-      );
-      debugLog("GEMINI", `Retry attempt ${attempt}, delay=${delayMs}ms`);
+      const delayMs = CONFIG.retry.baseDelayMs * 2 ** (attempt - 1);
+      console.log(`[Gemini] 🔄 Retry ${attempt}/${CONFIG.retry.maxRetries} sau ${delayMs}ms...`);
+      debugLog('GEMINI', `Retry attempt ${attempt}, delay=${delayMs}ms`);
       await sleep(delayMs);
 
       deleteChatSession(sessionId);
@@ -88,17 +84,14 @@ export async function generateContent(
 
     try {
       const chat = getChatSession(sessionId, history);
-      debugLog(
-        "GEMINI",
-        `Using chat session: ${sessionId}, history=${history?.length || 0}`
-      );
+      debugLog('GEMINI', `Using chat session: ${sessionId}, history=${history?.length || 0}`);
 
       if (history && history.length > 0) {
         logAIHistory(sessionId, history);
       }
 
       const response = await chat.sendMessage({ message: parts });
-      const rawText = response.text || "{}";
+      const rawText = response.text || '{}';
 
       if (attempt > 0) {
         console.log(`[Gemini] ✅ Retry thành công sau ${attempt} lần thử`);
@@ -112,12 +105,8 @@ export async function generateContent(
       lastError = error;
 
       if (isRetryableError(error) && attempt < CONFIG.retry.maxRetries) {
-        console.log(
-          `[Gemini] ⚠️ Lỗi ${
-            error.status || error.code
-          }: Model overloaded, sẽ retry...`
-        );
-        debugLog("GEMINI", `Retryable error: ${error.status || error.code}`);
+        console.log(`[Gemini] ⚠️ Lỗi ${error.status || error.code}: Model overloaded, sẽ retry...`);
+        debugLog('GEMINI', `Retryable error: ${error.status || error.code}`);
         continue;
       }
 
@@ -125,11 +114,11 @@ export async function generateContent(
     }
   }
 
-  logError("generateContent", lastError);
-  console.error("Gemini Error:", lastError);
+  logError('generateContent', lastError);
+  console.error('Gemini Error:', lastError);
 
   if (threadId) {
-    debugLog("GEMINI", `Error with chat session, resetting thread ${threadId}`);
+    debugLog('GEMINI', `Error with chat session, resetting thread ${threadId}`);
     deleteChatSession(threadId);
   }
 

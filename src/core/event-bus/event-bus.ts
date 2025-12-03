@@ -1,8 +1,9 @@
 /**
  * Event Bus - Hệ thống sự kiện pub/sub
  */
-import type { IEventBus, EventHandler } from "../types.js";
-import { debugLog } from "../logger/logger.js";
+
+import { debugLog } from '../logger/logger.js';
+import type { EventHandler, IEventBus } from '../types.js';
 
 export class EventBus implements IEventBus {
   private handlers = new Map<string, Set<EventHandler>>();
@@ -12,14 +13,14 @@ export class EventBus implements IEventBus {
       this.handlers.set(event, new Set());
     }
     this.handlers.get(event)!.add(handler);
-    debugLog("EVENT_BUS", `Registered handler for: ${event}`);
+    debugLog('EVENT_BUS', `Registered handler for: ${event}`);
   }
 
   off<T>(event: string, handler: EventHandler<T>): void {
     const handlers = this.handlers.get(event);
     if (handlers) {
       handlers.delete(handler);
-      debugLog("EVENT_BUS", `Removed handler for: ${event}`);
+      debugLog('EVENT_BUS', `Removed handler for: ${event}`);
     }
   }
 
@@ -34,11 +35,11 @@ export class EventBus implements IEventBus {
   async emit<T>(event: string, data: T): Promise<void> {
     const handlers = this.handlers.get(event);
     if (!handlers || handlers.size === 0) {
-      debugLog("EVENT_BUS", `No handlers for: ${event}`);
+      debugLog('EVENT_BUS', `No handlers for: ${event}`);
       return;
     }
 
-    debugLog("EVENT_BUS", `Emitting: ${event} to ${handlers.size} handlers`);
+    debugLog('EVENT_BUS', `Emitting: ${event} to ${handlers.size} handlers`);
 
     const promises = Array.from(handlers).map(async (handler) => {
       try {
@@ -53,7 +54,7 @@ export class EventBus implements IEventBus {
 
   clear(): void {
     this.handlers.clear();
-    debugLog("EVENT_BUS", "Cleared all handlers");
+    debugLog('EVENT_BUS', 'Cleared all handlers');
   }
 }
 
@@ -63,21 +64,21 @@ export const eventBus = new EventBus();
 // Event names constants
 export const Events = {
   // Module events
-  MODULE_LOADED: "module:loaded",
-  MODULE_UNLOADED: "module:unloaded",
-  ALL_MODULES_READY: "modules:ready",
+  MODULE_LOADED: 'module:loaded',
+  MODULE_UNLOADED: 'module:unloaded',
+  ALL_MODULES_READY: 'modules:ready',
 
   // Message events
-  MESSAGE_RECEIVED: "message:received",
-  MESSAGE_PROCESSED: "message:processed",
-  MESSAGE_SENT: "message:sent",
+  MESSAGE_RECEIVED: 'message:received',
+  MESSAGE_PROCESSED: 'message:processed',
+  MESSAGE_SENT: 'message:sent',
 
   // Tool events
-  TOOL_CALLED: "tool:called",
-  TOOL_COMPLETED: "tool:completed",
-  TOOL_ERROR: "tool:error",
+  TOOL_CALLED: 'tool:called',
+  TOOL_COMPLETED: 'tool:completed',
+  TOOL_ERROR: 'tool:error',
 
   // Bot events
-  BOT_READY: "bot:ready",
-  BOT_ERROR: "bot:error",
+  BOT_READY: 'bot:ready',
+  BOT_ERROR: 'bot:error',
 } as const;

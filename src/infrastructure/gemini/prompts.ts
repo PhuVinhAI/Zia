@@ -1,5 +1,5 @@
-import { CHARACTER_PROMPT, CHARACTER } from "./character.js";
-import { generateToolsPrompt } from "../../core/index.js";
+import { generateToolsPrompt } from '../../core/index.js';
+import { CHARACTER, CHARACTER_PROMPT } from './character.js';
 
 // ═══════════════════════════════════════════════════
 // SYSTEM PROMPT KHI BẬT CHARACTER (roleplay)
@@ -188,7 +188,7 @@ LƯU Ý: Viết text bình thường, KHÔNG cần JSON. Các tag có thể đ�
 // EXPORT - Chọn prompt dựa trên config
 // ═══════════════════════════════════════════════════
 
-import { CONFIG } from "../../shared/constants/config.js";
+import { CONFIG } from '../../shared/constants/config.js';
 
 // Prompt bổ sung khi tắt showToolCalls - AI phải im lặng khi dùng tool
 const SILENT_TOOL_PROMPT = `
@@ -221,12 +221,10 @@ VÍ DỤ ĐÚNG:
 
 // Export function để lấy prompt động (gọi generateToolsPrompt() runtime)
 export function getSystemPrompt(useCharacter: boolean = true): string {
-  const basePrompt = useCharacter
-    ? CHARACTER_SYSTEM_PROMPT
-    : ASSISTANT_BASE_PROMPT;
+  const basePrompt = useCharacter ? CHARACTER_SYSTEM_PROMPT : ASSISTANT_BASE_PROMPT;
 
   // Thêm silent tool prompt nếu tắt showToolCalls
-  const silentPrompt = CONFIG.showToolCalls ? "" : SILENT_TOOL_PROMPT;
+  const silentPrompt = CONFIG.showToolCalls ? '' : SILENT_TOOL_PROMPT;
 
   return basePrompt + generateToolsPrompt() + silentPrompt;
 }
@@ -258,13 +256,13 @@ export const PROMPTS = {
   // Quote có media (ảnh/video/audio/sticker/file từ tin cũ)
   quoteMedia: (quoteText?: string, mediaType?: string) => {
     const typeDesc: Record<string, string> = {
-      image: "hình ảnh",
-      video: "video",
-      audio: "tin nhắn thoại/audio",
-      sticker: "sticker",
-      file: "file",
+      image: 'hình ảnh',
+      video: 'video',
+      audio: 'tin nhắn thoại/audio',
+      sticker: 'sticker',
+      file: 'file',
     };
-    const desc = typeDesc[mediaType || "image"] || "media";
+    const desc = typeDesc[mediaType || 'image'] || 'media';
     let prompt = `\n\n[QUOTE MEDIA] Người dùng đang reply/hỏi về ${desc} từ tin nhắn cũ (xem nội dung đính kèm).`;
     if (quoteText) {
       prompt += `\nNội dung text của tin nhắn được quote: "${quoteText}"`;
@@ -275,14 +273,12 @@ export const PROMPTS = {
   // YouTube video
   youtube: (urls: string[], content: string) =>
     `Người dùng gửi ${urls.length} video YouTube:\n${urls.join(
-      "\n"
+      '\n',
     )}\n\nTin nhắn: "${content}"\n\nHãy XEM video và trả lời/nhận xét về nội dung video. Nếu họ hỏi gì về video thì trả lời dựa trên nội dung video.`,
 
   // YouTube trong media batch
   youtubeInBatch: (urls: string[]) =>
-    `\n\n[YOUTUBE] Có ${urls.length} video YouTube: ${urls.join(
-      ", "
-    )}. Hãy XEM video và phản hồi.`,
+    `\n\n[YOUTUBE] Có ${urls.length} video YouTube: ${urls.join(', ')}. Hãy XEM video và phản hồi.`,
 
   // Mixed content - nhiều loại tin nhắn
   mixedContent: (items: ClassifiedItem[]) => {
@@ -290,40 +286,32 @@ export const PROMPTS = {
 
     items.forEach((item, index) => {
       switch (item.type) {
-        case "text":
+        case 'text':
           parts.push(`[${index}] Tin nhắn: "${item.text}"`);
           break;
-        case "sticker":
+        case 'sticker':
           parts.push(`[${index}] Sticker: (xem hình sticker đính kèm)`);
           break;
-        case "image":
+        case 'image':
           parts.push(`[${index}] Ảnh: (xem hình ảnh đính kèm)`);
           break;
-        case "video":
-          parts.push(
-            `[${index}] Video ${item.duration || 0}s: (xem video đính kèm)`
-          );
+        case 'video':
+          parts.push(`[${index}] Video ${item.duration || 0}s: (xem video đính kèm)`);
           break;
-        case "voice":
-          parts.push(
-            `[${index}] Tin nhắn thoại ${
-              item.duration || 0
-            }s: (nghe audio đính kèm)`
-          );
+        case 'voice':
+          parts.push(`[${index}] Tin nhắn thoại ${item.duration || 0}s: (nghe audio đính kèm)`);
           break;
-        case "file":
+        case 'file':
           parts.push(`[${index}] File "${item.fileName}": (đọc file đính kèm)`);
           break;
-        case "link":
+        case 'link':
           parts.push(`[${index}] Link: ${item.url}`);
           break;
       }
     });
 
-    return `Người dùng gửi ${
-      items.length
-    } nội dung theo thứ tự (số trong ngoặc vuông là INDEX):
-${parts.join("\n")}
+    return `Người dùng gửi ${items.length} nội dung theo thứ tự (số trong ngoặc vuông là INDEX):
+${parts.join('\n')}
 
 HƯỚNG DẪN:
 - Dùng [quote:INDEX]câu trả lời[/quote] để reply vào tin nhắn cụ thể (CHỈ viết câu trả lời, KHÔNG lặp lại nội dung tin gốc!)
@@ -334,12 +322,10 @@ Hãy XEM/NGHE tất cả nội dung đính kèm và phản hồi phù hợp.`;
   },
 
   // Lưu ý thêm cho media
-  mediaNote: (notes: string[]) =>
-    notes.length > 0 ? `\n\nLưu ý: ${notes.join(", ")}` : "",
+  mediaNote: (notes: string[]) => (notes.length > 0 ? `\n\nLưu ý: ${notes.join(', ')}` : ''),
 
   // Rate limit message
-  rateLimit: (seconds: number) =>
-    `⏳ Đợi ${seconds}s nữa AI mới trả lời nhé...`,
+  rateLimit: (seconds: number) => `⏳ Đợi ${seconds}s nữa AI mới trả lời nhé...`,
 
   // Prefix hint
   prefixHint: (prefix: string) => `💡 Cú pháp: ${prefix} <câu hỏi>`,

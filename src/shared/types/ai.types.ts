@@ -2,17 +2,14 @@
  * AI Types - Interface cho AI service
  * Dùng để dependency injection, tránh shared import infrastructure
  */
-import type { Content } from "@google/genai";
+import type { Content } from '@google/genai';
 
 export interface TokenCountResult {
   totalTokens?: number;
 }
 
 export interface AIService {
-  countTokens(params: {
-    model: string;
-    contents: Content[];
-  }): Promise<TokenCountResult>;
+  countTokens(params: { model: string; contents: Content[] }): Promise<TokenCountResult>;
 }
 
 // Singleton holder - sẽ được set bởi infrastructure layer
@@ -24,7 +21,7 @@ export function setAIService(service: AIService): void {
 
 export function getAIService(): AIService {
   if (!aiService) {
-    throw new Error("AI Service not initialized. Call setAIService first.");
+    throw new Error('AI Service not initialized. Call setAIService first.');
   }
   return aiService;
 }

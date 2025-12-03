@@ -3,25 +3,23 @@
  */
 
 // Connection
-export { initDatabase, getDatabase, closeDatabase } from "./connection.js";
-
-// Schema
-export * from "./schema.js";
+export { closeDatabase, getDatabase, initDatabase } from './connection.js';
+// Service
+export { DatabaseService, databaseService } from './database.service.js';
 
 // Repositories
 export {
-  historyRepository,
   HistoryRepository,
-} from "./repositories/history.repository.js";
+  historyRepository,
+} from './repositories/history.repository.js';
 export {
-  sentMessagesRepository,
   SentMessagesRepository,
-} from "./repositories/sent-messages.repository.js";
+  sentMessagesRepository,
+} from './repositories/sent-messages.repository.js';
 export {
-  usersRepository,
-  UsersRepository,
   type UserRole,
-} from "./repositories/users.repository.js";
-
-// Service
-export { databaseService, DatabaseService } from "./database.service.js";
+  UsersRepository,
+  usersRepository,
+} from './repositories/users.repository.js';
+// Schema
+export * from './schema.js';

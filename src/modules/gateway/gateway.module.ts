@@ -1,18 +1,13 @@
 /**
  * Gateway Module - Message processing pipeline
  */
-import {
-  BaseModule,
-  type ModuleMetadata,
-  eventBus,
-  Events,
-} from "../../core/index.js";
+import { BaseModule, Events, eventBus, type ModuleMetadata } from '../../core/index.js';
 
 export class GatewayModule extends BaseModule {
   readonly metadata: ModuleMetadata = {
-    name: "gateway",
-    description: "Message processing and routing pipeline",
-    version: "1.0.0",
+    name: 'gateway',
+    description: 'Message processing and routing pipeline',
+    version: '1.0.0',
   };
 
   async onLoad(): Promise<void> {
@@ -28,51 +23,44 @@ export class GatewayModule extends BaseModule {
 // Export singleton instance
 export const gatewayModule = new GatewayModule();
 
-// Re-export handlers
-export {
-  sendResponse,
-  createStreamCallbacks,
-  setupSelfMessageListener,
-} from "./response.handler.js";
-
-export {
-  handleMixedContent,
-  classifyMessageDetailed,
-  type ClassifiedMessage,
-  type MessageType,
-} from "./message.processor.js";
-
-export {
-  handleToolCalls,
-  isToolOnlyResponse,
-  formatToolResultForAI,
-  notifyToolCall,
-  type ToolHandlerResult,
-} from "./tool.handler.js";
-
 export {
   classifyMessage,
   classifyMessages,
   countMessageTypes,
-} from "./classifier.js";
-
-export { prepareMediaParts, addQuoteMedia } from "./media.processor.js";
-
+} from './classifier.js';
+export { addQuoteMedia, prepareMediaParts } from './media.processor.js';
 export {
-  parseQuoteAttachment,
-  extractQuoteInfo,
-  type QuoteMedia,
-} from "./quote.parser.js";
-
+  type ClassifiedMessage,
+  classifyMessageDetailed,
+  handleMixedContent,
+  type MessageType,
+} from './message.processor.js';
 export {
   buildPrompt,
   extractTextFromMessages,
   processPrefix,
-} from "./prompt.builder.js";
-
+} from './prompt.builder.js';
+export {
+  extractQuoteInfo,
+  parseQuoteAttachment,
+  type QuoteMedia,
+} from './quote.parser.js';
 export {
   checkRateLimit,
-  markApiCall,
   getRateLimitStatus,
-} from "./rate-limit.guard.js";
-export { isUserAllowed, isGroupAllowed, isAllowedUser } from "./user.filter.js";
+  markApiCall,
+} from './rate-limit.guard.js';
+// Re-export handlers
+export {
+  createStreamCallbacks,
+  sendResponse,
+  setupSelfMessageListener,
+} from './response.handler.js';
+export {
+  formatToolResultForAI,
+  handleToolCalls,
+  isToolOnlyResponse,
+  notifyToolCall,
+  type ToolHandlerResult,
+} from './tool.handler.js';
+export { isAllowedUser, isGroupAllowed, isUserAllowed } from './user.filter.js';

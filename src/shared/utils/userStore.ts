@@ -2,11 +2,8 @@
  * User Store - Quản lý người dùng với database
  * Wrapper cho usersRepository với caching
  */
-import { debugLog } from "../../core/logger/logger.js";
-import {
-  usersRepository,
-  type UserRole,
-} from "../../infrastructure/database/index.js";
+import { debugLog } from '../../core/logger/logger.js';
+import { type UserRole, usersRepository } from '../../infrastructure/database/index.js';
 
 // Cache để tránh query DB liên tục
 const roleCache = new Map<string, UserRole>();
@@ -41,7 +38,7 @@ export async function getUserRole(userId: string): Promise<UserRole | null> {
  */
 export async function isAdmin(userId: string): Promise<boolean> {
   const role = await getUserRole(userId);
-  return role === "admin";
+  return role === 'admin';
 }
 
 /**
@@ -49,59 +46,54 @@ export async function isAdmin(userId: string): Promise<boolean> {
  */
 export async function isBlocked(userId: string): Promise<boolean> {
   const role = await getUserRole(userId);
-  return role === "blocked";
+  return role === 'blocked';
 }
 
 /**
  * Block user
  */
 export async function blockUser(userId: string, name?: string): Promise<void> {
-  await usersRepository.upsertUser(userId, { name, role: "blocked" });
-  roleCache.set(userId, "blocked");
+  await usersRepository.upsertUser(userId, { name, role: 'blocked' });
+  roleCache.set(userId, 'blocked');
   cacheTimestamps.set(userId, Date.now());
-  debugLog("USER_STORE", `Blocked user: ${userId}`);
+  debugLog('USER_STORE', `Blocked user: ${userId}`);
 }
 
 /**
  * Unblock user
  */
 export async function unblockUser(userId: string): Promise<void> {
-  await usersRepository.upsertUser(userId, { role: "user" });
-  roleCache.set(userId, "user");
+  await usersRepository.upsertUser(userId, { role: 'user' });
+  roleCache.set(userId, 'user');
   cacheTimestamps.set(userId, Date.now());
-  debugLog("USER_STORE", `Unblocked user: ${userId}`);
+  debugLog('USER_STORE', `Unblocked user: ${userId}`);
 }
 
 /**
  * Set admin
  */
 export async function setAdmin(userId: string, name?: string): Promise<void> {
-  await usersRepository.upsertUser(userId, { name, role: "admin" });
-  roleCache.set(userId, "admin");
+  await usersRepository.upsertUser(userId, { name, role: 'admin' });
+  roleCache.set(userId, 'admin');
   cacheTimestamps.set(userId, Date.now());
-  debugLog("USER_STORE", `Set admin: ${userId}`);
+  debugLog('USER_STORE', `Set admin: ${userId}`);
 }
 
 /**
  * Đăng ký user mới (nếu chưa tồn tại)
  */
-export async function registerUser(
-  userId: string,
-  name?: string
-): Promise<void> {
+export async function registerUser(userId: string, name?: string): Promise<void> {
   const existing = await usersRepository.getUser(userId);
   if (!existing) {
-    await usersRepository.upsertUser(userId, { name, role: "user" });
-    debugLog("USER_STORE", `Registered new user: ${userId} (${name})`);
+    await usersRepository.upsertUser(userId, { name, role: 'user' });
+    debugLog('USER_STORE', `Registered new user: ${userId} (${name})`);
   }
 }
 
 /**
  * Lấy danh sách admins
  */
-export async function getAdmins(): Promise<
-  Array<{ userId: string; name: string | null }>
-> {
+export async function getAdmins(): Promise<Array<{ userId: string; name: string | null }>> {
   const admins = await usersRepository.getAdmins();
   return admins.map((u) => ({ userId: u.userId, name: u.name }));
 }
@@ -109,9 +101,7 @@ export async function getAdmins(): Promise<
 /**
  * Lấy danh sách blocked users
  */
-export async function getBlockedUsers(): Promise<
-  Array<{ userId: string; name: string | null }>
-> {
+export async function getBlockedUsers(): Promise<Array<{ userId: string; name: string | null }>> {
   const blocked = await usersRepository.getBlockedUsers();
   return blocked.map((u) => ({ userId: u.userId, name: u.name }));
 }

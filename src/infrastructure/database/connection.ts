@@ -2,12 +2,12 @@
  * Database Connection - Quản lý kết nối SQLite với Bun native driver
  * Sử dụng WAL mode để tối ưu hiệu năng
  */
-import { Database } from "bun:sqlite";
-import { drizzle } from "drizzle-orm/bun-sqlite";
-import { debugLog } from "../../core/logger/logger.js";
-import * as schema from "./schema.js";
+import { Database } from 'bun:sqlite';
+import { drizzle } from 'drizzle-orm/bun-sqlite';
+import { debugLog } from '../../core/logger/logger.js';
+import * as schema from './schema.js';
 
-const DB_PATH = "data/bot.db";
+const DB_PATH = 'data/bot.db';
 
 let db: ReturnType<typeof drizzle<typeof schema>> | null = null;
 let sqliteDb: Database | null = null;
@@ -19,28 +19,28 @@ export function initDatabase() {
   if (db) return db;
 
   // Đảm bảo thư mục data tồn tại
-  const fs = require("fs");
-  const path = require("path");
+  const fs = require('node:fs');
+  const path = require('node:path');
   const dir = path.dirname(DB_PATH);
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
 
-  debugLog("DATABASE", `Connecting to ${DB_PATH}...`);
+  debugLog('DATABASE', `Connecting to ${DB_PATH}...`);
 
   // Khởi tạo SQLite với Bun native driver
   sqliteDb = new Database(DB_PATH);
 
   // Bật WAL mode để tăng hiệu năng ghi đồng thời
-  sqliteDb.exec("PRAGMA journal_mode = WAL;");
-  sqliteDb.exec("PRAGMA synchronous = NORMAL;");
-  sqliteDb.exec("PRAGMA cache_size = 10000;");
-  sqliteDb.exec("PRAGMA temp_store = MEMORY;");
+  sqliteDb.exec('PRAGMA journal_mode = WAL;');
+  sqliteDb.exec('PRAGMA synchronous = NORMAL;');
+  sqliteDb.exec('PRAGMA cache_size = 10000;');
+  sqliteDb.exec('PRAGMA temp_store = MEMORY;');
 
   // Tạo Drizzle instance
   db = drizzle(sqliteDb, { schema });
 
-  debugLog("DATABASE", "✅ Database connected with WAL mode");
+  debugLog('DATABASE', '✅ Database connected with WAL mode');
 
   // Auto-migration: Tạo tables nếu chưa tồn tại
   runMigrations(sqliteDb);
@@ -52,7 +52,7 @@ export function initDatabase() {
  * Auto-migration - Tạo tables và indexes
  */
 function runMigrations(sqlite: Database) {
-  debugLog("DATABASE", "Running auto-migrations...");
+  debugLog('DATABASE', 'Running auto-migrations...');
 
   // Tạo bảng history
   sqlite.exec(`
@@ -88,7 +88,7 @@ function runMigrations(sqlite: Database) {
     );
   `);
 
-  debugLog("DATABASE", "✅ Migrations completed");
+  debugLog('DATABASE', '✅ Migrations completed');
 }
 
 /**
@@ -109,6 +109,6 @@ export function closeDatabase() {
     sqliteDb.close();
     sqliteDb = null;
     db = null;
-    debugLog("DATABASE", "Database connection closed");
+    debugLog('DATABASE', 'Database connection closed');
   }
 }

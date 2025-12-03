@@ -1,41 +1,32 @@
 /**
  * Tool: getFriendOnlines - Lấy danh sách bạn bè đang online
  */
-import {
-  ToolDefinition,
-  ToolContext,
-  ToolResult,
-} from "../../../shared/types/tools.types.js";
-import { debugLog, logZaloAPI } from "../../../core/logger/logger.js";
-import {
-  GetFriendOnlinesSchema,
-  validateParams,
-} from "../../../shared/schemas/tools.schema.js";
+
+import { debugLog, logZaloAPI } from '../../../core/logger/logger.js';
+import { GetFriendOnlinesSchema, validateParams } from '../../../shared/schemas/tools.schema.js';
+import type { ToolContext, ToolDefinition, ToolResult } from '../../../shared/types/tools.types.js';
 
 export const getFriendOnlinesTool: ToolDefinition = {
-  name: "getFriendOnlines",
+  name: 'getFriendOnlines',
   description:
-    "Lấy danh sách bạn bè đang online (có chấm xanh). Trả về userId và trạng thái. Lưu ý: Chỉ thấy người công khai trạng thái online.",
+    'Lấy danh sách bạn bè đang online (có chấm xanh). Trả về userId và trạng thái. Lưu ý: Chỉ thấy người công khai trạng thái online.',
   parameters: [
     {
-      name: "limit",
-      type: "number",
-      description: "Giới hạn số lượng trả về (mặc định: 10, tối đa: 50)",
+      name: 'limit',
+      type: 'number',
+      description: 'Giới hạn số lượng trả về (mặc định: 10, tối đa: 50)',
       required: false,
       default: 10,
     },
     {
-      name: "includeNames",
-      type: "boolean",
-      description: "Có lấy tên hiển thị không (chậm hơn vì phải gọi thêm API)",
+      name: 'includeNames',
+      type: 'boolean',
+      description: 'Có lấy tên hiển thị không (chậm hơn vì phải gọi thêm API)',
       required: false,
       default: true,
     },
   ],
-  execute: async (
-    params: Record<string, any>,
-    context: ToolContext
-  ): Promise<ToolResult> => {
+  execute: async (params: Record<string, any>, context: ToolContext): Promise<ToolResult> => {
     // Validate với Zod
     const validation = validateParams(GetFriendOnlinesSchema, params);
     if (!validation.success) {
@@ -45,25 +36,21 @@ export const getFriendOnlinesTool: ToolDefinition = {
 
     try {
       debugLog(
-        "TOOL:getFriendOnlines",
-        `Calling API with limit=${data.limit}, includeNames=${data.includeNames}`
+        'TOOL:getFriendOnlines',
+        `Calling API with limit=${data.limit}, includeNames=${data.includeNames}`,
       );
 
       let result: any;
       try {
         result = await context.api.getFriendOnlines();
       } catch (apiError: any) {
-        debugLog("TOOL:getFriendOnlines", `API error: ${apiError.message}`);
-        if (
-          apiError.message?.includes("JSON") ||
-          apiError.message?.includes("Unexpected")
-        ) {
+        debugLog('TOOL:getFriendOnlines', `API error: ${apiError.message}`);
+        if (apiError.message?.includes('JSON') || apiError.message?.includes('Unexpected')) {
           return {
             success: true,
             data: {
               total: 0,
-              message:
-                "Không có ai đang online hoặc API tạm thời không khả dụng",
+              message: 'Không có ai đang online hoặc API tạm thời không khả dụng',
               friends: [],
             },
           };
@@ -72,28 +59,26 @@ export const getFriendOnlinesTool: ToolDefinition = {
       }
 
       logZaloAPI(
-        "tool:getFriendOnlines",
+        'tool:getFriendOnlines',
         { limit: data.limit, includeNames: data.includeNames },
-        { count: result?.onlines?.length, sample: result?.onlines?.slice(0, 3) }
+        { count: result?.onlines?.length, sample: result?.onlines?.slice(0, 3) },
       );
 
       debugLog(
-        "TOOL:getFriendOnlines",
-        `Raw response type: ${typeof result}, onlines count: ${
-          result?.onlines?.length
-        }`
+        'TOOL:getFriendOnlines',
+        `Raw response type: ${typeof result}, onlines count: ${result?.onlines?.length}`,
       );
 
       if (!result || !result.onlines || !Array.isArray(result.onlines)) {
         debugLog(
-          "TOOL:getFriendOnlines",
-          `Invalid/empty response: ${JSON.stringify(result)?.substring(0, 500)}`
+          'TOOL:getFriendOnlines',
+          `Invalid/empty response: ${JSON.stringify(result)?.substring(0, 500)}`,
         );
         return {
           success: true,
           data: {
             total: 0,
-            message: "Không có ai đang online (hoặc họ ẩn trạng thái)",
+            message: 'Không có ai đang online (hoặc họ ẩn trạng thái)',
             friends: [],
           },
         };
@@ -106,7 +91,7 @@ export const getFriendOnlinesTool: ToolDefinition = {
           success: true,
           data: {
             total: 0,
-            message: "Không có ai đang online (hoặc họ ẩn trạng thái)",
+            message: 'Không có ai đang online (hoặc họ ẩn trạng thái)',
             friends: [],
           },
         };
@@ -120,10 +105,9 @@ export const getFriendOnlinesTool: ToolDefinition = {
           try {
             const info = await context.api.getUserInfo(user.userId);
             const profile = info?.changed_profiles?.[user.userId];
-            friendData.displayName =
-              profile?.displayName || profile?.zaloName || "Không tên";
+            friendData.displayName = profile?.displayName || profile?.zaloName || 'Không tên';
           } catch {
-            friendData.displayName = "Không lấy được tên";
+            friendData.displayName = 'Không lấy được tên';
           }
         }
 

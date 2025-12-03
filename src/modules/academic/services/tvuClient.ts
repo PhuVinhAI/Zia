@@ -2,19 +2,19 @@
  * TVU API Client - HTTP client cho TVU Student Portal API
  */
 
-import { debugLog, logError } from "../../../core/logger/logger.js";
+import { debugLog, logError } from '../../../core/logger/logger.js';
 
 // ═══════════════════════════════════════════════════
 // CONSTANTS
 // ═══════════════════════════════════════════════════
 
-const TVU_BASE_URL = "https://ttsv.tvu.edu.vn";
+const TVU_BASE_URL = 'https://ttsv.tvu.edu.vn';
 const TVU_TIMEOUT = 10000;
 
 const TVU_HEADERS = {
-  "Content-Type": "application/json",
-  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-  Referer: "https://ttsv.tvu.edu.vn",
+  'Content-Type': 'application/json',
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+  Referer: 'https://ttsv.tvu.edu.vn',
 };
 
 // ═══════════════════════════════════════════════════
@@ -49,7 +49,7 @@ let tokenExpiry: number = 0;
 export function setTvuToken(token: string, expiresIn: number = 3600): void {
   cachedToken = token;
   tokenExpiry = Date.now() + expiresIn * 1000;
-  debugLog("TVU", `Token set, expires in ${expiresIn}s`);
+  debugLog('TVU', `Token set, expires in ${expiresIn}s`);
 }
 
 export function getTvuToken(): string | null {
@@ -71,26 +71,23 @@ export function clearTvuToken(): void {
 /**
  * Login TVU và lấy access token
  */
-export async function tvuLogin(
-  username: string,
-  password: string
-): Promise<TvuLoginResponse> {
-  debugLog("TVU", `Logging in as ${username}`);
+export async function tvuLogin(username: string, password: string): Promise<TvuLoginResponse> {
+  debugLog('TVU', `Logging in as ${username}`);
 
   const params = new URLSearchParams();
-  params.append("username", username);
-  params.append("password", password);
-  params.append("grant_type", "password");
+  params.append('username', username);
+  params.append('password', password);
+  params.append('grant_type', 'password');
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), TVU_TIMEOUT);
 
   try {
     const response = await fetch(`${TVU_BASE_URL}/api/auth/login`, {
-      method: "POST",
+      method: 'POST',
       headers: {
         ...TVU_HEADERS,
-        "Content-Type": "application/x-www-form-urlencoded",
+        'Content-Type': 'application/x-www-form-urlencoded',
       },
       body: params.toString(),
       signal: controller.signal,
@@ -99,9 +96,7 @@ export async function tvuLogin(
     clearTimeout(timeoutId);
 
     if (!response.ok) {
-      throw new Error(
-        `Login failed: ${response.status} ${response.statusText}`
-      );
+      throw new Error(`Login failed: ${response.status} ${response.statusText}`);
     }
 
     const data = await response.json();
@@ -111,11 +106,11 @@ export async function tvuLogin(
       setTvuToken(data.access_token, data.expires_in || 3600);
     }
 
-    debugLog("TVU", `Login success for ${username}`);
+    debugLog('TVU', `Login success for ${username}`);
     return data;
   } catch (error: any) {
     clearTimeout(timeoutId);
-    logError("tvuLogin", error);
+    logError('tvuLogin', error);
     throw error;
   }
 }
@@ -126,21 +121,21 @@ export async function tvuLogin(
 export async function tvuRequest<T>(
   endpoint: string,
   body: any = {},
-  extraHeaders: Record<string, string> = {}
+  extraHeaders: Record<string, string> = {},
 ): Promise<TvuResponse<T>> {
   const token = getTvuToken();
   if (!token) {
-    throw new Error("Chưa đăng nhập TVU. Vui lòng đăng nhập trước.");
+    throw new Error('Chưa đăng nhập TVU. Vui lòng đăng nhập trước.');
   }
 
-  debugLog("TVU", `Request: ${endpoint}`);
+  debugLog('TVU', `Request: ${endpoint}`);
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), TVU_TIMEOUT);
 
   try {
     const response = await fetch(`${TVU_BASE_URL}${endpoint}`, {
-      method: "POST",
+      method: 'POST',
       headers: {
         ...TVU_HEADERS,
         Authorization: `Bearer ${token}`,
@@ -153,17 +148,15 @@ export async function tvuRequest<T>(
     clearTimeout(timeoutId);
 
     if (!response.ok) {
-      throw new Error(
-        `Request failed: ${response.status} ${response.statusText}`
-      );
+      throw new Error(`Request failed: ${response.status} ${response.statusText}`);
     }
 
     const data = await response.json();
-    debugLog("TVU", `Response: ${JSON.stringify(data).substring(0, 200)}`);
+    debugLog('TVU', `Response: ${JSON.stringify(data).substring(0, 200)}`);
     return data;
   } catch (error: any) {
     clearTimeout(timeoutId);
-    logError("tvuRequest", error);
+    logError('tvuRequest', error);
     throw error;
   }
 }

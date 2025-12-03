@@ -1,22 +1,14 @@
 /**
  * Base Tool - Abstract class cho tất cả tools
  */
-import type {
-  ITool,
-  ToolParameter,
-  ToolContext,
-  ToolResult,
-} from "../types.js";
+import type { ITool, ToolContext, ToolParameter, ToolResult } from '../types.js';
 
 export abstract class BaseTool implements ITool {
   abstract readonly name: string;
   abstract readonly description: string;
   abstract readonly parameters: ToolParameter[];
 
-  abstract execute(
-    params: Record<string, any>,
-    context: ToolContext
-  ): Promise<ToolResult>;
+  abstract execute(params: Record<string, any>, context: ToolContext): Promise<ToolResult>;
 
   /**
    * Validate params trước khi execute

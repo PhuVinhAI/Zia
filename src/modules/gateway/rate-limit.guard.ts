@@ -1,5 +1,5 @@
-import { CONFIG } from "../../shared/constants/config.js";
-import { debugLog } from "../../core/logger/logger.js";
+import { debugLog } from '../../core/logger/logger.js';
+import { CONFIG } from '../../shared/constants/config.js';
 
 const lastCallTime = new Map<string, number>();
 
@@ -27,15 +27,12 @@ export function checkRateLimit(threadId: string): number {
   const waitTime = CONFIG.rateLimitMs - timeSince;
 
   if (waitTime > 0) {
-    debugLog(
-      "RATE_LIMIT",
-      `Need to wait: thread=${threadId}, waitTime=${waitTime}ms`
-    );
+    debugLog('RATE_LIMIT', `Need to wait: thread=${threadId}, waitTime=${waitTime}ms`);
     return waitTime;
   }
 
   lastCallTime.set(threadId, now);
-  debugLog("RATE_LIMIT", `Passed: thread=${threadId}`);
+  debugLog('RATE_LIMIT', `Passed: thread=${threadId}`);
   return 0;
 }
 

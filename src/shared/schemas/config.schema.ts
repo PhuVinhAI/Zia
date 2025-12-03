@@ -1,18 +1,18 @@
 /**
  * Config Schema - Zod validation cho settings.json
  */
-import { z } from "zod";
+import { z } from 'zod';
 
 // Cloud Debug schema
 const CloudDebugSchema = z.object({
   enabled: z.boolean().default(false),
-  prefix: z.string().default("#bot"),
+  prefix: z.string().default('#bot'),
 });
 
 // Bot config schema
 export const BotConfigSchema = z.object({
-  name: z.string().default("Trợ lý AI Zalo"),
-  prefix: z.string().default("#bot"),
+  name: z.string().default('Trợ lý AI Zalo'),
+  prefix: z.string().default('#bot'),
   requirePrefix: z.boolean().default(false),
   rateLimitMs: z.coerce.number().min(0).default(3000),
   maxTokenHistory: z.coerce.number().min(1000).default(300000),
@@ -21,13 +21,13 @@ export const BotConfigSchema = z.object({
   useStreaming: z.boolean().default(true),
   useCharacter: z.boolean().default(true),
   fileLogging: z.boolean().default(false),
-  logFile: z.string().default("logs/bot.txt"),
-  unauthorizedLogFile: z.string().default("logs/unauthorized.json"),
+  logFile: z.string().default('logs/bot.txt'),
+  unauthorizedLogFile: z.string().default('logs/unauthorized.json'),
   maxToolDepth: z.coerce.number().min(1).max(50).default(10),
   showToolCalls: z.boolean().default(true),
   cloudDebug: CloudDebugSchema.optional().default({
     enabled: false,
-    prefix: "#bot",
+    prefix: '#bot',
   }),
 });
 
@@ -79,8 +79,8 @@ export const StickersConfigSchema = z.object({
 // Full settings schema
 export const SettingsSchema = z.object({
   bot: BotConfigSchema.optional().default({
-    name: "Trợ lý AI Zalo",
-    prefix: "#bot",
+    name: 'Trợ lý AI Zalo',
+    prefix: '#bot',
     requirePrefix: false,
     rateLimitMs: 3000,
     maxTokenHistory: 300000,
@@ -89,11 +89,11 @@ export const SettingsSchema = z.object({
     useStreaming: true,
     useCharacter: true,
     fileLogging: false,
-    logFile: "logs/bot.txt",
-    unauthorizedLogFile: "logs/unauthorized.json",
+    logFile: 'logs/bot.txt',
+    unauthorizedLogFile: 'logs/unauthorized.json',
     maxToolDepth: 10,
     showToolCalls: true,
-    cloudDebug: { enabled: false, prefix: "#bot" },
+    cloudDebug: { enabled: false, prefix: '#bot' },
   }),
   retry: RetryConfigSchema.optional().default({
     maxRetries: 3,
@@ -143,42 +143,42 @@ export type Settings = z.infer<typeof SettingsSchema>;
 // MIME types (static, không cần validate)
 export const MIME_TYPES: Record<string, string> = {
   // Documents
-  pdf: "application/pdf",
-  txt: "text/plain",
-  html: "text/html",
-  css: "text/css",
-  csv: "text/csv",
-  xml: "application/xml",
-  json: "application/json",
-  md: "text/markdown",
+  pdf: 'application/pdf',
+  txt: 'text/plain',
+  html: 'text/html',
+  css: 'text/css',
+  csv: 'text/csv',
+  xml: 'application/xml',
+  json: 'application/json',
+  md: 'text/markdown',
   // Code
-  js: "text/javascript",
-  ts: "text/typescript",
-  py: "text/x-python",
-  java: "text/x-java",
-  c: "text/x-c",
-  cpp: "text/x-c++",
-  cs: "text/x-csharp",
-  go: "text/x-go",
-  rb: "text/x-ruby",
-  php: "text/x-php",
-  swift: "text/x-swift",
-  kt: "text/x-kotlin",
-  rs: "text/x-rust",
+  js: 'text/javascript',
+  ts: 'text/typescript',
+  py: 'text/x-python',
+  java: 'text/x-java',
+  c: 'text/x-c',
+  cpp: 'text/x-c++',
+  cs: 'text/x-csharp',
+  go: 'text/x-go',
+  rb: 'text/x-ruby',
+  php: 'text/x-php',
+  swift: 'text/x-swift',
+  kt: 'text/x-kotlin',
+  rs: 'text/x-rust',
   // Images
-  png: "image/png",
-  jpg: "image/jpeg",
-  jpeg: "image/jpeg",
-  gif: "image/gif",
-  webp: "image/webp",
+  png: 'image/png',
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  gif: 'image/gif',
+  webp: 'image/webp',
   // Audio
-  mp3: "audio/mpeg",
-  wav: "audio/wav",
-  aac: "audio/aac",
-  ogg: "audio/ogg",
+  mp3: 'audio/mpeg',
+  wav: 'audio/wav',
+  aac: 'audio/aac',
+  ogg: 'audio/ogg',
   // Video
-  mp4: "video/mp4",
-  webm: "video/webm",
-  mov: "video/quicktime",
-  avi: "video/x-msvideo",
+  mp4: 'video/mp4',
+  webm: 'video/webm',
+  mov: 'video/quicktime',
+  avi: 'video/x-msvideo',
 };

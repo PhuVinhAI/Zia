@@ -2,12 +2,12 @@
  * Users Repository - Quản lý người dùng
  * Hỗ trợ whitelist, blacklist, phân quyền
  */
-import { eq } from "drizzle-orm";
-import { getDatabase } from "../connection.js";
-import { users, type NewUser, type User } from "../schema.js";
-import { debugLog } from "../../../core/logger/logger.js";
+import { eq } from 'drizzle-orm';
+import { debugLog } from '../../../core/logger/logger.js';
+import { getDatabase } from '../connection.js';
+import { type User, users } from '../schema.js';
 
-export type UserRole = "admin" | "user" | "blocked";
+export type UserRole = 'admin' | 'user' | 'blocked';
 
 export class UsersRepository {
   private get db() {
@@ -17,10 +17,7 @@ export class UsersRepository {
   /**
    * Tạo hoặc cập nhật user
    */
-  async upsertUser(
-    userId: string,
-    data: { name?: string; role?: UserRole }
-  ): Promise<User> {
+  async upsertUser(userId: string, data: { name?: string; role?: UserRole }): Promise<User> {
     const existing = await this.getUser(userId);
 
     if (existing) {
@@ -40,11 +37,11 @@ export class UsersRepository {
     await this.db.insert(users).values({
       userId,
       name: data.name || null,
-      role: data.role || "user",
+      role: data.role || 'user',
       createdAt: new Date(),
     });
 
-    debugLog("USERS", `Created user ${userId}`);
+    debugLog('USERS', `Created user ${userId}`);
     return (await this.getUser(userId))!;
   }
 
@@ -52,11 +49,7 @@ export class UsersRepository {
    * Lấy thông tin user
    */
   async getUser(userId: string): Promise<User | null> {
-    const result = await this.db
-      .select()
-      .from(users)
-      .where(eq(users.userId, userId))
-      .limit(1);
+    const result = await this.db.select().from(users).where(eq(users.userId, userId)).limit(1);
 
     return result[0] || null;
   }
@@ -66,7 +59,7 @@ export class UsersRepository {
    */
   async isAdmin(userId: string): Promise<boolean> {
     const user = await this.getUser(userId);
-    return user?.role === "admin";
+    return user?.role === 'admin';
   }
 
   /**
@@ -74,31 +67,31 @@ export class UsersRepository {
    */
   async isBlocked(userId: string): Promise<boolean> {
     const user = await this.getUser(userId);
-    return user?.role === "blocked";
+    return user?.role === 'blocked';
   }
 
   /**
    * Block user
    */
   async blockUser(userId: string): Promise<void> {
-    await this.upsertUser(userId, { role: "blocked" });
-    debugLog("USERS", `Blocked user ${userId}`);
+    await this.upsertUser(userId, { role: 'blocked' });
+    debugLog('USERS', `Blocked user ${userId}`);
   }
 
   /**
    * Unblock user
    */
   async unblockUser(userId: string): Promise<void> {
-    await this.upsertUser(userId, { role: "user" });
-    debugLog("USERS", `Unblocked user ${userId}`);
+    await this.upsertUser(userId, { role: 'user' });
+    debugLog('USERS', `Unblocked user ${userId}`);
   }
 
   /**
    * Set admin
    */
   async setAdmin(userId: string): Promise<void> {
-    await this.upsertUser(userId, { role: "admin" });
-    debugLog("USERS", `Set admin for ${userId}`);
+    await this.upsertUser(userId, { role: 'admin' });
+    debugLog('USERS', `Set admin for ${userId}`);
   }
 
   /**
@@ -112,24 +105,21 @@ export class UsersRepository {
    * Lấy tất cả admins
    */
   async getAdmins(): Promise<User[]> {
-    return this.getUsersByRole("admin");
+    return this.getUsersByRole('admin');
   }
 
   /**
    * Lấy tất cả blocked users
    */
   async getBlockedUsers(): Promise<User[]> {
-    return this.getUsersByRole("blocked");
+    return this.getUsersByRole('blocked');
   }
 
   /**
    * Xóa user
    */
   async deleteUser(userId: string): Promise<boolean> {
-    const result = await this.db
-      .delete(users)
-      .where(eq(users.userId, userId))
-      .returning();
+    const result = await this.db.delete(users).where(eq(users.userId, userId)).returning();
 
     return result.length > 0;
   }

@@ -1,12 +1,12 @@
-import { CONFIG } from "../../shared/constants/config.js";
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
-import { debugLog } from "../../core/logger/logger.js";
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { debugLog } from '../../core/logger/logger.js';
+import { CONFIG } from '../../shared/constants/config.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const projectRoot = path.resolve(__dirname, "../../../");
-const settingsPath = path.join(projectRoot, "settings.json");
+const projectRoot = path.resolve(__dirname, '../../../');
+const settingsPath = path.join(projectRoot, 'settings.json');
 
 /**
  * Kiểm tra user có được phép không
@@ -18,7 +18,7 @@ export function isUserAllowed(userId: string, userName: string): boolean {
 /**
  * Kiểm tra group có được phép không
  */
-export function isGroupAllowed(groupId: string): boolean {
+export function isGroupAllowed(_groupId: string): boolean {
   // Hiện tại chưa có config allowedGroupIds, cho phép tất cả
   return true;
 }
@@ -32,22 +32,17 @@ const loggedUnauthorizedUsers = new Set<string>();
 export function isAllowedUser(userId: string, userName: string): boolean {
   // Nếu danh sách rỗng, cho phép tất cả
   if (!CONFIG.allowedUserIds || CONFIG.allowedUserIds.length === 0) {
-    debugLog(
-      "USER_FILTER",
-      `Allowed (no filter): id=${userId}, name="${userName}"`
-    );
+    debugLog('USER_FILTER', `Allowed (no filter): id=${userId}, name="${userName}"`);
     return true;
   }
 
   // Kiểm tra ID có trong danh sách không
   const allowed = CONFIG.allowedUserIds.includes(userId);
   debugLog(
-    "USER_FILTER",
+    'USER_FILTER',
     `${
-      allowed ? "Allowed" : "Blocked"
-    }: id=${userId}, name="${userName}", allowedIds=[${CONFIG.allowedUserIds.join(
-      ", "
-    )}]`
+      allowed ? 'Allowed' : 'Blocked'
+    }: id=${userId}, name="${userName}", allowedIds=[${CONFIG.allowedUserIds.join(', ')}]`,
   );
 
   // Nếu không được phép, ghi log ra file
@@ -68,9 +63,7 @@ function logUnauthorizedUser(userId: string, userName: string): void {
   }
   loggedUnauthorizedUsers.add(userId);
 
-  const logFilePath = path.resolve(
-    CONFIG.unauthorizedLogFile || "logs/unauthorized.json"
-  );
+  const logFilePath = path.resolve(CONFIG.unauthorizedLogFile || 'logs/unauthorized.json');
   const logDir = path.dirname(logFilePath);
 
   // Tạo thư mục nếu chưa có
@@ -87,7 +80,7 @@ function logUnauthorizedUser(userId: string, userName: string): void {
   }> = [];
   if (fs.existsSync(logFilePath)) {
     try {
-      const data = fs.readFileSync(logFilePath, "utf-8");
+      const data = fs.readFileSync(logFilePath, 'utf-8');
       unauthorizedList = JSON.parse(data);
     } catch {
       unauthorizedList = [];
@@ -110,17 +103,12 @@ function logUnauthorizedUser(userId: string, userName: string): void {
       firstSeen: now,
       lastSeen: now,
     });
-    console.log(
-      `[UserFilter] 📝 Ghi nhận user mới chưa được cấp phép: ${userName} (${userId})`
-    );
+    console.log(`[UserFilter] 📝 Ghi nhận user mới chưa được cấp phép: ${userName} (${userId})`);
   }
 
   // Ghi file
   fs.writeFileSync(logFilePath, JSON.stringify(unauthorizedList, null, 2));
-  debugLog(
-    "USER_FILTER",
-    `Logged unauthorized user: id=${userId}, name="${userName}"`
-  );
+  debugLog('USER_FILTER', `Logged unauthorized user: id=${userId}, name="${userName}"`);
 }
 
 /**
@@ -160,16 +148,14 @@ export function getUnauthorizedUsers(): Array<{
   firstSeen: string;
   lastSeen: string;
 }> {
-  const logFilePath = path.resolve(
-    CONFIG.unauthorizedLogFile || "logs/unauthorized.json"
-  );
+  const logFilePath = path.resolve(CONFIG.unauthorizedLogFile || 'logs/unauthorized.json');
 
   if (!fs.existsSync(logFilePath)) {
     return [];
   }
 
   try {
-    const data = fs.readFileSync(logFilePath, "utf-8");
+    const data = fs.readFileSync(logFilePath, 'utf-8');
     return JSON.parse(data);
   } catch {
     return [];
@@ -177,9 +163,9 @@ export function getUnauthorizedUsers(): Array<{
 }
 
 function saveSettings() {
-  const data = fs.readFileSync(settingsPath, "utf-8");
+  const data = fs.readFileSync(settingsPath, 'utf-8');
   const settings = JSON.parse(data);
   settings.allowedUserIds = CONFIG.allowedUserIds;
   fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
-  console.log("[Config] ✅ Đã lưu danh sách user IDs");
+  console.log('[Config] ✅ Đã lưu danh sách user IDs');
 }

@@ -1,16 +1,16 @@
 /**
  * Tool Registry - Quản lý và thực thi tools
  */
-import type { ITool, ToolCall, ToolContext, ToolResult } from "../types.js";
-import { moduleManager } from "../plugin-manager/module-manager.js";
-import { debugLog } from "../logger/logger.js";
+
+import { debugLog } from '../logger/logger.js';
+import { moduleManager } from '../plugin-manager/module-manager.js';
+import type { ITool, ToolCall, ToolContext, ToolResult } from '../types.js';
 
 // ═══════════════════════════════════════════════════
 // TOOL PARSER - Parse tool calls từ AI response
 // ═══════════════════════════════════════════════════
 
-const TOOL_CALL_REGEX =
-  /\[tool:(\w+)(?:\s+([^\]]*))?\](?:\s*(\{[\s\S]*?\})\s*\[\/tool\])?/gi;
+const TOOL_CALL_REGEX = /\[tool:(\w+)(?:\s+([^\]]*))?\](?:\s*(\{[\s\S]*?\})\s*\[\/tool\])?/gi;
 
 /**
  * Parse parameters từ string format: param1="value1" param2="value2"
@@ -26,11 +26,11 @@ function parseInlineParams(paramStr: string): Record<string, any> {
     const key = match[1];
     const value = match[2] ?? match[3] ?? match[4];
 
-    if (value === "true") {
+    if (value === 'true') {
       params[key] = true;
-    } else if (value === "false") {
+    } else if (value === 'false') {
       params[key] = false;
-    } else if (!isNaN(Number(value)) && value !== "") {
+    } else if (!Number.isNaN(Number(value)) && value !== '') {
       const isLargeNumber = value.length > 15;
       const isIdField = /id$/i.test(key);
       if (isLargeNumber || isIdField) {
@@ -57,7 +57,7 @@ export function parseToolCalls(response: string): ToolCall[] {
 
   while ((match = TOOL_CALL_REGEX.exec(response)) !== null) {
     const toolName = match[1];
-    const inlineParams = match[2] || "";
+    const inlineParams = match[2] || '';
     const jsonParams = match[3];
 
     let params: Record<string, any> = {};
@@ -66,7 +66,7 @@ export function parseToolCalls(response: string): ToolCall[] {
       try {
         params = JSON.parse(jsonParams);
       } catch {
-        debugLog("TOOL", `Failed to parse JSON params: ${jsonParams}`);
+        debugLog('TOOL', `Failed to parse JSON params: ${jsonParams}`);
         params = parseInlineParams(inlineParams);
       }
     } else {
@@ -74,10 +74,7 @@ export function parseToolCalls(response: string): ToolCall[] {
     }
 
     calls.push({ toolName, params, rawTag: match[0] });
-    debugLog(
-      "TOOL",
-      `Parsed: ${toolName} with params: ${JSON.stringify(params)}`
-    );
+    debugLog('TOOL', `Parsed: ${toolName} with params: ${JSON.stringify(params)}`);
   }
 
   return calls;
@@ -98,10 +95,7 @@ export function hasToolCalls(response: string): boolean {
 /**
  * Execute một tool call
  */
-export async function executeTool(
-  toolCall: ToolCall,
-  context: ToolContext
-): Promise<ToolResult> {
+export async function executeTool(toolCall: ToolCall, context: ToolContext): Promise<ToolResult> {
   const tool = moduleManager.getTool(toolCall.toolName);
 
   if (!tool) {
@@ -111,14 +105,14 @@ export async function executeTool(
     };
   }
 
-  debugLog("TOOL", `Executing: ${toolCall.toolName}`);
+  debugLog('TOOL', `Executing: ${toolCall.toolName}`);
 
   try {
     const result = await tool.execute(toolCall.params, context);
-    debugLog("TOOL", `Result: ${JSON.stringify(result).substring(0, 200)}`);
+    debugLog('TOOL', `Result: ${JSON.stringify(result).substring(0, 200)}`);
     return result;
   } catch (error: any) {
-    debugLog("TOOL", `Error: ${error.message}`);
+    debugLog('TOOL', `Error: ${error.message}`);
     return {
       success: false,
       error: `Lỗi thực thi tool: ${error.message}`,
@@ -131,7 +125,7 @@ export async function executeTool(
  */
 export async function executeAllTools(
   toolCalls: ToolCall[],
-  context: ToolContext
+  context: ToolContext,
 ): Promise<Map<string, ToolResult>> {
   const results = new Map<string, ToolResult>();
 
@@ -159,17 +153,17 @@ export function generateToolsPrompt(): string {
         .map(
           (p) =>
             `  - ${p.name} (${p.type}${
-              p.required ? ", bắt buộc" : ", tùy chọn"
-            }): ${p.description}`
+              p.required ? ', bắt buộc' : ', tùy chọn'
+            }): ${p.description}`,
         )
-        .join("\n");
+        .join('\n');
 
       return `📌 ${tool.name}
 Mô tả: ${tool.description}
 Tham số:
-${paramsDesc || "  (Không có tham số)"}`;
+${paramsDesc || '  (Không có tham số)'}`;
     })
-    .join("\n\n");
+    .join('\n\n');
 
   return `
 ═══════════════════════════════════════════════════

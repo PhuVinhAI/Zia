@@ -9,17 +9,17 @@
  * 5. AI xử lý kết quả và phản hồi cuối cùng ra Zalo
  */
 
-import { ThreadType } from "../../infrastructure/zalo/zalo.service.js";
 import {
-  parseToolCalls,
-  hasToolCalls,
-  executeAllTools,
   debugLog,
+  executeAllTools,
+  hasToolCalls,
   logStep,
+  parseToolCalls,
   type ToolCall,
   type ToolContext,
   type ToolResult,
-} from "../../core/index.js";
+} from '../../core/index.js';
+import { ThreadType } from '../../infrastructure/zalo/zalo.service.js';
 
 // ═══════════════════════════════════════════════════
 // TOOL RESPONSE FORMATTER
@@ -28,10 +28,7 @@ import {
 /**
  * Format kết quả tool thành prompt cho AI
  */
-export function formatToolResultForAI(
-  toolCall: ToolCall,
-  result: ToolResult
-): string {
+export function formatToolResultForAI(toolCall: ToolCall, result: ToolResult): string {
   if (result.success) {
     return `[tool_result:${toolCall.toolName}]
 Kết quả thành công:
@@ -49,7 +46,7 @@ Lỗi: ${result.error}
  */
 export function formatAllToolResults(
   toolCalls: ToolCall[],
-  results: Map<string, ToolResult>
+  results: Map<string, ToolResult>,
 ): string {
   const parts: string[] = [];
 
@@ -60,10 +57,7 @@ export function formatAllToolResults(
     }
   }
 
-  return (
-    parts.join("\n\n") +
-    "\n\nDựa trên kết quả tool ở trên, hãy trả lời user một cách tự nhiên."
-  );
+  return `${parts.join('\n\n')}\n\nDựa trên kết quả tool ở trên, hãy trả lời user một cách tự nhiên.`;
 }
 
 // ═══════════════════════════════════════════════════
@@ -78,17 +72,17 @@ export function formatAllToolResults(
 export async function notifyToolCall(
   api: any,
   threadId: string,
-  toolCalls: ToolCall[]
+  toolCalls: ToolCall[],
 ): Promise<void> {
-  const toolNames = toolCalls.map((c) => c.toolName).join(", ");
+  const toolNames = toolCalls.map((c) => c.toolName).join(', ');
 
   // Import CONFIG để check setting
-  const { CONFIG } = await import("../../shared/constants/config.js");
+  const { CONFIG } = await import('../../shared/constants/config.js');
 
   // Nếu tắt showToolCalls, chỉ log console, không gửi tin nhắn
   if (!CONFIG.showToolCalls) {
     console.log(`[Tool] 🔧 Gọi tool (silent): ${toolNames}`);
-    debugLog("TOOL", `Silent tool call: ${toolNames}`);
+    debugLog('TOOL', `Silent tool call: ${toolNames}`);
     return;
   }
 
@@ -97,15 +91,13 @@ export async function notifyToolCall(
 
   try {
     // Import createRichMessage để format đúng Zalo style
-    const { createRichMessage } = await import(
-      "../../shared/utils/richText.js"
-    );
+    const { createRichMessage } = await import('../../shared/utils/richText.js');
     const richMsg = createRichMessage(message);
     await api.sendMessage(richMsg, threadId, ThreadType.User);
     console.log(`[Tool] 🔧 Gọi tool: ${toolNames}`);
-    debugLog("TOOL", `Notified tool call: ${toolNames}`);
+    debugLog('TOOL', `Notified tool call: ${toolNames}`);
   } catch (e) {
-    debugLog("TOOL", `Failed to notify tool call: ${e}`);
+    debugLog('TOOL', `Failed to notify tool call: ${e}`);
   }
 }
 
@@ -136,7 +128,7 @@ export async function handleToolCalls(
   api: any,
   threadId: string,
   senderId: string,
-  senderName?: string
+  senderName?: string,
 ): Promise<ToolHandlerResult> {
   // Check if response has tool calls
   if (!hasToolCalls(aiResponse)) {
@@ -144,23 +136,23 @@ export async function handleToolCalls(
       hasTools: false,
       toolCalls: [],
       results: new Map(),
-      promptForAI: "",
+      promptForAI: '',
       cleanedResponse: aiResponse,
     };
   }
 
-  logStep("toolHandler:start", { threadId, senderId });
+  logStep('toolHandler:start', { threadId, senderId });
 
   // Parse tool calls
   const toolCalls = parseToolCalls(aiResponse);
-  debugLog("TOOL", `Found ${toolCalls.length} tool calls`);
+  debugLog('TOOL', `Found ${toolCalls.length} tool calls`);
 
   if (toolCalls.length === 0) {
     return {
       hasTools: false,
       toolCalls: [],
       results: new Map(),
-      promptForAI: "",
+      promptForAI: '',
       cleanedResponse: aiResponse,
     };
   }
@@ -185,10 +177,10 @@ export async function handleToolCalls(
   // Clean response (remove tool tags)
   let cleanedResponse = aiResponse;
   for (const call of toolCalls) {
-    cleanedResponse = cleanedResponse.replace(call.rawTag, "").trim();
+    cleanedResponse = cleanedResponse.replace(call.rawTag, '').trim();
   }
 
-  logStep("toolHandler:complete", {
+  logStep('toolHandler:complete', {
     toolCount: toolCalls.length,
     successCount: Array.from(results.values()).filter((r) => r.success).length,
   });
@@ -212,13 +204,13 @@ export function isToolOnlyResponse(response: string): boolean {
   // Remove all tool tags and check if anything meaningful remains
   let cleaned = response;
   for (const call of toolCalls) {
-    cleaned = cleaned.replace(call.rawTag, "");
+    cleaned = cleaned.replace(call.rawTag, '');
   }
 
   // Remove whitespace and common tags
   cleaned = cleaned
-    .replace(/\[reaction:\w+\]/gi, "")
-    .replace(/\[sticker:\w+\]/gi, "")
+    .replace(/\[reaction:\w+\]/gi, '')
+    .replace(/\[sticker:\w+\]/gi, '')
     .trim();
 
   return cleaned.length === 0;

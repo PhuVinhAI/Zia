@@ -1,20 +1,18 @@
 /**
  * Bot Setup - Khởi tạo và cấu hình bot
  */
+
 import {
-  loginWithQR,
-  ThreadType,
-} from "../infrastructure/zalo/zalo.service.js";
-import { CONFIG } from "../shared/constants/config.js";
-import { setupSelfMessageListener } from "../modules/gateway/gateway.module.js";
-import { preloadAllHistory } from "../shared/utils/history.js";
-import {
-  initFileLogger,
-  enableFileLogging,
   debugLog,
-  logStep,
+  enableFileLogging,
   getSessionDir,
-} from "../core/logger/logger.js";
+  initFileLogger,
+  logStep,
+} from '../core/logger/logger.js';
+import { loginWithQR, ThreadType } from '../infrastructure/zalo/zalo.service.js';
+import { setupSelfMessageListener } from '../modules/gateway/gateway.module.js';
+import { CONFIG } from '../shared/constants/config.js';
+import { preloadAllHistory } from '../shared/utils/history.js';
 
 /**
  * Khởi tạo file logging
@@ -24,7 +22,7 @@ export function initLogging() {
     initFileLogger(CONFIG.logFile);
     enableFileLogging();
     debugLog(
-      "INIT",
+      'INIT',
       `Config loaded: ${JSON.stringify({
         name: CONFIG.name,
         prefix: CONFIG.prefix,
@@ -33,7 +31,7 @@ export function initLogging() {
         useStreaming: CONFIG.useStreaming,
         selfListen: CONFIG.selfListen,
         allowedUserIds: CONFIG.allowedUserIds,
-      })}`
+      })}`,
     );
   }
 }
@@ -42,28 +40,22 @@ export function initLogging() {
  * In thông tin khởi động
  */
 export function printStartupInfo() {
-  console.log("─".repeat(50));
+  console.log('─'.repeat(50));
   console.log(`🤖 ${CONFIG.name}`);
-  console.log(
-    `📌 Prefix: "${CONFIG.prefix}" (${
-      CONFIG.requirePrefix ? "bắt buộc" : "tùy chọn"
-    })`
-  );
+  console.log(`📌 Prefix: "${CONFIG.prefix}" (${CONFIG.requirePrefix ? 'bắt buộc' : 'tùy chọn'})`);
   console.log(`⏱️ Rate limit: ${CONFIG.rateLimitMs}ms`);
   console.log(
     `👥 Allowed user IDs: ${
-      CONFIG.allowedUserIds.length > 0
-        ? CONFIG.allowedUserIds.join(", ")
-        : "Tất cả"
-    }`
+      CONFIG.allowedUserIds.length > 0 ? CONFIG.allowedUserIds.join(', ') : 'Tất cả'
+    }`,
   );
-  console.log(`📝 Streaming: ${CONFIG.useStreaming ? "ON" : "OFF"}`);
+  console.log(`📝 Streaming: ${CONFIG.useStreaming ? 'ON' : 'OFF'}`);
   if (CONFIG.fileLogging) {
     console.log(`📄 Session: ${getSessionDir()}`);
   }
-  console.log("─".repeat(50));
+  console.log('─'.repeat(50));
 
-  logStep("main:start", { config: CONFIG.name });
+  logStep('main:start', { config: CONFIG.name });
 }
 
 /**
@@ -71,15 +63,12 @@ export function printStartupInfo() {
  */
 export async function loginZalo() {
   const { api, myId } = await loginWithQR();
-  logStep("main:loginComplete", "Zalo login successful");
+  logStep('main:loginComplete', 'Zalo login successful');
 
   // Log Cloud Debug status
   if (CONFIG.cloudDebug.enabled) {
     console.log(`☁️ Cloud Debug: ON (prefix: "${CONFIG.cloudDebug.prefix}")`);
-    debugLog(
-      "INIT",
-      `Cloud Debug enabled with prefix: ${CONFIG.cloudDebug.prefix}`
-    );
+    debugLog('INIT', `Cloud Debug enabled with prefix: ${CONFIG.cloudDebug.prefix}`);
   }
 
   return { api, myId };
@@ -91,11 +80,11 @@ export async function loginZalo() {
 export async function setupListeners(api: any) {
   // Setup self message listener
   setupSelfMessageListener(api);
-  debugLog("INIT", "Self message listener setup complete");
+  debugLog('INIT', 'Self message listener setup complete');
 
   // Start listener
   api.listener.start();
-  debugLog("INIT", "Listener starting...");
+  debugLog('INIT', 'Listener starting...');
 
   // Chờ WebSocket connect
   await new Promise<void>((resolve) => {
@@ -103,8 +92,8 @@ export async function setupListeners(api: any) {
       setTimeout(resolve, 2000);
     };
     if (api.listener.on) {
-      api.listener.once("connected", () => {
-        debugLog("INIT", "WebSocket connected");
+      api.listener.once('connected', () => {
+        debugLog('INIT', 'WebSocket connected');
         resolve();
       });
       setTimeout(resolve, 2000);
@@ -112,11 +101,11 @@ export async function setupListeners(api: any) {
       checkReady();
     }
   });
-  debugLog("INIT", "Listener ready");
+  debugLog('INIT', 'Listener ready');
 
   // Preload history
   await preloadAllHistory(api);
-  debugLog("INIT", "History preload complete");
+  debugLog('INIT', 'History preload complete');
 }
 
 /**
@@ -129,8 +118,7 @@ export function isCloudMessage(message: any): boolean {
   const content = message.data?.content;
   const cloudPrefix = CONFIG.cloudDebug.prefix;
 
-  const hasCloudPrefix =
-    typeof content === "string" && content.startsWith(cloudPrefix);
+  const hasCloudPrefix = typeof content === 'string' && content.startsWith(cloudPrefix);
 
   return isSelf && hasCloudPrefix;
 }
@@ -142,11 +130,11 @@ export function processCloudMessage(message: any): any {
   const content = message.data?.content;
   const cloudPrefix = CONFIG.cloudDebug.prefix;
 
-  debugLog("CLOUD", `Cloud message detected: ${content.substring(0, 50)}...`);
+  debugLog('CLOUD', `Cloud message detected: ${content.substring(0, 50)}...`);
   console.log(`☁️ [Cloud] Nhận lệnh: ${content.substring(0, 50)}...`);
 
   // Xóa prefix khỏi nội dung
-  message.data.content = content.replace(cloudPrefix, "").trim();
+  message.data.content = content.replace(cloudPrefix, '').trim();
   return message;
 }
 
@@ -157,17 +145,17 @@ export function shouldSkipMessage(message: any): {
   skip: boolean;
   reason?: string;
 } {
-  const threadId = message.threadId;
+  const _threadId = message.threadId;
   const isSelf = message.isSelf;
 
   // Tin nhắn tự gửi không có prefix Cloud
   if (isSelf && !isCloudMessage(message)) {
-    return { skip: true, reason: "self message without cloud prefix" };
+    return { skip: true, reason: 'self message without cloud prefix' };
   }
 
   // Tin nhắn từ nhóm
   if (message.type === ThreadType.Group) {
-    return { skip: true, reason: "group message" };
+    return { skip: true, reason: 'group message' };
   }
 
   return { skip: false };

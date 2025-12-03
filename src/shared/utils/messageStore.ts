@@ -2,8 +2,8 @@
  * Lưu trữ tin nhắn đã gửi để có thể thu hồi
  * Sử dụng SQLite database thay vì in-memory Map
  */
-import { debugLog } from "../../core/logger/logger.js";
-import { sentMessagesRepository } from "../../infrastructure/database/index.js";
+import { debugLog } from '../../core/logger/logger.js';
+import { sentMessagesRepository } from '../../infrastructure/database/index.js';
 
 interface SentMessage {
   msgId: string;
@@ -24,7 +24,7 @@ export function saveSentMessage(
   threadId: string,
   msgId: string,
   cliMsgId: string,
-  content: string
+  content: string,
 ): number {
   const msg: SentMessage = {
     msgId,
@@ -47,12 +47,9 @@ export function saveSentMessage(
   // Lưu vào database (async, không block)
   sentMessagesRepository
     .saveMessage({ msgId, cliMsgId, threadId, content })
-    .catch((err) => debugLog("MSG_STORE", `DB save error: ${err}`));
+    .catch((err) => debugLog('MSG_STORE', `DB save error: ${err}`));
 
-  debugLog(
-    "MSG_STORE",
-    `Saved: thread=${threadId}, msgId=${msgId}, index=${cache.length - 1}`
-  );
+  debugLog('MSG_STORE', `Saved: thread=${threadId}, msgId=${msgId}, index=${cache.length - 1}`);
 
   return cache.length - 1;
 }
@@ -60,37 +57,29 @@ export function saveSentMessage(
 /**
  * Lấy tin nhắn theo index (0 = cũ nhất, -1 = mới nhất)
  */
-export function getSentMessage(
-  threadId: string,
-  index: number
-): SentMessage | null {
+export function getSentMessage(threadId: string, index: number): SentMessage | null {
   const cache = messageCache.get(threadId);
   if (!cache || cache.length === 0) {
-    debugLog("MSG_STORE", `getSentMessage: thread=${threadId} has no messages`);
+    debugLog('MSG_STORE', `getSentMessage: thread=${threadId} has no messages`);
     return null;
   }
 
   const actualIndex = index < 0 ? cache.length + index : index;
 
   if (actualIndex < 0 || actualIndex >= cache.length) {
-    debugLog(
-      "MSG_STORE",
-      `getSentMessage: index ${index} out of range [0, ${cache.length - 1}]`
-    );
+    debugLog('MSG_STORE', `getSentMessage: index ${index} out of range [0, ${cache.length - 1}]`);
     return null;
   }
 
   const msg = cache[actualIndex];
-  debugLog("MSG_STORE", `getSentMessage: found msgId=${msg.msgId}`);
+  debugLog('MSG_STORE', `getSentMessage: found msgId=${msg.msgId}`);
   return msg;
 }
 
 /**
  * Lấy tin nhắn mới nhất của thread (async, từ DB)
  */
-export async function getLastSentMessage(
-  threadId: string
-): Promise<SentMessage | null> {
+export async function getLastSentMessage(threadId: string): Promise<SentMessage | null> {
   // Thử cache trước
   const cache = messageCache.get(threadId);
   if (cache && cache.length > 0) {
@@ -102,8 +91,8 @@ export async function getLastSentMessage(
   if (dbMsg) {
     return {
       msgId: dbMsg.msgId,
-      cliMsgId: dbMsg.cliMsgId || "",
-      content: dbMsg.content || "",
+      cliMsgId: dbMsg.cliMsgId || '',
+      content: dbMsg.content || '',
       threadId: dbMsg.threadId,
       timestamp: dbMsg.timestamp.getTime(),
     };
@@ -128,9 +117,9 @@ export function removeSentMessage(threadId: string, msgId: string): void {
   // Xóa khỏi DB (async)
   sentMessagesRepository
     .deleteMessage(msgId)
-    .catch((err) => debugLog("MSG_STORE", `DB delete error: ${err}`));
+    .catch((err) => debugLog('MSG_STORE', `DB delete error: ${err}`));
 
-  debugLog("MSG_STORE", `removeSentMessage: removed msgId=${msgId}`);
+  debugLog('MSG_STORE', `removeSentMessage: removed msgId=${msgId}`);
 }
 
 /**
@@ -154,10 +143,7 @@ export function cleanupOldMessages(): void {
   }
 
   if (totalRemoved > 0) {
-    debugLog(
-      "MSG_STORE",
-      `Cache cleanup: removed ${totalRemoved} old messages`
-    );
+    debugLog('MSG_STORE', `Cache cleanup: removed ${totalRemoved} old messages`);
   }
 }
 

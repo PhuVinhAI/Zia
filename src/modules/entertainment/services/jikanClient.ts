@@ -2,9 +2,9 @@
  * Jikan API Client - Base client cho Jikan v4 API
  * https://api.jikan.moe/v4
  */
-import { debugLog, logError } from "../../../core/logger/logger.js";
+import { debugLog, logError } from '../../../core/logger/logger.js';
 
-const BASE_URL = "https://api.jikan.moe/v4";
+const BASE_URL = 'https://api.jikan.moe/v4';
 const RATE_LIMIT_DELAY = 350; // 3 requests/giây = ~333ms giữa mỗi request
 
 let lastRequestTime = 0;
@@ -24,22 +24,19 @@ async function rateLimitWait(): Promise<void> {
 /**
  * Fetch với retry khi gặp 429
  */
-export async function jikanFetch<T>(
-  endpoint: string,
-  params?: Record<string, any>
-): Promise<T> {
+export async function jikanFetch<T>(endpoint: string, params?: Record<string, any>): Promise<T> {
   await rateLimitWait();
 
   const url = new URL(`${BASE_URL}${endpoint}`);
   if (params) {
     Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined && value !== null && value !== "") {
+      if (value !== undefined && value !== null && value !== '') {
         url.searchParams.append(key, String(value));
       }
     });
   }
 
-  debugLog("JIKAN", `Fetching: ${url.toString()}`);
+  debugLog('JIKAN', `Fetching: ${url.toString()}`);
 
   let retries = 3;
   while (retries > 0) {
@@ -47,7 +44,7 @@ export async function jikanFetch<T>(
       const response = await fetch(url.toString());
 
       if (response.status === 429) {
-        debugLog("JIKAN", "Rate limited (429), waiting 2s...");
+        debugLog('JIKAN', 'Rate limited (429), waiting 2s...');
         await new Promise((r) => setTimeout(r, 2000));
         retries--;
         continue;
@@ -60,14 +57,14 @@ export async function jikanFetch<T>(
       const data = await response.json();
       return data as T;
     } catch (error: any) {
-      logError("jikanFetch", error);
+      logError('jikanFetch', error);
       if (retries <= 1) throw error;
       retries--;
       await new Promise((r) => setTimeout(r, 1000));
     }
   }
 
-  throw new Error("Max retries exceeded");
+  throw new Error('Max retries exceeded');
 }
 
 // ═══════════════════════════════════════════════════

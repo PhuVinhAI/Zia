@@ -1,23 +1,14 @@
+import { debugLog, logError, logMessage, logStep, logZaloAPI } from '../../core/logger/logger.js';
+import type { StreamCallbacks } from '../../infrastructure/gemini/gemini.provider.js';
+import { Reactions, ThreadType } from '../../infrastructure/zalo/zalo.service.js';
+import type { AIResponse } from '../../shared/types/config.schema.js';
+import { getRawHistory } from '../../shared/utils/history.js';
 import {
-  ThreadType,
-  Reactions,
-} from "../../infrastructure/zalo/zalo.service.js";
-import { getRawHistory } from "../../shared/utils/history.js";
-import { createRichMessage } from "../../shared/utils/richText.js";
-import { AIResponse } from "../../shared/types/config.schema.js";
-import { StreamCallbacks } from "../../infrastructure/gemini/gemini.provider.js";
-import {
-  saveSentMessage,
   getSentMessage,
   removeSentMessage,
-} from "../../shared/utils/messageStore.js";
-import {
-  logZaloAPI,
-  logMessage,
-  debugLog,
-  logStep,
-  logError,
-} from "../../core/logger/logger.js";
+  saveSentMessage,
+} from '../../shared/utils/messageStore.js';
+import { createRichMessage } from '../../shared/utils/richText.js';
 
 // ═══════════════════════════════════════════════════
 // SHARED HELPERS
@@ -32,85 +23,67 @@ const reactionMap: Record<string, any> = {
   like: Reactions.LIKE,
 };
 
-async function sendLink(
-  api: any,
-  link: string,
-  message: string | undefined,
-  threadId: string
-) {
+async function sendLink(api: any, link: string, message: string | undefined, threadId: string) {
   try {
-    debugLog("LINK", `Sending link: ${link}, message: ${message || "(none)"}`);
+    debugLog('LINK', `Sending link: ${link}, message: ${message || '(none)'}`);
 
     const linkData: any = { link };
     if (message) linkData.msg = message;
 
     const result = await api.sendLink(linkData, threadId, ThreadType.User);
-    logZaloAPI("sendLink", { linkData, threadId }, result);
+    logZaloAPI('sendLink', { linkData, threadId }, result);
     console.log(`[Bot] 🔗 Đã gửi link với preview!`);
-    logMessage("OUT", threadId, { type: "link", link, message });
+    logMessage('OUT', threadId, { type: 'link', link, message });
   } catch (e: any) {
-    logZaloAPI("sendLink", { link, threadId }, null, e);
-    logError("sendLink", e);
+    logZaloAPI('sendLink', { link, threadId }, null, e);
+    logError('sendLink', e);
   }
 }
 
-async function sendCard(
-  api: any,
-  userId: string | undefined,
-  threadId: string
-) {
+async function sendCard(api: any, userId: string | undefined, threadId: string) {
   try {
     // Nếu không có userId, gửi card của bot
     const targetUserId = userId || String(api.getContext().uid);
-    debugLog("CARD", `Sending card for userId=${targetUserId}`);
+    debugLog('CARD', `Sending card for userId=${targetUserId}`);
 
     const cardData = { userId: targetUserId };
     const result = await api.sendCard(cardData, threadId, ThreadType.User);
-    logZaloAPI("sendCard", { cardData, threadId }, result);
+    logZaloAPI('sendCard', { cardData, threadId }, result);
     console.log(`[Bot] 📇 Đã gửi danh thiếp!`);
-    logMessage("OUT", threadId, { type: "card", userId: targetUserId });
+    logMessage('OUT', threadId, { type: 'card', userId: targetUserId });
   } catch (e: any) {
-    logZaloAPI("sendCard", { userId, threadId }, null, e);
-    logError("sendCard", e);
+    logZaloAPI('sendCard', { userId, threadId }, null, e);
+    logError('sendCard', e);
   }
 }
 
 async function sendSticker(api: any, keyword: string, threadId: string) {
   try {
     console.log(`[Bot] 🎨 Tìm sticker: "${keyword}"`);
-    debugLog("STICKER", `Searching sticker: "${keyword}"`);
+    debugLog('STICKER', `Searching sticker: "${keyword}"`);
 
     const stickerIds = await api.getStickers(keyword);
-    logZaloAPI("getStickers", { keyword }, stickerIds);
+    logZaloAPI('getStickers', { keyword }, stickerIds);
 
     if (stickerIds?.length > 0) {
-      const randomId =
-        stickerIds[Math.floor(Math.random() * stickerIds.length)];
+      const randomId = stickerIds[Math.floor(Math.random() * stickerIds.length)];
       const stickerDetails = await api.getStickersDetail(randomId);
-      logZaloAPI("getStickersDetail", { stickerId: randomId }, stickerDetails);
+      logZaloAPI('getStickersDetail', { stickerId: randomId }, stickerDetails);
 
       if (stickerDetails?.[0]) {
-        const result = await api.sendSticker(
-          stickerDetails[0],
-          threadId,
-          ThreadType.User
-        );
-        logZaloAPI(
-          "sendSticker",
-          { sticker: stickerDetails[0], threadId },
-          result
-        );
+        const result = await api.sendSticker(stickerDetails[0], threadId, ThreadType.User);
+        logZaloAPI('sendSticker', { sticker: stickerDetails[0], threadId }, result);
         console.log(`[Bot] ✅ Đã gửi sticker!`);
-        logMessage("OUT", threadId, {
-          type: "sticker",
+        logMessage('OUT', threadId, {
+          type: 'sticker',
           keyword,
           stickerId: randomId,
         });
       }
     }
   } catch (e: any) {
-    logZaloAPI("sendSticker", { keyword, threadId }, null, e);
-    logError("sendSticker", e);
+    logZaloAPI('sendSticker', { keyword, threadId }, null, e);
+    logError('sendSticker', e);
   }
 }
 
@@ -119,9 +92,9 @@ async function sendSticker(api: any, keyword: string, threadId: string) {
 // ═══════════════════════════════════════════════════
 
 export function setupSelfMessageListener(api: any) {
-  debugLog("SELF_LISTEN", "Setting up self message listener");
+  debugLog('SELF_LISTEN', 'Setting up self message listener');
 
-  api.listener.on("message", (message: any) => {
+  api.listener.on('message', (message: any) => {
     if (!message.isSelf) return;
 
     const content = message.data?.content;
@@ -131,10 +104,9 @@ export function setupSelfMessageListener(api: any) {
 
     if (!msgId || !cliMsgId) return;
 
-    const contentStr =
-      typeof content === "string" ? content : JSON.stringify(content);
+    const contentStr = typeof content === 'string' ? content : JSON.stringify(content);
     saveSentMessage(threadId, msgId, cliMsgId, contentStr);
-    debugLog("SELF_LISTEN", `Saved: msgId=${msgId}`);
+    debugLog('SELF_LISTEN', `Saved: msgId=${msgId}`);
   });
 }
 
@@ -145,7 +117,7 @@ export function setupSelfMessageListener(api: any) {
 function resolveQuoteData(
   quoteIndex: number | undefined,
   threadId: string,
-  batchMessages?: any[]
+  batchMessages?: any[],
 ): any {
   if (quoteIndex === undefined) return undefined;
 
@@ -188,15 +160,15 @@ async function handleReaction(
   reaction: string,
   threadId: string,
   originalMessage?: any,
-  batchMessages?: any[]
+  batchMessages?: any[],
 ): Promise<void> {
   let reactionType = reaction;
   let targetMsg = originalMessage;
 
-  if (reaction.includes(":")) {
-    const [indexStr, type] = reaction.split(":");
+  if (reaction.includes(':')) {
+    const [indexStr, type] = reaction.split(':');
     reactionType = type;
-    const index = parseInt(indexStr);
+    const index = parseInt(indexStr, 10);
     if (batchMessages && index >= 0 && index < batchMessages.length) {
       targetMsg = batchMessages[index];
     }
@@ -206,15 +178,11 @@ async function handleReaction(
   if (reactionObj && targetMsg) {
     try {
       const result = await api.addReaction(reactionObj, targetMsg);
-      logZaloAPI(
-        "addReaction",
-        { reaction: reactionType, msgId: targetMsg?.data?.msgId },
-        result
-      );
+      logZaloAPI('addReaction', { reaction: reactionType, msgId: targetMsg?.data?.msgId }, result);
       console.log(`[Bot] 💖 Đã thả reaction: ${reactionType}`);
-      logMessage("OUT", threadId, { type: "reaction", reaction: reactionType });
+      logMessage('OUT', threadId, { type: 'reaction', reaction: reactionType });
     } catch (e: any) {
-      logError("handleReaction", e);
+      logError('handleReaction', e);
     }
   }
 }
@@ -228,13 +196,13 @@ export async function sendResponse(
   response: AIResponse,
   threadId: string,
   originalMessage?: any,
-  allMessages?: any[]
+  allMessages?: any[],
 ): Promise<void> {
   debugLog(
-    "RESPONSE",
-    `sendResponse: thread=${threadId}, reactions=${response.reactions.length}, messages=${response.messages.length}`
+    'RESPONSE',
+    `sendResponse: thread=${threadId}, reactions=${response.reactions.length}, messages=${response.messages.length}`,
   );
-  logStep("sendResponse:start", {
+  logStep('sendResponse:start', {
     threadId,
     reactions: response.reactions,
     messageCount: response.messages.length,
@@ -252,25 +220,21 @@ export async function sendResponse(
     const quoteData = resolveQuoteData(
       msg.quoteIndex >= 0 ? msg.quoteIndex : undefined,
       threadId,
-      allMessages
+      allMessages,
     );
 
     if (msg.text) {
       try {
         const richMsg = createRichMessage(`🤖 AI: ${msg.text}`, quoteData);
-        const result = await api.sendMessage(
-          richMsg,
-          threadId,
-          ThreadType.User
-        );
-        logZaloAPI("sendMessage", { message: richMsg, threadId }, result);
-        logMessage("OUT", threadId, {
-          type: "text",
+        const result = await api.sendMessage(richMsg, threadId, ThreadType.User);
+        logZaloAPI('sendMessage', { message: richMsg, threadId }, result);
+        logMessage('OUT', threadId, {
+          type: 'text',
           text: msg.text,
           quoteIndex: msg.quoteIndex,
         });
       } catch (e: any) {
-        logError("sendResponse:text", e);
+        logError('sendResponse:text', e);
         await api.sendMessage(`🤖 AI: ${msg.text}`, threadId, ThreadType.User);
       }
     }
@@ -286,8 +250,7 @@ export async function sendResponse(
     }
 
     if (msg.card !== undefined) {
-      if (msg.text || msg.sticker || msg.link)
-        await new Promise((r) => setTimeout(r, 500));
+      if (msg.text || msg.sticker || msg.link) await new Promise((r) => setTimeout(r, 500));
       await sendCard(api, msg.card || undefined, threadId);
     }
 
@@ -296,7 +259,7 @@ export async function sendResponse(
     }
   }
 
-  logStep("sendResponse:end", { threadId });
+  logStep('sendResponse:end', { threadId });
 }
 
 // ═══════════════════════════════════════════════════
@@ -304,11 +267,10 @@ export async function sendResponse(
 // ═══════════════════════════════════════════════════
 
 // Regex để detect và strip tool tags từ text
-const TOOL_TAG_REGEX =
-  /\[tool:\w+(?:\s+[^\]]*?)?\](?:\s*\{[\s\S]*?\}\s*\[\/tool\])?/gi;
+const TOOL_TAG_REGEX = /\[tool:\w+(?:\s+[^\]]*?)?\](?:\s*\{[\s\S]*?\}\s*\[\/tool\])?/gi;
 
 function stripToolTags(text: string): string {
-  return text.replace(TOOL_TAG_REGEX, "").trim();
+  return text.replace(TOOL_TAG_REGEX, '').trim();
 }
 
 function hasToolTags(text: string): boolean {
@@ -321,7 +283,7 @@ export function createStreamCallbacks(
   threadId: string,
   originalMessage?: any,
   messages?: any[],
-  enableToolDetection: boolean = false
+  enableToolDetection: boolean = false,
 ): StreamCallbacks & { hasResponse: () => boolean } {
   let messageCount = 0;
   let reactionCount = 0;
@@ -330,10 +292,10 @@ export function createStreamCallbacks(
   let toolDetected = false; // Track if tool was detected
 
   debugLog(
-    "STREAM_CB",
+    'STREAM_CB',
     `Creating callbacks: thread=${threadId}, messages=${
       messages?.length || 0
-    }, toolDetection=${enableToolDetection}`
+    }, toolDetection=${enableToolDetection}`,
   );
 
   return {
@@ -370,7 +332,7 @@ export function createStreamCallbacks(
       if (!cleanText) {
         if (hasToolTags(text)) {
           toolDetected = true;
-          debugLog("STREAM_CB", `Tool detected in message, skipping send`);
+          debugLog('STREAM_CB', `Tool detected in message, skipping send`);
         }
         return;
       }
@@ -380,20 +342,16 @@ export function createStreamCallbacks(
 
       try {
         const richMsg = createRichMessage(`🤖 AI: ${cleanText}`, quoteData);
-        const result = await api.sendMessage(
-          richMsg,
-          threadId,
-          ThreadType.User
-        );
-        logZaloAPI("sendMessage", { message: richMsg, threadId }, result);
+        const result = await api.sendMessage(richMsg, threadId, ThreadType.User);
+        logZaloAPI('sendMessage', { message: richMsg, threadId }, result);
         console.log(`[Bot] 📤 Streaming: Đã gửi tin nhắn #${messageCount}`);
-        logMessage("OUT", threadId, {
-          type: "text",
+        logMessage('OUT', threadId, {
+          type: 'text',
           text: cleanText,
           quoteIndex,
         });
       } catch (e: any) {
-        logError("onMessage", e);
+        logError('onMessage', e);
         await api.sendMessage(`🤖 AI: ${cleanText}`, threadId, ThreadType.User);
       }
       await new Promise((r) => setTimeout(r, 300));
@@ -402,36 +360,34 @@ export function createStreamCallbacks(
     onUndo: async (index: number) => {
       const msg = getSentMessage(threadId, index);
       if (!msg) {
-        console.log(
-          `[Bot] ⚠️ Không tìm thấy tin nhắn index ${index} để thu hồi`
-        );
+        console.log(`[Bot] ⚠️ Không tìm thấy tin nhắn index ${index} để thu hồi`);
         return;
       }
       try {
         const undoData = { msgId: msg.msgId, cliMsgId: msg.cliMsgId };
         const result = await api.undo(undoData, threadId, ThreadType.User);
-        logZaloAPI("undo", { undoData, threadId }, result);
+        logZaloAPI('undo', { undoData, threadId }, result);
         removeSentMessage(threadId, msg.msgId);
         console.log(`[Bot] 🗑️ Đã thu hồi tin nhắn`);
-        logMessage("OUT", threadId, { type: "undo", msgId: msg.msgId });
+        logMessage('OUT', threadId, { type: 'undo', msgId: msg.msgId });
       } catch (e: any) {
-        logError("onUndo", e);
+        logError('onUndo', e);
       }
     },
 
     onComplete: async () => {
       // Prevent double execution
       if (completed) {
-        debugLog("STREAM_CB", "onComplete already called, skipping");
+        debugLog('STREAM_CB', 'onComplete already called, skipping');
         return;
       }
       completed = true;
 
       // Nếu tool detected và chưa gửi tin nhắn nào, không gửi sticker
       if (toolDetected && messageCount === 0) {
-        debugLog("STREAM_CB", "Tool detected, skipping stickers");
+        debugLog('STREAM_CB', 'Tool detected, skipping stickers');
         console.log(`[Bot] 🔧 Phát hiện tool call, đang xử lý...`);
-        logStep("streamComplete", {
+        logStep('streamComplete', {
           threadId,
           messageCount,
           stickerCount: 0,
@@ -446,12 +402,10 @@ export function createStreamCallbacks(
       }
       console.log(
         `[Bot] ✅ Streaming hoàn tất! ${messageCount} tin nhắn${
-          pendingStickers.length > 0
-            ? ` + ${pendingStickers.length} sticker`
-            : ""
-        }`
+          pendingStickers.length > 0 ? ` + ${pendingStickers.length} sticker` : ''
+        }`,
       );
-      logStep("streamComplete", {
+      logStep('streamComplete', {
         threadId,
         messageCount,
         stickerCount: pendingStickers.length,
@@ -459,8 +413,8 @@ export function createStreamCallbacks(
     },
 
     onError: (error: Error) => {
-      console.error("[Bot] ❌ Streaming error:", error);
-      logError("streamError", error);
+      console.error('[Bot] ❌ Streaming error:', error);
+      logError('streamError', error);
     },
   };
 }

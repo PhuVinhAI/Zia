@@ -9,7 +9,10 @@
     "dev": "bun --watch src/index.ts",
     "db:studio": "bun drizzle-kit studio",
     "db:generate": "bun drizzle-kit generate",
-    "db:migrate": "bun drizzle-kit migrate"
+    "db:migrate": "bun drizzle-kit migrate",
+    "format": "bunx biome format --write ./src",
+    "lint": "bunx biome check ./src",
+    "lint:fix": "bunx biome check --write ./src"
   },
   "keywords": [
     "zalo",
@@ -28,6 +31,7 @@
     "zod": "^4.1.13"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.3.8",
     "better-sqlite3": "^12.5.0",
     "bun-types": "latest",
     "drizzle-kit": "^0.31.7",

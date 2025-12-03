@@ -1,15 +1,13 @@
 /**
  * Tool: jikanRecommendations - Gợi ý anime/manga tương tự
  */
-import {
-  ToolDefinition,
-  ToolResult,
-} from "../../../shared/types/tools.types.js";
-import { jikanFetch } from "../services/jikanClient.js";
+
 import {
   JikanRecommendationsSchema,
   validateParams,
-} from "../../../shared/schemas/tools.schema.js";
+} from '../../../shared/schemas/tools.schema.js';
+import type { ToolDefinition, ToolResult } from '../../../shared/types/tools.types.js';
+import { jikanFetch } from '../services/jikanClient.js';
 
 interface RecommendationResponse {
   data: {
@@ -27,26 +25,26 @@ interface RecommendationResponse {
 }
 
 export const jikanRecommendationsTool: ToolDefinition = {
-  name: "jikanRecommendations",
+  name: 'jikanRecommendations',
   description:
-    "Lấy danh sách anime/manga được gợi ý tương tự với một anime/manga cụ thể (dựa trên vote của người dùng MAL).",
+    'Lấy danh sách anime/manga được gợi ý tương tự với một anime/manga cụ thể (dựa trên vote của người dùng MAL).',
   parameters: [
     {
-      name: "id",
-      type: "number",
-      description: "MAL ID của anime/manga gốc",
+      name: 'id',
+      type: 'number',
+      description: 'MAL ID của anime/manga gốc',
       required: true,
     },
     {
-      name: "mediaType",
-      type: "string",
+      name: 'mediaType',
+      type: 'string',
       description: "Loại: 'anime' hoặc 'manga' (mặc định: anime)",
       required: false,
     },
     {
-      name: "limit",
-      type: "number",
-      description: "Số gợi ý tối đa (mặc định: 10)",
+      name: 'limit',
+      type: 'number',
+      description: 'Số gợi ý tối đa (mặc định: 10)',
       required: false,
     },
   ],
@@ -62,17 +60,13 @@ export const jikanRecommendationsTool: ToolDefinition = {
       const endpoint = `/${data.mediaType}/${data.id}/recommendations`;
       const response = await jikanFetch<RecommendationResponse>(endpoint);
 
-      const recommendations = response.data
-        .slice(0, data.limit)
-        .map((item) => ({
-          id: item.entry.mal_id,
-          title: item.entry.title,
-          votes: item.votes,
-          image:
-            item.entry.images?.webp?.large_image_url ||
-            item.entry.images?.jpg?.large_image_url,
-          url: item.entry.url,
-        }));
+      const recommendations = response.data.slice(0, data.limit).map((item) => ({
+        id: item.entry.mal_id,
+        title: item.entry.title,
+        votes: item.votes,
+        image: item.entry.images?.webp?.large_image_url || item.entry.images?.jpg?.large_image_url,
+        url: item.entry.url,
+      }));
 
       return {
         success: true,

@@ -1,4 +1,4 @@
-import { debugLog } from "../../core/logger/logger.js";
+import { debugLog } from '../../core/logger/logger.js';
 
 // Lưu trữ AbortController để hủy tác vụ cho từng thread
 const activeTasks = new Map<string, AbortController>();
@@ -11,7 +11,7 @@ const activeTasks = new Map<string, AbortController>();
 export function startTask(threadId: string): AbortSignal {
   if (activeTasks.has(threadId)) {
     console.log(`[Bot] 🛑 Bị ngắt lời! Dừng tác vụ cũ của thread ${threadId}`);
-    debugLog("TASK", `Aborting existing task for thread ${threadId}`);
+    debugLog('TASK', `Aborting existing task for thread ${threadId}`);
     const oldController = activeTasks.get(threadId);
     oldController?.abort(); // Gửi tín hiệu hủy
     activeTasks.delete(threadId);
@@ -19,7 +19,7 @@ export function startTask(threadId: string): AbortSignal {
 
   const controller = new AbortController();
   activeTasks.set(threadId, controller);
-  debugLog("TASK", `Started new task for thread ${threadId}`);
+  debugLog('TASK', `Started new task for thread ${threadId}`);
   return controller.signal;
 }
 
@@ -31,7 +31,7 @@ export function abortTask(threadId: string): boolean {
     const controller = activeTasks.get(threadId);
     controller?.abort();
     activeTasks.delete(threadId);
-    debugLog("TASK", `Task aborted for thread ${threadId}`);
+    debugLog('TASK', `Task aborted for thread ${threadId}`);
     return true;
   }
   return false;

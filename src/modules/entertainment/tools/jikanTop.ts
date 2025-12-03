@@ -1,56 +1,51 @@
 /**
  * Tool: jikanTop - Bảng xếp hạng Anime/Manga
  */
+
+import { JikanTopSchema, validateParams } from '../../../shared/schemas/tools.schema.js';
+import type { ToolDefinition, ToolResult } from '../../../shared/types/tools.types.js';
 import {
-  ToolDefinition,
-  ToolResult,
-} from "../../../shared/types/tools.types.js";
-import {
+  type JikanAnime,
+  type JikanListResponse,
+  type JikanManga,
   jikanFetch,
-  JikanAnime,
-  JikanManga,
-  JikanListResponse,
-} from "../services/jikanClient.js";
-import {
-  JikanTopSchema,
-  validateParams,
-} from "../../../shared/schemas/tools.schema.js";
+} from '../services/jikanClient.js';
 
 export const jikanTopTool: ToolDefinition = {
-  name: "jikanTop",
+  name: 'jikanTop',
   description:
-    "Lấy bảng xếp hạng top anime hoặc manga. Có thể lọc theo loại (TV, Movie...) và tiêu chí (đang chiếu, phổ biến nhất, yêu thích nhất).",
+    'Lấy bảng xếp hạng top anime hoặc manga. Có thể lọc theo loại (TV, Movie...) và tiêu chí (đang chiếu, phổ biến nhất, yêu thích nhất).',
   parameters: [
     {
-      name: "mediaType",
-      type: "string",
+      name: 'mediaType',
+      type: 'string',
       description: "Loại: 'anime' hoặc 'manga' (mặc định: anime)",
       required: false,
     },
     {
-      name: "type",
-      type: "string",
+      name: 'type',
+      type: 'string',
       description:
-        "Lọc theo loại: tv, movie, ova, special, ona, music (anime) hoặc manga, novel, lightnovel, oneshot, doujin, manhwa, manhua (manga)",
+        'Lọc theo loại: tv, movie, ova, special, ona, music (anime) hoặc manga, novel, lightnovel, oneshot, doujin, manhwa, manhua (manga)',
       required: false,
     },
     {
-      name: "filter",
-      type: "string",
+      name: 'filter',
+      type: 'string',
       description:
-        "Tiêu chí: airing (đang chiếu), upcoming (sắp chiếu), bypopularity (phổ biến nhất), favorite (yêu thích nhất)",
+        'Tiêu chí: airing (đang chiếu), upcoming (sắp chiếu), bypopularity (phổ biến nhất), favorite (yêu thích nhất)',
       required: false,
     },
     {
-      name: "page",
-      type: "number",
-      description: "Số trang (mặc định: 1)",
+      name: 'page',
+      type: 'number',
+      description: 'Số trang (mặc định: 1)',
       required: false,
     },
     {
-      name: "limit",
-      type: "number",
-      description: "Số kết quả (tối đa 25)",
+      name: 'limit',
+      type: 'number',
+      description: 'Số kết quả (tối đa 25)',
       required: false,
     },
   ],
@@ -72,14 +67,13 @@ export const jikanTopTool: ToolDefinition = {
         limit: data.limit,
       };
 
-      const response = await jikanFetch<
-        JikanListResponse<JikanAnime | JikanManga>
-      >(endpoint, queryParams);
+      const response = await jikanFetch<JikanListResponse<JikanAnime | JikanManga>>(
+        endpoint,
+        queryParams,
+      );
 
       const results = response.data.map((item, index) => ({
-        rank:
-          item.rank ||
-          (response.pagination.current_page - 1) * data.limit + index + 1,
+        rank: item.rank || (response.pagination.current_page - 1) * data.limit + index + 1,
         id: item.mal_id,
         title: item.title,
         titleEnglish: item.title_english,
@@ -88,14 +82,10 @@ export const jikanTopTool: ToolDefinition = {
         members: item.members,
         favorites: item.favorites,
         status: item.status,
-        image:
-          item.images?.webp?.large_image_url ||
-          item.images?.jpg?.large_image_url,
+        image: item.images?.webp?.large_image_url || item.images?.jpg?.large_image_url,
         url: item.url,
-        ...("episodes" in item ? { episodes: item.episodes } : {}),
-        ...("chapters" in item
-          ? { chapters: (item as JikanManga).chapters }
-          : {}),
+        ...('episodes' in item ? { episodes: item.episodes } : {}),
+        ...('chapters' in item ? { chapters: (item as JikanManga).chapters } : {}),
       }));
 
       return {

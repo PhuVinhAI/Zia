@@ -1,7 +1,7 @@
 /**
  * Base Module - Abstract class cho tất cả modules
  */
-import type { IModule, ITool, ModuleMetadata } from "../types.js";
+import type { IModule, ITool, ModuleMetadata } from '../types.js';
 
 export abstract class BaseModule implements IModule {
   abstract readonly metadata: ModuleMetadata;

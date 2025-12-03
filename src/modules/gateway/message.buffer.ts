@@ -1,11 +1,12 @@
 /**
  * Message Buffer - Cơ chế đệm tin nhắn để gom nhiều tin thành 1 context
  */
-import { ThreadType } from "../../infrastructure/zalo/zalo.service.js";
-import { handleMixedContent } from "./gateway.module.js";
-import { startTask } from "../../shared/utils/taskManager.js";
-import { debugLog, logStep, logError } from "../../core/logger/logger.js";
-import { CONFIG } from "../../shared/constants/config.js";
+
+import { debugLog, logError, logStep } from '../../core/logger/logger.js';
+import { ThreadType } from '../../infrastructure/zalo/zalo.service.js';
+import { CONFIG } from '../../shared/constants/config.js';
+import { startTask } from '../../shared/utils/taskManager.js';
+import { handleMixedContent } from './gateway.module.js';
 
 // Queue tin nhắn theo thread
 const messageQueues = new Map<string, any[]>();
@@ -29,26 +30,23 @@ const threadBuffers = new Map<string, ThreadBuffer>();
  */
 async function processQueue(api: any, threadId: string, signal?: AbortSignal) {
   if (processingThreads.has(threadId)) {
-    debugLog("QUEUE", `Thread ${threadId} already processing, skipping`);
+    debugLog('QUEUE', `Thread ${threadId} already processing, skipping`);
     return;
   }
 
   const queue = messageQueues.get(threadId);
   if (!queue || queue.length === 0) {
-    debugLog("QUEUE", `Thread ${threadId} queue empty`);
+    debugLog('QUEUE', `Thread ${threadId} queue empty`);
     return;
   }
 
   processingThreads.add(threadId);
-  debugLog(
-    "QUEUE",
-    `Processing queue for thread ${threadId}: ${queue.length} messages`
-  );
-  logStep("processQueue:start", { threadId, queueLength: queue.length });
+  debugLog('QUEUE', `Processing queue for thread ${threadId}: ${queue.length} messages`);
+  logStep('processQueue:start', { threadId, queueLength: queue.length });
 
   while (queue.length > 0) {
     if (signal?.aborted) {
-      debugLog("QUEUE", `Queue processing aborted for thread ${threadId}`);
+      debugLog('QUEUE', `Queue processing aborted for thread ${threadId}`);
       processingThreads.delete(threadId);
       return;
     }
@@ -56,29 +54,26 @@ async function processQueue(api: any, threadId: string, signal?: AbortSignal) {
     const allMessages = [...queue];
     queue.length = 0;
 
-    debugLog("QUEUE", `Processing ${allMessages.length} messages`);
-    logStep("processQueue:messages", { count: allMessages.length });
+    debugLog('QUEUE', `Processing ${allMessages.length} messages`);
+    logStep('processQueue:messages', { count: allMessages.length });
 
     if (allMessages.length === 0) {
-      debugLog("QUEUE", "No processable messages");
+      debugLog('QUEUE', 'No processable messages');
       continue;
     }
 
     if (signal?.aborted) {
-      debugLog("QUEUE", `Aborted before processing messages`);
+      debugLog('QUEUE', `Aborted before processing messages`);
       break;
     }
 
-    debugLog(
-      "QUEUE",
-      `Using handleMixedContent for ${allMessages.length} messages`
-    );
+    debugLog('QUEUE', `Using handleMixedContent for ${allMessages.length} messages`);
     await handleMixedContent(api, allMessages, threadId, signal);
   }
 
   processingThreads.delete(threadId);
-  debugLog("QUEUE", `Finished processing queue for thread ${threadId}`);
-  logStep("processQueue:end", { threadId });
+  debugLog('QUEUE', `Finished processing queue for thread ${threadId}`);
+  logStep('processQueue:end', { threadId });
 }
 
 /**
@@ -98,11 +93,11 @@ export function startTypingWithRefresh(api: any, threadId: string) {
   buffer.typingInterval = setInterval(() => {
     if (buffer.isTyping) {
       api.sendTypingEvent(threadId, ThreadType.User).catch(() => {});
-      debugLog("TYPING", `Refreshed typing for ${threadId}`);
+      debugLog('TYPING', `Refreshed typing for ${threadId}`);
     }
   }, getTypingRefreshMs());
 
-  debugLog("BUFFER", `Started typing with refresh for ${threadId}`);
+  debugLog('BUFFER', `Started typing with refresh for ${threadId}`);
 }
 
 /**
@@ -117,7 +112,7 @@ export function stopTyping(threadId: string) {
     clearInterval(buffer.typingInterval);
     buffer.typingInterval = null;
   }
-  debugLog("BUFFER", `Stopped typing for ${threadId}`);
+  debugLog('BUFFER', `Stopped typing for ${threadId}`);
 }
 
 /**
@@ -136,11 +131,8 @@ async function processBufferedMessages(api: any, threadId: string) {
   buffer.messages = [];
   buffer.timer = null;
 
-  debugLog(
-    "BUFFER",
-    `Processing batch of ${messagesToProcess.length} messages for ${threadId}`
-  );
-  logStep("buffer:process", {
+  debugLog('BUFFER', `Processing batch of ${messagesToProcess.length} messages for ${threadId}`);
+  logStep('buffer:process', {
     threadId,
     messageCount: messagesToProcess.length,
   });
@@ -156,12 +148,12 @@ async function processBufferedMessages(api: any, threadId: string) {
   try {
     await processQueue(api, threadId, abortSignal);
   } catch (e: any) {
-    if (e.message === "Aborted" || abortSignal.aborted) {
-      debugLog("BUFFER", `Task aborted for thread ${threadId}`);
+    if (e.message === 'Aborted' || abortSignal.aborted) {
+      debugLog('BUFFER', `Task aborted for thread ${threadId}`);
       return;
     }
-    logError("processBufferedMessages", e);
-    console.error("[Bot] Lỗi xử lý buffer:", e);
+    logError('processBufferedMessages', e);
+    console.error('[Bot] Lỗi xử lý buffer:', e);
     processingThreads.delete(threadId);
   } finally {
     stopTyping(threadId);
@@ -185,10 +177,7 @@ export function addToBuffer(api: any, threadId: string, message: any) {
 
   // Thêm tin nhắn
   buffer.messages.push(message);
-  debugLog(
-    "BUFFER",
-    `Added to buffer: thread=${threadId}, bufferSize=${buffer.messages.length}`
-  );
+  debugLog('BUFFER', `Added to buffer: thread=${threadId}, bufferSize=${buffer.messages.length}`);
 
   // Hiển thị typing
   if (!buffer.isTyping) {
@@ -198,7 +187,7 @@ export function addToBuffer(api: any, threadId: string, message: any) {
   // Reset timer (Debounce)
   if (buffer.timer) {
     clearTimeout(buffer.timer);
-    debugLog("BUFFER", `Debounced: User still typing... (${threadId})`);
+    debugLog('BUFFER', `Debounced: User still typing... (${threadId})`);
   }
 
   // Đặt timer mới

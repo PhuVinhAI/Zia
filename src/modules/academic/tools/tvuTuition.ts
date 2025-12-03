@@ -1,12 +1,10 @@
 /**
  * Tool: tvuTuition - Lấy thông tin học phí TVU
  */
-import {
-  ToolDefinition,
-  ToolResult,
-} from "../../../shared/types/tools.types.js";
-import { tvuRequest } from "../services/tvuClient.js";
-import { debugLog } from "../../../core/logger/logger.js";
+
+import { debugLog } from '../../../core/logger/logger.js';
+import type { ToolDefinition, ToolResult } from '../../../shared/types/tools.types.js';
+import { tvuRequest } from '../services/tvuClient.js';
 
 interface TuitionData {
   ds_hoc_phi_hoc_ky: Array<{
@@ -20,30 +18,27 @@ interface TuitionData {
 }
 
 export const tvuTuitionTool: ToolDefinition = {
-  name: "tvuTuition",
+  name: 'tvuTuition',
   description:
-    "Lấy thông tin học phí, công nợ và lịch sử đóng học phí của sinh viên TVU. Yêu cầu đã đăng nhập TVU.",
+    'Lấy thông tin học phí, công nợ và lịch sử đóng học phí của sinh viên TVU. Yêu cầu đã đăng nhập TVU.',
   parameters: [],
   execute: async (): Promise<ToolResult> => {
     try {
-      debugLog("TVU:Tuition", "Fetching tuition info");
+      debugLog('TVU:Tuition', 'Fetching tuition info');
 
-      const response = await tvuRequest<TuitionData>(
-        "/api/rms/w-locdstonghophocphisv",
-        {
-          filter: {},
-          additional: { paging: { limit: 100, page: 1 } },
-        }
-      );
+      const response = await tvuRequest<TuitionData>('/api/rms/w-locdstonghophocphisv', {
+        filter: {},
+        additional: { paging: { limit: 100, page: 1 } },
+      });
 
       if (!response.result || !response.data) {
         return {
           success: false,
-          error: response.message || "Không lấy được thông tin học phí",
+          error: response.message || 'Không lấy được thông tin học phí',
         };
       }
 
-      const formatMoney = (n: number) => n.toLocaleString("vi-VN") + " VNĐ";
+      const formatMoney = (n: number) => `${n.toLocaleString('vi-VN')} VNĐ`;
 
       const semesters = response.data.ds_hoc_phi_hoc_ky.map((hk) => ({
         tenHocKy: hk.ten_hoc_ky,
@@ -61,10 +56,7 @@ export const tvuTuitionTool: ToolDefinition = {
       }));
 
       // Tính tổng
-      const tongConNo = response.data.ds_hoc_phi_hoc_ky.reduce(
-        (sum, hk) => sum + hk.con_no,
-        0
-      );
+      const tongConNo = response.data.ds_hoc_phi_hoc_ky.reduce((sum, hk) => sum + hk.con_no, 0);
 
       return {
         success: true,

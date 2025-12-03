@@ -1,24 +1,24 @@
 /**
  * Gemini Stream - Xử lý streaming responses
  */
-import { Content } from "@google/genai";
-import { CONFIG } from "../../shared/constants/config.js";
+import type { Content } from '@google/genai';
 import {
-  getChatSession,
-  deleteChatSession,
-  buildMessageParts,
-  isRetryableError,
-  sleep,
-} from "./geminiChat.js";
-import { MediaPart } from "./geminiConfig.js";
-import {
-  logAIResponse,
-  logError,
   debugLog,
   logAIHistory,
+  logAIResponse,
+  logError,
   logSystemPrompt,
-} from "../../core/logger/logger.js";
-import { getSystemPrompt } from "./prompts.js";
+} from '../../core/logger/logger.js';
+import { CONFIG } from '../../shared/constants/config.js';
+import {
+  buildMessageParts,
+  deleteChatSession,
+  getChatSession,
+  isRetryableError,
+  sleep,
+} from './geminiChat.js';
+import type { MediaPart } from './geminiConfig.js';
+import { getSystemPrompt } from './prompts.js';
 
 export interface StreamCallbacks {
   onReaction?: (reaction: string) => Promise<void>;
@@ -42,14 +42,7 @@ interface ParserState {
   sentUndos: Set<string>;
 }
 
-const VALID_REACTIONS = new Set([
-  "heart",
-  "haha",
-  "wow",
-  "sad",
-  "angry",
-  "like",
-]);
+const VALID_REACTIONS = new Set(['heart', 'haha', 'wow', 'sad', 'angry', 'like']);
 
 // Regex patterns để strip tags
 const TAG_PATTERNS = [
@@ -64,17 +57,11 @@ const TAG_PATTERNS = [
 ];
 
 function getPlainText(buffer: string): string {
-  return TAG_PATTERNS.reduce(
-    (text, pattern) => text.replace(pattern, ""),
-    buffer
-  ).trim();
+  return TAG_PATTERNS.reduce((text, pattern) => text.replace(pattern, ''), buffer).trim();
 }
 
-async function processStreamChunk(
-  state: ParserState,
-  callbacks: StreamCallbacks
-): Promise<void> {
-  if (callbacks.signal?.aborted) throw new Error("Aborted");
+async function processStreamChunk(state: ParserState, callbacks: StreamCallbacks): Promise<void> {
+  if (callbacks.signal?.aborted) throw new Error('Aborted');
 
   const { buffer } = state;
 
@@ -83,17 +70,11 @@ async function processStreamChunk(
   for (const match of reactionMatches) {
     const indexPart = match[1];
     const reaction = match[2].toLowerCase();
-    const key = indexPart
-      ? `reaction:${indexPart}${reaction}`
-      : `reaction:${reaction}`;
-    if (
-      VALID_REACTIONS.has(reaction) &&
-      !state.sentReactions.has(key) &&
-      callbacks.onReaction
-    ) {
+    const key = indexPart ? `reaction:${indexPart}${reaction}` : `reaction:${reaction}`;
+    if (VALID_REACTIONS.has(reaction) && !state.sentReactions.has(key) && callbacks.onReaction) {
       state.sentReactions.add(key);
       await callbacks.onReaction(
-        indexPart ? `${indexPart.replace(":", "")}:${reaction}` : reaction
+        indexPart ? `${indexPart.replace(':', '')}:${reaction}` : reaction,
       );
     }
   }
@@ -110,11 +91,9 @@ async function processStreamChunk(
   }
 
   // Parse [quote:index]...[/quote]
-  const quoteMatches = buffer.matchAll(
-    /\[quote:(-?\d+)\]([\s\S]*?)\[\/quote\]/gi
-  );
+  const quoteMatches = buffer.matchAll(/\[quote:(-?\d+)\]([\s\S]*?)\[\/quote\]/gi);
   for (const match of quoteMatches) {
-    const quoteIndex = parseInt(match[1]);
+    const quoteIndex = parseInt(match[1], 10);
     const text = match[2].trim();
     const key = `quote:${quoteIndex}:${text}`;
     if (text && !state.sentMessages.has(key) && callbacks.onMessage) {
@@ -137,7 +116,7 @@ async function processStreamChunk(
   // Parse [undo:index]
   const undoMatches = buffer.matchAll(/\[undo:(-?\d+)\]/gi);
   for (const match of undoMatches) {
-    const index = parseInt(match[1]);
+    const index = parseInt(match[1], 10);
     const key = `undo:${index}`;
     if (!state.sentUndos.has(key) && callbacks.onUndo) {
       state.sentUndos.add(key);
@@ -146,9 +125,7 @@ async function processStreamChunk(
   }
 
   // Parse [link:url]caption[/link]
-  const linkMatches = buffer.matchAll(
-    /\[link:(https?:\/\/[^\]]+)\]([\s\S]*?)\[\/link\]/gi
-  );
+  const linkMatches = buffer.matchAll(/\[link:(https?:\/\/[^\]]+)\]([\s\S]*?)\[\/link\]/gi);
   for (const match of linkMatches) {
     const link = match[1];
     const message = match[2].trim();
@@ -162,7 +139,7 @@ async function processStreamChunk(
   // Parse [card:userId] hoặc [card]
   const cardMatches = buffer.matchAll(/\[card(?::(\d+))?\]/gi);
   for (const match of cardMatches) {
-    const userId = match[1] || "";
+    const userId = match[1] || '';
     const key = `card:${userId}`;
     if (!state.sentCards.has(key) && callbacks.onCard) {
       state.sentCards.add(key);
@@ -179,10 +156,10 @@ export async function generateContentStream(
   callbacks: StreamCallbacks,
   media?: MediaPart[],
   threadId?: string,
-  history?: Content[]
+  history?: Content[],
 ): Promise<string> {
   const state: ParserState = {
-    buffer: "",
+    buffer: '',
     sentReactions: new Set(),
     sentStickers: new Set(),
     sentMessages: new Set(),
@@ -192,10 +169,10 @@ export async function generateContentStream(
   };
 
   debugLog(
-    "STREAM",
+    'STREAM',
     `Starting stream: prompt="${prompt.substring(0, 100)}...", media=${
       media?.length || 0
-    }, thread=${threadId || "none"}`
+    }, thread=${threadId || 'none'}`,
   );
 
   let hasPartialResponse = false;
@@ -207,7 +184,7 @@ export async function generateContentStream(
   // Retry loop
   for (let attempt = 0; attempt <= CONFIG.retry.maxRetries; attempt++) {
     if (attempt > 0) {
-      state.buffer = "";
+      state.buffer = '';
       state.sentReactions.clear();
       state.sentStickers.clear();
       state.sentMessages.clear();
@@ -216,11 +193,9 @@ export async function generateContentStream(
       state.sentUndos.clear();
       hasPartialResponse = false;
 
-      const delayMs = CONFIG.retry.baseDelayMs * Math.pow(2, attempt - 1);
-      console.log(
-        `[Gemini] 🔄 Retry ${attempt}/${CONFIG.retry.maxRetries} sau ${delayMs}ms...`
-      );
-      debugLog("STREAM", `Retry attempt ${attempt}, delay=${delayMs}ms`);
+      const delayMs = CONFIG.retry.baseDelayMs * 2 ** (attempt - 1);
+      console.log(`[Gemini] 🔄 Retry ${attempt}/${CONFIG.retry.maxRetries} sau ${delayMs}ms...`);
+      debugLog('STREAM', `Retry attempt ${attempt}, delay=${delayMs}ms`);
       await sleep(delayMs);
 
       deleteChatSession(sessionId);
@@ -242,9 +217,9 @@ export async function generateContentStream(
 
       for await (const chunk of response) {
         if (callbacks.signal?.aborted) {
-          debugLog("STREAM", "Aborted");
+          debugLog('STREAM', 'Aborted');
           hasPartialResponse = state.buffer.length > 0;
-          throw new Error("Aborted");
+          throw new Error('Aborted');
         }
 
         if (chunk.text) {
@@ -278,25 +253,18 @@ export async function generateContentStream(
     } catch (error: any) {
       lastError = error;
 
-      if (error.message === "Aborted" || callbacks.signal?.aborted) {
-        debugLog(
-          "STREAM",
-          `Stream aborted, hasPartialResponse=${hasPartialResponse}`
-        );
+      if (error.message === 'Aborted' || callbacks.signal?.aborted) {
+        debugLog('STREAM', `Stream aborted, hasPartialResponse=${hasPartialResponse}`);
         if (hasPartialResponse && callbacks.onComplete) {
-          debugLog("STREAM", "Calling onComplete for partial response");
+          debugLog('STREAM', 'Calling onComplete for partial response');
           await callbacks.onComplete();
         }
         return state.buffer;
       }
 
       if (isRetryableError(error) && attempt < CONFIG.retry.maxRetries) {
-        console.log(
-          `[Gemini] ⚠️ Lỗi ${
-            error.status || error.code
-          }: Model overloaded, sẽ retry...`
-        );
-        debugLog("STREAM", `Retryable error: ${error.status || error.code}`);
+        console.log(`[Gemini] ⚠️ Lỗi ${error.status || error.code}: Model overloaded, sẽ retry...`);
+        debugLog('STREAM', `Retryable error: ${error.status || error.code}`);
         continue;
       }
 
@@ -304,7 +272,7 @@ export async function generateContentStream(
     }
   }
 
-  logError("generateContentStream", lastError);
+  logError('generateContentStream', lastError);
   callbacks.onError?.(lastError);
 
   if (threadId) deleteChatSession(threadId);

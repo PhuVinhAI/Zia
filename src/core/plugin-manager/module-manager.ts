@@ -1,10 +1,11 @@
 /**
  * Module Manager - Quản lý load/unload modules
  */
-import type { IModule, ITool, ModuleMetadata } from "../types.js";
-import { eventBus, Events } from "../event-bus/event-bus.js";
-import { debugLog, logStep } from "../logger/logger.js";
-import { CONFIG } from "../../shared/constants/config.js";
+
+import { CONFIG } from '../../shared/constants/config.js';
+import { Events, eventBus } from '../event-bus/event-bus.js';
+import { debugLog, logStep } from '../logger/logger.js';
+import type { IModule, ITool, ModuleMetadata } from '../types.js';
 
 interface LoadedModule {
   instance: IModule;
@@ -24,7 +25,7 @@ export class ModuleManager {
     const { name } = module.metadata;
 
     if (this.modules.has(name)) {
-      debugLog("MODULE_MGR", `Module already registered: ${name}`);
+      debugLog('MODULE_MGR', `Module already registered: ${name}`);
       return;
     }
 
@@ -45,7 +46,7 @@ export class ModuleManager {
     };
 
     this.modules.set(name, loadedModule);
-    debugLog("MODULE_MGR", `Registered module: ${name}`);
+    debugLog('MODULE_MGR', `Registered module: ${name}`);
   }
 
   /**
@@ -59,7 +60,7 @@ export class ModuleManager {
     }
 
     if (module.loaded) {
-      debugLog("MODULE_MGR", `Module already loaded: ${name}`);
+      debugLog('MODULE_MGR', `Module already loaded: ${name}`);
       return;
     }
 
@@ -67,11 +68,11 @@ export class ModuleManager {
     const isEnabled = CONFIG.modules[name] ?? true;
     if (!isEnabled) {
       console.log(`[Module] ⏸️ Skipped (disabled): ${name}`);
-      debugLog("MODULE_MGR", `Module disabled in config: ${name}`);
+      debugLog('MODULE_MGR', `Module disabled in config: ${name}`);
       return;
     }
 
-    logStep("module:load", { name });
+    logStep('module:load', { name });
 
     // Call onLoad hook
     if (module.instance.onLoad) {
@@ -81,7 +82,7 @@ export class ModuleManager {
     // Register tools
     for (const tool of module.tools) {
       this.toolRegistry.set(tool.name, tool);
-      debugLog("MODULE_MGR", `Registered tool: ${tool.name} from ${name}`);
+      debugLog('MODULE_MGR', `Registered tool: ${tool.name} from ${name}`);
     }
 
     module.loaded = true;
@@ -102,7 +103,7 @@ export class ModuleManager {
       return;
     }
 
-    logStep("module:unload", { name });
+    logStep('module:unload', { name });
 
     // Call onUnload hook
     if (module.instance.onUnload) {

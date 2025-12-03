@@ -1,5 +1,5 @@
-import { TextStyle } from "../types/zalo.types.js";
-import { debugLog } from "../../core/logger/logger.js";
+import { debugLog } from '../../core/logger/logger.js';
+import { TextStyle } from '../types/zalo.types.js';
 
 interface StyleItem {
   start: number;
@@ -34,7 +34,7 @@ export function parseRichText(rawText: string): ParsedRichText {
     { regex: /__([^_]+)__/g, style: TextStyle.Underline },
     { regex: /!!([^!]+)!!/g, style: TextStyle.Blue },
     { regex: /##([^#]+)##/g, style: TextStyle.Big },
-    { regex: /\^\^([^\^]+)\^\^/g, style: TextStyle.Small },
+    { regex: /\^\^([^^]+)\^\^/g, style: TextStyle.Small },
     { regex: /\*([^*]+)\*/g, style: TextStyle.Bold },
     { regex: /_([^_]+)_/g, style: TextStyle.Italic },
     { regex: /~([^~]+)~/g, style: TextStyle.StrikeThrough },
@@ -53,10 +53,7 @@ export function parseRichText(rawText: string): ParsedRichText {
       const startIndex = match.index;
 
       // Xóa ký tự đánh dấu, giữ lại nội dung
-      msg =
-        msg.slice(0, startIndex) +
-        content +
-        msg.slice(startIndex + fullMatch.length);
+      msg = msg.slice(0, startIndex) + content + msg.slice(startIndex + fullMatch.length);
 
       // Thêm style
       styles.push({
@@ -78,7 +75,7 @@ export function parseRichText(rawText: string): ParsedRichText {
  */
 export function createRichMessage(
   text: string,
-  quote?: any
+  quote?: any,
 ): { msg: string; styles?: StyleItem[]; quote?: any } {
   const { msg, styles } = parseRichText(text);
 
@@ -86,12 +83,12 @@ export function createRichMessage(
 
   if (styles.length > 0) {
     result.styles = styles;
-    debugLog("RICH_TEXT", `Parsed ${styles.length} styles from text`);
+    debugLog('RICH_TEXT', `Parsed ${styles.length} styles from text`);
   }
 
   if (quote) {
     result.quote = quote;
-    debugLog("RICH_TEXT", `Added quote: msgId=${quote.msgId}`);
+    debugLog('RICH_TEXT', `Added quote: msgId=${quote.msgId}`);
   }
 
   return result;

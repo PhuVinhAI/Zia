@@ -1,8 +1,8 @@
 /**
  * Prompt Builder - Xây dựng prompt cho Gemini API
  */
-import { PROMPTS } from "../../infrastructure/gemini/prompts.js";
-import type { ClassifiedMessage } from "./classifier.js";
+import { PROMPTS } from '../../infrastructure/gemini/prompts.js';
+import type { ClassifiedMessage } from './classifier.js';
 
 /**
  * Build prompt thống nhất cho mọi loại tin nhắn
@@ -14,12 +14,11 @@ export function buildPrompt(
   quoteHasMedia: boolean,
   quoteMediaType: string | undefined,
   youtubeUrls: string[],
-  mediaNotes: string[]
+  mediaNotes: string[],
 ): string {
   const hasMedia =
-    classified.some((c) =>
-      ["image", "video", "voice", "file", "sticker"].includes(c.type)
-    ) || quoteHasMedia;
+    classified.some((c) => ['image', 'video', 'voice', 'file', 'sticker'].includes(c.type)) ||
+    quoteHasMedia;
 
   let prompt: string;
 
@@ -36,11 +35,9 @@ export function buildPrompt(
     prompt += PROMPTS.mediaNote(mediaNotes);
   } else if (quoteHasMedia) {
     // Quote có media → thêm context đặc biệt
-    prompt = userText || "(người dùng không nhập text)";
+    prompt = userText || '(người dùng không nhập text)';
     const quoteText =
-      quoteContent && quoteContent !== "(nội dung không xác định)"
-        ? quoteContent
-        : undefined;
+      quoteContent && quoteContent !== '(nội dung không xác định)' ? quoteContent : undefined;
     prompt += PROMPTS.quoteMedia(quoteText, quoteMediaType);
   } else {
     // Text only → dùng userText trực tiếp
@@ -68,14 +65,12 @@ export function buildPrompt(
 /**
  * Extract text từ classified messages
  */
-export function extractTextFromMessages(
-  classified: ClassifiedMessage[]
-): string {
+export function extractTextFromMessages(classified: ClassifiedMessage[]): string {
   return classified
-    .filter((c) => c.type === "text" || c.type === "link")
-    .map((c) => c.text || c.url || "")
+    .filter((c) => c.type === 'text' || c.type === 'link')
+    .map((c) => c.text || c.url || '')
     .filter(Boolean)
-    .join("\n");
+    .join('\n');
 }
 
 /**
@@ -84,17 +79,15 @@ export function extractTextFromMessages(
 export function processPrefix(
   combinedText: string,
   requirePrefix: boolean,
-  prefix: string
+  prefix: string,
 ): { shouldContinue: boolean; userText: string } {
   if (combinedText && requirePrefix) {
     if (!combinedText.startsWith(prefix)) {
-      return { shouldContinue: false, userText: "" };
+      return { shouldContinue: false, userText: '' };
     }
   }
 
-  const userText = requirePrefix
-    ? combinedText.replace(prefix, "").trim()
-    : combinedText;
+  const userText = requirePrefix ? combinedText.replace(prefix, '').trim() : combinedText;
 
   return { shouldContinue: true, userText };
 }

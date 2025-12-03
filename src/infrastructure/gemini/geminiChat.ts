@@ -1,12 +1,12 @@
 /**
  * Gemini Chat - Quản lý chat sessions
  */
-import { Chat, Content, Part } from "@google/genai";
-import { ai, GEMINI_MODEL, GEMINI_CONFIG, MediaPart } from "./geminiConfig.js";
-import { getSystemPrompt } from "./prompts.js";
-import { CONFIG } from "../../shared/constants/config.js";
-import { fetchAsBase64 } from "../../shared/utils/fetch.js";
-import { debugLog } from "../../core/logger/logger.js";
+import type { Chat, Content, Part } from '@google/genai';
+import { debugLog } from '../../core/logger/logger.js';
+import { CONFIG } from '../../shared/constants/config.js';
+import { fetchAsBase64 } from '../../shared/utils/fetch.js';
+import { ai, GEMINI_CONFIG, GEMINI_MODEL, type MediaPart } from './geminiConfig.js';
+import { getSystemPrompt } from './prompts.js';
 
 // Chat session storage
 const chatSessions = new Map<string, Chat>();
@@ -21,7 +21,7 @@ export function getChatSession(threadId: string, history?: Content[]): Chat {
   let chat = chatSessions.get(threadId);
 
   if (!chat) {
-    debugLog("GEMINI", `Creating new chat session for thread ${threadId}`);
+    debugLog('GEMINI', `Creating new chat session for thread ${threadId}`);
     chat = ai.chats.create({
       model: GEMINI_MODEL,
       config: {
@@ -46,10 +46,7 @@ export function deleteChatSession(threadId: string): void {
 /**
  * Build message parts từ prompt và media
  */
-export async function buildMessageParts(
-  prompt: string,
-  media?: MediaPart[]
-): Promise<Part[]> {
+export async function buildMessageParts(prompt: string, media?: MediaPart[]): Promise<Part[]> {
   const parts: Part[] = [{ text: prompt }];
 
   if (!media || media.length === 0) {
@@ -58,31 +55,31 @@ export async function buildMessageParts(
 
   for (const item of media) {
     try {
-      if (item.type === "youtube" && item.url) {
-        parts.push({ fileData: { fileUri: item.url, mimeType: "video/mp4" } });
-        debugLog("GEMINI", `Added YouTube: ${item.url}`);
+      if (item.type === 'youtube' && item.url) {
+        parts.push({ fileData: { fileUri: item.url, mimeType: 'video/mp4' } });
+        debugLog('GEMINI', `Added YouTube: ${item.url}`);
       } else if (item.base64) {
         parts.push({
           inlineData: {
             data: item.base64,
-            mimeType: item.mimeType || "application/octet-stream",
+            mimeType: item.mimeType || 'application/octet-stream',
           },
         });
-        debugLog("GEMINI", `Added pre-converted: ${item.mimeType}`);
+        debugLog('GEMINI', `Added pre-converted: ${item.mimeType}`);
       } else if (item.url) {
         const base64Data = await fetchAsBase64(item.url);
         if (base64Data) {
           parts.push({
             inlineData: {
               data: base64Data,
-              mimeType: item.mimeType || "application/octet-stream",
+              mimeType: item.mimeType || 'application/octet-stream',
             },
           });
-          debugLog("GEMINI", `Loaded ${item.type}: ${item.mimeType}`);
+          debugLog('GEMINI', `Loaded ${item.type}: ${item.mimeType}`);
         }
       }
     } catch (e) {
-      debugLog("GEMINI", `Error loading ${item.type}: ${e}`);
+      debugLog('GEMINI', `Error loading ${item.type}: ${e}`);
     }
   }
 

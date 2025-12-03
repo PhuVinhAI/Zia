@@ -2,23 +2,20 @@
  * Logger Module - Pino-based structured logging
  * Auto-rotate files daily, keep 7 days
  */
-import pino from "pino";
-import * as fs from "fs";
-import * as path from "path";
+
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import pino from 'pino';
 
 let logger: pino.Logger;
-let sessionDir: string = "";
+let sessionDir: string = '';
 let fileLoggingEnabled = false;
 
 /**
  * Tạo timestamp cho tên thư mục
  */
 function getTimestamp(): string {
-  return new Date()
-    .toISOString()
-    .replace(/[:.]/g, "-")
-    .replace("T", "_")
-    .slice(0, 19);
+  return new Date().toISOString().replace(/[:.]/g, '-').replace('T', '_').slice(0, 19);
 }
 
 /**
@@ -39,25 +36,25 @@ export function initFileLogger(basePath: string): void {
   }
 
   // Log file trong session dir
-  const logFile = path.join(sessionDir, "bot.txt");
+  const logFile = path.join(sessionDir, 'bot.txt');
 
   // Pino transport config
   const transport = pino.transport({
     targets: [
       // Console output (pretty)
       {
-        target: "pino-pretty",
-        level: process.env.LOG_LEVEL || "info",
+        target: 'pino-pretty',
+        level: process.env.LOG_LEVEL || 'info',
         options: {
           colorize: true,
-          translateTime: "SYS:standard",
-          ignore: "pid,hostname",
+          translateTime: 'SYS:standard',
+          ignore: 'pid,hostname',
         },
       },
       // File output trong session dir
       {
-        target: "pino/file",
-        level: "debug",
+        target: 'pino/file',
+        level: 'debug',
         options: {
           destination: logFile,
           mkdir: true,
@@ -68,13 +65,13 @@ export function initFileLogger(basePath: string): void {
 
   logger = pino(
     {
-      level: "debug",
+      level: 'debug',
       timestamp: pino.stdTimeFunctions.isoTime,
     },
-    transport
+    transport,
   );
 
-  logger.info({ session: sessionDir }, "🚀 Bot started");
+  logger.info({ session: sessionDir }, '🚀 Bot started');
 }
 
 /**
@@ -112,19 +109,15 @@ export function closeFileLogger(): void {
 export function debugLog(category: string, ...args: any[]): void {
   if (!logger) return;
   const message = args
-    .map((a) => (typeof a === "object" ? JSON.stringify(a) : String(a)))
-    .join(" ");
+    .map((a) => (typeof a === 'object' ? JSON.stringify(a) : String(a)))
+    .join(' ');
   logger.debug({ category }, message);
 }
 
 /**
  * Log tin nhắn IN/OUT
  */
-export function logMessage(
-  direction: "IN" | "OUT",
-  threadId: string,
-  data: any
-): void {
+export function logMessage(direction: 'IN' | 'OUT', threadId: string, data: any): void {
   if (!logger) return;
   logger.info({ direction, threadId, data }, `Message ${direction}`);
 }
@@ -140,12 +133,7 @@ export function logStep(step: string, details?: any): void {
 /**
  * Log API call
  */
-export function logAPI(
-  service: string,
-  action: string,
-  request?: any,
-  response?: any
-): void {
+export function logAPI(service: string, action: string, request?: any, response?: any): void {
   if (!logger) return;
   logger.debug({ service, action, request, response }, `API: ${service}`);
 }
@@ -157,10 +145,10 @@ export function logAIResponse(prompt: string, rawResponse: string): void {
   if (!logger) return;
   logger.debug(
     {
-      prompt: prompt.substring(0, 500) + (prompt.length > 500 ? "..." : ""),
+      prompt: prompt.substring(0, 500) + (prompt.length > 500 ? '...' : ''),
       response: rawResponse,
     },
-    "AI Response"
+    'AI Response',
   );
 }
 
@@ -180,7 +168,7 @@ export function logError(context: string, error: any): void {
         stack: error?.stack,
       },
     },
-    `Error in ${context}`
+    `Error in ${context}`,
   );
 }
 
@@ -190,10 +178,7 @@ export function logError(context: string, error: any): void {
 export function logAIHistory(threadId: string, history: any[]): void {
   if (!logger || !sessionDir) return;
 
-  logger.debug(
-    { threadId, messageCount: history.length },
-    "AI History updated"
-  );
+  logger.debug({ threadId, messageCount: history.length }, 'AI History updated');
 
   // Ghi raw JSON vào file riêng
   const historyFile = path.join(sessionDir, `history_${threadId}.json`);
@@ -208,7 +193,7 @@ export function logAIHistory(threadId: string, history: any[]): void {
             ...part,
             inlineData: {
               ...part.inlineData,
-              data: part.inlineData.data.substring(0, 100) + "...[truncated]",
+              data: `${part.inlineData.data.substring(0, 100)}...[truncated]`,
             },
           };
         }
@@ -221,25 +206,17 @@ export function logAIHistory(threadId: string, history: any[]): void {
       };
     }),
   };
-  fs.writeFileSync(historyFile, JSON.stringify(data, null, 2), "utf-8");
+  fs.writeFileSync(historyFile, JSON.stringify(data, null, 2), 'utf-8');
 }
 
 /**
  * Log Zalo API
  */
-export function logZaloAPI(
-  action: string,
-  request: any,
-  response?: any,
-  error?: any
-): void {
+export function logZaloAPI(action: string, request: any, response?: any, error?: any): void {
   if (!logger) return;
 
   if (error) {
-    logger.error(
-      { action, request, error: error?.message || error },
-      `ZALO: ${action} ERROR`
-    );
+    logger.error({ action, request, error: error?.message || error }, `ZALO: ${action} ERROR`);
   } else {
     logger.debug({ action, request, response }, `ZALO: ${action}`);
   }
@@ -251,13 +228,13 @@ export function logZaloAPI(
 export function logSystemPrompt(threadId: string, systemPrompt: string): void {
   if (!logger || !sessionDir) return;
 
-  logger.debug({ threadId }, "System prompt set");
+  logger.debug({ threadId }, 'System prompt set');
 
   const promptFile = path.join(sessionDir, `system_prompt_${threadId}.txt`);
-  const data = `Thread: ${threadId}\nTimestamp: ${new Date().toISOString()}\n${"=".repeat(
-    80
+  const data = `Thread: ${threadId}\nTimestamp: ${new Date().toISOString()}\n${'='.repeat(
+    80,
   )}\n\n${systemPrompt}`;
-  fs.writeFileSync(promptFile, data, "utf-8");
+  fs.writeFileSync(promptFile, data, 'utf-8');
 }
 
 // ═══════════════════════════════════════════════════
@@ -274,8 +251,6 @@ export function getLogger(): pino.Logger | undefined {
 /**
  * Create child logger with bindings
  */
-export function createChildLogger(
-  bindings: Record<string, any>
-): pino.Logger | undefined {
+export function createChildLogger(bindings: Record<string, any>): pino.Logger | undefined {
   return logger?.child(bindings);
 }

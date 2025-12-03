@@ -2,18 +2,18 @@
  * Gemini Config - Cấu hình và khởi tạo Gemini API
  * Runtime: Bun
  */
-import { GoogleGenAI } from "@google/genai";
-import { debugLog } from "../../core/logger/logger.js";
-import { setAIService } from "../../shared/types/ai.types.js";
+import { GoogleGenAI } from '@google/genai';
+import { debugLog } from '../../core/logger/logger.js';
+import { setAIService } from '../../shared/types/ai.types.js';
 
-const GEMINI_API_KEY = Bun.env.GEMINI_API_KEY || "";
+const GEMINI_API_KEY = Bun.env.GEMINI_API_KEY || '';
 
-if (!GEMINI_API_KEY || GEMINI_API_KEY === "your_gemini_api_key_here") {
-  console.error("❌ Vui lòng cấu hình GEMINI_API_KEY trong file .env");
+if (!GEMINI_API_KEY || GEMINI_API_KEY === 'your_gemini_api_key_here') {
+  console.error('❌ Vui lòng cấu hình GEMINI_API_KEY trong file .env');
   process.exit(1);
 }
 
-debugLog("GEMINI", "Initializing Gemini API...");
+debugLog('GEMINI', 'Initializing Gemini API...');
 
 export const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
 
@@ -22,7 +22,7 @@ setAIService({
   countTokens: (params) => ai.models.countTokens(params),
 });
 
-export const GEMINI_MODEL = "models/gemini-flash-latest";
+export const GEMINI_MODEL = 'models/gemini-flash-latest';
 
 export const GEMINI_CONFIG = {
   temperature: 1,
@@ -39,13 +39,11 @@ const YOUTUBE_REGEX =
   /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|v\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/gi;
 
 export function extractYouTubeUrls(text: string): string[] {
-  return [...text.matchAll(YOUTUBE_REGEX)].map(
-    (m) => `https://www.youtube.com/watch?v=${m[1]}`
-  );
+  return [...text.matchAll(YOUTUBE_REGEX)].map((m) => `https://www.youtube.com/watch?v=${m[1]}`);
 }
 
 // Media types
-export type MediaType = "image" | "video" | "audio" | "file" | "youtube";
+export type MediaType = 'image' | 'video' | 'audio' | 'file' | 'youtube';
 
 export interface MediaPart {
   type: MediaType;
