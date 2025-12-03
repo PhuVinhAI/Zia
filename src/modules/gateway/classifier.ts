@@ -12,7 +12,7 @@ export type MessageType =
   | "link"
   | "unknown";
 
-export interface ClassifiedMessage {
+export type ClassifiedMessage = {
   type: MessageType;
   message: any;
   text?: string;
@@ -24,7 +24,7 @@ export interface ClassifiedMessage {
   fileName?: string;
   fileExt?: string;
   stickerId?: string;
-}
+};
 
 /**
  * Phân loại tin nhắn chi tiết

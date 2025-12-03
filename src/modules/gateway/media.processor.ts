@@ -9,7 +9,7 @@ import {
   fetchAndConvertToTextBase64,
 } from "../../shared/utils/fetch.js";
 import { debugLog } from "../../core/logger/logger.js";
-import { ClassifiedMessage } from "./classifier.js";
+import type { ClassifiedMessage } from "./classifier.js";
 import { QuoteMedia } from "./quote.parser.js";
 
 /**

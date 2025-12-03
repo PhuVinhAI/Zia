@@ -1,11 +1,12 @@
 /**
  * Gemini Config - Cấu hình và khởi tạo Gemini API
+ * Runtime: Bun
  */
 import { GoogleGenAI } from "@google/genai";
 import { debugLog } from "../../core/logger/logger.js";
 import { setAIService } from "../../shared/types/ai.types.js";
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
+const GEMINI_API_KEY = Bun.env.GEMINI_API_KEY || "";
 
 if (!GEMINI_API_KEY || GEMINI_API_KEY === "your_gemini_api_key_here") {
   console.error("❌ Vui lòng cấu hình GEMINI_API_KEY trong file .env");

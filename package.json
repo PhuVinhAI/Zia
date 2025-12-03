@@ -2,12 +2,11 @@
   "name": "zalopi",
   "version": "1.0.0",
   "description": "ZaloPi - Zalo AI Bot using zca-js and Google Gemini",
-  "main": "dist/index.js",
+  "main": "src/index.ts",
   "type": "module",
   "scripts": {
-    "build": "tsc",
-    "start": "node dist/index.js",
-    "dev": "node --import=tsx src/index.ts"
+    "start": "bun src/index.ts",
+    "dev": "bun --watch src/index.ts"
   },
   "keywords": [
     "zalo",
@@ -18,13 +17,10 @@
   "license": "MIT",
   "dependencies": {
     "@google/genai": "^1.30.0",
-    "dotenv": "^16.4.5",
     "zca-js": "^2.0.4"
   },
   "devDependencies": {
-    "@types/node": "^22.10.1",
-    "ts-node": "^10.9.2",
-    "tsx": "^4.21.0",
+    "bun-types": "latest",
     "typescript": "^5.7.2"
   }
 }

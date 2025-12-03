@@ -26,9 +26,8 @@ import {
   classifyMessage,
   classifyMessages,
   countMessageTypes,
-  ClassifiedMessage,
-  MessageType,
 } from "./classifier.js";
+import type { ClassifiedMessage, MessageType } from "./classifier.js";
 import { prepareMediaParts, addQuoteMedia } from "./media.processor.js";
 import { extractQuoteInfo, QuoteMedia } from "./quote.parser.js";
 import {

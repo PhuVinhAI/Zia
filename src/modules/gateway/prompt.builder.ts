@@ -2,7 +2,7 @@
  * Prompt Builder - Xây dựng prompt cho Gemini API
  */
 import { PROMPTS } from "../../infrastructure/gemini/prompts.js";
-import { ClassifiedMessage } from "./classifier.js";
+import type { ClassifiedMessage } from "./classifier.js";
 
 /**
  * Build prompt thống nhất cho mọi loại tin nhắn

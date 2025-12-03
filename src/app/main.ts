@@ -5,8 +5,9 @@
  * 1. Khởi tạo core services
  * 2. Load tất cả modules
  * 3. Start message listener
+ *
+ * Runtime: Bun (https://bun.sh)
  */
-import "../shared/constants/env.js";
 import { CONFIG } from "../shared/constants/config.js";
 import {
   container,
