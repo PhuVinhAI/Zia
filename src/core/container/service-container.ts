@@ -56,4 +56,5 @@ export const Services = {
   EVENT_BUS: "event:bus",
   TOOL_REGISTRY: "tool:registry",
   MODULE_MANAGER: "module:manager",
+  DATABASE: "database",
 } as const;

@@ -2,6 +2,7 @@
  * App Module - Đăng ký và khởi tạo các modules
  */
 import { moduleManager, container, Services, eventBus } from "../core/index.js";
+import { databaseService } from "../infrastructure/database/index.js";
 
 // Import module instances
 import { systemModule } from "../modules/system/system.module.js";
@@ -13,6 +14,10 @@ import { gatewayModule } from "../modules/gateway/gateway.module.js";
  * Đăng ký tất cả modules vào ModuleManager
  */
 export async function registerModules(): Promise<void> {
+  // Initialize database first
+  databaseService.init();
+  container.register(Services.DATABASE, databaseService);
+
   // Register core services
   container.register(Services.EVENT_BUS, eventBus);
   container.register(Services.MODULE_MANAGER, moduleManager);

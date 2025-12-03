@@ -8,3 +8,7 @@ logs/
 
 # Bun
 bun.lockb
+
+# Database
+data/
+drizzle/

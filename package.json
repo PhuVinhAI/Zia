@@ -6,7 +6,10 @@
   "type": "module",
   "scripts": {
     "start": "bun src/index.ts",
-    "dev": "bun --watch src/index.ts"
+    "dev": "bun --watch src/index.ts",
+    "db:studio": "bun drizzle-kit studio",
+    "db:generate": "bun drizzle-kit generate",
+    "db:migrate": "bun drizzle-kit migrate"
   },
   "keywords": [
     "zalo",
@@ -17,10 +20,12 @@
   "license": "MIT",
   "dependencies": {
     "@google/genai": "^1.30.0",
+    "drizzle-orm": "^0.44.7",
     "zca-js": "^2.0.4"
   },
   "devDependencies": {
     "bun-types": "latest",
+    "drizzle-kit": "^0.31.7",
     "typescript": "^5.7.2"
   }
 }
