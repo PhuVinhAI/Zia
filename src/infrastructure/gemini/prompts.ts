@@ -1,5 +1,5 @@
 import { CHARACTER_PROMPT, CHARACTER } from "./character.js";
-import { generateToolsPrompt } from "../../modules/system/system.module.js";
+import { generateToolsPrompt } from "../../core/index.js";
 
 // ═══════════════════════════════════════════════════
 // SYSTEM PROMPT KHI BẬT CHARACTER (roleplay)

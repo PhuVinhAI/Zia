@@ -1,15 +1,40 @@
 /**
- * Gateway Module - Message Processing Pipeline
+ * Gateway Module - Message processing pipeline
  */
+import {
+  BaseModule,
+  type ModuleMetadata,
+  eventBus,
+  Events,
+} from "../../core/index.js";
 
-// Response handler
+export class GatewayModule extends BaseModule {
+  readonly metadata: ModuleMetadata = {
+    name: "gateway",
+    description: "Message processing and routing pipeline",
+    version: "1.0.0",
+  };
+
+  async onLoad(): Promise<void> {
+    console.log(`[Gateway] 🚀 Message gateway initialized`);
+  }
+
+  async onReady(): Promise<void> {
+    // Emit bot ready event
+    await eventBus.emit(Events.BOT_READY, { timestamp: Date.now() });
+  }
+}
+
+// Export singleton instance
+export const gatewayModule = new GatewayModule();
+
+// Re-export handlers
 export {
   sendResponse,
   createStreamCallbacks,
   setupSelfMessageListener,
 } from "./response.handler.js";
 
-// Mixed content handler - XỬ LÝ TẤT CẢ loại tin nhắn
 export {
   handleMixedContent,
   classifyMessageDetailed,
@@ -17,7 +42,6 @@ export {
   type MessageType,
 } from "./message.processor.js";
 
-// Tool handler - Xử lý custom tools
 export {
   handleToolCalls,
   isToolOnlyResponse,
@@ -26,36 +50,29 @@ export {
   type ToolHandlerResult,
 } from "./tool.handler.js";
 
-// Message classifier
 export {
   classifyMessage,
   classifyMessages,
   countMessageTypes,
 } from "./classifier.js";
 
-// Media processor
 export { prepareMediaParts, addQuoteMedia } from "./media.processor.js";
 
-// Quote parser
 export {
   parseQuoteAttachment,
   extractQuoteInfo,
   type QuoteMedia,
 } from "./quote.parser.js";
 
-// Prompt builder
 export {
   buildPrompt,
   extractTextFromMessages,
   processPrefix,
 } from "./prompt.builder.js";
 
-// Guards
-export { checkRateLimit, getRateLimitStatus } from "./rate-limit.guard.js";
-export { isUserAllowed, isGroupAllowed } from "./user.filter.js";
-
-// Module metadata
-export const GatewayModule = {
-  name: "Gateway",
-  description: "Message processing and routing",
-};
+export {
+  checkRateLimit,
+  markApiCall,
+  getRateLimitStatus,
+} from "./rate-limit.guard.js";
+export { isUserAllowed, isGroupAllowed, isAllowedUser } from "./user.filter.js";

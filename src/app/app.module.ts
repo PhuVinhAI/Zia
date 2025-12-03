@@ -1,17 +1,46 @@
 /**
- * App Module - Đăng ký các module sẽ chạy
+ * App Module - Đăng ký và khởi tạo các modules
  */
-import { AcademicModule } from "../modules/academic/academic.module.js";
-import { EntertainmentModule } from "../modules/entertainment/entertainment.module.js";
-import { SystemModule } from "../modules/system/system.module.js";
-import { GatewayModule } from "../modules/gateway/gateway.module.js";
+import { moduleManager, container, Services, eventBus } from "../core/index.js";
 
-// Chỉ cần thêm vào đây là tính năng tự động chạy
-export const registeredModules = [
-  GatewayModule,
-  AcademicModule,
-  EntertainmentModule,
-  SystemModule,
-];
+// Import module instances
+import { systemModule } from "../modules/system/system.module.js";
+import { academicModule } from "../modules/academic/academic.module.js";
+import { entertainmentModule } from "../modules/entertainment/entertainment.module.js";
+import { gatewayModule } from "../modules/gateway/gateway.module.js";
 
-export { AcademicModule, EntertainmentModule, SystemModule, GatewayModule };
+/**
+ * Đăng ký tất cả modules vào ModuleManager
+ */
+export async function registerModules(): Promise<void> {
+  // Register core services
+  container.register(Services.EVENT_BUS, eventBus);
+  container.register(Services.MODULE_MANAGER, moduleManager);
+
+  // Register modules (thứ tự quan trọng nếu có dependencies)
+  await moduleManager.register(gatewayModule);
+  await moduleManager.register(systemModule);
+  await moduleManager.register(academicModule);
+  await moduleManager.register(entertainmentModule);
+}
+
+/**
+ * Load tất cả modules
+ */
+export async function loadModules(): Promise<void> {
+  await moduleManager.loadAll();
+}
+
+/**
+ * Khởi tạo app (register + load)
+ */
+export async function initializeApp(): Promise<void> {
+  await registerModules();
+  await loadModules();
+}
+
+// Export module instances for direct access
+export { systemModule, academicModule, entertainmentModule, gatewayModule };
+
+// Export module manager
+export { moduleManager };

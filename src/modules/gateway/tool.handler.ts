@@ -14,11 +14,12 @@ import {
   parseToolCalls,
   hasToolCalls,
   executeAllTools,
-  ToolCall,
-  ToolContext,
-  ToolResult,
-} from "../system/system.module.js";
-import { debugLog, logStep } from "../../core/logger/logger.js";
+  debugLog,
+  logStep,
+  type ToolCall,
+  type ToolContext,
+  type ToolResult,
+} from "../../core/index.js";
 
 // ═══════════════════════════════════════════════════
 // TOOL RESPONSE FORMATTER

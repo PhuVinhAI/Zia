@@ -1,23 +1,32 @@
 /**
  * Zalo AI Bot - Entry Point
+ *
+ * Kiến trúc Modular/Plugin-First:
+ * 1. Khởi tạo core services
+ * 2. Load tất cả modules
+ * 3. Start message listener
  */
 import "../shared/constants/env.js";
-import { ThreadType } from "../infrastructure/zalo/zalo.service.js";
 import { CONFIG } from "../shared/constants/config.js";
+import {
+  container,
+  Services,
+  eventBus,
+  Events,
+  logMessage,
+  debugLog,
+  logStep,
+  logError,
+} from "../core/index.js";
 import { isAllowedUser } from "../modules/gateway/user.filter.js";
 import {
   initThreadHistory,
   isThreadInitialized,
 } from "../shared/utils/history.js";
-import {
-  logMessage,
-  debugLog,
-  logStep,
-  logError,
-} from "../core/logger/logger.js";
 import { abortTask } from "../shared/utils/taskManager.js";
 
-// Import từ các module mới
+// App setup
+import { initializeApp } from "./app.module.js";
 import {
   initLogging,
   printStartupInfo,
@@ -29,27 +38,35 @@ import {
 } from "./botSetup.js";
 import { addToBuffer } from "./messageBuffer.js";
 
-// Khởi tạo logging
-initLogging();
-
 async function main() {
+  // 1. Khởi tạo logging
+  initLogging();
   printStartupInfo();
 
-  // Đăng nhập Zalo
+  // 2. Đăng nhập Zalo
   const { api, myId } = await loginZalo();
 
-  // Setup listeners và preload history
+  // Register Zalo API vào container
+  container.register(Services.ZALO_API, api);
+
+  // 3. Khởi tạo và load tất cả modules
+  console.log("\n📦 Initializing modules...");
+  await initializeApp();
+
+  // 4. Setup listeners và preload history
   await setupListeners(api);
 
-  // Message handler
+  // 5. Message handler
   api.listener.on("message", async (message: any) => {
     const threadId = message.threadId;
-    const isSelf = message.isSelf;
 
     // Log RAW message
     if (CONFIG.fileLogging) {
       logMessage("IN", threadId, message);
     }
+
+    // Emit message received event
+    await eventBus.emit(Events.MESSAGE_RECEIVED, { threadId, message });
 
     // Kiểm tra Cloud Debug
     const cloudMessage = isCloudMessage(message);
@@ -90,7 +107,7 @@ async function main() {
     addToBuffer(api, threadId, message);
   });
 
-  console.log("👂 Bot đang lắng nghe...");
+  console.log("\n👂 Bot đang lắng nghe...");
   logStep("main:listening", "Bot is now listening for messages");
 }
 
