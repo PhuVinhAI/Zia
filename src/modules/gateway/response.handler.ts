@@ -8,6 +8,7 @@ import { http } from '../../shared/utils/httpClient.js';
 import {
   type CodeBlock,
   getFileExtension,
+  type LinkItem,
   type MediaImage,
   parseMarkdownToZalo,
 } from '../../shared/utils/markdownToZalo.js';
@@ -424,6 +425,12 @@ export async function sendResponse(
           await new Promise((r) => setTimeout(r, 300));
           await sendCodeFile(api, codeBlock, threadId);
         }
+
+        // Gửi tất cả links với preview
+        for (const link of parsed.links) {
+          await new Promise((r) => setTimeout(r, 300));
+          await sendLink(api, link.url, link.text, threadId);
+        }
       } catch (e: any) {
         logError('sendResponse:text', e);
         await api.sendMessage(msg.text, threadId, ThreadType.User);
@@ -571,6 +578,12 @@ export function createStreamCallbacks(
         for (const codeBlock of parsed.codeBlocks) {
           await new Promise((r) => setTimeout(r, 300));
           await sendCodeFile(api, codeBlock, threadId);
+        }
+
+        // Gửi tất cả links với preview
+        for (const link of parsed.links) {
+          await new Promise((r) => setTimeout(r, 300));
+          await sendLink(api, link.url, link.text, threadId);
         }
       } catch (e: any) {
         logError('onMessage', e);

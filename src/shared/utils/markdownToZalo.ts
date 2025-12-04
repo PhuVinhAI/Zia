@@ -38,11 +38,17 @@ export interface MediaImage {
   type: 'table' | 'mermaid';
 }
 
+export interface LinkItem {
+  url: string;
+  text?: string;
+}
+
 export interface ParsedMarkdown {
   text: string;
   styles: StyleItem[];
   codeBlocks: CodeBlock[];
   images: MediaImage[];
+  links: LinkItem[];
 }
 
 // ═══════════════════════════════════════════════════
@@ -279,8 +285,9 @@ function extractCodeBlocksAndTables(markdown: string): ExtractResult {
 // INLINE MARKDOWN TO ZALO STYLES
 // ═══════════════════════════════════════════════════
 
-function parseInlineStyles(text: string): { text: string; styles: StyleItem[] } {
+function parseInlineStyles(text: string): { text: string; styles: StyleItem[]; links: LinkItem[] } {
   const styles: StyleItem[] = [];
+  const links: LinkItem[] = [];
   let result = text;
 
   const patterns: Array<{ regex: RegExp; style: number }> = [
@@ -308,7 +315,7 @@ function parseInlineStyles(text: string): { text: string; styles: StyleItem[] } 
     }
   }
 
-  // Handle links
+  // Handle markdown links [text](url) - extract và replace bằng text có style
   const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
   let linkMatch: RegExpExecArray | null;
   linkRegex.lastIndex = 0;
@@ -319,14 +326,36 @@ function parseInlineStyles(text: string): { text: string; styles: StyleItem[] } 
     const url = linkMatch[2];
     const startIndex = linkMatch.index;
 
-    const replacement = `${linkText} (${url})`;
-    result = result.slice(0, startIndex) + replacement + result.slice(startIndex + fullMatch.length);
+    // Lưu link để gửi riêng với preview
+    links.push({ url, text: linkText });
+
+    // Replace bằng text có style underline
+    result = result.slice(0, startIndex) + linkText + result.slice(startIndex + fullMatch.length);
     styles.push({ start: startIndex, len: linkText.length, st: TextStyle.Blue | TextStyle.Underline });
     linkRegex.lastIndex = 0;
   }
 
+  // Handle bare URLs (http:// hoặc https://)
+  const bareUrlRegex = /(?<!\()(https?:\/\/[^\s\)]+)/g;
+  let bareMatch: RegExpExecArray | null;
+  bareUrlRegex.lastIndex = 0;
+
+  while ((bareMatch = bareUrlRegex.exec(result)) !== null) {
+    const url = bareMatch[1];
+    const startIndex = bareMatch.index;
+
+    // Chỉ thêm vào links nếu chưa có
+    if (!links.some(l => l.url === url)) {
+      links.push({ url });
+    }
+
+    // Style cho URL
+    styles.push({ start: startIndex, len: url.length, st: TextStyle.Blue | TextStyle.Underline });
+    bareUrlRegex.lastIndex = bareMatch.index + url.length;
+  }
+
   result = result.replace(/\n{3,}/g, '\n\n');
-  return { text: result.trim(), styles };
+  return { text: result.trim(), styles, links };
 }
 
 // ═══════════════════════════════════════════════════
@@ -336,7 +365,7 @@ function parseInlineStyles(text: string): { text: string; styles: StyleItem[] } 
 export async function parseMarkdownToZalo(markdown: string): Promise<ParsedMarkdown> {
   const normalized = markdown.replace(/\r\n/g, '\n').replace(/\\n/g, '\n');
   const { text: withoutCodeAndTables, codeBlocks, tables, mermaidCodes } = extractCodeBlocksAndTables(normalized);
-  const { text: finalText, styles } = parseInlineStyles(withoutCodeAndTables);
+  const { text: finalText, styles, links } = parseInlineStyles(withoutCodeAndTables);
 
   const images: MediaImage[] = [];
 
@@ -354,7 +383,7 @@ export async function parseMarkdownToZalo(markdown: string): Promise<ParsedMarkd
     }
   }
 
-  return { text: finalText, styles, codeBlocks, images };
+  return { text: finalText, styles, codeBlocks, images, links };
 }
 
 export function getFileExtension(language: string): string {
