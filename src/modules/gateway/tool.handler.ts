@@ -27,12 +27,18 @@ import { ThreadType } from '../../infrastructure/zalo/zalo.service.js';
 
 /**
  * Format kết quả tool thành prompt cho AI
+ * Loại bỏ các field binary (audio buffer) khỏi response
  */
 export function formatToolResultForAI(toolCall: ToolCall, result: ToolResult): string {
   if (result.success) {
+    // Clone data và loại bỏ binary fields
+    const cleanData = { ...result.data };
+    if (cleanData.audio) delete cleanData.audio;
+    if (cleanData.audioBase64) delete cleanData.audioBase64;
+
     return `[tool_result:${toolCall.toolName}]
 Kết quả thành công:
-${JSON.stringify(result.data, null, 2)}
+${JSON.stringify(cleanData, null, 2)}
 [/tool_result]`;
   } else {
     return `[tool_result:${toolCall.toolName}]
@@ -58,6 +64,51 @@ export function formatAllToolResults(
   }
 
   return `${parts.join('\n\n')}\n\nDựa trên kết quả tool ở trên, hãy trả lời user một cách tự nhiên.`;
+}
+
+// ═══════════════════════════════════════════════════
+// VOICE MESSAGE HANDLER (for TTS tool)
+// ═══════════════════════════════════════════════════
+
+/**
+ * Gửi voice message từ TTS tool result
+ */
+async function sendVoiceFromToolResult(
+  api: any,
+  threadId: string,
+  audioBuffer: Buffer,
+): Promise<void> {
+  try {
+    console.log(`[Tool] 🎤 Đang upload voice (${audioBuffer.length} bytes)...`);
+    debugLog('TOOL:TTS', `Uploading voice, size: ${audioBuffer.length}`);
+
+    // 1. Upload file lên Zalo để lấy link
+    const uploadResult = await api.uploadAttachment(
+      {
+        filename: `voice_${Date.now()}.mp3`,
+        data: audioBuffer,
+        metadata: { totalSize: audioBuffer.length, width: 0, height: 0 },
+      },
+      threadId,
+      ThreadType.User,
+    );
+
+    // 2. Lấy URL từ kết quả upload
+    const fileUrl = uploadResult[0]?.fileUrl || uploadResult[0]?.normalUrl;
+    if (!fileUrl) {
+      throw new Error('Không lấy được link file sau khi upload');
+    }
+
+    debugLog('TOOL:TTS', `Upload success, URL: ${fileUrl}`);
+
+    // 3. Gửi Voice Message
+    await api.sendVoice({ voiceUrl: fileUrl }, threadId, ThreadType.User);
+    console.log(`[Tool] ✅ Đã gửi voice message!`);
+  } catch (e: any) {
+    console.error(`[Tool] ❌ Lỗi gửi voice:`, e.message);
+    debugLog('TOOL:TTS', `Voice send error: ${e.message}`);
+    throw e;
+  }
 }
 
 // ═══════════════════════════════════════════════════
@@ -170,6 +221,18 @@ export async function handleToolCalls(
 
   // Execute all tools
   const results = await executeAllTools(toolCalls, context);
+
+  // Handle special tools that need immediate action (e.g., TTS → send voice)
+  for (const call of toolCalls) {
+    const result = results.get(call.rawTag);
+    if (result?.success && call.toolName === 'textToSpeech' && result.data?.audio) {
+      try {
+        await sendVoiceFromToolResult(api, threadId, result.data.audio);
+      } catch (e: any) {
+        debugLog('TOOL:TTS', `Failed to send voice: ${e.message}`);
+      }
+    }
+  }
 
   // Format results for AI
   const promptForAI = formatAllToolResults(toolCalls, results);

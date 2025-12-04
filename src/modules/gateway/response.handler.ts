@@ -121,6 +121,46 @@ async function sendImageFromUrl(
   }
 }
 
+/**
+ * Gửi voice message từ audio buffer
+ */
+async function sendVoiceFromBuffer(api: any, audioBuffer: Buffer, threadId: string) {
+  try {
+    debugLog('VOICE', `Sending voice message, size: ${audioBuffer.length} bytes`);
+    console.log(`[Bot] 🎤 Đang upload voice...`);
+
+    // 1. Upload file lên Zalo để lấy link
+    const uploadResult = await api.uploadAttachment(
+      {
+        filename: `voice_${Date.now()}.mp3`,
+        data: audioBuffer,
+        metadata: { totalSize: audioBuffer.length, width: 0, height: 0 },
+      },
+      threadId,
+      ThreadType.User,
+    );
+
+    // 2. Lấy URL từ kết quả upload
+    const fileUrl = uploadResult[0]?.fileUrl || uploadResult[0]?.normalUrl;
+    if (!fileUrl) {
+      throw new Error('Không lấy được link file sau khi upload');
+    }
+
+    logZaloAPI('uploadAttachment:voice', { threadId, size: audioBuffer.length }, uploadResult);
+
+    // 3. Gửi Voice Message bằng link vừa có
+    const result = await api.sendVoice({ voiceUrl: fileUrl }, threadId, ThreadType.User);
+    logZaloAPI('sendVoice', { voiceUrl: fileUrl, threadId }, result);
+
+    console.log(`[Bot] ✅ Đã gửi voice message!`);
+    logMessage('OUT', threadId, { type: 'voice', size: audioBuffer.length });
+  } catch (e: any) {
+    logZaloAPI('sendVoice', { threadId }, null, e);
+    logError('sendVoiceFromBuffer', e);
+    throw e;
+  }
+}
+
 async function sendSticker(api: any, keyword: string, threadId: string) {
   try {
     console.log(`[Bot] 🎨 Tìm sticker: "${keyword}"`);
@@ -391,6 +431,12 @@ export function createStreamCallbacks(
     onImage: async (url: string, caption?: string) => {
       messageCount++;
       await sendImageFromUrl(api, url, caption, threadId);
+      await new Promise((r) => setTimeout(r, 500));
+    },
+
+    onVoice: async (audioBuffer: Buffer) => {
+      messageCount++;
+      await sendVoiceFromBuffer(api, audioBuffer, threadId);
       await new Promise((r) => setTimeout(r, 500));
     },
 

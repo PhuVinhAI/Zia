@@ -28,6 +28,7 @@ export interface StreamCallbacks {
   onCard?: (userId?: string) => Promise<void>;
   onUndo?: (index: number) => Promise<void>;
   onImage?: (url: string, caption?: string) => Promise<void>;
+  onVoice?: (audioBuffer: Buffer) => Promise<void>;
   onComplete?: () => void | Promise<void>;
   onError?: (error: Error) => void;
   signal?: AbortSignal;
