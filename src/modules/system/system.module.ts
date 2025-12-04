@@ -2,6 +2,7 @@
  * System Module - Core system tools và tool registry
  */
 import { BaseModule, type ITool, type ModuleMetadata } from '../../core/index.js';
+import { youtubeChannelTool, youtubeSearchTool, youtubeVideoTool } from './system.module.js';
 import { createChartTool } from './tools/createChart.js';
 import { createFileTool } from './tools/createFile/index.js';
 import { executeCodeTool } from './tools/executeCode.js';
@@ -16,7 +17,7 @@ export class SystemModule extends BaseModule {
   readonly metadata: ModuleMetadata = {
     name: 'system',
     description:
-      'Core system tools (user info, friends, messaging, TTS, Word document, Charts, Code execution)',
+      'Core system tools (user info, friends, messaging, TTS, Word document, Charts, Code execution, YouTube)',
     version: '1.0.0',
   };
 
@@ -30,6 +31,9 @@ export class SystemModule extends BaseModule {
     createChartTool,
     solveMathTool,
     executeCodeTool,
+    youtubeSearchTool,
+    youtubeVideoTool,
+    youtubeChannelTool,
   ];
 
   get tools(): ITool[] {

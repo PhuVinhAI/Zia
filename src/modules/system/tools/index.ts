@@ -11,3 +11,4 @@ export { getFriendOnlinesTool } from './getFriendOnlines.js';
 export { getUserInfoTool } from './getUserInfo.js';
 export { solveMathTool } from './solveMath.js';
 export { textToSpeechTool } from './textToSpeech.js';
+export { youtubeChannelTool, youtubeSearchTool, youtubeVideoTool } from './youtube.js';

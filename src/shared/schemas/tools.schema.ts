@@ -220,6 +220,28 @@ export const TvuNotificationsSchema = z.object({
   limit: z.coerce.number().min(1).max(100).default(20),
 });
 
+// ============ YOUTUBE API TOOLS ============
+
+// YouTube Search params
+export const YouTubeSearchSchema = z.object({
+  q: z.string().min(1, 'Thiếu từ khóa tìm kiếm'),
+  type: z.enum(['video', 'channel', 'playlist']).default('video'),
+  maxResults: z.coerce.number().min(1).max(50).default(5),
+  order: z.enum(['relevance', 'date', 'rating', 'viewCount', 'title']).optional(),
+  videoDuration: z.enum(['any', 'short', 'medium', 'long']).optional(),
+  pageToken: z.string().optional(),
+});
+
+// YouTube Video Details params
+export const YouTubeVideoSchema = z.object({
+  videoId: z.string().min(1, 'Thiếu ID video YouTube'),
+});
+
+// YouTube Channel Details params
+export const YouTubeChannelSchema = z.object({
+  channelId: z.string().min(1, 'Thiếu ID channel YouTube'),
+});
+
 // ============ HELPER FUNCTION ============
 
 /**
@@ -260,3 +282,6 @@ export type TextToSpeechParams = z.infer<typeof TextToSpeechSchema>;
 export type FreepikImageParams = z.infer<typeof FreepikImageSchema>;
 export type CreateFileParams = z.infer<typeof CreateFileSchema>;
 export type CreateChartParams = z.infer<typeof CreateChartSchema>;
+export type YouTubeSearchParams = z.infer<typeof YouTubeSearchSchema>;
+export type YouTubeVideoParams = z.infer<typeof YouTubeVideoSchema>;
+export type YouTubeChannelParams = z.infer<typeof YouTubeChannelSchema>;
