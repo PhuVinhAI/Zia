@@ -72,6 +72,6 @@
   "modules": {
     "system": true,
     "academic": false,
-    "entertainment": false
+    "entertainment": true
   }
 }

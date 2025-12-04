@@ -11,6 +11,8 @@ import { jikanRecommendationsTool } from './tools/jikanRecommendations.js';
 import { jikanSearchTool } from './tools/jikanSearch.js';
 import { jikanSeasonTool } from './tools/jikanSeason.js';
 import { jikanTopTool } from './tools/jikanTop.js';
+import { nekosImagesTool } from './tools/nekosImages.js';
+import { nekosSearchTool } from './tools/nekosSearch.js';
 
 export class EntertainmentModule extends BaseModule {
   readonly metadata: ModuleMetadata = {
@@ -28,6 +30,8 @@ export class EntertainmentModule extends BaseModule {
     jikanRecommendationsTool,
     jikanGenresTool,
     jikanEpisodesTool,
+    nekosImagesTool,
+    nekosSearchTool,
   ];
 
   get tools(): ITool[] {
@@ -35,7 +39,7 @@ export class EntertainmentModule extends BaseModule {
   }
 
   async onLoad(): Promise<void> {
-    console.log(`[Entertainment] 🎬 Loading ${this._tools.length} Jikan tools`);
+    console.log(`[Entertainment] 🎬 Loading ${this._tools.length} entertainment tools`);
   }
 }
 
