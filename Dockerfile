@@ -20,6 +20,11 @@ FROM oven/bun:1-slim
 
 WORKDIR /app
 
+# Install fonts for PDF Vietnamese support
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    fonts-dejavu-core \
+    && rm -rf /var/lib/apt/lists/*
+
 # Copy from builder
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./

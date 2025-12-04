@@ -36,7 +36,12 @@ import {
 type FileHandler = (content: string, options?: CreateFileParams) => Promise<Buffer>;
 
 const textFileHandler: FileHandler = async (content: string): Promise<Buffer> => {
-  return Buffer.from(content, 'utf-8');
+  // Normalize newlines: convert literal \n to actual newline
+  const normalizedContent = content
+    .replace(/\\n/g, '\n')
+    .replace(/\\r\\n/g, '\r\n')
+    .replace(/\\t/g, '\t');
+  return Buffer.from(normalizedContent, 'utf-8');
 };
 
 // ═══════════════════════════════════════════════════
@@ -192,6 +197,23 @@ const wordFileHandler: FileHandler = async (
 
 type PDFDoc = InstanceType<typeof PDFDocument>;
 
+function getPdfFont(isBold: boolean, isItalic: boolean, isCode: boolean): string {
+  if (isCode) return 'Courier';
+
+  if (unicodeFontsAvailable) {
+    if (isBold && isItalic) return 'UniFont-BoldItalic';
+    if (isBold) return 'UniFont-Bold';
+    if (isItalic) return 'UniFont-Italic';
+    return 'UniFont';
+  }
+
+  // Fallback to Helvetica (no Vietnamese support)
+  if (isBold && isItalic) return 'Helvetica-BoldOblique';
+  if (isBold) return 'Helvetica-Bold';
+  if (isItalic) return 'Helvetica-Oblique';
+  return 'Helvetica';
+}
+
 function renderPdfTokens(doc: PDFDoc, tokens: InlineToken[], baseSize = 12): void {
   for (let i = 0; i < tokens.length; i++) {
     const token = tokens[i];
@@ -201,12 +223,7 @@ function renderPdfTokens(doc: PDFDoc, tokens: InlineToken[], baseSize = 12): voi
     const isCode = hasStyle(token, 'code');
     const isLink = hasStyle(token, 'link');
 
-    let font = 'Helvetica';
-    if (isCode) font = 'Courier';
-    else if (isBold && isItalic) font = 'Helvetica-BoldOblique';
-    else if (isBold) font = 'Helvetica-Bold';
-    else if (isItalic) font = 'Helvetica-Oblique';
-
+    const font = getPdfFont(isBold, isItalic, isCode);
     doc.font(font).fontSize(baseSize);
 
     if (isLink && token.href) {
@@ -222,45 +239,49 @@ function renderPdfTokens(doc: PDFDoc, tokens: InlineToken[], baseSize = 12): voi
 }
 
 function renderPdfBlock(doc: PDFDoc, block: Block): void {
+  const defaultFont = getPdfFont(false, false, false);
+  const boldFont = getPdfFont(true, false, false);
+  const italicFont = getPdfFont(false, true, false);
+
   switch (block.type) {
     case 'empty':
       doc.moveDown(0.5);
       break;
     case 'heading1':
-      doc.fontSize(24).font('Helvetica-Bold');
+      doc.fontSize(24).font(boldFont);
       renderPdfTokens(doc, block.tokens, 24);
       doc.moveDown(0.5);
       break;
     case 'heading2':
-      doc.fontSize(20).font('Helvetica-Bold');
+      doc.fontSize(20).font(boldFont);
       renderPdfTokens(doc, block.tokens, 20);
       doc.moveDown(0.4);
       break;
     case 'heading3':
-      doc.fontSize(16).font('Helvetica-Bold');
+      doc.fontSize(16).font(boldFont);
       renderPdfTokens(doc, block.tokens, 16);
       doc.moveDown(0.3);
       break;
     case 'heading4':
-      doc.fontSize(14).font('Helvetica-Bold');
+      doc.fontSize(14).font(boldFont);
       renderPdfTokens(doc, block.tokens, 14);
       doc.moveDown(0.3);
       break;
     case 'bullet': {
       const indent = (block.indent || 0) * 20 + 20;
       const bullet = block.indent === 0 ? '• ' : block.indent === 1 ? '◦ ' : '▪ ';
-      doc.fontSize(12).font('Helvetica').text(bullet, { continued: true, indent });
+      doc.fontSize(12).font(defaultFont).text(bullet, { continued: true, indent });
       renderPdfTokens(doc, block.tokens, 12);
       break;
     }
     case 'numbered': {
       const indent = (block.indent || 0) * 20 + 20;
-      doc.fontSize(12).font('Helvetica').text('', { indent });
+      doc.fontSize(12).font(defaultFont).text('', { indent });
       renderPdfTokens(doc, block.tokens, 12);
       break;
     }
     case 'blockquote':
-      doc.fontSize(12).font('Helvetica-Oblique').text('', { indent: 30 });
+      doc.fontSize(12).font(italicFont).text('', { indent: 30 });
       renderPdfTokens(doc, block.tokens, 12);
       doc.moveDown(0.3);
       break;
@@ -280,11 +301,57 @@ function renderPdfBlock(doc: PDFDoc, block: Block): void {
       doc.moveDown(0.5);
       break;
     default:
-      doc.fontSize(12).font('Helvetica');
+      doc.fontSize(12).font(defaultFont);
       renderPdfTokens(doc, block.tokens, 12);
       doc.moveDown(0.3);
       break;
   }
+}
+
+// Font paths for different OS - supports Vietnamese/Unicode
+const FONT_PATHS: Record<
+  string,
+  { regular: string; bold: string; italic: string; boldItalic: string }
+> = {
+  win32: {
+    regular: 'C:/Windows/Fonts/arial.ttf',
+    bold: 'C:/Windows/Fonts/arialbd.ttf',
+    italic: 'C:/Windows/Fonts/ariali.ttf',
+    boldItalic: 'C:/Windows/Fonts/arialbi.ttf',
+  },
+  linux: {
+    regular: '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
+    bold: '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf',
+    italic: '/usr/share/fonts/truetype/dejavu/DejaVuSans-Oblique.ttf',
+    boldItalic: '/usr/share/fonts/truetype/dejavu/DejaVuSans-BoldOblique.ttf',
+  },
+  darwin: {
+    regular: '/System/Library/Fonts/Supplemental/Arial.ttf',
+    bold: '/System/Library/Fonts/Supplemental/Arial Bold.ttf',
+    italic: '/System/Library/Fonts/Supplemental/Arial Italic.ttf',
+    boldItalic: '/System/Library/Fonts/Supplemental/Arial Bold Italic.ttf',
+  },
+};
+
+let unicodeFontsAvailable = false;
+
+function registerUnicodeFonts(doc: PDFDoc): boolean {
+  const platform = process.platform as keyof typeof FONT_PATHS;
+  const fonts = FONT_PATHS[platform] || FONT_PATHS.linux;
+
+  try {
+    const fs = require('node:fs');
+    if (fs.existsSync(fonts.regular)) {
+      doc.registerFont('UniFont', fonts.regular);
+      doc.registerFont('UniFont-Bold', fonts.bold);
+      doc.registerFont('UniFont-Italic', fonts.italic);
+      doc.registerFont('UniFont-BoldItalic', fonts.boldItalic);
+      return true;
+    }
+  } catch {
+    // Font registration failed
+  }
+  return false;
 }
 
 const pdfFileHandler: FileHandler = async (
@@ -303,13 +370,17 @@ const pdfFileHandler: FileHandler = async (
         },
       });
 
+      // Register Unicode fonts for Vietnamese support
+      unicodeFontsAvailable = registerUnicodeFonts(doc);
+
       const chunks: Buffer[] = [];
       doc.on('data', (chunk: Buffer) => chunks.push(chunk));
       doc.on('end', () => resolve(Buffer.concat(chunks)));
       doc.on('error', reject);
 
       if (opts?.title) {
-        doc.fontSize(28).font('Helvetica-Bold').text(opts.title, { align: 'center' });
+        const titleFont = unicodeFontsAvailable ? 'UniFont-Bold' : 'Helvetica-Bold';
+        doc.fontSize(28).font(titleFont).text(opts.title, { align: 'center' });
         doc.moveDown(1.5);
       }
 

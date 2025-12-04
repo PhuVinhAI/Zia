@@ -158,7 +158,9 @@ export function parseInline(text: string): InlineToken[] {
  * Parse markdown content thành blocks
  */
 export function parseMarkdown(content: string): Block[] {
-  const lines = content.split('\n');
+  // Normalize literal \n to actual newlines before parsing
+  const normalizedContent = content.replace(/\\n/g, '\n').replace(/\\r\\n/g, '\r\n');
+  const lines = normalizedContent.split('\n');
   const blocks: Block[] = [];
   let i = 0;
 
