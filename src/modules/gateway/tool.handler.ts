@@ -350,6 +350,15 @@ export async function handleToolCalls(
       }
     }
 
+    // Mermaid diagram → send image
+    if (call.toolName === 'createMermaid' && result.data?.imageBuffer) {
+      try {
+        await sendImageFromToolResult(api, threadId, result.data.imageBuffer, result.data.filename);
+      } catch (e: any) {
+        debugLog('TOOL:MERMAID', `Failed to send mermaid image: ${e.message}`);
+      }
+    }
+
     // solveMath → send PDF
     if (call.toolName === 'solveMath' && result.data?.fileBuffer) {
       try {

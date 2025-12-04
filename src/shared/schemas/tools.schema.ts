@@ -202,6 +202,13 @@ export const CreateChartSchema = z.object({
   height: z.coerce.number().min(200).max(2000).optional(),
 });
 
+// Create Mermaid Diagram params
+export const CreateMermaidSchema = z.object({
+  code: z.string().min(1, 'Thiếu mã Mermaid diagram'),
+  theme: z.enum(['default', 'dark', 'forest', 'neutral']).optional(),
+  bgColor: z.string().optional(),
+});
+
 // ============ ACADEMIC TOOLS ============
 
 // TVU Login params
@@ -282,6 +289,7 @@ export type TextToSpeechParams = z.infer<typeof TextToSpeechSchema>;
 export type FreepikImageParams = z.infer<typeof FreepikImageSchema>;
 export type CreateFileParams = z.infer<typeof CreateFileSchema>;
 export type CreateChartParams = z.infer<typeof CreateChartSchema>;
+export type CreateMermaidParams = z.infer<typeof CreateMermaidSchema>;
 export type YouTubeSearchParams = z.infer<typeof YouTubeSearchSchema>;
 export type YouTubeVideoParams = z.infer<typeof YouTubeVideoSchema>;
 export type YouTubeChannelParams = z.infer<typeof YouTubeChannelSchema>;
