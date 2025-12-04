@@ -18,7 +18,7 @@
     "selfListen": true,
     "logging": true,
     "useStreaming": true,
-    "useCharacter": false,
+    "useCharacter": true,
     "fileLogging": true,
     "logFile": "logs/bot.txt",
     "unauthorizedLogFile": "logs/unauthorized.json",
