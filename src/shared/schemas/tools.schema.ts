@@ -180,6 +180,28 @@ export const GetUserInfoSchema = z.object({
   userId: z.string().optional(),
 });
 
+// Create Chart params
+export const CreateChartSchema = z.object({
+  type: z.enum(['bar', 'line', 'pie', 'doughnut', 'radar', 'polarArea']),
+  title: z.string().min(1, 'Thiếu tiêu đề biểu đồ'),
+  labels: z.array(z.string()).min(1, 'Cần ít nhất 1 label'),
+  datasets: z
+    .array(
+      z.object({
+        label: z.string().optional(),
+        data: z.array(z.coerce.number()),
+        backgroundColor: z.union([z.string(), z.array(z.string())]).optional(),
+        borderColor: z.union([z.string(), z.array(z.string())]).optional(),
+        borderWidth: z.coerce.number().optional(),
+        fill: z.boolean().optional(),
+        tension: z.coerce.number().optional(),
+      }),
+    )
+    .min(1, 'Cần ít nhất 1 dataset'),
+  width: z.coerce.number().min(200).max(2000).optional(),
+  height: z.coerce.number().min(200).max(2000).optional(),
+});
+
 // ============ ACADEMIC TOOLS ============
 
 // TVU Login params
@@ -237,3 +259,4 @@ export type NekosImagesParams = z.infer<typeof NekosImagesSchema>;
 export type TextToSpeechParams = z.infer<typeof TextToSpeechSchema>;
 export type FreepikImageParams = z.infer<typeof FreepikImageSchema>;
 export type CreateFileParams = z.infer<typeof CreateFileSchema>;
+export type CreateChartParams = z.infer<typeof CreateChartSchema>;

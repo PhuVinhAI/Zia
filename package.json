@@ -24,6 +24,8 @@
   "dependencies": {
     "@elevenlabs/elevenlabs-js": "^2.26.0",
     "@google/genai": "^1.30.0",
+    "chart.js": "^4.5.1",
+    "chartjs-node-canvas": "^5.0.0",
     "dayjs": "^1.11.19",
     "docx": "^9.5.1",
     "drizzle-orm": "^0.44.7",

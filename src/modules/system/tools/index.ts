@@ -2,6 +2,7 @@
  * System Tools - Export tất cả tools
  */
 
+export { createChartTool } from './createChart.js';
 export { createFileTool } from './createFile/index.js';
 export { freepikImageTool } from './freepikImage.js';
 export { getAllFriendsTool } from './getAllFriends.js';
