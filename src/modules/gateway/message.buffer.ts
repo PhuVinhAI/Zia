@@ -10,8 +10,10 @@ import { ThreadType } from '../../infrastructure/zalo/zalo.service.js';
 import { CONFIG } from '../../shared/constants/config.js';
 import { clearHistory } from '../../shared/utils/history.js';
 import {
+  clearPendingToolExecution,
   getAndClearAbortedMessages,
   hasAbortedMessages,
+  hasPendingToolExecution,
   saveAbortedMessages,
   startTask,
 } from '../../shared/utils/taskManager.js';
@@ -87,19 +89,31 @@ async function processBatch(batch: BufferedMessage[]) {
   const threadId = batch[0].threadId;
   const api = batch[0].api;
   let messages = batch.map((b) => b.message);
-  let _wasAborted = false;
 
   // Gom nhóm tin nhắn từ task bị abort trước đó
   if (hasAbortedMessages(threadId)) {
     const abortedMsgs = getAndClearAbortedMessages(threadId);
-    messages = [...abortedMsgs, ...messages];
-    // Xóa history cũ để giảm context khi gom nhóm
-    clearHistory(threadId);
-    _wasAborted = true;
-    console.log(
-      `[Bot] 🔄 Gom nhóm ${abortedMsgs.length} tin cũ + ${batch.length} tin mới, đã xóa history cũ`,
-    );
-    debugLog('BUFFER', `Merged ${abortedMsgs.length} aborted + ${batch.length} new messages`);
+
+    // Nếu task trước có tool đang chờ execute (đã được execute trong abort handler)
+    // thì KHÔNG merge messages cũ, chỉ xử lý messages mới
+    if (hasPendingToolExecution(threadId)) {
+      clearPendingToolExecution(threadId);
+      console.log(`[Bot] 🔄 Task trước có tool đã execute, xử lý ${batch.length} tin mới`);
+      debugLog(
+        'BUFFER',
+        `Previous task had tool executed, processing ${batch.length} new messages only`,
+      );
+      // KHÔNG clear history vì tool result đã được lưu
+    } else {
+      // Không có tool, merge messages như cũ
+      messages = [...abortedMsgs, ...messages];
+      // Xóa history cũ để giảm context khi gom nhóm
+      clearHistory(threadId);
+      console.log(
+        `[Bot] 🔄 Gom nhóm ${abortedMsgs.length} tin cũ + ${batch.length} tin mới, đã xóa history cũ`,
+      );
+      debugLog('BUFFER', `Merged ${abortedMsgs.length} aborted + ${batch.length} new messages`);
+    }
   }
 
   debugLog('BUFFER', `Processing batch of ${messages.length} messages for ${threadId}`);

@@ -6,6 +6,10 @@ const activeTasks = new Map<string, AbortController>();
 // Lưu trữ tin nhắn đã xử lý của task bị abort để gom nhóm
 const abortedTaskMessages = new Map<string, any[]>();
 
+// Track các thread có tool đã được execute khi abort
+// Dùng để quyết định có merge messages hay không
+const pendingToolExecutions = new Set<string>();
+
 /**
  * Đăng ký một tác vụ mới cho thread.
  * Nếu thread đó đang có tác vụ chạy dở -> HỦY NGAY LẬP TỨC.
@@ -64,4 +68,28 @@ export function getAndClearAbortedMessages(threadId: string): any[] {
  */
 export function hasAbortedMessages(threadId: string): boolean {
   return abortedTaskMessages.has(threadId) && (abortedTaskMessages.get(threadId)?.length || 0) > 0;
+}
+
+/**
+ * Đánh dấu thread có tool đã được execute khi abort
+ * Dùng để quyết định có merge messages hay không trong batch tiếp theo
+ */
+export function markPendingToolExecution(threadId: string): void {
+  pendingToolExecutions.add(threadId);
+  debugLog('TASK', `Marked pending tool execution for thread ${threadId}`);
+}
+
+/**
+ * Kiểm tra thread có tool đang chờ không
+ */
+export function hasPendingToolExecution(threadId: string): boolean {
+  return pendingToolExecutions.has(threadId);
+}
+
+/**
+ * Xóa đánh dấu tool đang chờ
+ */
+export function clearPendingToolExecution(threadId: string): void {
+  pendingToolExecutions.delete(threadId);
+  debugLog('TASK', `Cleared pending tool execution for thread ${threadId}`);
 }

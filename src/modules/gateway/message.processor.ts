@@ -18,6 +18,7 @@ import {
   saveToHistory,
   saveToolResultToHistory,
 } from '../../shared/utils/history.js';
+import { markPendingToolExecution } from '../../shared/utils/taskManager.js';
 import type { ClassifiedMessage, MessageType } from './classifier.js';
 // Import từ các module mới
 import { classifyMessage, classifyMessages, countMessageTypes } from './classifier.js';
@@ -235,7 +236,20 @@ async function processStreamingResponse(
 
   if (signal?.aborted) {
     debugLog('MIXED', `Aborted with ${result ? 'partial' : 'no'} response`);
-    if (result) await saveResponseToHistory(threadId, result);
+    if (result) {
+      await saveResponseToHistory(threadId, result);
+
+      // Nếu có tool call trong response, vẫn execute tool trước khi return
+      // Điều này đảm bảo tool như freepikImage vẫn gửi ảnh dù bị abort
+      const toolResult = await handleToolCalls(result, api, threadId, senderId, senderName);
+      if (toolResult.hasTools) {
+        debugLog('MIXED', `Executing ${toolResult.toolCalls.length} tool(s) despite abort`);
+        // Lưu tool result vào history để AI biết tool đã chạy
+        await saveToolResultToHistory(threadId, toolResult.promptForAI);
+        // Đánh dấu để buffer biết không cần merge messages
+        markPendingToolExecution(threadId);
+      }
+    }
     return;
   }
 
