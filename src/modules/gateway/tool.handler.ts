@@ -137,7 +137,7 @@ async function sendDocumentFromToolResult(
 
     await api.sendMessage(
       {
-        msg: `📄 Đã tạo file: ${filename}`,
+        msg: '', // Không gửi text, để AI tự trả lời
         attachments: [attachment],
       },
       threadId,
