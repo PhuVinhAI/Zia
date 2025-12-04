@@ -25,6 +25,7 @@ export const BotConfigSchema = z.object({
   unauthorizedLogFile: z.string().default('logs/unauthorized.json'),
   maxToolDepth: z.coerce.number().min(1).max(50).default(10),
   showToolCalls: z.boolean().default(true),
+  allowNSFW: z.boolean().default(false),
   cloudDebug: CloudDebugSchema.optional().default({
     enabled: false,
     prefix: '#bot',
@@ -93,6 +94,7 @@ export const SettingsSchema = z.object({
     unauthorizedLogFile: 'logs/unauthorized.json',
     maxToolDepth: 10,
     showToolCalls: true,
+    allowNSFW: false,
     cloudDebug: { enabled: false, prefix: '#bot' },
   }),
   retry: RetryConfigSchema.optional().default({

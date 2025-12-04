@@ -68,6 +68,7 @@ function buildConfig(settings: Settings) {
     unauthorizedLogFile: settings.bot.unauthorizedLogFile,
     maxToolDepth: settings.bot.maxToolDepth,
     showToolCalls: settings.bot.showToolCalls,
+    allowNSFW: settings.bot.allowNSFW,
     cloudDebug: settings.bot.cloudDebug,
     allowedUserIds: settings.allowedUserIds,
     retry: settings.retry,

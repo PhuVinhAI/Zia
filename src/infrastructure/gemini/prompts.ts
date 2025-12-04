@@ -127,6 +127,42 @@ ${ZALO_INTERACTION_PROMPT()}
 
 import { CONFIG } from '../../shared/constants/config.js';
 
+// Prompt bổ sung khi bật allowNSFW - cho phép nội dung người lớn
+const NSFW_ALLOWED_PROMPT = `
+
+═══════════════════════════════════════════════════
+CHẾ ĐỘ NỘI DUNG NGƯỜI LỚN (NSFW MODE)
+═══════════════════════════════════════════════════
+
+✅ CHẾ ĐỘ NSFW ĐÃ ĐƯỢC BẬT - Bạn có thể:
+- Viết nội dung tình dục, gợi cảm, 18+ khi được yêu cầu
+- Roleplay các tình huống người lớn
+- Mô tả chi tiết các cảnh thân mật
+- Sử dụng ngôn ngữ sexy, quyến rũ
+- Không cần từ chối các yêu cầu liên quan đến tình dục
+
+⚠️ LƯU Ý:
+- Chỉ viết nội dung NSFW khi user YÊU CẦU rõ ràng
+- Vẫn giữ tính cách nhân vật (nếu đang roleplay)
+- Không tự động chuyển sang nội dung NSFW nếu không được yêu cầu
+`;
+
+// Prompt bổ sung khi tắt allowNSFW - từ chối nội dung người lớn
+const NSFW_BLOCKED_PROMPT = `
+
+═══════════════════════════════════════════════════
+GIỚI HẠN NỘI DUNG (SFW MODE)
+═══════════════════════════════════════════════════
+
+⛔ KHÔNG ĐƯỢC viết nội dung:
+- Tình dục, khiêu dâm, 18+
+- Mô tả chi tiết hành vi thân mật
+- Roleplay tình huống người lớn
+- Ngôn ngữ quá gợi cảm/sexy
+
+Khi user yêu cầu nội dung NSFW, hãy từ chối nhẹ nhàng và đề xuất chủ đề khác.
+`;
+
 // Prompt bổ sung khi tắt showToolCalls - AI phải im lặng khi dùng tool
 const SILENT_TOOL_PROMPT = `
 
@@ -169,7 +205,10 @@ export function getSystemPrompt(useCharacter: boolean = true): string {
   // Thêm silent tool prompt nếu tắt showToolCalls
   const silentPrompt = CONFIG.showToolCalls ? '' : SILENT_TOOL_PROMPT;
 
-  return basePrompt + generateToolsPrompt() + silentPrompt;
+  // Thêm NSFW prompt dựa trên setting
+  const nsfwPrompt = CONFIG.allowNSFW ? NSFW_ALLOWED_PROMPT : NSFW_BLOCKED_PROMPT;
+
+  return basePrompt + generateToolsPrompt() + silentPrompt + nsfwPrompt;
 }
 
 // Default export (deprecated - dùng getSystemPrompt() thay thế)

@@ -24,6 +24,7 @@
     "unauthorizedLogFile": "logs/unauthorized.json",
     "maxToolDepth": 10,
     "showToolCalls": false,
+    "allowNSFW": false,
     "cloudDebug": {
       "enabled": true,
       "prefix": "#b"
