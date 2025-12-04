@@ -2,6 +2,7 @@
  * System Module - Core system tools và tool registry
  */
 import { BaseModule, type ITool, type ModuleMetadata } from '../../core/index.js';
+import { createWordDocumentTool } from './tools/createWordDocument.js';
 import { freepikImageTool } from './tools/freepikImage.js';
 import { getAllFriendsTool } from './tools/getAllFriends.js';
 import { getFriendOnlinesTool } from './tools/getFriendOnlines.js';
@@ -11,7 +12,7 @@ import { textToSpeechTool } from './tools/textToSpeech.js';
 export class SystemModule extends BaseModule {
   readonly metadata: ModuleMetadata = {
     name: 'system',
-    description: 'Core system tools (user info, friends, messaging, TTS)',
+    description: 'Core system tools (user info, friends, messaging, TTS, Word document)',
     version: '1.0.0',
   };
 
@@ -21,6 +22,7 @@ export class SystemModule extends BaseModule {
     getFriendOnlinesTool,
     textToSpeechTool,
     freepikImageTool,
+    createWordDocumentTool,
   ];
 
   get tools(): ITool[] {

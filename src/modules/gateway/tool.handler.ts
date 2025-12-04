@@ -35,6 +35,7 @@ export function formatToolResultForAI(toolCall: ToolCall, result: ToolResult): s
     const cleanData = { ...result.data };
     if (cleanData.audio) delete cleanData.audio;
     if (cleanData.audioBase64) delete cleanData.audioBase64;
+    if (cleanData.document) delete cleanData.document; // Word document buffer
 
     return `[tool_result:${toolCall.toolName}]
 Kết quả thành công:
@@ -107,6 +108,47 @@ async function sendVoiceFromToolResult(
   } catch (e: any) {
     console.error(`[Tool] ❌ Lỗi gửi voice:`, e.message);
     debugLog('TOOL:TTS', `Voice send error: ${e.message}`);
+    throw e;
+  }
+}
+
+/**
+ * Gửi file document (Word, PDF, etc.) từ tool result
+ */
+async function sendDocumentFromToolResult(
+  api: any,
+  threadId: string,
+  buffer: Buffer,
+  filename: string,
+): Promise<void> {
+  try {
+    console.log(`[Tool] 📄 Đang gửi file ${filename} (${buffer.length} bytes)...`);
+    debugLog('TOOL:DOC', `Sending document: ${filename}, size: ${buffer.length}`);
+
+    const attachment = {
+      filename,
+      data: buffer,
+      metadata: {
+        width: 0,
+        height: 0,
+        totalSize: buffer.length,
+      },
+    };
+
+    await api.sendMessage(
+      {
+        msg: `📄 Đã tạo file: ${filename}`,
+        attachments: [attachment],
+      },
+      threadId,
+      ThreadType.User,
+    );
+
+    console.log(`[Tool] ✅ Đã gửi file ${filename}!`);
+    debugLog('TOOL:DOC', `Document sent successfully: ${filename}`);
+  } catch (e: any) {
+    console.error(`[Tool] ❌ Lỗi gửi file:`, e.message);
+    debugLog('TOOL:DOC', `Document send error: ${e.message}`);
     throw e;
   }
 }
@@ -222,14 +264,26 @@ export async function handleToolCalls(
   // Execute all tools
   const results = await executeAllTools(toolCalls, context);
 
-  // Handle special tools that need immediate action (e.g., TTS → send voice)
+  // Handle special tools that need immediate action (e.g., TTS → send voice, Word → send file)
   for (const call of toolCalls) {
     const result = results.get(call.rawTag);
-    if (result?.success && call.toolName === 'textToSpeech' && result.data?.audio) {
+    if (!result?.success) continue;
+
+    // TTS → send voice
+    if (call.toolName === 'textToSpeech' && result.data?.audio) {
       try {
         await sendVoiceFromToolResult(api, threadId, result.data.audio);
       } catch (e: any) {
         debugLog('TOOL:TTS', `Failed to send voice: ${e.message}`);
+      }
+    }
+
+    // Word Document → send file
+    if (call.toolName === 'createWordDocument' && result.data?.document) {
+      try {
+        await sendDocumentFromToolResult(api, threadId, result.data.document, result.data.filename);
+      } catch (e: any) {
+        debugLog('TOOL:DOC', `Failed to send document: ${e.message}`);
       }
     }
   }

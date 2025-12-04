@@ -149,6 +149,14 @@ export const TextToSpeechSchema = z.object({
 
 // ============ SYSTEM TOOLS ============
 
+// Create Word Document params
+export const CreateWordDocumentSchema = z.object({
+  filename: z.string().min(1, 'Thiếu tên file').max(100, 'Tên file quá dài'),
+  title: z.string().max(200, 'Tiêu đề quá dài').optional(),
+  content: z.string().min(1, 'Thiếu nội dung').max(50000, 'Nội dung quá dài (tối đa 50000 ký tự)'),
+  author: z.string().max(100, 'Tên tác giả quá dài').optional(),
+});
+
 // Get All Friends params
 export const GetAllFriendsSchema = z.object({
   limit: z.coerce.number().min(1).max(200).default(50),
@@ -221,3 +229,4 @@ export type TvuNotificationsParams = z.infer<typeof TvuNotificationsSchema>;
 export type NekosImagesParams = z.infer<typeof NekosImagesSchema>;
 export type TextToSpeechParams = z.infer<typeof TextToSpeechSchema>;
 export type FreepikImageParams = z.infer<typeof FreepikImageSchema>;
+export type CreateWordDocumentParams = z.infer<typeof CreateWordDocumentSchema>;
