@@ -200,7 +200,7 @@ async function createMathPdf(params: SolveMathParams): Promise<Buffer> {
             }
             if (trimmed.startsWith('- ') || trimmed.startsWith('• ')) {
               doc.font(mainFont).text(`  • ${trimmed.slice(2)}`);
-            } else if (/^(Bước|Step)\s*\d+/i.test(trimmed) || /^\d+[.\)]\s/.test(trimmed)) {
+            } else if (/^(Bước|Step)\s*\d+/i.test(trimmed) || /^\d+[.)]\s/.test(trimmed)) {
               doc.moveDown(0.2);
               doc.font(boldFont).fillColor('#1565c0').text(trimmed);
               doc.fillColor('#000');
