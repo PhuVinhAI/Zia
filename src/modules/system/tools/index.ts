@@ -8,4 +8,5 @@ export { freepikImageTool } from './freepikImage.js';
 export { getAllFriendsTool } from './getAllFriends.js';
 export { getFriendOnlinesTool } from './getFriendOnlines.js';
 export { getUserInfoTool } from './getUserInfo.js';
+export { solveMathTool } from './solveMath.js';
 export { textToSpeechTool } from './textToSpeech.js';

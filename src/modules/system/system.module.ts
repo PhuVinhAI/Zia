@@ -8,6 +8,7 @@ import { freepikImageTool } from './tools/freepikImage.js';
 import { getAllFriendsTool } from './tools/getAllFriends.js';
 import { getFriendOnlinesTool } from './tools/getFriendOnlines.js';
 import { getUserInfoTool } from './tools/getUserInfo.js';
+import { solveMathTool } from './tools/solveMath.js';
 import { textToSpeechTool } from './tools/textToSpeech.js';
 
 export class SystemModule extends BaseModule {
@@ -25,6 +26,7 @@ export class SystemModule extends BaseModule {
     freepikImageTool,
     createFileTool,
     createChartTool,
+    solveMathTool,
   ];
 
   get tools(): ITool[] {

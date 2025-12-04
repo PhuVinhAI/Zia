@@ -342,6 +342,20 @@ export async function handleToolCalls(
         debugLog('TOOL:CHART', `Failed to send chart image: ${e.message}`);
       }
     }
+
+    // solveMath → send PDF
+    if (call.toolName === 'solveMath' && result.data?.fileBuffer) {
+      try {
+        await sendDocumentFromToolResult(
+          api,
+          threadId,
+          result.data.fileBuffer,
+          result.data.filename,
+        );
+      } catch (e: any) {
+        debugLog('TOOL:MATH', `Failed to send math PDF: ${e.message}`);
+      }
+    }
   }
 
   // Format results for AI

@@ -30,6 +30,7 @@
     "docx": "^9.5.1",
     "drizzle-orm": "^0.44.7",
     "jsonrepair": "^3.13.1",
+    "katex": "^0.16.25",
     "ky": "^1.14.0",
     "mammoth": "^1.11.0",
     "pdfkit": "^0.17.2",
@@ -39,11 +40,13 @@
     "pptxgenjs": "^4.0.1",
     "rxjs": "^7.8.2",
     "sharp": "^0.34.5",
+    "svg-to-pdfkit": "^0.1.8",
     "zca-js": "^2.0.4",
     "zod": "^4.1.13"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.8",
+    "@types/katex": "^0.16.7",
     "@types/pdfkit": "^0.17.4",
     "better-sqlite3": "^12.5.0",
     "bun-types": "latest",
