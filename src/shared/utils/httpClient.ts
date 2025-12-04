@@ -92,6 +92,44 @@ export async function fetchAsBase64(url: string): Promise<string | null> {
 }
 
 /**
+ * Fetch ảnh từ URL và trả về Buffer
+ * Giả lập browser để tránh bị chặn bởi CDN (403 Forbidden)
+ */
+export async function fetchImageAsBuffer(url: string): Promise<{
+  buffer: Buffer;
+  mimeType: string;
+} | null> {
+  try {
+    debugLog('HTTP', `Fetching image buffer: ${url.substring(0, 80)}...`);
+
+    // Tạo client với headers giả lập browser đầy đủ
+    const response = await http.get(url, {
+      headers: {
+        Accept: 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9,vi;q=0.8',
+        Referer: new URL(url).origin,
+        'Sec-Ch-Ua': '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
+        'Sec-Ch-Ua-Mobile': '?0',
+        'Sec-Ch-Ua-Platform': '"Windows"',
+        'Sec-Fetch-Dest': 'image',
+        'Sec-Fetch-Mode': 'no-cors',
+        'Sec-Fetch-Site': 'cross-site',
+      },
+    });
+
+    const contentType = response.headers.get('content-type') || 'image/jpeg';
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    debugLog('HTTP', `✓ Image buffer: ${buffer.length} bytes, type: ${contentType}`);
+    return { buffer, mimeType: contentType };
+  } catch (e: any) {
+    logError('fetchImageAsBuffer', e);
+    return null;
+  }
+}
+
+/**
  * Fetch URL và trả về text
  */
 export async function fetchAsText(url: string, maxSize?: number): Promise<string | null> {

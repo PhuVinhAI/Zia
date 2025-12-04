@@ -27,7 +27,7 @@ import { ThreadType } from '../../infrastructure/zalo/zalo.service.js';
 
 /**
  * Format kết quả tool thành prompt cho AI
- * Loại bỏ các field binary (audio buffer) khỏi response
+ * Loại bỏ các field binary (audio buffer, image buffer) khỏi response
  */
 export function formatToolResultForAI(toolCall: ToolCall, result: ToolResult): string {
   if (result.success) {
@@ -37,6 +37,13 @@ export function formatToolResultForAI(toolCall: ToolCall, result: ToolResult): s
     if (cleanData.audioBase64) delete cleanData.audioBase64;
     if (cleanData.fileBuffer) delete cleanData.fileBuffer; // File buffer (Word, txt, etc.)
     if (cleanData.imageBuffer) delete cleanData.imageBuffer; // Image buffer (chart, etc.)
+
+    // Loại bỏ imageBuffers (nekosImages, freepikImage) - chỉ giữ metadata
+    if (cleanData.imageBuffers) {
+      cleanData.imagesSent = cleanData.imageBuffers.length;
+      cleanData.imagesInfo = cleanData.imageBuffers.map((img: any) => img.info || { sent: true });
+      delete cleanData.imageBuffers;
+    }
 
     return `[tool_result:${toolCall.toolName}]
 Kết quả thành công:
@@ -354,6 +361,40 @@ export async function handleToolCalls(
         );
       } catch (e: any) {
         debugLog('TOOL:MATH', `Failed to send math PDF: ${e.message}`);
+      }
+    }
+
+    // nekosImages → send images from buffer (tránh 403 Forbidden)
+    if (call.toolName === 'nekosImages' && result.data?.imageBuffers) {
+      try {
+        for (let i = 0; i < result.data.imageBuffers.length; i++) {
+          const img = result.data.imageBuffers[i];
+          const ext = img.mimeType.includes('png') ? 'png' : 'jpg';
+          const filename = `nekos_${Date.now()}_${i}.${ext}`;
+          await sendImageFromToolResult(api, threadId, img.buffer, filename);
+          if (i < result.data.imageBuffers.length - 1) {
+            await new Promise((r) => setTimeout(r, 500)); // Delay giữa các ảnh
+          }
+        }
+      } catch (e: any) {
+        debugLog('TOOL:NEKOS', `Failed to send nekos images: ${e.message}`);
+      }
+    }
+
+    // freepikImage → send images from buffer (tránh 403 Forbidden / URL hết hạn)
+    if (call.toolName === 'freepikImage' && result.data?.imageBuffers) {
+      try {
+        for (let i = 0; i < result.data.imageBuffers.length; i++) {
+          const img = result.data.imageBuffers[i];
+          const ext = img.mimeType.includes('png') ? 'png' : 'jpg';
+          const filename = `freepik_${Date.now()}_${i}.${ext}`;
+          await sendImageFromToolResult(api, threadId, img.buffer, filename);
+          if (i < result.data.imageBuffers.length - 1) {
+            await new Promise((r) => setTimeout(r, 500));
+          }
+        }
+      } catch (e: any) {
+        debugLog('TOOL:FREEPIK', `Failed to send freepik images: ${e.message}`);
       }
     }
   }

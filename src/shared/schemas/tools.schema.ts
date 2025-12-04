@@ -109,7 +109,7 @@ export const JikanRecommendationsSchema = z.object({
 export const NekosImagesSchema = z.object({
   tags: z.string().optional(),
   withoutTags: z.string().optional(),
-  rating: z.enum(['safe', 'suggestive']).default('safe'),
+  rating: z.enum(['safe', 'suggestive', 'borderline', 'explicit']).default('safe'),
   artist: z.coerce.number().optional(),
   limit: z.coerce.number().min(1).max(25).default(1),
 });

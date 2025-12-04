@@ -1,15 +1,18 @@
 /**
  * Tool: freepikImage - Tạo ảnh AI với Freepik Seedream v4
+ * Sử dụng cơ chế Download Buffer -> Send Buffer để tránh bị chặn 403
  */
 
+import { debugLog } from '../../../core/logger/logger.js';
 import { FreepikImageSchema, validateParams } from '../../../shared/schemas/tools.schema.js';
 import type { ToolDefinition, ToolResult } from '../../../shared/types/tools.types.js';
+import { fetchImageAsBuffer } from '../../../shared/utils/httpClient.js';
 import { generateSeedreamImage, pollTaskUntilComplete } from '../services/freepikClient.js';
 
 export const freepikImageTool: ToolDefinition = {
   name: 'freepikImage',
   description: `Tạo ảnh AI với Freepik Seedream v4. Chất lượng cao, hỗ trợ nhiều aspect ratio.
-Trả về URL ảnh đã tạo. Thời gian tạo ~10-30 giây.`,
+Trả về ảnh trực tiếp. Thời gian tạo ~10-30 giây.`,
   parameters: [
     {
       name: 'prompt',
@@ -65,18 +68,42 @@ Trả về URL ảnh đã tạo. Thời gian tạo ~10-30 giây.`,
         };
       }
 
-      const images = result.data.generated || [];
-      if (images.length === 0) {
+      const imageUrls = result.data.generated || [];
+      if (imageUrls.length === 0) {
         return { success: false, error: 'Không có ảnh được tạo' };
+      }
+
+      // Download ảnh ngay lập tức để tránh URL hết hạn hoặc bị chặn 403
+      const imageBuffers: Array<{
+        buffer: Buffer;
+        mimeType: string;
+      }> = [];
+
+      for (const url of imageUrls) {
+        debugLog('FREEPIK', `Downloading generated image: ${url.substring(0, 60)}...`);
+        const downloaded = await fetchImageAsBuffer(url);
+
+        if (downloaded) {
+          imageBuffers.push({
+            buffer: downloaded.buffer,
+            mimeType: downloaded.mimeType,
+          });
+        } else {
+          debugLog('FREEPIK', `Failed to download image: ${url}`);
+        }
+      }
+
+      if (imageBuffers.length === 0) {
+        return { success: false, error: 'Không thể tải ảnh đã tạo (URL có thể đã hết hạn)' };
       }
 
       return {
         success: true,
         data: {
-          images,
+          imageBuffers, // Array of { buffer, mimeType }
           prompt: data.prompt,
           taskId,
-          count: images.length,
+          count: imageBuffers.length,
         },
       };
     } catch (error: any) {

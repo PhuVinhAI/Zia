@@ -61,6 +61,7 @@ async function sendCard(api: any, userId: string | undefined, threadId: string) 
 
 /**
  * Gửi ảnh từ URL
+ * Sử dụng headers giả lập browser đầy đủ để tránh bị chặn 403 Forbidden
  */
 async function sendImageFromUrl(
   api: any,
@@ -72,11 +73,18 @@ async function sendImageFromUrl(
     debugLog('IMAGE', `Sending image from URL: ${url}`);
     console.log(`[Bot] 🖼️ Đang tải ảnh từ URL...`);
 
-    // Tải ảnh về buffer sử dụng http client (đã có User-Agent và retry)
+    // Tải ảnh về buffer với headers giả lập browser đầy đủ để tránh bị chặn
     const response = await http.get(url, {
       headers: {
-        Accept: 'image/*,*/*;q=0.8',
+        Accept: 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9,vi;q=0.8',
         Referer: new URL(url).origin,
+        'Sec-Ch-Ua': '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
+        'Sec-Ch-Ua-Mobile': '?0',
+        'Sec-Ch-Ua-Platform': '"Windows"',
+        'Sec-Fetch-Dest': 'image',
+        'Sec-Fetch-Mode': 'no-cors',
+        'Sec-Fetch-Site': 'cross-site',
       },
     });
 

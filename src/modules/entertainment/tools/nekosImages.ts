@@ -1,15 +1,18 @@
 /**
  * Tool: nekosImages - Lấy ảnh anime từ Nekos API
+ * Sử dụng cơ chế Download Buffer -> Send Buffer để tránh bị chặn 403
  */
 
+import { debugLog } from '../../../core/logger/logger.js';
 import { NekosImagesSchema, validateParams } from '../../../shared/schemas/tools.schema.js';
 import type { ToolDefinition, ToolResult } from '../../../shared/types/tools.types.js';
+import { fetchImageAsBuffer } from '../../../shared/utils/httpClient.js';
 import { type NekosImage, nekosFetch } from '../services/nekosClient.js';
 
 export const nekosImagesTool: ToolDefinition = {
   name: 'nekosImages',
   description:
-    'Lấy ảnh anime ngẫu nhiên từ Nekos API. Hỗ trợ lọc theo tags, rating, artist. Trả về URL ảnh và thông tin chi tiết.',
+    'Lấy ảnh anime ngẫu nhiên từ Nekos API. Hỗ trợ lọc theo tags, rating, artist. Trả về ảnh trực tiếp.',
   parameters: [
     {
       name: 'tags',
@@ -27,7 +30,8 @@ export const nekosImagesTool: ToolDefinition = {
     {
       name: 'rating',
       type: 'string',
-      description: "Độ tuổi phù hợp: 'safe' (an toàn), 'suggestive' (gợi cảm nhẹ). Mặc định: safe",
+      description:
+        "Độ tuổi phù hợp: 'safe' (an toàn), 'suggestive' (gợi cảm nhẹ), 'borderline' (ranh giới), 'explicit' (18+). Mặc định: safe",
       required: false,
     },
     {
@@ -61,25 +65,62 @@ export const nekosImagesTool: ToolDefinition = {
 
       const response = await nekosFetch<NekosImage[]>('/images/random', queryParams);
 
-      const images = response.map((img: NekosImage) => ({
-        id: img.id,
-        url: img.image_url || img.url,
-        sampleUrl: img.sample_url,
-        width: img.image_width,
-        height: img.image_height,
-        rating: img.rating,
-        source: img.source,
-        artist: img.artist?.name || (img as any).artist_name || null,
-        tags: Array.isArray(img.tags)
-          ? img.tags.map((t: any) => (typeof t === 'string' ? t : t.name))
-          : [],
-      }));
+      if (!response || response.length === 0) {
+        return { success: false, error: 'Không tìm thấy ảnh phù hợp' };
+      }
+
+      // Download tất cả ảnh về buffer để tránh bị chặn 403
+      const imageBuffers: Array<{
+        buffer: Buffer;
+        mimeType: string;
+        info: {
+          id: number;
+          width?: number;
+          height?: number;
+          rating: string;
+          source?: string | null;
+          artist?: string | null;
+          tags: string[];
+        };
+      }> = [];
+
+      for (const img of response) {
+        const imageUrl = img.image_url || img.url || img.sample_url;
+        if (!imageUrl) continue;
+
+        debugLog('NEKOS', `Downloading image: ${imageUrl.substring(0, 60)}...`);
+        const result = await fetchImageAsBuffer(imageUrl);
+
+        if (result) {
+          imageBuffers.push({
+            buffer: result.buffer,
+            mimeType: result.mimeType,
+            info: {
+              id: img.id,
+              width: img.image_width,
+              height: img.image_height,
+              rating: img.rating,
+              source: img.source,
+              artist: img.artist?.name || (img as any).artist_name || null,
+              tags: Array.isArray(img.tags)
+                ? img.tags.map((t: any) => (typeof t === 'string' ? t : t.name))
+                : [],
+            },
+          });
+        } else {
+          debugLog('NEKOS', `Failed to download image: ${imageUrl}`);
+        }
+      }
+
+      if (imageBuffers.length === 0) {
+        return { success: false, error: 'Không thể tải ảnh từ nguồn (có thể bị chặn)' };
+      }
 
       return {
         success: true,
         data: {
-          images,
-          count: images.length,
+          imageBuffers, // Array of { buffer, mimeType, info }
+          count: imageBuffers.length,
         },
       };
     } catch (error: any) {
