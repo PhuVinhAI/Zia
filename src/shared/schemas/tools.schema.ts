@@ -149,11 +149,18 @@ export const TextToSpeechSchema = z.object({
 
 // ============ SYSTEM TOOLS ============
 
-// Create Word Document params
-export const CreateWordDocumentSchema = z.object({
-  filename: z.string().min(1, 'Thiếu tên file').max(100, 'Tên file quá dài'),
+// Create File params (txt, docx, json, csv, code, etc.)
+export const CreateFileSchema = z.object({
+  filename: z
+    .string()
+    .min(1, 'Thiếu tên file')
+    .max(100, 'Tên file quá dài')
+    .refine((name) => name.includes('.'), 'Tên file phải có đuôi mở rộng (vd: report.docx)'),
+  content: z
+    .string()
+    .min(1, 'Thiếu nội dung')
+    .max(100000, 'Nội dung quá dài (tối đa 100000 ký tự)'),
   title: z.string().max(200, 'Tiêu đề quá dài').optional(),
-  content: z.string().min(1, 'Thiếu nội dung').max(50000, 'Nội dung quá dài (tối đa 50000 ký tự)'),
   author: z.string().max(100, 'Tên tác giả quá dài').optional(),
 });
 
@@ -229,4 +236,4 @@ export type TvuNotificationsParams = z.infer<typeof TvuNotificationsSchema>;
 export type NekosImagesParams = z.infer<typeof NekosImagesSchema>;
 export type TextToSpeechParams = z.infer<typeof TextToSpeechSchema>;
 export type FreepikImageParams = z.infer<typeof FreepikImageSchema>;
-export type CreateWordDocumentParams = z.infer<typeof CreateWordDocumentSchema>;
+export type CreateFileParams = z.infer<typeof CreateFileSchema>;

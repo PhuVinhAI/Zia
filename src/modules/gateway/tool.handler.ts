@@ -35,7 +35,7 @@ export function formatToolResultForAI(toolCall: ToolCall, result: ToolResult): s
     const cleanData = { ...result.data };
     if (cleanData.audio) delete cleanData.audio;
     if (cleanData.audioBase64) delete cleanData.audioBase64;
-    if (cleanData.document) delete cleanData.document; // Word document buffer
+    if (cleanData.fileBuffer) delete cleanData.fileBuffer; // File buffer (Word, txt, etc.)
 
     return `[tool_result:${toolCall.toolName}]
 Kết quả thành công:
@@ -278,12 +278,17 @@ export async function handleToolCalls(
       }
     }
 
-    // Word Document → send file
-    if (call.toolName === 'createWordDocument' && result.data?.document) {
+    // File (Word, txt, json, code, etc.) → send file
+    if (call.toolName === 'createFile' && result.data?.fileBuffer) {
       try {
-        await sendDocumentFromToolResult(api, threadId, result.data.document, result.data.filename);
+        await sendDocumentFromToolResult(
+          api,
+          threadId,
+          result.data.fileBuffer,
+          result.data.filename,
+        );
       } catch (e: any) {
-        debugLog('TOOL:DOC', `Failed to send document: ${e.message}`);
+        debugLog('TOOL:FILE', `Failed to send file: ${e.message}`);
       }
     }
   }
