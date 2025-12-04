@@ -2,6 +2,7 @@
  * Tool Registry - Quản lý và thực thi tools
  */
 
+import { jsonrepair } from 'jsonrepair';
 import { debugLog } from '../logger/logger.js';
 import { moduleManager } from '../plugin-manager/module-manager.js';
 import type { ITool, ToolCall, ToolContext, ToolResult } from '../types.js';
@@ -10,34 +11,41 @@ import type { ITool, ToolCall, ToolContext, ToolResult } from '../types.js';
 // TOOL PARSER - Parse tool calls từ AI response
 // ═══════════════════════════════════════════════════
 
-const TOOL_CALL_REGEX = /\[tool:(\w+)(?:\s+([^\]]*))?\](?:\s*(\{[\s\S]*?\})\s*\[\/tool\])?/gi;
+// Regex để tìm tool tag mở: [tool:name params] hoặc [tool:name]
+const TOOL_OPEN_REGEX = /\[tool:(\w+)(?:\s+([^\]]*))?\]/gi;
 
 /**
  * Parse parameters từ string format: param1="value1" param2="value2"
+ * Hỗ trợ escaped quotes bên trong value: content="hello \"world\""
  */
 function parseInlineParams(paramStr: string): Record<string, any> {
   const params: Record<string, any> = {};
   if (!paramStr) return params;
 
-  const paramRegex = /(\w+)=(?:"([^"]*)"|'([^']*)'|(\S+))/g;
+  // Regex hỗ trợ escaped quotes: "value with \"escaped\" quotes"
+  const paramRegex = /(\w+)=(?:"((?:[^"\\]|\\.)*)"|'((?:[^'\\]|\\.)*)'|(\S+))/g;
   let match;
 
   while ((match = paramRegex.exec(paramStr)) !== null) {
     const key = match[1];
-    const value = match[2] ?? match[3] ?? match[4];
+    let value = match[2] ?? match[3] ?? match[4];
 
-    if (value === 'true') {
-      params[key] = true;
-    } else if (value === 'false') {
-      params[key] = false;
-    } else if (!Number.isNaN(Number(value)) && value !== '') {
+    // Unescape các ký tự đã escape
+    if (value && (match[2] !== undefined || match[3] !== undefined)) {
+      value = value
+        .replace(/\\"/g, '"')
+        .replace(/\\'/g, "'")
+        .replace(/\\n/g, '\n')
+        .replace(/\\t/g, '\t')
+        .replace(/\\\\/g, '\\');
+    }
+
+    if (value === 'true') params[key] = true;
+    else if (value === 'false') params[key] = false;
+    else if (!Number.isNaN(Number(value)) && value !== '') {
       const isLargeNumber = value.length > 15;
       const isIdField = /id$/i.test(key);
-      if (isLargeNumber || isIdField) {
-        params[key] = value;
-      } else {
-        params[key] = Number(value);
-      }
+      params[key] = isLargeNumber || isIdField ? value : Number(value);
     } else {
       params[key] = value;
     }
@@ -47,33 +55,118 @@ function parseInlineParams(paramStr: string): Record<string, any> {
 }
 
 /**
+ * Parse JSON an toàn với jsonrepair
+ */
+function safeParseJson(jsonStr: string): Record<string, any> | null {
+  try {
+    // Thử parse trực tiếp trước
+    return JSON.parse(jsonStr);
+  } catch {
+    try {
+      // Dùng jsonrepair để sửa JSON bị lỗi
+      const repaired = jsonrepair(jsonStr);
+      debugLog(
+        'TOOL',
+        `JSON repaired: ${jsonStr.substring(0, 100)}... -> ${repaired.substring(0, 100)}...`,
+      );
+      return JSON.parse(repaired);
+    } catch (e: any) {
+      debugLog('TOOL', `JSON repair failed: ${e.message}`);
+      return null;
+    }
+  }
+}
+
+/**
+ * Tìm vị trí [/tool] đúng - bỏ qua những cái nằm trong JSON string
+ * Trả về index trong text, hoặc -1 nếu không tìm thấy
+ */
+function findCloseTag(text: string): number {
+  const closeTag = '[/tool]';
+  let searchStart = 0;
+
+  while (searchStart < text.length) {
+    const closeIndex = text.indexOf(closeTag, searchStart);
+    if (closeIndex === -1) return -1;
+
+    // Kiểm tra xem [/tool] có nằm trong JSON string không
+    // Đếm số dấu " không bị escape trước vị trí closeIndex
+    const beforeClose = text.slice(0, closeIndex);
+    let inString = false;
+    let escapeNext = false;
+
+    for (const char of beforeClose) {
+      if (escapeNext) {
+        escapeNext = false;
+        continue;
+      }
+      if (char === '\\') {
+        escapeNext = true;
+        continue;
+      }
+      if (char === '"') {
+        inString = !inString;
+      }
+    }
+
+    // Nếu không trong string -> đây là [/tool] thật
+    if (!inString) {
+      return closeIndex;
+    }
+
+    // Nếu trong string -> tìm tiếp
+    searchStart = closeIndex + closeTag.length;
+  }
+
+  return -1;
+}
+
+/**
  * Parse tất cả tool calls từ AI response
  */
 export function parseToolCalls(response: string): ToolCall[] {
   const calls: ToolCall[] = [];
   let match;
 
-  TOOL_CALL_REGEX.lastIndex = 0;
+  TOOL_OPEN_REGEX.lastIndex = 0;
 
-  while ((match = TOOL_CALL_REGEX.exec(response)) !== null) {
+  while ((match = TOOL_OPEN_REGEX.exec(response)) !== null) {
     const toolName = match[1];
     const inlineParams = match[2] || '';
-    const jsonParams = match[3];
+    const tagEnd = match.index + match[0].length;
 
     let params: Record<string, any> = {};
+    let rawTag = match[0];
 
-    if (jsonParams) {
-      try {
-        params = JSON.parse(jsonParams);
-      } catch {
-        debugLog('TOOL', `Failed to parse JSON params: ${jsonParams}`);
+    // Kiểm tra xem có JSON body và [/tool] không
+    const afterTag = response.slice(tagEnd);
+    const closeTagIndex = findCloseTag(afterTag);
+
+    if (closeTagIndex !== -1) {
+      // Có [/tool] -> extract JSON giữa tag mở và tag đóng
+      const jsonSection = afterTag.slice(0, closeTagIndex).trim();
+      rawTag = response.slice(match.index, tagEnd + closeTagIndex + 7);
+
+      if (jsonSection.startsWith('{')) {
+        const parsed = safeParseJson(jsonSection);
+        if (parsed) {
+          params = parsed;
+        } else {
+          // Fallback to inline params
+          params = parseInlineParams(inlineParams);
+        }
+      } else {
         params = parseInlineParams(inlineParams);
       }
+
+      // Di chuyển regex index qua [/tool] để không parse lại phần đã xử lý
+      TOOL_OPEN_REGEX.lastIndex = tagEnd + closeTagIndex + 7;
     } else {
+      // Không có [/tool] -> chỉ dùng inline params
       params = parseInlineParams(inlineParams);
     }
 
-    calls.push({ toolName, params, rawTag: match[0] });
+    calls.push({ toolName, params, rawTag });
     debugLog('TOOL', `Parsed: ${toolName} with params: ${JSON.stringify(params)}`);
   }
 
@@ -84,8 +177,8 @@ export function parseToolCalls(response: string): ToolCall[] {
  * Kiểm tra response có chứa tool call không
  */
 export function hasToolCalls(response: string): boolean {
-  TOOL_CALL_REGEX.lastIndex = 0;
-  return TOOL_CALL_REGEX.test(response);
+  TOOL_OPEN_REGEX.lastIndex = 0;
+  return TOOL_OPEN_REGEX.test(response);
 }
 
 // ═══════════════════════════════════════════════════
@@ -152,9 +245,7 @@ export function generateToolsPrompt(): string {
       const paramsDesc = tool.parameters
         .map(
           (p) =>
-            `  - ${p.name} (${p.type}${
-              p.required ? ', bắt buộc' : ', tùy chọn'
-            }): ${p.description}`,
+            `  - ${p.name} (${p.type}${p.required ? ', bắt buộc' : ', tùy chọn'}): ${p.description}`,
         )
         .join('\n');
 
