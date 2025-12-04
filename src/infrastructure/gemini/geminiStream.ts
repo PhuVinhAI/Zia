@@ -17,7 +17,8 @@ import {
   isRetryableError,
   sleep,
 } from './geminiChat.js';
-import type { MediaPart } from './geminiConfig.js';
+import { keyManager, type MediaPart } from './geminiConfig.js';
+import { isRateLimitError } from './keyManager.js';
 import { getSystemPrompt } from './prompts.js';
 
 export interface StreamCallbacks {
@@ -356,6 +357,21 @@ export async function generateContentStream(
         return state.buffer;
       }
 
+      // Xử lý lỗi 429 (rate limit) - chuyển key
+      if (isRateLimitError(error)) {
+        const rotated = keyManager.handleRateLimitError();
+        if (rotated && attempt < CONFIG.retry.maxRetries) {
+          console.log(
+            `[Gemini] ⚠️ Lỗi 429: Rate limit, chuyển sang key #${keyManager.getCurrentKeyIndex()}/${keyManager.getTotalKeys()}`,
+          );
+          debugLog('STREAM', `Rate limit, rotated to key #${keyManager.getCurrentKeyIndex()}`);
+          // Recreate session với key mới
+          deleteChatSession(sessionId);
+          continue;
+        }
+      }
+
+      // Xử lý các lỗi retryable khác (503, etc.)
       if (isRetryableError(error) && attempt < CONFIG.retry.maxRetries) {
         console.log(`[Gemini] ⚠️ Lỗi ${error.status || error.code}: Model overloaded, sẽ retry...`);
         debugLog('STREAM', `Retryable error: ${error.status || error.code}`);

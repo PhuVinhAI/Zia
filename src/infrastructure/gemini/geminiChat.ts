@@ -5,7 +5,7 @@ import type { Chat, Content, Part } from '@google/genai';
 import { debugLog } from '../../core/logger/logger.js';
 import { CONFIG } from '../../shared/constants/config.js';
 import { fetchAsBase64 } from '../../shared/utils/httpClient.js';
-import { ai, GEMINI_CONFIG, GEMINI_MODEL, type MediaPart } from './geminiConfig.js';
+import { GEMINI_CONFIG, GEMINI_MODEL, getAI, keyManager, type MediaPart } from './geminiConfig.js';
 import { getSystemPrompt } from './prompts.js';
 
 // Chat session storage
@@ -16,13 +16,17 @@ const getPrompt = () => getSystemPrompt(CONFIG.useCharacter);
 
 /**
  * Lấy hoặc tạo chat session cho thread
+ * Sử dụng getAI() để lấy instance với key hiện tại
  */
 export function getChatSession(threadId: string, history?: Content[]): Chat {
   let chat = chatSessions.get(threadId);
 
   if (!chat) {
-    debugLog('GEMINI', `Creating new chat session for thread ${threadId}`);
-    chat = ai.chats.create({
+    debugLog(
+      'GEMINI',
+      `Creating new chat session for thread ${threadId} with key #${keyManager.getCurrentKeyIndex()}`,
+    );
+    chat = getAI().chats.create({
       model: GEMINI_MODEL,
       config: {
         ...GEMINI_CONFIG,
@@ -34,6 +38,14 @@ export function getChatSession(threadId: string, history?: Content[]): Chat {
   }
 
   return chat;
+}
+
+/**
+ * Force tạo mới chat session (dùng khi rotate key)
+ */
+export function recreateChatSession(threadId: string, history?: Content[]): Chat {
+  chatSessions.delete(threadId);
+  return getChatSession(threadId, history);
 }
 
 /**

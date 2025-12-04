@@ -2,25 +2,26 @@
  * Gemini Config - Cấu hình và khởi tạo Gemini API
  * Runtime: Bun
  */
-import { GoogleGenAI } from '@google/genai';
 import { debugLog } from '../../core/logger/logger.js';
 import { setAIService } from '../../shared/types/ai.types.js';
+import { keyManager } from './keyManager.js';
 
-const GEMINI_API_KEY = Bun.env.GEMINI_API_KEY || '';
+debugLog('GEMINI', 'Initializing Gemini API with Key Manager...');
 
-if (!GEMINI_API_KEY || GEMINI_API_KEY === 'your_gemini_api_key_here') {
-  console.error('❌ Vui lòng cấu hình GEMINI_API_KEY trong file .env');
-  process.exit(1);
-}
+// Export getter để luôn lấy AI instance hiện tại (có thể đã rotate)
+export const getAI = () => keyManager.getCurrentAI();
 
-debugLog('GEMINI', 'Initializing Gemini API...');
-
-export const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+// Backward compatibility - export ai như getter
+export const ai = keyManager.getCurrentAI();
 
 // Register AI service cho shared layer (dependency inversion)
+// Sử dụng getter để luôn dùng key hiện tại
 setAIService({
-  countTokens: (params) => ai.models.countTokens(params),
+  countTokens: (params) => keyManager.getCurrentAI().models.countTokens(params),
 });
+
+// Re-export key manager utilities
+export { keyManager } from './keyManager.js';
 
 export const GEMINI_MODEL = 'models/gemini-2.5-pro';
 

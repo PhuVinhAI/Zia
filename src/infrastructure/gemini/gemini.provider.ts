@@ -27,7 +27,8 @@ import {
   isRetryableError,
   sleep,
 } from './geminiChat.js';
-import type { MediaPart } from './geminiConfig.js';
+import { keyManager, type MediaPart } from './geminiConfig.js';
+import { isRateLimitError } from './keyManager.js';
 
 export { parseAIResponse } from '../../shared/types/config.schema.js';
 export { deleteChatSession, getChatSession } from './geminiChat.js';
@@ -38,9 +39,12 @@ export {
   extractYouTubeUrls,
   GEMINI_CONFIG,
   GEMINI_MODEL,
+  getAI,
+  keyManager,
 } from './geminiConfig.js';
 export type { StreamCallbacks } from './geminiStream.js';
 export { generateContentStream } from './geminiStream.js';
+export { isRateLimitError } from './keyManager.js';
 
 /**
  * Generate content sử dụng Chat session (non-streaming)
@@ -104,6 +108,20 @@ export async function generateContent(
     } catch (error: any) {
       lastError = error;
 
+      // Xử lý lỗi 429 (rate limit) - chuyển key
+      if (isRateLimitError(error)) {
+        const rotated = keyManager.handleRateLimitError();
+        if (rotated && attempt < CONFIG.retry.maxRetries) {
+          console.log(
+            `[Gemini] ⚠️ Lỗi 429: Rate limit, chuyển sang key #${keyManager.getCurrentKeyIndex()}/${keyManager.getTotalKeys()}`,
+          );
+          debugLog('GEMINI', `Rate limit, rotated to key #${keyManager.getCurrentKeyIndex()}`);
+          deleteChatSession(sessionId);
+          continue;
+        }
+      }
+
+      // Xử lý các lỗi retryable khác (503, etc.)
       if (isRetryableError(error) && attempt < CONFIG.retry.maxRetries) {
         console.log(`[Gemini] ⚠️ Lỗi ${error.status || error.code}: Model overloaded, sẽ retry...`);
         debugLog('GEMINI', `Retryable error: ${error.status || error.code}`);
