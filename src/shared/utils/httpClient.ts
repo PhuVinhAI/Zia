@@ -3,6 +3,8 @@
  */
 
 import ky, { type KyInstance, type Options } from 'ky';
+import mammoth from 'mammoth';
+import PDFDocument from 'pdfkit';
 import { debugLog, logError } from '../../core/logger/logger.js';
 import { CONFIG } from '../constants/config.js';
 
@@ -143,6 +145,81 @@ export async function fetchAndConvertToTextBase64(url: string): Promise<string |
   }
 }
 
+/**
+ * Convert DOCX buffer sang PDF buffer
+ */
+async function convertDocxToPdf(docxBuffer: Buffer): Promise<Buffer> {
+  // Extract text từ docx bằng mammoth
+  const result = await mammoth.extractRawText({ buffer: docxBuffer });
+  const text = result.value;
+
+  // Tạo PDF từ text
+  return new Promise((resolve, reject) => {
+    try {
+      const doc = new PDFDocument({
+        size: 'A4',
+        margin: 50,
+        info: {
+          Title: 'Converted Document',
+          Author: 'Zia AI Bot',
+          Creator: 'Zia AI Bot',
+        },
+      });
+
+      const chunks: Buffer[] = [];
+      doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', reject);
+
+      // Render text với font mặc định
+      doc.fontSize(12).font('Helvetica');
+
+      // Split theo paragraphs và render
+      const paragraphs = text.split(/\n\n+/);
+      for (const para of paragraphs) {
+        if (para.trim()) {
+          doc.text(para.trim(), { align: 'left' });
+          doc.moveDown(0.5);
+        }
+      }
+
+      doc.end();
+    } catch (e) {
+      reject(e);
+    }
+  });
+}
+
+/**
+ * Fetch DOCX file, convert sang PDF, trả về base64
+ */
+export async function fetchDocxAndConvertToPdfBase64(url: string): Promise<string | null> {
+  try {
+    const cfg = getHttpConfig();
+    debugLog('HTTP', `Converting DOCX to PDF: ${url.substring(0, 80)}...`);
+
+    const response = await http.get(url);
+    const arrayBuffer = await response.arrayBuffer();
+    const docxBuffer = Buffer.from(arrayBuffer);
+
+    // Check size
+    if (docxBuffer.length > cfg.maxTextConvertSize) {
+      debugLog('HTTP', `✗ DOCX too large: ${(docxBuffer.length / 1024 / 1024).toFixed(1)}MB`);
+      return null;
+    }
+
+    // Convert to PDF
+    const pdfBuffer = await convertDocxToPdf(docxBuffer);
+    const base64 = pdfBuffer.toString('base64');
+
+    debugLog('HTTP', `✓ DOCX→PDF→Base64: ${base64.length} chars`);
+    return base64;
+  } catch (e: any) {
+    logError('fetchDocxAndConvertToPdfBase64', e);
+    return null;
+  }
+}
+
 // ═══════════════════════════════════════════════════
 // FILE FORMAT HELPERS
 // ═══════════════════════════════════════════════════
@@ -200,7 +277,6 @@ const GEMINI_SUPPORTED_FORMATS = new Set([
 
 const TEXT_CONVERTIBLE_FORMATS = new Set([
   'doc',
-  'docx',
   'rtf',
   'odt',
   'csv',
@@ -225,5 +301,9 @@ const TEXT_CONVERTIBLE_FORMATS = new Set([
   'dockerfile',
 ]);
 
+// DOCX sẽ convert sang PDF riêng
+const DOCX_CONVERTIBLE_FORMATS = new Set(['docx']);
+
 export const isGeminiSupported = (ext: string) => GEMINI_SUPPORTED_FORMATS.has(ext.toLowerCase());
 export const isTextConvertible = (ext: string) => TEXT_CONVERTIBLE_FORMATS.has(ext.toLowerCase());
+export const isDocxConvertible = (ext: string) => DOCX_CONVERTIBLE_FORMATS.has(ext.toLowerCase());

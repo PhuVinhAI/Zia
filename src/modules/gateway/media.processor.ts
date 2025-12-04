@@ -7,6 +7,8 @@ import type { MediaPart } from '../../infrastructure/gemini/gemini.provider.js';
 import { CONFIG } from '../../shared/constants/config.js';
 import {
   fetchAndConvertToTextBase64,
+  fetchDocxAndConvertToPdfBase64,
+  isDocxConvertible,
   isGeminiSupported,
   isTextConvertible,
 } from '../../shared/utils/httpClient.js';
@@ -63,6 +65,20 @@ export async function prepareMediaParts(
           url: item.url,
           mimeType: item.mimeType || 'application/octet-stream',
         });
+      } else if (isDocxConvertible(item.fileExt)) {
+        // Convert DOCX sang PDF
+        const maxSizeMB = CONFIG.fetch?.maxTextConvertSizeMB ?? 20;
+        const maxSize = maxSizeMB * 1024 * 1024;
+        if (item.fileSize && item.fileSize > maxSize) {
+          const sizeMB = (item.fileSize / 1024 / 1024).toFixed(1);
+          console.log(`[Bot] ⚠️ File quá lớn để convert: ${sizeMB}MB`);
+          notes.push(`(File "${item.fileName}" quá lớn ${sizeMB}MB, max ${maxSizeMB}MB)`);
+        } else {
+          console.log(`[Bot] 📄 Convert DOCX sang PDF: ${item.fileName}`);
+          const base64 = await fetchDocxAndConvertToPdfBase64(item.url);
+          if (base64) media.push({ type: 'file', base64, mimeType: 'application/pdf' });
+          else notes.push(`(File "${item.fileName}" không convert được)`);
+        }
       } else if (isTextConvertible(item.fileExt)) {
         // Check file size trước khi convert (từ config)
         const maxSizeMB = CONFIG.fetch?.maxTextConvertSizeMB ?? 20;
@@ -147,6 +163,14 @@ export async function addQuoteMedia(
         url: quoteMedia.url,
         mimeType: quoteMedia.mimeType || 'application/octet-stream',
       });
+    } else if (isDocxConvertible(ext)) {
+      console.log(`[Bot] 📄 Convert DOCX sang PDF từ quote: ${quoteMedia.title}`);
+      const base64 = await fetchDocxAndConvertToPdfBase64(quoteMedia.url);
+      if (base64) {
+        media.push({ type: 'file', base64, mimeType: 'application/pdf' });
+      } else {
+        notes.push(`(File "${quoteMedia.title}" từ tin cũ không convert được)`);
+      }
     } else if (isTextConvertible(ext)) {
       const base64 = await fetchAndConvertToTextBase64(quoteMedia.url);
       if (base64) {
