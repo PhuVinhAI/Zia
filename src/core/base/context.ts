@@ -24,7 +24,7 @@ export class BotContext implements IBotContext {
   }
 
   async reply(text: string): Promise<void> {
-    await this.send(`🤖 AI: ${text}`);
+    await this.send(`🤖 Zia: ${text}`);
   }
 }
 

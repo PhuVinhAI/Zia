@@ -60,6 +60,12 @@ export {
 // Rich text
 export { createRichMessage, parseRichText } from './richText.js';
 // Task manager
-export { abortTask, startTask } from './taskManager.js';
+export {
+  abortTask,
+  getAndClearAbortedMessages,
+  hasAbortedMessages,
+  saveAbortedMessages,
+  startTask,
+} from './taskManager.js';
 // Token counter
 export { filterUnsupportedMedia, isSupportedMime } from './tokenCounter.js';

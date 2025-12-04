@@ -3,6 +3,9 @@ import { debugLog } from '../../core/logger/logger.js';
 // Lưu trữ AbortController để hủy tác vụ cho từng thread
 const activeTasks = new Map<string, AbortController>();
 
+// Lưu trữ tin nhắn đã xử lý của task bị abort để gom nhóm
+const abortedTaskMessages = new Map<string, any[]>();
+
 /**
  * Đăng ký một tác vụ mới cho thread.
  * Nếu thread đó đang có tác vụ chạy dở -> HỦY NGAY LẬP TỨC.
@@ -35,4 +38,30 @@ export function abortTask(threadId: string): boolean {
     return true;
   }
   return false;
+}
+
+/**
+ * Lưu tin nhắn của task bị abort để gom nhóm sau
+ */
+export function saveAbortedMessages(threadId: string, messages: any[]): void {
+  const existing = abortedTaskMessages.get(threadId) || [];
+  abortedTaskMessages.set(threadId, [...existing, ...messages]);
+  debugLog('TASK', `Saved ${messages.length} aborted messages for thread ${threadId}`);
+}
+
+/**
+ * Lấy và xóa tin nhắn đã abort để gom nhóm
+ */
+export function getAndClearAbortedMessages(threadId: string): any[] {
+  const messages = abortedTaskMessages.get(threadId) || [];
+  abortedTaskMessages.delete(threadId);
+  debugLog('TASK', `Retrieved ${messages.length} aborted messages for thread ${threadId}`);
+  return messages;
+}
+
+/**
+ * Kiểm tra có tin nhắn abort đang chờ không
+ */
+export function hasAbortedMessages(threadId: string): boolean {
+  return abortedTaskMessages.has(threadId) && (abortedTaskMessages.get(threadId)?.length || 0) > 0;
 }

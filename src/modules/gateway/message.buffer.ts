@@ -8,7 +8,13 @@ import { bufferWhen, debounceTime, filter, groupBy, mergeMap, tap } from 'rxjs/o
 import { debugLog, logError, logStep } from '../../core/logger/logger.js';
 import { ThreadType } from '../../infrastructure/zalo/zalo.service.js';
 import { CONFIG } from '../../shared/constants/config.js';
-import { startTask } from '../../shared/utils/taskManager.js';
+import { clearHistory } from '../../shared/utils/history.js';
+import {
+  getAndClearAbortedMessages,
+  hasAbortedMessages,
+  saveAbortedMessages,
+  startTask,
+} from '../../shared/utils/taskManager.js';
 import { handleMixedContent } from './gateway.module.js';
 
 // Buffer config từ settings.json
@@ -80,7 +86,19 @@ async function processBatch(batch: BufferedMessage[]) {
 
   const threadId = batch[0].threadId;
   const api = batch[0].api;
-  const messages = batch.map((b) => b.message);
+  let messages = batch.map((b) => b.message);
+
+  // Gom nhóm tin nhắn từ task bị abort trước đó
+  if (hasAbortedMessages(threadId)) {
+    const abortedMsgs = getAndClearAbortedMessages(threadId);
+    messages = [...abortedMsgs, ...messages];
+    // Xóa history cũ để giảm context khi gom nhóm
+    clearHistory(threadId);
+    console.log(
+      `[Bot] 🔄 Gom nhóm ${abortedMsgs.length} tin cũ + ${batch.length} tin mới, đã xóa history cũ`,
+    );
+    debugLog('BUFFER', `Merged ${abortedMsgs.length} aborted + ${batch.length} new messages`);
+  }
 
   debugLog('BUFFER', `Processing batch of ${messages.length} messages for ${threadId}`);
   logStep('buffer:process', { threadId, messageCount: messages.length });
@@ -91,7 +109,9 @@ async function processBatch(batch: BufferedMessage[]) {
     await handleMixedContent(api, messages, threadId, abortSignal);
   } catch (e: any) {
     if (e.message === 'Aborted' || abortSignal?.aborted) {
-      debugLog('BUFFER', `Task aborted for thread ${threadId}`);
+      // Lưu tin nhắn của task bị abort để gom nhóm sau
+      saveAbortedMessages(threadId, messages);
+      debugLog('BUFFER', `Task aborted, saved ${messages.length} messages for thread ${threadId}`);
       return;
     }
     logError('processBatch', e);

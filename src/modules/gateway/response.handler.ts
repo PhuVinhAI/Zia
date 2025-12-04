@@ -97,7 +97,7 @@ async function sendImageFromUrl(
     // Gửi ảnh
     const result = await api.sendMessage(
       {
-        msg: caption ? `🤖 AI: ${caption}` : '',
+        msg: caption ? `🤖 Zia: ${caption}` : '',
         attachments: [attachment],
       },
       threadId,
@@ -113,7 +113,7 @@ async function sendImageFromUrl(
     // Fallback: gửi link ảnh
     try {
       await api.sendMessage(
-        `🤖 AI: Không tải được ảnh, đây là link: ${url}`,
+        `🤖 Zia: Không tải được ảnh, đây là link: ${url}`,
         threadId,
         ThreadType.User,
       );
@@ -289,7 +289,7 @@ export async function sendResponse(
 
     if (msg.text) {
       try {
-        const richMsg = createRichMessage(`🤖 AI: ${msg.text}`, quoteData);
+        const richMsg = createRichMessage(`🤖 Zia: ${msg.text}`, quoteData);
         const result = await api.sendMessage(richMsg, threadId, ThreadType.User);
         logZaloAPI('sendMessage', { message: richMsg, threadId }, result);
         logMessage('OUT', threadId, {
@@ -299,7 +299,7 @@ export async function sendResponse(
         });
       } catch (e: any) {
         logError('sendResponse:text', e);
-        await api.sendMessage(`🤖 AI: ${msg.text}`, threadId, ThreadType.User);
+        await api.sendMessage(`🤖 Zia: ${msg.text}`, threadId, ThreadType.User);
       }
     }
 
@@ -411,7 +411,7 @@ export function createStreamCallbacks(
       const quoteData = resolveQuoteData(quoteIndex, threadId, messages);
 
       try {
-        const richMsg = createRichMessage(`🤖 AI: ${cleanText}`, quoteData);
+        const richMsg = createRichMessage(`🤖 Zia: ${cleanText}`, quoteData);
         const result = await api.sendMessage(richMsg, threadId, ThreadType.User);
         logZaloAPI('sendMessage', { message: richMsg, threadId }, result);
         console.log(`[Bot] 📤 Streaming: Đã gửi tin nhắn #${messageCount}`);
@@ -422,7 +422,7 @@ export function createStreamCallbacks(
         });
       } catch (e: any) {
         logError('onMessage', e);
-        await api.sendMessage(`🤖 AI: ${cleanText}`, threadId, ThreadType.User);
+        await api.sendMessage(`🤖 Zia: ${cleanText}`, threadId, ThreadType.User);
       }
       await new Promise((r) => setTimeout(r, 300));
     },
