@@ -18,7 +18,7 @@
     "selfListen": true,
     "logging": true,
     "useStreaming": true,
-    "useCharacter": true,
+    "useCharacter": false,
     "fileLogging": true,
     "logFile": "logs/bot.txt",
     "unauthorizedLogFile": "logs/unauthorized.json",
@@ -44,14 +44,7 @@
     "baseDelayMs": 1000,
     "retryableStatusCodes": [503, 429, 500, 502, 504]
   },
-  "allowedUserIds": [
-    "4779843125887605364",
-    "5013616206173690802",
-    "7946678712090274665",
-    "1565348328338661784",
-    "193137975454310799",
-    "8645041344863765464"
-  ],
+  "allowedUserIds": [],
   "stickers": {
     "keywords": [
       "hello",

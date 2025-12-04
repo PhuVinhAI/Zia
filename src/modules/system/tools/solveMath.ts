@@ -160,7 +160,7 @@ async function createMathPdf(params: SolveMathParams): Promise<Buffer> {
       fontsRegistered = registerFonts(doc);
       const mainFont = fontsRegistered ? 'MainFont' : 'Helvetica';
       const boldFont = fontsRegistered ? 'MainFont-Bold' : 'Helvetica-Bold';
-      const italicFont = fontsRegistered ? 'MainFont-Italic' : 'Helvetica-Oblique';
+      const _italicFont = fontsRegistered ? 'MainFont-Italic' : 'Helvetica-Oblique';
       const chunks: Buffer[] = [];
       doc.on('data', (chunk: Buffer) => chunks.push(chunk));
       doc.on('end', () => resolve(Buffer.concat(chunks)));
@@ -223,12 +223,6 @@ async function createMathPdf(params: SolveMathParams): Promise<Buffer> {
 
       doc.moveDown(1);
       doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke('#ddd');
-      doc.moveDown(0.3);
-      doc
-        .fontSize(9)
-        .font(italicFont)
-        .fillColor('#888')
-        .text('Được tạo bởi Zia AI Bot 🤖', { align: 'center' });
       doc.end();
     } catch (e) {
       reject(e);

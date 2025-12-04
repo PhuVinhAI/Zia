@@ -1,10 +1,12 @@
 /**
  * Logger Module - Pino-based structured logging
  * Auto-rotate files daily, keep 7 days
+ * Log rotation: tạo file mới khi đạt MAX_LINES_PER_FILE dòng
  */
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { Writable } from 'node:stream';
 import pino from 'pino';
 import { formatFileTimestamp, now } from '../../shared/utils/datetime.js';
 
@@ -12,11 +14,90 @@ let logger: pino.Logger;
 let sessionDir: string = '';
 let fileLoggingEnabled = false;
 
+const MAX_LINES_PER_FILE = 1000;
+
 /**
  * Tạo timestamp cho tên thư mục
  */
 function getTimestamp(): string {
   return formatFileTimestamp();
+}
+
+/**
+ * Custom writable stream với log rotation theo số dòng
+ */
+class RotatingFileStream extends Writable {
+  private basePath: string;
+  private currentFile: string;
+  private lineCount: number = 0;
+  private fileIndex: number = 0;
+  private writeStream: fs.WriteStream | null = null;
+
+  constructor(basePath: string) {
+    super();
+    this.basePath = basePath;
+    this.currentFile = this.getFileName(0);
+    this.initStream();
+  }
+
+  private getFileName(index: number): string {
+    const ext = path.extname(this.basePath);
+    const base = this.basePath.slice(0, -ext.length);
+    return index === 0 ? this.basePath : `${base}_${index}${ext}`;
+  }
+
+  private initStream(): void {
+    // Đếm số dòng hiện có nếu file đã tồn tại
+    if (fs.existsSync(this.currentFile)) {
+      const content = fs.readFileSync(this.currentFile, 'utf-8');
+      this.lineCount = content.split('\n').filter((line) => line.trim()).length;
+
+      // Nếu file đã đầy, tìm file tiếp theo
+      while (this.lineCount >= MAX_LINES_PER_FILE) {
+        this.fileIndex++;
+        this.currentFile = this.getFileName(this.fileIndex);
+        if (fs.existsSync(this.currentFile)) {
+          const content = fs.readFileSync(this.currentFile, 'utf-8');
+          this.lineCount = content.split('\n').filter((line) => line.trim()).length;
+        } else {
+          this.lineCount = 0;
+        }
+      }
+    }
+
+    this.writeStream = fs.createWriteStream(this.currentFile, { flags: 'a' });
+  }
+
+  private rotate(): void {
+    if (this.writeStream) {
+      this.writeStream.end();
+    }
+    this.fileIndex++;
+    this.currentFile = this.getFileName(this.fileIndex);
+    this.lineCount = 0;
+    this.writeStream = fs.createWriteStream(this.currentFile, { flags: 'a' });
+  }
+
+  _write(chunk: Buffer, _encoding: string, callback: (error?: Error | null) => void): void {
+    const data = chunk.toString();
+    const lines = data.split('\n').filter((line) => line.trim()).length;
+
+    // Kiểm tra nếu cần rotate
+    if (this.lineCount + lines > MAX_LINES_PER_FILE) {
+      this.rotate();
+    }
+
+    this.lineCount += lines;
+    this.writeStream?.write(chunk, callback);
+  }
+
+  _final(callback: (error?: Error | null) => void): void {
+    if (this.writeStream) {
+      this.writeStream.end(callback);
+    } else {
+      callback();
+    }
+  }
 }
 
 /**
@@ -39,37 +120,36 @@ export function initFileLogger(basePath: string): void {
   // Log file trong session dir
   const logFile = path.join(sessionDir, 'bot.txt');
 
-  // Pino transport config
-  const transport = pino.transport({
-    targets: [
-      // Console output (pretty)
-      {
+  // Tạo rotating file stream
+  const rotatingStream = new RotatingFileStream(logFile);
+
+  // Pino multistream: console pretty + rotating file
+  const streams: pino.StreamEntry[] = [
+    // Console output (pretty) - dùng transport riêng
+    {
+      level: (process.env.LOG_LEVEL || 'info') as pino.Level,
+      stream: pino.transport({
         target: 'pino-pretty',
-        level: process.env.LOG_LEVEL || 'info',
         options: {
           colorize: true,
           translateTime: 'SYS:standard',
           ignore: 'pid,hostname',
         },
-      },
-      // File output trong session dir
-      {
-        target: 'pino/file',
-        level: 'debug',
-        options: {
-          destination: logFile,
-          mkdir: true,
-        },
-      },
-    ],
-  });
+      }),
+    },
+    // File output với rotation theo số dòng
+    {
+      level: 'debug',
+      stream: rotatingStream,
+    },
+  ];
 
   logger = pino(
     {
       level: 'debug',
       timestamp: pino.stdTimeFunctions.isoTime,
     },
-    transport,
+    pino.multistream(streams),
   );
 
   logger.info({ session: sessionDir }, '🚀 Bot started');
