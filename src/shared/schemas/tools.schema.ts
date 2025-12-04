@@ -7,7 +7,7 @@ import { z } from 'zod';
 
 // Jikan Search params
 export const JikanSearchSchema = z.object({
-  q: z.string().optional(),
+  q: z.coerce.string().optional(), // Coerce để chấp nhận cả number
   mediaType: z.enum(['anime', 'manga']).default('anime'),
   type: z
     .enum([

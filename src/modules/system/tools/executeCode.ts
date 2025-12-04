@@ -11,7 +11,7 @@ import { validateParams } from '../../../shared/schemas/tools.schema.js';
 export const ExecuteCodeSchema = z.object({
   code: z.string().min(1, 'Thiếu code cần chạy').max(50000, 'Code quá dài (tối đa 50000 ký tự)'),
   language: z.enum(['python', 'javascript', 'typescript', 'r', 'java']).default('python'),
-  timeout: z.coerce.number().min(5000).max(120000).default(30000),
+  timeout: z.coerce.number().min(5000).max(120000).default(60000), // Tăng default lên 60s cho network requests
   packages: z.array(z.string()).optional(),
 });
 
@@ -32,6 +32,31 @@ const INSTALL_COMMANDS: Record<string, (pkg: string) => string> = {
   r: (pkg) => `R -e "install.packages('${pkg}', repos='https://cran.rstudio.com/')"`,
   java: () => '', // Java packages handled differently
 };
+
+/**
+ * Wrap code JS/TS với async IIFE để đảm bảo top-level await hoạt động
+ * và đợi tất cả promises hoàn tất
+ */
+function wrapAsyncCode(code: string, language: string): string {
+  if (language !== 'javascript' && language !== 'typescript') {
+    return code;
+  }
+
+  // Nếu code đã có async wrapper hoặc không có await/fetch/Promise, không cần wrap
+  const hasAsyncPatterns = /\b(await|fetch|Promise|\.then\(|async\s+function|async\s*\()/i.test(
+    code,
+  );
+  const alreadyWrapped = /^\s*\(async\s*\(\)\s*=>\s*\{/.test(code);
+
+  if (!hasAsyncPatterns || alreadyWrapped) {
+    return code;
+  }
+
+  // Wrap với async IIFE
+  return `(async () => {
+${code}
+})().catch(e => console.error('Async error:', e));`;
+}
 
 async function installPackages(
   sandbox: Sandbox,
@@ -155,8 +180,11 @@ export const executeCodeTool: ITool = {
         installLogs.push(...logs);
       }
 
+      // Wrap code nếu cần (cho JS/TS async)
+      const wrappedCode = wrapAsyncCode(code, language);
+
       // Chạy code
-      const execution = await sandbox.runCode(code, {
+      const execution = await sandbox.runCode(wrappedCode, {
         language: LANGUAGE_MAP[language] || 'python',
         timeoutMs: timeout,
       });

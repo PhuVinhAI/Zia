@@ -4,6 +4,7 @@ import type { StreamCallbacks } from '../../infrastructure/gemini/gemini.provide
 import { Reactions, ThreadType } from '../../infrastructure/zalo/zalo.service.js';
 import type { AIResponse } from '../../shared/types/config.schema.js';
 import { getRawHistory } from '../../shared/utils/history.js';
+import { http } from '../../shared/utils/httpClient.js';
 import {
   getSentMessage,
   removeSentMessage,
@@ -71,11 +72,13 @@ async function sendImageFromUrl(
     debugLog('IMAGE', `Sending image from URL: ${url}`);
     console.log(`[Bot] 🖼️ Đang tải ảnh từ URL...`);
 
-    // Tải ảnh về buffer
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
+    // Tải ảnh về buffer sử dụng http client (đã có User-Agent và retry)
+    const response = await http.get(url, {
+      headers: {
+        Accept: 'image/*,*/*;q=0.8',
+        Referer: new URL(url).origin,
+      },
+    });
 
     const arrayBuffer = await response.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
@@ -110,9 +113,24 @@ async function sendImageFromUrl(
   } catch (e: any) {
     logZaloAPI('sendMessage:image', { url, threadId }, null, e);
     logError('sendImageFromUrl', e);
-    // Fallback: gửi link ảnh
+
+    // Fallback: gửi link ảnh với thông báo rõ ràng hơn
+    const errorMsg = e.message || 'Unknown error';
+    const isBlocked = errorMsg.includes('403');
+    const isNotFound = errorMsg.includes('404');
+
     try {
-      await api.sendMessage(`Không tải được ảnh, đây là link: ${url}`, threadId, ThreadType.User);
+      if (isBlocked) {
+        await api.sendMessage(
+          `⚠️ Nguồn ảnh bị chặn truy cập. Link gốc: ${url}`,
+          threadId,
+          ThreadType.User,
+        );
+      } else if (isNotFound) {
+        await api.sendMessage(`⚠️ Ảnh không còn tồn tại hoặc đã bị xóa.`, threadId, ThreadType.User);
+      } else {
+        await api.sendMessage(`⚠️ Không tải được ảnh: ${url}`, threadId, ThreadType.User);
+      }
     } catch {}
   }
 }

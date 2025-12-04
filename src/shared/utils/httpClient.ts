@@ -23,6 +23,10 @@ const getHttpConfig = () => ({
 // BASE HTTP CLIENT
 // ═══════════════════════════════════════════════════
 
+// User-Agent giả lập browser để tránh bị chặn bởi CDN
+const DEFAULT_USER_AGENT =
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+
 /**
  * Tạo Ky instance với config mặc định
  */
@@ -36,6 +40,10 @@ export function createHttpClient(options: Options = {}): KyInstance {
       methods: ['get', 'post'],
       statusCodes: [408, 429, 500, 502, 503, 504],
       backoffLimit: cfg.retryDelayMs * cfg.maxRetries,
+    },
+    headers: {
+      'User-Agent': DEFAULT_USER_AGENT,
+      Accept: '*/*',
     },
     hooks: {
       beforeRequest: [
