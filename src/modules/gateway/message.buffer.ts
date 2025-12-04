@@ -87,6 +87,7 @@ async function processBatch(batch: BufferedMessage[]) {
   const threadId = batch[0].threadId;
   const api = batch[0].api;
   let messages = batch.map((b) => b.message);
+  let _wasAborted = false;
 
   // Gom nhóm tin nhắn từ task bị abort trước đó
   if (hasAbortedMessages(threadId)) {
@@ -94,6 +95,7 @@ async function processBatch(batch: BufferedMessage[]) {
     messages = [...abortedMsgs, ...messages];
     // Xóa history cũ để giảm context khi gom nhóm
     clearHistory(threadId);
+    _wasAborted = true;
     console.log(
       `[Bot] 🔄 Gom nhóm ${abortedMsgs.length} tin cũ + ${batch.length} tin mới, đã xóa history cũ`,
     );
@@ -109,14 +111,17 @@ async function processBatch(batch: BufferedMessage[]) {
     await handleMixedContent(api, messages, threadId, abortSignal);
   } catch (e: any) {
     if (e.message === 'Aborted' || abortSignal?.aborted) {
-      // Lưu tin nhắn của task bị abort để gom nhóm sau
+      debugLog('BUFFER', `Task aborted (exception) for thread ${threadId}`);
+    } else {
+      logError('processBatch', e);
+      console.error('[Bot] Lỗi xử lý buffer:', e);
+    }
+  } finally {
+    // Nếu bị abort, lưu messages để gom nhóm sau
+    if (abortSignal.aborted) {
       saveAbortedMessages(threadId, messages);
       debugLog('BUFFER', `Task aborted, saved ${messages.length} messages for thread ${threadId}`);
-      return;
     }
-    logError('processBatch', e);
-    console.error('[Bot] Lỗi xử lý buffer:', e);
-  } finally {
     stopTyping(threadId);
   }
 }
