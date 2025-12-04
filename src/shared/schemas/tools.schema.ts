@@ -114,6 +114,16 @@ export const NekosImagesSchema = z.object({
   limit: z.coerce.number().min(1).max(25).default(1),
 });
 
+// ============ ELEVENLABS TTS TOOLS ============
+
+// Text to Speech params (Yui voice + Eleven v3 Alpha)
+export const TextToSpeechSchema = z.object({
+  text: z.string().min(1, 'Thiếu văn bản cần đọc').max(5000, 'Văn bản quá dài (tối đa 5000 ký tự)'),
+  stability: z.coerce.number().min(0).max(1).optional(),
+  similarityBoost: z.coerce.number().min(0).max(1).optional(),
+  style: z.coerce.number().min(0).max(1).optional(),
+});
+
 // ============ SYSTEM TOOLS ============
 
 // Get All Friends params
@@ -186,3 +196,4 @@ export type TvuLoginParams = z.infer<typeof TvuLoginSchema>;
 export type TvuScheduleParams = z.infer<typeof TvuScheduleSchema>;
 export type TvuNotificationsParams = z.infer<typeof TvuNotificationsSchema>;
 export type NekosImagesParams = z.infer<typeof NekosImagesSchema>;
+export type TextToSpeechParams = z.infer<typeof TextToSpeechSchema>;

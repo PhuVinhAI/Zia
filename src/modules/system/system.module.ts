@@ -4,17 +4,22 @@
 import { BaseModule, type ITool, type ModuleMetadata } from '../../core/index.js';
 import { getAllFriendsTool } from './tools/getAllFriends.js';
 import { getFriendOnlinesTool } from './tools/getFriendOnlines.js';
-// Import tools
 import { getUserInfoTool } from './tools/getUserInfo.js';
+import { textToSpeechTool } from './tools/textToSpeech.js';
 
 export class SystemModule extends BaseModule {
   readonly metadata: ModuleMetadata = {
     name: 'system',
-    description: 'Core system tools (user info, friends, messaging)',
+    description: 'Core system tools (user info, friends, messaging, TTS)',
     version: '1.0.0',
   };
 
-  private _tools: ITool[] = [getUserInfoTool, getAllFriendsTool, getFriendOnlinesTool];
+  private _tools: ITool[] = [
+    getUserInfoTool,
+    getAllFriendsTool,
+    getFriendOnlinesTool,
+    textToSpeechTool,
+  ];
 
   get tools(): ITool[] {
     return this._tools;
