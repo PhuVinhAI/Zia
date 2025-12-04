@@ -13,4 +13,3 @@ export { jikanTopTool } from './jikanTop.js';
 
 // Nekos API
 export { nekosImagesTool } from './nekosImages.js';
-export { nekosSearchTool } from './nekosSearch.js';

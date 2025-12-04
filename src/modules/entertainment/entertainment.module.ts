@@ -12,7 +12,6 @@ import { jikanSearchTool } from './tools/jikanSearch.js';
 import { jikanSeasonTool } from './tools/jikanSeason.js';
 import { jikanTopTool } from './tools/jikanTop.js';
 import { nekosImagesTool } from './tools/nekosImages.js';
-import { nekosSearchTool } from './tools/nekosSearch.js';
 
 export class EntertainmentModule extends BaseModule {
   readonly metadata: ModuleMetadata = {
@@ -31,7 +30,6 @@ export class EntertainmentModule extends BaseModule {
     jikanGenresTool,
     jikanEpisodesTool,
     nekosImagesTool,
-    nekosSearchTool,
   ];
 
   get tools(): ITool[] {

@@ -114,16 +114,6 @@ export const NekosImagesSchema = z.object({
   limit: z.coerce.number().min(1).max(25).default(1),
 });
 
-// Nekos Search params (with pagination)
-export const NekosSearchSchema = z.object({
-  tags: z.string().optional(),
-  withoutTags: z.string().optional(),
-  rating: z.enum(['safe', 'suggestive']).default('safe'),
-  artist: z.coerce.number().optional(),
-  limit: z.coerce.number().min(1).max(100).default(10),
-  offset: z.coerce.number().min(0).default(0),
-});
-
 // ============ SYSTEM TOOLS ============
 
 // Get All Friends params
@@ -196,4 +186,3 @@ export type TvuLoginParams = z.infer<typeof TvuLoginSchema>;
 export type TvuScheduleParams = z.infer<typeof TvuScheduleSchema>;
 export type TvuNotificationsParams = z.infer<typeof TvuNotificationsSchema>;
 export type NekosImagesParams = z.infer<typeof NekosImagesSchema>;
-export type NekosSearchParams = z.infer<typeof NekosSearchSchema>;
