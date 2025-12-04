@@ -1,3 +1,4 @@
+import sharp from 'sharp';
 import { debugLog, logError, logMessage, logStep, logZaloAPI } from '../../core/logger/logger.js';
 import type { StreamCallbacks } from '../../infrastructure/gemini/gemini.provider.js';
 import { Reactions, ThreadType } from '../../infrastructure/zalo/zalo.service.js';
@@ -54,6 +55,69 @@ async function sendCard(api: any, userId: string | undefined, threadId: string) 
   } catch (e: any) {
     logZaloAPI('sendCard', { userId, threadId }, null, e);
     logError('sendCard', e);
+  }
+}
+
+/**
+ * Gửi ảnh từ URL
+ */
+async function sendImageFromUrl(
+  api: any,
+  url: string,
+  caption: string | undefined,
+  threadId: string,
+) {
+  try {
+    debugLog('IMAGE', `Sending image from URL: ${url}`);
+    console.log(`[Bot] 🖼️ Đang tải ảnh từ URL...`);
+
+    // Tải ảnh về buffer
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    // Lấy metadata bằng sharp
+    const metadata = await sharp(buffer).metadata();
+
+    // Tạo attachment
+    const attachment = {
+      filename: `image_${Date.now()}.${metadata.format || 'jpg'}`,
+      data: buffer,
+      metadata: {
+        width: metadata.width || 0,
+        height: metadata.height || 0,
+        totalSize: buffer.length,
+      },
+    };
+
+    // Gửi ảnh
+    const result = await api.sendMessage(
+      {
+        msg: caption ? `🤖 AI: ${caption}` : '',
+        attachments: [attachment],
+      },
+      threadId,
+      ThreadType.User,
+    );
+
+    logZaloAPI('sendMessage:image', { url, caption, threadId }, result);
+    console.log(`[Bot] ✅ Đã gửi ảnh!`);
+    logMessage('OUT', threadId, { type: 'image', url, caption });
+  } catch (e: any) {
+    logZaloAPI('sendMessage:image', { url, threadId }, null, e);
+    logError('sendImageFromUrl', e);
+    // Fallback: gửi link ảnh
+    try {
+      await api.sendMessage(
+        `🤖 AI: Không tải được ảnh, đây là link: ${url}`,
+        threadId,
+        ThreadType.User,
+      );
+    } catch {}
   }
 }
 
@@ -322,6 +386,12 @@ export function createStreamCallbacks(
       messageCount++;
       await sendCard(api, userId, threadId);
       await new Promise((r) => setTimeout(r, 300));
+    },
+
+    onImage: async (url: string, caption?: string) => {
+      messageCount++;
+      await sendImageFromUrl(api, url, caption, threadId);
+      await new Promise((r) => setTimeout(r, 500));
     },
 
     onMessage: async (text: string, quoteIndex?: number) => {

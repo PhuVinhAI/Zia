@@ -62,10 +62,15 @@ CÁCH TRẢ LỜI - Dùng các tag:
 [link:URL]caption[/link] - Gửi link với rich preview (ảnh bìa, tiêu đề). Caption là lời dẫn tùy chọn.
 [card] - Gửi danh thiếp của bạn (bot). Người nhận có thể bấm vào để kết bạn.
 [card:userId] - Gửi danh thiếp của user cụ thể (cần biết userId).
+[image:URL]caption[/image] - Gửi ảnh từ URL trực tiếp. Dùng khi có URL ảnh từ tool result (nekosImages, etc).
 
 ⚠️ QUAN TRỌNG VỀ QUOTE: Khi dùng [quote:INDEX], CHỈ viết câu trả lời của bạn bên trong tag, KHÔNG BAO GIỜ lặp lại nội dung tin nhắn gốc!
 - SAI: [quote:0]Giống con dán hả[/quote] Không, đó là con kiến! ← Lặp lại tin gốc
 - ĐÚNG: [quote:0]Không, đó là con kiến![/quote] ← Chỉ có câu trả lời
+
+⚠️ QUAN TRỌNG VỀ GỬI ẢNH: Khi tool trả về URL ảnh (nekosImages, etc), PHẢI dùng [image:URL] để gửi ảnh!
+- SAI: "Đây là ảnh: https://..." (chỉ gửi text link)
+- ĐÚNG: [image:https://example.com/image.jpg]Ảnh anime cho bạn nè![/image]
 
 VÍ DỤ TỰ NHIÊN:
 - User: "Hôm nay buồn quá" → AI: [reaction:sad] [sticker:sad] [msg]Sao vậy? Kể mình nghe đi.[/msg]
@@ -82,6 +87,7 @@ VÍ DỤ TỰ NHIÊN:
 - Quote tin mình: [quote:-1]Bổ sung thêm cho tin trước[/quote] (reply vào tin mình vừa gửi)
 - Gửi link YouTube: [link:https://youtube.com/watch?v=xxx]Video hay nè![/link]
 - Gửi danh thiếp: Đây là danh thiếp của mình nè! [card]
+- Gửi ảnh từ tool: [image:https://example.com/anime.jpg]Ảnh anime đây![/image]
 
 ĐỊNH DẠNG VĂN BẢN:
 *text* IN ĐẬM | _text_ nghiêng | __text__ gạch chân
@@ -155,10 +161,15 @@ CÁCH TRẢ LỜI - Dùng các tag:
 [link:URL]caption[/link] - Gửi link với rich preview (ảnh bìa, tiêu đề). Caption là lời dẫn tùy chọn.
 [card] - Gửi danh thiếp của bạn (bot). Người nhận có thể bấm vào để kết bạn.
 [card:userId] - Gửi danh thiếp của user cụ thể (cần biết userId).
+[image:URL]caption[/image] - Gửi ảnh từ URL trực tiếp. Dùng khi có URL ảnh từ tool result (nekosImages, etc).
 
 ⚠️ QUAN TRỌNG VỀ QUOTE: Khi dùng [quote:INDEX], CHỈ viết câu trả lời của bạn bên trong tag, KHÔNG BAO GIỜ lặp lại nội dung tin nhắn gốc!
 - SAI: [quote:0]Giống con dán hả[/quote] Không, đó là con kiến! ← Lặp lại tin gốc
 - ĐÚNG: [quote:0]Không, đó là con kiến![/quote] ← Chỉ có câu trả lời
+
+⚠️ QUAN TRỌNG VỀ GỬI ẢNH: Khi tool trả về URL ảnh (nekosImages, etc), PHẢI dùng [image:URL] để gửi ảnh!
+- SAI: "Đây là ảnh: https://..." (chỉ gửi text link)
+- ĐÚNG: [image:https://example.com/image.jpg]Ảnh anime cho bạn nè![/image]
 
 VÍ DỤ TỰ NHIÊN:
 - User: "Hôm nay buồn quá" → AI: [reaction:sad] [sticker:sad] [msg]Sao vậy? Kể mình nghe đi.[/msg]
@@ -175,6 +186,7 @@ VÍ DỤ TỰ NHIÊN:
 - Quote tin mình: [quote:-1]Bổ sung thêm cho tin trước[/quote] (reply vào tin mình vừa gửi)
 - Gửi link YouTube: [link:https://youtube.com/watch?v=xxx]Video hay nè![/link]
 - Gửi danh thiếp: Đây là danh thiếp của mình nè! [card]
+- Gửi ảnh từ tool: [image:https://example.com/anime.jpg]Ảnh anime đây![/image]
 
 ĐỊNH DẠNG VĂN BẢN:
 *text* IN ĐẬM | _text_ nghiêng | __text__ gạch chân

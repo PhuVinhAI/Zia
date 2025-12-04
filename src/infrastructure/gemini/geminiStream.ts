@@ -27,6 +27,7 @@ export interface StreamCallbacks {
   onLink?: (link: string, message?: string) => Promise<void>;
   onCard?: (userId?: string) => Promise<void>;
   onUndo?: (index: number) => Promise<void>;
+  onImage?: (url: string, caption?: string) => Promise<void>;
   onComplete?: () => void | Promise<void>;
   onError?: (error: Error) => void;
   signal?: AbortSignal;
@@ -40,6 +41,7 @@ interface ParserState {
   sentLinks: Set<string>;
   sentCards: Set<string>;
   sentUndos: Set<string>;
+  sentImages: Set<string>;
 }
 
 const VALID_REACTIONS = new Set(['heart', 'haha', 'wow', 'sad', 'angry', 'like']);
@@ -54,6 +56,7 @@ const TAG_PATTERNS = [
   /\[link:https?:\/\/[^\]]+\][\s\S]*?\[\/link\]/gi,
   /\[card(?::\d+)?\]/gi,
   /\[tool:\w+(?:\s+[^\]]*?)?\](?:\s*\{[\s\S]*?\}\s*\[\/tool\])?/gi,
+  /\[image:https?:\/\/[^\]]+\][\s\S]*?\[\/image\]/gi,
 ];
 
 function getPlainText(buffer: string): string {
@@ -224,6 +227,17 @@ async function processStreamChunk(state: ParserState, callbacks: StreamCallbacks
       await callbacks.onCard(userId || undefined);
     }
   }
+
+  // Parse top-level [image:url]caption[/image]
+  for (const match of buffer.matchAll(/\[image:(https?:\/\/[^\]]+)\]([\s\S]*?)\[\/image\]/gi)) {
+    const url = match[1];
+    const caption = match[2].trim();
+    const key = `image:${url}`;
+    if (!state.sentImages.has(key) && callbacks.onImage) {
+      state.sentImages.add(key);
+      await callbacks.onImage(url, caption || undefined);
+    }
+  }
 }
 
 /**
@@ -244,6 +258,7 @@ export async function generateContentStream(
     sentLinks: new Set(),
     sentCards: new Set(),
     sentUndos: new Set(),
+    sentImages: new Set(),
   };
 
   debugLog(
@@ -269,6 +284,7 @@ export async function generateContentStream(
       state.sentLinks.clear();
       state.sentCards.clear();
       state.sentUndos.clear();
+      state.sentImages.clear();
       hasPartialResponse = false;
 
       const delayMs = CONFIG.retry.baseDelayMs * 2 ** (attempt - 1);
