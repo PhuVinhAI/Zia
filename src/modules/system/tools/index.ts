@@ -2,6 +2,7 @@
  * System Tools - Export tất cả tools
  */
 
+export { clearHistoryTool } from './clearHistory.js';
 export { createChartTool } from './createChart.js';
 export { createFileTool } from './createFile/index.js';
 export { executeCodeTool } from './executeCode.js';
