@@ -332,11 +332,13 @@ export async function generateContentStream(
 
       logAIResponse(`[STREAM] ${prompt.substring(0, 50)}`, state.buffer);
 
-      // Chỉ gửi plainText nếu KHÔNG có [msg] hoặc [quote] tags (tức là AI không dùng tag)
-      // Nếu đã có tin nhắn được gửi qua tags, không gửi lại
-      if (state.sentMessages.size === 0) {
-        const plainText = getPlainText(state.buffer);
-        if (plainText && callbacks.onMessage) {
+      // Xử lý content nằm ngoài tags (tables, code blocks, plain text)
+      const plainText = getPlainText(state.buffer);
+      if (plainText && callbacks.onMessage) {
+        // Nếu chưa gửi message nào qua tags, gửi toàn bộ plainText
+        // Nếu đã gửi qua tags, chỉ gửi nếu plainText chứa table/code block
+        const hasTableOrCode = /(\|[^\n]+\|\n\|[-:\s|]+\|)|(```\w*\n[\s\S]*?```)/.test(plainText);
+        if (state.sentMessages.size === 0 || hasTableOrCode) {
           await callbacks.onMessage(plainText);
         }
       }
