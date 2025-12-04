@@ -1,6 +1,7 @@
 /**
- * Tool: createFile - Tạo và gửi file qua Zalo
- * Hỗ trợ: txt, docx (Word), pdf, pptx (PowerPoint), json, csv, code files, ...
+ * Tool: createFile - Tạo và gửi file Office qua Zalo
+ * Hỗ trợ: docx (Word), pdf, pptx (PowerPoint), xlsx (Excel)
+ * Các file text thuần (txt, md, code) sẽ được gửi trực tiếp qua markdown
  */
 
 import type { ITool, ToolResult } from '../../../../core/types.js';
@@ -12,98 +13,63 @@ import {
 import { docxHandler } from './docxHandler.js';
 import { pdfHandler } from './pdfHandler.js';
 import { pptxHandler } from './pptxHandler.js';
-import { textFileHandler } from './textHandler.js';
+import { xlsxHandler } from './xlsxHandler.js';
 import { type FileHandler, MIME_TYPES } from './types.js';
 
-// File handlers mapping
+// File handlers mapping (chỉ Office documents)
 const FILE_HANDLERS: Record<string, FileHandler> = {
-  // Documents
   docx: docxHandler,
   pdf: pdfHandler,
   pptx: pptxHandler,
-  // Text files
-  txt: textFileHandler,
-  md: textFileHandler,
-  json: textFileHandler,
-  csv: textFileHandler,
-  xml: textFileHandler,
-  yaml: textFileHandler,
-  yml: textFileHandler,
-  // Web
-  html: textFileHandler,
-  css: textFileHandler,
-  // JavaScript/TypeScript
-  js: textFileHandler,
-  ts: textFileHandler,
-  jsx: textFileHandler,
-  tsx: textFileHandler,
-  // Other languages
-  py: textFileHandler,
-  java: textFileHandler,
-  c: textFileHandler,
-  cpp: textFileHandler,
-  h: textFileHandler,
-  cs: textFileHandler,
-  go: textFileHandler,
-  rs: textFileHandler,
-  rb: textFileHandler,
-  php: textFileHandler,
-  sql: textFileHandler,
-  sh: textFileHandler,
-  bat: textFileHandler,
-  ps1: textFileHandler,
-  // Config
-  log: textFileHandler,
-  ini: textFileHandler,
-  env: textFileHandler,
-  gitignore: textFileHandler,
+  xlsx: xlsxHandler,
 };
+
+// Supported extensions
+const SUPPORTED_EXTENSIONS = Object.keys(FILE_HANDLERS);
 
 export const createFileTool: ITool = {
   name: 'createFile',
-  description: `Tạo file và gửi qua Zalo. Hỗ trợ nhiều định dạng:
-- Văn bản: txt, md
-- Tài liệu: docx (Word), pdf, pptx (PowerPoint) - Full markdown support
-- Data: json, csv, xml, yaml
-- Code: js, ts, py, java, html, css, sql, sh, ...
+  description: `Tạo file Office và gửi qua Zalo. CHỈ dùng cho các định dạng sau:
+- docx (Word): Tài liệu văn bản, báo cáo
+- pdf: Tài liệu PDF
+- pptx (PowerPoint): Bài thuyết trình
+- xlsx (Excel): Bảng tính, dữ liệu
+
+⚠️ KHÔNG dùng tool này cho txt, md, json, csv, code files - chúng sẽ được gửi trực tiếp qua tin nhắn.
 
 **PPTX FORMAT:**
 - Dùng "---" trên dòng riêng để tách các slides
-- # Heading = Tiêu đề slide (to, màu xanh)
-- ## Heading = Phụ đề slide (nhỏ hơn, màu xám)
+- # Heading = Tiêu đề slide
+- ## Heading = Phụ đề slide
 - Dấu - hoặc * = Bullet points
-- \`\`\`code\`\`\` = Code block
 
-**VÍ DỤ PPTX:**
-# Giới thiệu
-## Tổng quan dự án
-- Điểm 1
-- Điểm 2
----
-# Nội dung chính
-- Chi tiết A
-- Chi tiết B
----
-# Kết luận
-- Tóm tắt`,
+**XLSX FORMAT:**
+- Dùng markdown table: | Col1 | Col2 |
+- Hoặc CSV: value1,value2
+- Dòng đầu tiên = Header (tự động bold + màu)
+
+**VÍ DỤ XLSX:**
+| Tên | Tuổi | Điểm |
+|-----|------|------|
+| An  | 20   | 8.5  |
+| Bình| 22   | 9.0  |`,
   parameters: [
     {
       name: 'filename',
       type: 'string',
-      description: 'Tên file KÈM ĐUÔI. Ví dụ: "report.docx", "slides.pptx"',
+      description: 'Tên file KÈM ĐUÔI. Chỉ hỗ trợ: .docx, .pdf, .pptx, .xlsx',
       required: true,
     },
     {
       name: 'content',
       type: 'string',
-      description:
-        'Nội dung file. PPTX: dùng --- tách slides, # title, ## subtitle, - bullets. Xem description tool để biết format chi tiết.',
+      description: 'Nội dung file. PPTX: dùng --- tách slides. XLSX: dùng markdown table hoặc CSV.',
       required: true,
     },
     {
       name: 'title',
       type: 'string',
-      description: 'Tiêu đề (dùng cho docx, pdf, pptx)',
+      description: 'Tiêu đề tài liệu',
       required: false,
     },
     {
@@ -119,8 +85,16 @@ export const createFileTool: ITool = {
     const data = validation.data as CreateFileParams;
 
     try {
-      const ext = data.filename.split('.').pop()?.toLowerCase() || 'txt';
-      const handler = FILE_HANDLERS[ext] || textFileHandler;
+      const ext = data.filename.split('.').pop()?.toLowerCase() || '';
+      const handler = FILE_HANDLERS[ext];
+
+      if (!handler) {
+        return {
+          success: false,
+          error: `Định dạng "${ext}" không được hỗ trợ. Chỉ hỗ trợ: ${SUPPORTED_EXTENSIONS.join(', ')}. Các file text/code sẽ được gửi trực tiếp qua tin nhắn.`,
+        };
+      }
+
       const buffer = await handler(data.content, data);
       const mimeType = MIME_TYPES[ext] || 'application/octet-stream';
 

@@ -229,6 +229,9 @@ async function sendCodeFile(api: any, codeBlock: CodeBlock, threadId: string) {
     const attachment = {
       filename,
       data: buffer,
+      metadata: {
+        totalSize: buffer.length,
+      },
     };
 
     const result = await api.sendMessage(

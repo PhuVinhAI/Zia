@@ -5,6 +5,7 @@
 import type { Content } from '@google/genai';
 import { debugLog } from '../../core/logger/logger.js';
 import { historyRepository } from '../../infrastructure/database/index.js';
+import { deleteChatSession } from '../../infrastructure/gemini/geminiChat.js';
 import { CONFIG } from '../constants/config.js';
 import { toGeminiContent } from './historyConverter.js';
 import { fetchFullHistory, getPaginationConfig, loadOldMessages } from './historyLoader.js';
@@ -266,16 +267,24 @@ export function getCachedTokenCount(threadId: string): number {
 
 /** Xóa history của thread */
 export function clearHistory(threadId: string): void {
+  const oldCount = messageHistory.get(threadId)?.length || 0;
   debugLog('HISTORY', `Clearing history for thread ${threadId}`);
+
+  // Xóa memory cache
   messageHistory.delete(threadId);
   rawMessageHistory.delete(threadId);
   tokenCache.delete(threadId);
   initializedThreads.delete(threadId);
 
+  // Xóa Gemini chat session (quan trọng! để AI quên context cũ)
+  deleteChatSession(threadId);
+
   // Clear from DB (async)
   historyRepository.clearHistory(threadId).catch((err) => {
     debugLog('HISTORY', `DB clear error: ${err}`);
   });
+
+  debugLog('HISTORY', `Cleared ${oldCount} messages for ${threadId}`);
 }
 
 /** Lấy raw Zalo messages (cho quote feature) */
