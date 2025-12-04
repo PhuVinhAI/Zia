@@ -22,6 +22,7 @@
   ],
   "license": "MIT",
   "dependencies": {
+    "@e2b/code-interpreter": "^2.3.1",
     "@elevenlabs/elevenlabs-js": "^2.26.0",
     "@google/genai": "^1.30.0",
     "chart.js": "^4.5.1",

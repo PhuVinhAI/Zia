@@ -4,6 +4,7 @@
 import { BaseModule, type ITool, type ModuleMetadata } from '../../core/index.js';
 import { createChartTool } from './tools/createChart.js';
 import { createFileTool } from './tools/createFile/index.js';
+import { executeCodeTool } from './tools/executeCode.js';
 import { freepikImageTool } from './tools/freepikImage.js';
 import { getAllFriendsTool } from './tools/getAllFriends.js';
 import { getFriendOnlinesTool } from './tools/getFriendOnlines.js';
@@ -14,7 +15,8 @@ import { textToSpeechTool } from './tools/textToSpeech.js';
 export class SystemModule extends BaseModule {
   readonly metadata: ModuleMetadata = {
     name: 'system',
-    description: 'Core system tools (user info, friends, messaging, TTS, Word document, Charts)',
+    description:
+      'Core system tools (user info, friends, messaging, TTS, Word document, Charts, Code execution)',
     version: '1.0.0',
   };
 
@@ -27,6 +29,7 @@ export class SystemModule extends BaseModule {
     createFileTool,
     createChartTool,
     solveMathTool,
+    executeCodeTool,
   ];
 
   get tools(): ITool[] {
