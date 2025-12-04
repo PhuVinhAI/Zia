@@ -13,7 +13,7 @@
     "name": "Trợ lý AI Zalo",
     "prefix": "#bot",
     "requirePrefix": false,
-    "rateLimitMs": 3000,
+    "rateLimitMs": 0,
     "maxTokenHistory": 300000,
     "selfListen": true,
     "logging": true,

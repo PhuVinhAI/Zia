@@ -126,15 +126,17 @@ export function parseQuoteAttachment(quote: any): QuoteMedia {
 export function extractQuoteInfo(lastMsg: any): {
   quoteContent: string | null;
   quoteMedia: QuoteMedia;
+  quoteMsgId: string | null;
 } {
   const quote = lastMsg.data?.quote;
 
   if (!quote) {
-    return { quoteContent: null, quoteMedia: { type: 'none' } };
+    return { quoteContent: null, quoteMedia: { type: 'none' }, quoteMsgId: null };
   }
 
   const quoteContent = quote.msg || quote.content || null;
   const quoteMedia = parseQuoteAttachment(quote);
+  const quoteMsgId = quote.globalMsgId || quote.msgId || null;
 
   if (quoteMedia.type !== 'none') {
     console.log(
@@ -147,5 +149,6 @@ export function extractQuoteInfo(lastMsg: any): {
   return {
     quoteContent: quoteContent || '(nội dung không xác định)',
     quoteMedia,
+    quoteMsgId,
   };
 }

@@ -2,6 +2,7 @@
  * Media Processor - Chuẩn bị media parts cho Gemini API
  */
 
+import type { Content } from '@google/genai';
 import { debugLog } from '../../core/logger/logger.js';
 import type { MediaPart } from '../../infrastructure/gemini/gemini.provider.js';
 import { CONFIG } from '../../shared/constants/config.js';
@@ -14,6 +15,41 @@ import {
 } from '../../shared/utils/httpClient.js';
 import type { ClassifiedMessage } from './classifier.js';
 import type { QuoteMedia } from './quote.parser.js';
+
+/**
+ * Check xem history đã có media (inlineData) chưa
+ * Dùng để tránh fetch lại media từ quote nếu đã có trong history
+ */
+function historyHasMedia(history: Content[]): boolean {
+  for (const content of history) {
+    for (const part of content.parts || []) {
+      if ('inlineData' in part && part.inlineData?.data) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+/**
+ * Lấy mô tả media type cho note
+ */
+function getMediaTypeDescription(type: string): string {
+  switch (type) {
+    case 'image':
+      return 'hình ảnh';
+    case 'video':
+      return 'video';
+    case 'audio':
+      return 'audio/voice';
+    case 'sticker':
+      return 'sticker';
+    case 'file':
+      return 'file';
+    default:
+      return 'media';
+  }
+}
 
 /**
  * Chuẩn bị MediaPart[] từ classified messages
@@ -104,13 +140,23 @@ export async function prepareMediaParts(
 
 /**
  * Thêm media từ quote vào danh sách media
+ * Nếu media đã có trong history thì chỉ thêm note nhắc AI, không fetch lại
  */
 export async function addQuoteMedia(
   api: any,
   quoteMedia: QuoteMedia,
   media: MediaPart[],
   notes: string[],
+  history?: Content[],
 ): Promise<void> {
+  // Check nếu history đã có media thì không cần fetch lại
+  if (history && historyHasMedia(history)) {
+    const mediaDesc = getMediaTypeDescription(quoteMedia.type);
+    console.log(`[Bot] 📎 Quote media (${quoteMedia.type}) đã có trong history, skip fetch`);
+    notes.push(`(User đang reply tin nhắn có ${mediaDesc} ở trên, hãy tham khảo ${mediaDesc} đó)`);
+    return;
+  }
+
   if (quoteMedia.type === 'image' && quoteMedia.url) {
     console.log(`[Bot] 📎 Đang fetch ảnh từ quote...`);
     media.push({

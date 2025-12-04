@@ -90,8 +90,8 @@ export async function handleMixedContent(
     const { media, notes } = await prepareMediaParts(api, classified);
     if (signal?.aborted) return;
 
-    // 8. Thêm media từ quote nếu có
-    await addQuoteMedia(api, quoteMedia, media, notes);
+    // 8. Thêm media từ quote nếu có (truyền history để check media đã có chưa)
+    await addQuoteMedia(api, quoteMedia, media, notes, history);
 
     // 9. Check YouTube
     const youtubeUrls = extractYouTubeUrls(combinedText);
