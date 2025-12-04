@@ -114,6 +114,29 @@ export const NekosImagesSchema = z.object({
   limit: z.coerce.number().min(1).max(25).default(1),
 });
 
+// ============ FREEPIK AI IMAGE TOOLS ============
+
+// Freepik Seedream v4 Image Generation params
+export const FreepikImageSchema = z.object({
+  prompt: z
+    .string()
+    .min(1, 'Thiếu prompt mô tả ảnh')
+    .max(2000, 'Prompt quá dài (tối đa 2000 ký tự)'),
+  aspectRatio: z
+    .enum([
+      'square_1_1',
+      'widescreen_16_9',
+      'social_story_9_16',
+      'portrait_2_3',
+      'traditional_3_4',
+      'standard_3_2',
+      'classic_4_3',
+    ])
+    .default('square_1_1'),
+  guidanceScale: z.coerce.number().min(0).max(20).default(2.5),
+  seed: z.coerce.number().min(0).max(2147483647).optional(),
+});
+
 // ============ ELEVENLABS TTS TOOLS ============
 
 // Text to Speech params (Yui voice + Eleven v3 Alpha)
@@ -197,3 +220,4 @@ export type TvuScheduleParams = z.infer<typeof TvuScheduleSchema>;
 export type TvuNotificationsParams = z.infer<typeof TvuNotificationsSchema>;
 export type NekosImagesParams = z.infer<typeof NekosImagesSchema>;
 export type TextToSpeechParams = z.infer<typeof TextToSpeechSchema>;
+export type FreepikImageParams = z.infer<typeof FreepikImageSchema>;

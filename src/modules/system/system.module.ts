@@ -2,6 +2,7 @@
  * System Module - Core system tools và tool registry
  */
 import { BaseModule, type ITool, type ModuleMetadata } from '../../core/index.js';
+import { freepikImageTool } from './tools/freepikImage.js';
 import { getAllFriendsTool } from './tools/getAllFriends.js';
 import { getFriendOnlinesTool } from './tools/getFriendOnlines.js';
 import { getUserInfoTool } from './tools/getUserInfo.js';
@@ -19,6 +20,7 @@ export class SystemModule extends BaseModule {
     getAllFriendsTool,
     getFriendOnlinesTool,
     textToSpeechTool,
+    freepikImageTool,
   ];
 
   get tools(): ITool[] {

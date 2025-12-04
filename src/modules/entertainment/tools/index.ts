@@ -10,6 +10,5 @@ export { jikanRecommendationsTool } from './jikanRecommendations.js';
 export { jikanSearchTool } from './jikanSearch.js';
 export { jikanSeasonTool } from './jikanSeason.js';
 export { jikanTopTool } from './jikanTop.js';
-
 // Nekos API
 export { nekosImagesTool } from './nekosImages.js';
