@@ -6,11 +6,16 @@ import type { AIResponse } from '../../shared/types/config.schema.js';
 import { getRawHistory } from '../../shared/utils/history.js';
 import { http } from '../../shared/utils/httpClient.js';
 import {
+  type CodeBlock,
+  getFileExtension,
+  type MediaImage,
+  parseMarkdownToZalo,
+} from '../../shared/utils/markdownToZalo.js';
+import {
   getSentMessage,
   removeSentMessage,
   saveSentMessage,
 } from '../../shared/utils/messageStore.js';
-import { createRichMessage } from '../../shared/utils/richText.js';
 
 // ═══════════════════════════════════════════════════
 // SHARED HELPERS
@@ -173,6 +178,78 @@ async function sendSticker(api: any, keyword: string, threadId: string) {
   }
 }
 
+/**
+ * Gửi media image (table/mermaid PNG) từ buffer
+ */
+async function sendMediaImage(api: any, image: MediaImage, threadId: string) {
+  try {
+    const typeLabel = image.type === 'table' ? 'bảng' : 'sơ đồ';
+    debugLog('MEDIA_IMG', `Sending ${image.type} image: ${image.filename}`);
+    console.log(`[Bot] 📊 Đang gửi ${typeLabel} dạng ảnh...`);
+
+    const metadata = await sharp(image.buffer).metadata();
+
+    const attachment = {
+      filename: image.filename,
+      data: image.buffer,
+      metadata: {
+        width: metadata.width || 0,
+        height: metadata.height || 0,
+        totalSize: image.buffer.length,
+      },
+    };
+
+    const result = await api.sendMessage(
+      { msg: '', attachments: [attachment] },
+      threadId,
+      ThreadType.User,
+    );
+
+    logZaloAPI('sendMessage:mediaImage', { filename: image.filename, type: image.type, threadId }, result);
+    console.log(`[Bot] ✅ Đã gửi ${typeLabel}!`);
+    logMessage('OUT', threadId, { type: 'mediaImage', filename: image.filename, mediaType: image.type });
+  } catch (e: any) {
+    logZaloAPI('sendMessage:mediaImage', { threadId }, null, e);
+    logError('sendMediaImage', e);
+  }
+}
+
+/**
+ * Gửi code block dạng file
+ */
+async function sendCodeFile(api: any, codeBlock: CodeBlock, threadId: string) {
+  try {
+    const ext = getFileExtension(codeBlock.language);
+    const filename = `code_${Date.now()}.${ext}`;
+    const buffer = Buffer.from(codeBlock.code, 'utf-8');
+
+    debugLog('CODE_FILE', `Sending code file: ${filename}`);
+    console.log(`[Bot] 📄 Đang gửi file code (${codeBlock.language})...`);
+
+    const attachment = {
+      filename,
+      data: buffer,
+    };
+
+    const result = await api.sendMessage(
+      { msg: '', attachments: [attachment] },
+      threadId,
+      ThreadType.User,
+    );
+
+    logZaloAPI(
+      'sendMessage:codeFile',
+      { filename, language: codeBlock.language, threadId },
+      result,
+    );
+    console.log(`[Bot] ✅ Đã gửi file code!`);
+    logMessage('OUT', threadId, { type: 'codeFile', filename, language: codeBlock.language });
+  } catch (e: any) {
+    logZaloAPI('sendMessage:codeFile', { threadId }, null, e);
+    logError('sendCodeFile', e);
+  }
+}
+
 // ═══════════════════════════════════════════════════
 // SELF MESSAGE LISTENER (cho tính năng thu hồi)
 // ═══════════════════════════════════════════════════
@@ -311,14 +388,39 @@ export async function sendResponse(
 
     if (msg.text) {
       try {
-        const richMsg = createRichMessage(msg.text, quoteData);
-        const result = await api.sendMessage(richMsg, threadId, ThreadType.User);
-        logZaloAPI('sendMessage', { message: richMsg, threadId }, result);
-        logMessage('OUT', threadId, {
-          type: 'text',
-          text: msg.text,
-          quoteIndex: msg.quoteIndex,
-        });
+        // Parse markdown sang Zalo RichText + extract tables/code
+        const parsed = await parseMarkdownToZalo(msg.text);
+
+        // Gửi text message với styles
+        if (parsed.text.trim()) {
+          const richMsg: any = { msg: parsed.text };
+          if (parsed.styles.length > 0) {
+            richMsg.styles = parsed.styles;
+          }
+          if (quoteData) {
+            richMsg.quote = quoteData;
+          }
+
+          const result = await api.sendMessage(richMsg, threadId, ThreadType.User);
+          logZaloAPI('sendMessage', { message: richMsg, threadId }, result);
+          logMessage('OUT', threadId, {
+            type: 'text',
+            text: parsed.text,
+            quoteIndex: msg.quoteIndex,
+          });
+        }
+
+        // Gửi images (tables, mermaid diagrams)
+        for (const img of parsed.images) {
+          await new Promise((r) => setTimeout(r, 300));
+          await sendMediaImage(api, img, threadId);
+        }
+
+        // Gửi code files
+        for (const codeBlock of parsed.codeBlocks) {
+          await new Promise((r) => setTimeout(r, 300));
+          await sendCodeFile(api, codeBlock, threadId);
+        }
       } catch (e: any) {
         logError('sendResponse:text', e);
         await api.sendMessage(msg.text, threadId, ThreadType.User);
@@ -433,17 +535,43 @@ export function createStreamCallbacks(
       const quoteData = resolveQuoteData(quoteIndex, threadId, messages);
 
       try {
-        const richMsg = createRichMessage(cleanText, quoteData);
-        const result = await api.sendMessage(richMsg, threadId, ThreadType.User);
-        logZaloAPI('sendMessage', { message: richMsg, threadId }, result);
-        console.log(`[Bot] 📤 Streaming: Đã gửi tin nhắn #${messageCount}`);
-        logMessage('OUT', threadId, {
-          type: 'text',
-          text: cleanText,
-          quoteIndex,
-        });
+        // Parse markdown sang Zalo RichText + extract tables/code
+        const parsed = await parseMarkdownToZalo(cleanText);
+
+        // Gửi text message với styles
+        if (parsed.text.trim()) {
+          const richMsg: any = { msg: parsed.text };
+          if (parsed.styles.length > 0) {
+            richMsg.styles = parsed.styles;
+          }
+          if (quoteData) {
+            richMsg.quote = quoteData;
+          }
+
+          const result = await api.sendMessage(richMsg, threadId, ThreadType.User);
+          logZaloAPI('sendMessage', { message: richMsg, threadId }, result);
+          console.log(`[Bot] 📤 Streaming: Đã gửi tin nhắn #${messageCount}`);
+          logMessage('OUT', threadId, {
+            type: 'text',
+            text: parsed.text,
+            quoteIndex,
+          });
+        }
+
+        // Gửi images (tables, mermaid diagrams)
+        for (const img of parsed.images) {
+          await new Promise((r) => setTimeout(r, 300));
+          await sendMediaImage(api, img, threadId);
+        }
+
+        // Gửi code files
+        for (const codeBlock of parsed.codeBlocks) {
+          await new Promise((r) => setTimeout(r, 300));
+          await sendCodeFile(api, codeBlock, threadId);
+        }
       } catch (e: any) {
         logError('onMessage', e);
+        // Fallback: gửi text thuần
         await api.sendMessage(cleanText, threadId, ThreadType.User);
       }
       await new Promise((r) => setTimeout(r, 300));

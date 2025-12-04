@@ -6,7 +6,6 @@ import { youtubeChannelTool, youtubeSearchTool, youtubeVideoTool } from './syste
 import { clearHistoryTool } from './tools/clearHistory.js';
 import { createChartTool } from './tools/createChart.js';
 import { createFileTool } from './tools/createFile/index.js';
-import { createMermaidTool } from './tools/createMermaid.js';
 import { executeCodeTool } from './tools/executeCode.js';
 import { freepikImageTool } from './tools/freepikImage.js';
 import { getAllFriendsTool } from './tools/getAllFriends.js';
@@ -31,7 +30,6 @@ export class SystemModule extends BaseModule {
     freepikImageTool,
     createFileTool,
     createChartTool,
-    createMermaidTool,
     solveMathTool,
     executeCodeTool,
     youtubeSearchTool,

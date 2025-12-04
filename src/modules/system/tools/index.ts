@@ -5,7 +5,6 @@
 export { clearHistoryTool } from './clearHistory.js';
 export { createChartTool } from './createChart.js';
 export { createFileTool } from './createFile/index.js';
-export { createMermaidTool } from './createMermaid.js';
 export { executeCodeTool } from './executeCode.js';
 export { freepikImageTool } from './freepikImage.js';
 export { getAllFriendsTool } from './getAllFriends.js';

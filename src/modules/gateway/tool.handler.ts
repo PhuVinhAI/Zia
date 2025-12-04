@@ -228,14 +228,10 @@ export async function notifyToolCall(
     return;
   }
 
-  // Zalo format: *bold* _italic_ (không phải markdown)
-  const message = `🔧 *Đang gọi tool:* _${toolNames}_...`;
+  const message = `🔧 Đang gọi tool: ${toolNames}...`;
 
   try {
-    // Import createRichMessage để format đúng Zalo style
-    const { createRichMessage } = await import('../../shared/utils/richText.js');
-    const richMsg = createRichMessage(message);
-    await api.sendMessage(richMsg, threadId, ThreadType.User);
+    await api.sendMessage(message, threadId, ThreadType.User);
     console.log(`[Tool] 🔧 Gọi tool: ${toolNames}`);
     debugLog('TOOL', `Notified tool call: ${toolNames}`);
   } catch (e) {
@@ -347,15 +343,6 @@ export async function handleToolCalls(
         await sendImageFromToolResult(api, threadId, result.data.imageBuffer, result.data.filename);
       } catch (e: any) {
         debugLog('TOOL:CHART', `Failed to send chart image: ${e.message}`);
-      }
-    }
-
-    // Mermaid diagram → send image
-    if (call.toolName === 'createMermaid' && result.data?.imageBuffer) {
-      try {
-        await sendImageFromToolResult(api, threadId, result.data.imageBuffer, result.data.filename);
-      } catch (e: any) {
-        debugLog('TOOL:MERMAID', `Failed to send mermaid image: ${e.message}`);
       }
     }
 

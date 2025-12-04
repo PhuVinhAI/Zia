@@ -57,8 +57,14 @@ export {
   removeSentMessage,
   saveSentMessage,
 } from './messageStore.js';
-// Rich text
-export { createRichMessage, parseRichText } from './richText.js';
+// Markdown to Zalo
+export {
+  getFileExtension,
+  parseMarkdownToZalo,
+  type CodeBlock,
+  type MediaImage,
+  type ParsedMarkdown,
+} from './markdownToZalo.js';
 // Task manager
 export {
   abortTask,

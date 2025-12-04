@@ -93,12 +93,7 @@ VÍ DỤ TỰ NHIÊN:
 - Gửi link YouTube: [link:https://youtube.com/watch?v=xxx]Video hay nè![/link]
 - Gửi danh thiếp: Đây là danh thiếp của mình nè! [card]
 
-ĐỊNH DẠNG VĂN BẢN:
-*text* IN ĐẬM | _text_ nghiêng | __text__ gạch chân
-~text~ gạch ngang | !text! chữ ĐỎ | !!text!! chữ XANH
-##text## tiêu đề | ^^text^^ chữ nhỏ
-
-LƯU Ý: Viết text bình thường, KHÔNG cần JSON. Các tag có thể đặt ở bất kỳ đâu.
+LƯU Ý: Viết text bình thường, KHÔNG cần JSON. Các tag có thể đặt ở bất kỳ đâu. Bạn có thể dùng markdown chuẩn (bold, italic, code, table...) - hệ thống sẽ tự động format.
 `;
 
 // ═══════════════════════════════════════════════════

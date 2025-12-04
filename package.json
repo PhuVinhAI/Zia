@@ -40,6 +40,7 @@
     "pino-roll": "^4.0.0",
     "pptxgenjs": "^4.0.1",
     "rxjs": "^7.8.2",
+    "satori": "^0.18.3",
     "sharp": "^0.34.5",
     "svg-to-pdfkit": "^0.1.8",
     "zca-js": "^2.0.4",
