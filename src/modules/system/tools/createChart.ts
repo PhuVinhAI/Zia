@@ -18,19 +18,11 @@ const createChartCanvas = (width: number, height: number) =>
 
 export const createChartTool: ITool = {
   name: 'createChart',
-  description: `Tạo biểu đồ phân tích dữ liệu và xuất ra ảnh PNG.
-Hỗ trợ các loại biểu đồ:
-- bar: Biểu đồ cột (so sánh)
-- line: Biểu đồ đường (xu hướng)
-- pie: Biểu đồ tròn (tỷ lệ %)
-- doughnut: Biểu đồ donut
-- radar: Biểu đồ radar (đa chiều)
-- polarArea: Biểu đồ vùng cực
+  description: `Tạo biểu đồ xuất ảnh PNG. Loại: bar, line, pie, doughnut, radar, polarArea.
 
-**VÍ DỤ DATA:**
-- Labels: ["T1", "T2", "T3", "T4"]
-- Datasets: [{"label": "Doanh thu", "data": [100, 200, 150, 300]}]
-- Nhiều dataset: [{"label": "2023", "data": [10,20,30]}, {"label": "2024", "data": [15,25,35]}]`,
+⚠️ BẮT BUỘC: JSON trên 1 dòng, "data" phải có mảng số!
+📤 ẢNH TỰ ĐỘNG GỬI: Tool sẽ TỰ ĐỘNG gửi ảnh biểu đồ qua Zalo. KHÔNG cần dùng [image:] tag!
+[tool:createChart]{"type":"bar","title":"Top 5","labels":["A","B","C","D","E"],"datasets":[{"label":"Value","data":[100,80,60,40,20]}]}[/tool]`,
   parameters: [
     {
       name: 'type',
@@ -71,6 +63,18 @@ Hỗ trợ các loại biểu đồ:
     },
   ],
   execute: async (params: Record<string, any>): Promise<ToolResult> => {
+    // Pre-check: datasets[].data phải là mảng số
+    if (Array.isArray(params.datasets)) {
+      for (const ds of params.datasets) {
+        if (!ds.data || !Array.isArray(ds.data) || ds.data.length === 0) {
+          return {
+            success: false,
+            error: `LỖI: "data" phải là mảng số! VD: "data":[100,200,300]. Bạn đã để trống.`,
+          };
+        }
+      }
+    }
+
     const validation = validateParams(CreateChartSchema, params);
     if (!validation.success) return { success: false, error: validation.error };
     const data = validation.data;

@@ -23,7 +23,7 @@ setAIService({
 // Re-export key manager utilities
 export { keyManager } from './keyManager.js';
 
-export const GEMINI_MODEL = 'models/gemini-2.5-pro';
+export const GEMINI_MODEL = 'models/gemini-flash-latest';
 
 export const GEMINI_CONFIG = {
   temperature: 1,

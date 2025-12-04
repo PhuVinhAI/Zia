@@ -56,8 +56,20 @@ function parseInlineParams(paramStr: string): Record<string, any> {
 
 /**
  * Parse JSON an toàn với jsonrepair
+ * Detect và báo lỗi khi có field bị thiếu giá trị (vd: "data":} hoặc "data":,)
  */
 function safeParseJson(jsonStr: string): Record<string, any> | null {
+  // Detect pattern lỗi: "key": theo sau bởi } hoặc , hoặc ] (thiếu value)
+  const missingValuePattern = /"(\w+)":\s*[,}\]]/g;
+  const missingMatch = missingValuePattern.exec(jsonStr);
+  if (missingMatch) {
+    debugLog(
+      'TOOL',
+      `JSON missing value for field "${missingMatch[1]}": ${jsonStr.substring(0, 150)}...`,
+    );
+    // Vẫn thử repair nhưng log warning
+  }
+
   try {
     // Thử parse trực tiếp trước
     return JSON.parse(jsonStr);

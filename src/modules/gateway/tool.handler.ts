@@ -36,6 +36,7 @@ export function formatToolResultForAI(toolCall: ToolCall, result: ToolResult): s
     if (cleanData.audio) delete cleanData.audio;
     if (cleanData.audioBase64) delete cleanData.audioBase64;
     if (cleanData.fileBuffer) delete cleanData.fileBuffer; // File buffer (Word, txt, etc.)
+    if (cleanData.imageBuffer) delete cleanData.imageBuffer; // Image buffer (chart, etc.)
 
     return `[tool_result:${toolCall.toolName}]
 Kết quả thành công:
@@ -108,6 +109,47 @@ async function sendVoiceFromToolResult(
   } catch (e: any) {
     console.error(`[Tool] ❌ Lỗi gửi voice:`, e.message);
     debugLog('TOOL:TTS', `Voice send error: ${e.message}`);
+    throw e;
+  }
+}
+
+/**
+ * Gửi ảnh từ tool result (chart, etc.)
+ */
+async function sendImageFromToolResult(
+  api: any,
+  threadId: string,
+  buffer: Buffer,
+  filename: string,
+): Promise<void> {
+  try {
+    console.log(`[Tool] 📊 Đang gửi ảnh ${filename} (${buffer.length} bytes)...`);
+    debugLog('TOOL:IMG', `Sending image: ${filename}, size: ${buffer.length}`);
+
+    const attachment = {
+      filename,
+      data: buffer,
+      metadata: {
+        width: 800,
+        height: 600,
+        totalSize: buffer.length,
+      },
+    };
+
+    await api.sendMessage(
+      {
+        msg: '',
+        attachments: [attachment],
+      },
+      threadId,
+      ThreadType.User,
+    );
+
+    console.log(`[Tool] ✅ Đã gửi ảnh ${filename}!`);
+    debugLog('TOOL:IMG', `Image sent successfully: ${filename}`);
+  } catch (e: any) {
+    console.error(`[Tool] ❌ Lỗi gửi ảnh:`, e.message);
+    debugLog('TOOL:IMG', `Image send error: ${e.message}`);
     throw e;
   }
 }
@@ -289,6 +331,15 @@ export async function handleToolCalls(
         );
       } catch (e: any) {
         debugLog('TOOL:FILE', `Failed to send file: ${e.message}`);
+      }
+    }
+
+    // Chart → send image
+    if (call.toolName === 'createChart' && result.data?.imageBuffer) {
+      try {
+        await sendImageFromToolResult(api, threadId, result.data.imageBuffer, result.data.filename);
+      } catch (e: any) {
+        debugLog('TOOL:CHART', `Failed to send chart image: ${e.message}`);
       }
     }
   }
