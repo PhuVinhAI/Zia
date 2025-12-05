@@ -92,7 +92,7 @@ export function buildCoverPage(
           color: t.colors.primary,
         }),
       ],
-      spacing: { after: 200 },
+      spacing: { after: 400, line: 360 },
     })
   );
 
@@ -110,7 +110,7 @@ export function buildCoverPage(
             italics: style === 'academic',
           }),
         ],
-        spacing: { after: 600 },
+        spacing: { before: 200, after: 600, line: 300 },
       })
     );
   }
@@ -227,7 +227,7 @@ export function buildTitleBlock(
           color: t.colors.primary,
         }),
       ],
-      spacing: { before: 400, after: 200 },
+      spacing: { before: 400, after: 400, line: 340 },
     })
   );
 
@@ -244,7 +244,7 @@ export function buildTitleBlock(
             italics: true,
           }),
         ],
-        spacing: { after: 400 },
+        spacing: { before: 200, after: 400, line: 300 },
       })
     );
   }

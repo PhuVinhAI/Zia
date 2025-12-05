@@ -65,11 +65,16 @@ export class WordDocumentBuilder {
       }
     }
 
-    // 2. Build title if provided
-    const titleParagraphs = this.buildTitleSection();
-    allChildren.push(...titleParagraphs);
+    // 2. Check if content has cover page - skip title section if so
+    const hasCover = /\[COVER:[^\]]+\]/i.test(processedContent);
+    
+    // 3. Build title if provided AND no cover page in content
+    if (!hasCover) {
+      const titleParagraphs = this.buildTitleSection();
+      allChildren.push(...titleParagraphs);
+    }
 
-    // 3. Build TOC if requested
+    // 4. Build TOC if requested
     if (this.options.includeToc) {
       const headings = extractHeadings(processedContent);
       if (headings.length > 0) {
@@ -78,14 +83,14 @@ export class WordDocumentBuilder {
       }
     }
 
-    // 4. Parse main content (includes all features: boxes, callouts, tables, etc.)
+    // 5. Parse main content (includes all features: boxes, callouts, tables, etc.)
     const paragraphs = parseExtendedContent(processedContent, this.theme);
     allChildren.push(...paragraphs);
 
-    // 5. Build section properties
+    // 6. Build section properties
     const sectionProperties = this.buildSectionProperties();
 
-    // 6. Build headers (with watermark if specified)
+    // 7. Build headers (with watermark if specified)
     const headerConfig = watermarkConfig
       ? buildWatermarkHeader(watermarkConfig, this.theme)
       : this.options.header
@@ -135,7 +140,7 @@ export class WordDocumentBuilder {
               color: this.theme.colors.primary,
             }),
           ],
-          spacing: { after: 200 },
+          spacing: { after: 400, line: 340 },
         })
       );
 
@@ -153,7 +158,7 @@ export class WordDocumentBuilder {
                 color: this.theme.colors.secondary,
               }),
             ],
-            spacing: { after: 400 },
+            spacing: { before: 200, after: 400 },
           })
         );
       }
