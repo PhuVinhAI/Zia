@@ -76,6 +76,13 @@ export async function prepareMediaParts(
         url: item.url,
         mimeType: item.mimeType || 'image/jpeg',
       });
+    } else if (item.type === 'doodle' && item.url) {
+      // Doodle (vẽ hình) - xử lý như image
+      media.push({
+        type: 'image',
+        url: item.url,
+        mimeType: item.mimeType || 'image/jpeg',
+      });
     } else if (item.type === 'video') {
       if (item.url && item.fileSize && item.fileSize < 20 * 1024 * 1024) {
         media.push({ type: 'video', url: item.url, mimeType: 'video/mp4' });

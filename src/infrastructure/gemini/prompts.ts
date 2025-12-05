@@ -237,6 +237,11 @@ export interface ClassifiedItem {
   url?: string;
   duration?: number;
   fileName?: string;
+  // Contact card info
+  contactName?: string;
+  contactAvatar?: string;
+  contactUserId?: string;
+  contactPhone?: string;
 }
 
 export const PROMPTS = {
@@ -290,6 +295,9 @@ export const PROMPTS = {
         case 'image':
           parts.push(`[${index}] Ảnh: (xem hình ảnh đính kèm)`);
           break;
+        case 'doodle':
+          parts.push(`[${index}] Hình vẽ tay (doodle): (xem hình vẽ đính kèm)`);
+          break;
         case 'video':
           parts.push(`[${index}] Video ${item.duration || 0}s: (xem video đính kèm)`);
           break;
@@ -301,6 +309,9 @@ export const PROMPTS = {
           break;
         case 'link':
           parts.push(`[${index}] Link: ${item.url}`);
+          break;
+        case 'contact':
+          parts.push(`[${index}] Danh thiếp: ${item.text || '(thông tin liên hệ)'}`);
           break;
       }
     });

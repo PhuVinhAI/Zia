@@ -17,7 +17,7 @@ export function buildPrompt(
   mediaNotes: string[],
 ): string {
   const hasMedia =
-    classified.some((c) => ['image', 'video', 'voice', 'file', 'sticker'].includes(c.type)) ||
+    classified.some((c) => ['image', 'video', 'voice', 'file', 'sticker', 'doodle'].includes(c.type)) ||
     quoteHasMedia;
 
   let prompt: string;
@@ -30,6 +30,10 @@ export function buildPrompt(
       url: c.url,
       duration: c.duration,
       fileName: c.fileName,
+      contactName: c.contactName,
+      contactAvatar: c.contactAvatar,
+      contactUserId: c.contactUserId,
+      contactPhone: c.contactPhone,
     }));
     prompt = PROMPTS.mixedContent(items);
     prompt += PROMPTS.mediaNote(mediaNotes);
@@ -67,7 +71,7 @@ export function buildPrompt(
  */
 export function extractTextFromMessages(classified: ClassifiedMessage[]): string {
   return classified
-    .filter((c) => c.type === 'text' || c.type === 'link')
+    .filter((c) => c.type === 'text' || c.type === 'link' || c.type === 'contact')
     .map((c) => c.text || c.url || '')
     .filter(Boolean)
     .join('\n');

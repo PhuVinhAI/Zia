@@ -10,6 +10,8 @@ export type MessageType =
   | 'file'
   | 'sticker'
   | 'link'
+  | 'contact'
+  | 'doodle'
   | 'unknown';
 
 export type ClassifiedMessage = {
@@ -24,6 +26,11 @@ export type ClassifiedMessage = {
   fileName?: string;
   fileExt?: string;
   stickerId?: string;
+  // Contact card info
+  contactName?: string;
+  contactAvatar?: string;
+  contactUserId?: string;
+  contactPhone?: string;
 };
 
 /**
@@ -96,7 +103,28 @@ export function classifyMessage(msg: any): ClassifiedMessage {
     };
   }
 
-  // Link
+  // Contact card (danh thiếp)
+  if (msgType === 'chat.recommended' && content?.action === 'recommened.user') {
+    const contactUserId = content?.params || '';
+    const contactName = content?.title || '';
+    const contactAvatar = content?.thumb || '';
+    let contactPhone = '';
+    try {
+      const desc = JSON.parse(content?.description || '{}');
+      contactPhone = desc?.phone || '';
+    } catch {}
+    return {
+      type: 'contact',
+      message: msg,
+      contactName,
+      contactAvatar,
+      contactUserId,
+      contactPhone,
+      text: `Danh thiếp: ${contactName}${contactPhone ? ` (${contactPhone})` : ''}`,
+    };
+  }
+
+  // Link (other recommended types)
   if (msgType === 'chat.recommended') {
     let url = content?.href;
     if (!url && content?.params) {
@@ -105,6 +133,18 @@ export function classifyMessage(msg: any): ClassifiedMessage {
       } catch {}
     }
     if (url) return { type: 'link', message: msg, url, text: url };
+  }
+
+  // Doodle (vẽ hình)
+  if (msgType === 'chat.doodle' && content?.href) {
+    return {
+      type: 'doodle',
+      message: msg,
+      url: content.href,
+      thumbUrl: content.thumb || content.href,
+      mimeType: 'image/jpeg',
+      text: '(Hình vẽ tay)',
+    };
   }
 
   return { type: 'unknown', message: msg };
