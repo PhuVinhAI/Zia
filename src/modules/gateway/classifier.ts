@@ -9,6 +9,7 @@ export type MessageType =
   | 'voice'
   | 'file'
   | 'sticker'
+  | 'gif'
   | 'link'
   | 'contact'
   | 'doodle'
@@ -50,6 +51,22 @@ export function classifyMessage(msg: any): ClassifiedMessage {
   // Sticker
   if (msgType === 'chat.sticker' && content?.id) {
     return { type: 'sticker', message: msg, stickerId: content.id };
+  }
+
+  // GIF
+  if (msgType === 'chat.gif' && content?.href) {
+    // GIF có thể có nhiều URL: href (normal), hd (HD), small (thumbnail)
+    const params = content?.params ? JSON.parse(content.params) : {};
+    const hdUrl = params?.hd || content?.href;
+    const keyword = params?.tracking?.keyword || '';
+    return {
+      type: 'gif',
+      message: msg,
+      url: hdUrl,
+      thumbUrl: content?.thumb || params?.small,
+      mimeType: 'image/gif',
+      text: keyword ? `(GIF: ${keyword})` : '(GIF)',
+    };
   }
 
   // Image/Photo
