@@ -9,6 +9,7 @@ import PDFDocument from 'pdfkit';
 import sharp from 'sharp';
 import { debugLog, logError } from '../../core/logger/logger.js';
 import { CONFIG } from '../constants/config.js';
+import { MIME_TYPES } from '../schemas/config.schema.js';
 
 // ═══════════════════════════════════════════════════
 // CONFIG
@@ -462,66 +463,11 @@ export const isGeminiSupported = (ext: string) => GEMINI_SUPPORTED_FORMATS.has(e
 export const isTextConvertible = (ext: string) => TEXT_CONVERTIBLE_FORMATS.has(ext.toLowerCase());
 export const isDocxConvertible = (ext: string) => DOCX_CONVERTIBLE_FORMATS.has(ext.toLowerCase());
 
-// ═══════════════════════════════════════════════════
-// MIME TYPE MAPPING
-// ═══════════════════════════════════════════════════
-
-const EXT_TO_MIME: Record<string, string> = {
-  // Documents
-  pdf: 'application/pdf',
-  txt: 'text/plain',
-  html: 'text/html',
-  css: 'text/css',
-  js: 'text/javascript',
-  ts: 'text/typescript',
-  py: 'text/x-python',
-  java: 'text/x-java',
-  c: 'text/x-c',
-  cpp: 'text/x-c++',
-  cs: 'text/x-csharp',
-  go: 'text/x-go',
-  rb: 'text/x-ruby',
-  php: 'text/x-php',
-  swift: 'text/x-swift',
-  kt: 'text/x-kotlin',
-  rs: 'text/x-rust',
-  md: 'text/markdown',
-  json: 'application/json',
-  xml: 'application/xml',
-  yaml: 'application/x-yaml',
-  yml: 'application/x-yaml',
-  // Images
-  png: 'image/png',
-  jpg: 'image/jpeg',
-  jpeg: 'image/jpeg',
-  gif: 'image/gif',
-  webp: 'image/webp',
-  heic: 'image/heic',
-  heif: 'image/heif',
-  // Audio
-  wav: 'audio/wav',
-  mp3: 'audio/mpeg',
-  aiff: 'audio/aiff',
-  aac: 'audio/aac',
-  ogg: 'audio/ogg',
-  flac: 'audio/flac',
-  // Video
-  mp4: 'video/mp4',
-  mpeg: 'video/mpeg',
-  mov: 'video/quicktime',
-  avi: 'video/x-msvideo',
-  flv: 'video/x-flv',
-  mpg: 'video/mpeg',
-  webm: 'video/webm',
-  wmv: 'video/x-ms-wmv',
-  '3gp': 'video/3gpp',
-};
-
 /**
  * Lấy MIME type từ file extension
- * Trả về đúng MIME type cho Gemini API
+ * Sử dụng MIME_TYPES từ config.schema.ts
  */
 export function getMimeTypeFromExt(ext: string): string {
   const normalized = ext.toLowerCase().replace(/^\./, '');
-  return EXT_TO_MIME[normalized] || 'application/octet-stream';
+  return MIME_TYPES[normalized] || 'application/octet-stream';
 }

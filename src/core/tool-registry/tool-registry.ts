@@ -278,12 +278,17 @@ Bạn có thể sử dụng các tool sau:
 ${toolDescriptions}
 
 CÁCH GỌI TOOL:
-- Cú pháp ngắn: [tool:tên_tool param1="giá_trị1" param2="giá_trị2"]
-- Cú pháp JSON: [tool:tên_tool]{"param1": "giá_trị1"}[/tool]
+- Cú pháp ngắn (không có body): [tool:tên_tool param1="giá_trị1" param2="giá_trị2"]
+- Cú pháp JSON (có body): [tool:tên_tool]{"param1": "giá_trị1"}[/tool]
+
+⚠️ QUAN TRỌNG: Thẻ đóng PHẢI là [/tool] (KHÔNG có tên tool!)
+- ✅ ĐÚNG: [tool:createFile]{"filename":"test.docx"}[/tool]
+- ❌ SAI: [tool:createFile]{"filename":"test.docx"}[/tool:createFile]
 
 VÍ DỤ:
-- Lấy thông tin người đang chat: [tool:getUserInfo]
-- Lấy danh sách bạn bè: [tool:getAllFriends limit=10]
+- Không có tham số: [tool:getUserInfo]
+- Tham số inline: [tool:getAllFriends limit=10]
+- Tham số JSON: [tool:createFile]{"filename":"report.docx","content":"Nội dung..."}[/tool]
 
 QUY TẮC:
 1. Khi gọi tool, có thể kèm text thông báo ngắn

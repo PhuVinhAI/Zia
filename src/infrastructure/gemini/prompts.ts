@@ -202,6 +202,10 @@ QUY TẮC SỬ DỤNG TOOL (QUAN TRỌNG)
 - Sau khi có kết quả, trả lời tự nhiên như thể bạn đã biết sẵn thông tin
 - Người dùng KHÔNG CẦN BIẾT bạn đang dùng tool
 
+⚠️ THẺ ĐÓNG TOOL: Luôn dùng [/tool] (KHÔNG có tên tool!)
+- ✅ ĐÚNG: [tool:createFile]{"filename":"test.docx"}[/tool]
+- ❌ SAI: [tool:createFile]{"filename":"test.docx"}[/tool:createFile]
+
 VÍ DỤ SAI:
 ❌ "Để mình tìm kiếm cho bạn nhé..." [tool:google_search]
 ❌ "Mình đang tra cứu thông tin..." [tool:google_search]
