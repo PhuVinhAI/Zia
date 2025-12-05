@@ -170,6 +170,26 @@ export function classifyMessage(msg: any): ClassifiedMessage {
     };
   }
 
+  // Friend added notification (webchat format với msginfo.actionlist)
+  if (msgType === 'webchat' && content?.action === 'msginfo.actionlist') {
+    const title = content?.title || '';
+    const friendName = msg.data?.dName || '';
+    if (title.includes('kết bạn')) {
+      return {
+        type: 'friend_added',
+        message: msg,
+        contactName: friendName,
+        text: `[Thông báo hệ thống] Người dùng "${friendName}" vừa đồng ý kết bạn với bạn. Hãy gửi lời chào thân thiện đến họ.`,
+      };
+    }
+    // Other system notifications
+    return {
+      type: 'system',
+      message: msg,
+      text: title || '(Thông báo hệ thống)',
+    };
+  }
+
   return { type: 'unknown', message: msg };
 }
 
