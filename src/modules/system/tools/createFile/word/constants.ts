@@ -33,12 +33,26 @@ export const DEFAULT_MARGINS = {
   right: 25.4,
 };
 
+/**
+ * Get margins - supports both mm and twips
+ * If value > 100, assume it's already in twips (1 inch = 1440 twips)
+ * Otherwise, treat as mm and convert to twips
+ */
 export function getMargins(margins?: { top?: number; bottom?: number; left?: number; right?: number }) {
+  const convertValue = (value: number | undefined, defaultMm: number): number => {
+    if (value === undefined) {
+      return convertMillimetersToTwip(defaultMm);
+    }
+    // If value > 100, assume it's already in twips (typical mm values are < 100)
+    // 1440 twips = 1 inch, typical margins are 720-1440 twips
+    return value > 100 ? value : convertMillimetersToTwip(value);
+  };
+
   return {
-    top: convertMillimetersToTwip(margins?.top ?? DEFAULT_MARGINS.top),
-    bottom: convertMillimetersToTwip(margins?.bottom ?? DEFAULT_MARGINS.bottom),
-    left: convertMillimetersToTwip(margins?.left ?? DEFAULT_MARGINS.left),
-    right: convertMillimetersToTwip(margins?.right ?? DEFAULT_MARGINS.right),
+    top: convertValue(margins?.top, DEFAULT_MARGINS.top),
+    bottom: convertValue(margins?.bottom, DEFAULT_MARGINS.bottom),
+    left: convertValue(margins?.left, DEFAULT_MARGINS.left),
+    right: convertValue(margins?.right, DEFAULT_MARGINS.right),
   };
 }
 

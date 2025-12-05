@@ -280,6 +280,13 @@ Predefined: draft, confidential, sample, copy, original, urgent, approved, rejec
 } -->
 ```
 
+### Margins
+- Giá trị nhỏ (< 100): được hiểu là mm (millimeters)
+  - Ví dụ: `"margins": {"top": 25, "left": 25}` = 25mm
+- Giá trị lớn (>= 100): được hiểu là twips (1 inch = 1440 twips)
+  - Ví dụ: `"margins": {"top": 1440}` = 1 inch
+- Mặc định: 25.4mm (1 inch) cho tất cả các cạnh
+
 ### Page sizes
 - `A4` (default)
 - `Letter`
