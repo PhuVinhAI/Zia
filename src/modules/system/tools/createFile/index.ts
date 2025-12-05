@@ -157,12 +157,92 @@ OPTIONS (đặt ở ĐẦU content)
 - watermark: {text, color (hex không #)}
 
 ═══════════════════════════════════════════════════
-PPTX POWERPOINT
+PPTX POWERPOINT FRAMEWORK - FULL FEATURES
 ═══════════════════════════════════════════════════
---- để tách slides
-# Tiêu đề slide
+
+**SLIDE TYPES:**
+[SLIDE:title] - Slide tiêu đề
+[SLIDE:section] - Slide section header
+[SLIDE:content] - Slide nội dung (mặc định)
+[SLIDE:twoColumn] - Slide 2 cột
+[SLIDE:quote] - Slide trích dẫn
+[SLIDE:imageOnly] - Slide chỉ hình ảnh
+[SLIDE:thankyou] - Slide cảm ơn
+
+**TÁCH SLIDES:**
+--- hoặc *** hoặc ___ hoặc [SLIDE] hoặc [NEW_SLIDE]
+
+**CƠ BẢN:**
+# Tiêu đề slide (tự động tạo slide mới)
 ## Phụ đề
-- Bullet points
+- Bullet point
+  - Nested bullet
+1. Numbered list
+- [ ] Checklist unchecked
+- [x] Checklist checked
+
+**TABLES:**
+| Header 1 | Header 2 |
+|----------|----------|
+| Cell 1   | Cell 2   |
+
+**CODE BLOCKS:**
+\`\`\`javascript
+const x = 1;
+\`\`\`
+
+**QUOTES:**
+> Blockquote text
+[QUOTE:Nội dung quote:Tác giả]
+
+**CALLOUTS:**
+[!INFO] Thông tin
+[!TIP] Mẹo hay
+[!WARNING] Cảnh báo
+[!SUCCESS] Thành công
+[!ERROR] Lỗi
+
+**BOXES:**
+[BOX:info:Title]
+Content
+[/BOX]
+Types: info, success, warning, error, note, quote, code
+
+**BADGES:**
+[BADGE:New:primary] [BADGE:Hot:danger]
+
+**DIVIDERS:**
+[DIVIDER] [DIVIDER:dashed] [DIVIDER:decorated:Text]
+
+**IMAGES:**
+![Alt](url) hoặc [IMAGE:base64,width=400,caption="Caption"]
+
+**BACKGROUND:**
+[BACKGROUND:#FF5500]
+[BACKGROUND:gradient:color1:color2]
+
+**TRANSITIONS:**
+[TRANSITION:fade] [TRANSITION:push] [TRANSITION:wipe]
+
+**SPEAKER NOTES:**
+[NOTES]
+Ghi chú cho presenter
+[/NOTES]
+
+**THEMES (10 có sẵn):**
+default, professional, modern, dark, minimal, corporate, creative, nature, tech, elegant
+
+**OPTIONS:**
+<!--OPTIONS: {
+  "title": "Presentation",
+  "author": "Author",
+  "theme": {"name": "professional"},
+  "layout": "LAYOUT_16x9",
+  "showSlideNumbers": true
+} -->
+
+**LAYOUTS:**
+LAYOUT_16x9 (default), LAYOUT_16x10, LAYOUT_4x3, LAYOUT_WIDE
 
 ═══════════════════════════════════════════════════
 XLSX EXCEL
