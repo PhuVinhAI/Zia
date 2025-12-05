@@ -394,6 +394,22 @@ export async function handleToolCalls(
       }
     }
 
+    // giphyGif → send GIFs from buffer
+    if (call.toolName === 'giphyGif' && result.data?.imageBuffers) {
+      try {
+        for (let i = 0; i < result.data.imageBuffers.length; i++) {
+          const img = result.data.imageBuffers[i];
+          const filename = `giphy_${Date.now()}_${i}.gif`;
+          await sendImageFromToolResult(api, threadId, img.buffer, filename);
+          if (i < result.data.imageBuffers.length - 1) {
+            await new Promise((r) => setTimeout(r, 500));
+          }
+        }
+      } catch (e: any) {
+        debugLog('TOOL:GIPHY', `Failed to send giphy GIFs: ${e.message}`);
+      }
+    }
+
     // createApp → send HTML file
     if (call.toolName === 'createApp' && result.data?.fileBuffer) {
       try {

@@ -11,6 +11,7 @@ import { jikanRecommendationsTool } from './tools/jikanRecommendations.js';
 import { jikanSearchTool } from './tools/jikanSearch.js';
 import { jikanSeasonTool } from './tools/jikanSeason.js';
 import { jikanTopTool } from './tools/jikanTop.js';
+import { giphyGifTool } from './tools/giphyGif.js';
 import { nekosImagesTool } from './tools/nekosImages.js';
 
 export class EntertainmentModule extends BaseModule {
@@ -30,6 +31,7 @@ export class EntertainmentModule extends BaseModule {
     jikanGenresTool,
     jikanEpisodesTool,
     nekosImagesTool,
+    giphyGifTool,
   ];
 
   get tools(): ITool[] {

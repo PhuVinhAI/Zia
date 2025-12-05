@@ -114,6 +114,16 @@ export const NekosImagesSchema = z.object({
   limit: z.coerce.number().min(1).max(25).default(1),
 });
 
+// ============ GIPHY API TOOLS ============
+
+// Giphy GIF params
+export const GiphyGifSchema = z.object({
+  mode: z.enum(['search', 'trending', 'random']).default('search'),
+  query: z.string().optional(),
+  limit: z.coerce.number().min(1).max(25).default(1),
+  rating: z.enum(['y', 'g', 'pg', 'pg-13', 'r']).default('r'),
+});
+
 // ============ FREEPIK AI IMAGE TOOLS ============
 
 // Freepik Seedream v4 Image Generation params
@@ -336,6 +346,7 @@ export type TvuLoginParams = z.infer<typeof TvuLoginSchema>;
 export type TvuScheduleParams = z.infer<typeof TvuScheduleSchema>;
 export type TvuNotificationsParams = z.infer<typeof TvuNotificationsSchema>;
 export type NekosImagesParams = z.infer<typeof NekosImagesSchema>;
+export type GiphyGifParams = z.infer<typeof GiphyGifSchema>;
 export type TextToSpeechParams = z.infer<typeof TextToSpeechSchema>;
 export type FreepikImageParams = z.infer<typeof FreepikImageSchema>;
 export type CreateFileParams = z.infer<typeof CreateFileSchema>;

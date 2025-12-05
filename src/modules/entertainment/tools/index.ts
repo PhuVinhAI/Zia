@@ -12,3 +12,5 @@ export { jikanSeasonTool } from './jikanSeason.js';
 export { jikanTopTool } from './jikanTop.js';
 // Nekos API
 export { nekosImagesTool } from './nekosImages.js';
+// Giphy API
+export { giphyGifTool } from './giphyGif.js';
