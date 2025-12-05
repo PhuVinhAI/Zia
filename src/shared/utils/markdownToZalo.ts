@@ -474,6 +474,9 @@ export async function parseMarkdownToZalo(markdown: string): Promise<ParsedMarkd
     const buffer = await renderMermaidToPng(mermaidCodes[i]);
     if (buffer) {
       images.push({ buffer, filename: `diagram_${Date.now()}_${i}.png`, type: 'mermaid' });
+    } else {
+      // Fallback: nếu render ảnh thất bại, gửi file code mermaid
+      codeBlocks.push({ language: 'mermaid', code: mermaidCodes[i] });
     }
   }
 
@@ -487,6 +490,7 @@ export function getFileExtension(language: string): string {
     php: 'php', swift: 'swift', kotlin: 'kt', html: 'html', css: 'css',
     json: 'json', yaml: 'yaml', yml: 'yml', xml: 'xml', sql: 'sql',
     bash: 'sh', shell: 'sh', sh: 'sh', markdown: 'md', md: 'md', txt: 'txt',
+    mermaid: 'mmd',
   };
   return map[language.toLowerCase()] || language || 'txt';
 }
