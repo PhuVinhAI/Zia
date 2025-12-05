@@ -4,6 +4,7 @@
 import { BaseModule, type ITool, type ModuleMetadata } from '../../core/index.js';
 import { youtubeChannelTool, youtubeSearchTool, youtubeVideoTool } from './system.module.js';
 import { clearHistoryTool } from './tools/clearHistory.js';
+import { createAppTool } from './tools/createApp.js';
 import { createChartTool } from './tools/createChart.js';
 import { createFileTool } from './tools/createFile/index.js';
 import { executeCodeTool } from './tools/executeCode.js';
@@ -28,6 +29,7 @@ export class SystemModule extends BaseModule {
     getFriendOnlinesTool,
     textToSpeechTool,
     freepikImageTool,
+    createAppTool,
     createFileTool,
     createChartTool,
     solveMathTool,

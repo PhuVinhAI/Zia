@@ -3,6 +3,7 @@
  */
 
 export { clearHistoryTool } from './clearHistory.js';
+export { createAppTool } from './createApp.js';
 export { createChartTool } from './createChart.js';
 export { createFileTool } from './createFile/index.js';
 export { executeCodeTool } from './executeCode.js';

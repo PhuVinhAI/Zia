@@ -393,6 +393,20 @@ export async function handleToolCalls(
         debugLog('TOOL:FREEPIK', `Failed to send freepik images: ${e.message}`);
       }
     }
+
+    // createApp → send HTML file
+    if (call.toolName === 'createApp' && result.data?.fileBuffer) {
+      try {
+        await sendDocumentFromToolResult(
+          api,
+          threadId,
+          result.data.fileBuffer,
+          result.data.filename,
+        );
+      } catch (e: any) {
+        debugLog('TOOL:APP', `Failed to send app file: ${e.message}`);
+      }
+    }
   }
 
   // Format results for AI

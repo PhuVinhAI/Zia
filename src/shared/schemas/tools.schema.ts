@@ -242,6 +242,53 @@ export const YouTubeChannelSchema = z.object({
   channelId: z.string().min(1, 'Thiếu ID channel YouTube'),
 });
 
+// ============ CREATE APP TOOL ============
+
+// All available CDN libraries
+const APP_LIBRARIES = [
+  // CSS
+  'tailwind', 'bootstrap', 'daisyui',
+  // JS Frameworks
+  'alpine', 'petite', 'jquery',
+  // 2D Game Engines
+  'phaser', 'pixijs', 'kaboom', 'kontra', 'excalibur',
+  // 3D Engines
+  'three', 'babylon', 'aframe', 'playcanvas',
+  // Physics
+  'matter', 'p2', 'cannon',
+  // Animation
+  'anime', 'gsap', 'motion', 'lottie', 'confetti', 'particles',
+  // Charts
+  'chartjs', 'apexcharts', 'echarts', 'd3',
+  // Audio
+  'howler', 'tone', 'pizzicato',
+  // Utilities
+  'lodash', 'dayjs', 'axios', 'localforage', 'uuid',
+  // UI Components
+  'sweetalert', 'toastify', 'tippy', 'sortable', 'swiper',
+  // Markdown & Code
+  'marked', 'prism', 'highlight', 'katex',
+  // Icons
+  'fontawesome', 'lucide', 'boxicons', 'heroicons',
+  // Forms
+  'imask', 'cleave',
+  // Canvas & Drawing
+  'fabric', 'konva', 'paper', 'rough',
+  // Export
+  'html2canvas', 'jspdf', 'qrcode', 'qrcodejs',
+] as const;
+
+// Create App params (HTML single-file app with CDN libraries)
+export const CreateAppSchema = z.object({
+  name: z.string().min(1, 'Thiếu tên app').max(100, 'Tên app quá dài'),
+  html: z.string().min(1, 'Thiếu nội dung HTML'),
+  css: z.string().optional().default(''),
+  js: z.string().optional().default(''),
+  title: z.string().optional(),
+  description: z.string().optional(),
+  libraries: z.array(z.enum(APP_LIBRARIES)).optional().default(['tailwind']),
+});
+
 // ============ HELPER FUNCTION ============
 
 /**
@@ -285,3 +332,4 @@ export type CreateChartParams = z.infer<typeof CreateChartSchema>;
 export type YouTubeSearchParams = z.infer<typeof YouTubeSearchSchema>;
 export type YouTubeVideoParams = z.infer<typeof YouTubeVideoSchema>;
 export type YouTubeChannelParams = z.infer<typeof YouTubeChannelSchema>;
+export type CreateAppParams = z.infer<typeof CreateAppSchema>;
