@@ -14,9 +14,10 @@ import type { WordDocumentOptions } from './types.js';
 import { getTheme } from './themes.js';
 import { getMargins, getPageSize, ORIENTATIONS } from './constants.js';
 import { buildDocumentStyles, buildNumberingConfig } from './styleBuilder.js';
-import { parseExtendedContent, tokensToTextRuns } from './contentBuilder.js';
+import { parseExtendedContent } from './contentBuilder.js';
 import { buildDefaultFooter, buildDefaultHeader, buildFooter, buildHeader } from './headerFooter.js';
-import { parseInline } from '../../../../../shared/utils/markdownParser.js';
+import { buildManualTOC, extractHeadings } from './tocBuilder.js';
+import { parseChecklist, buildChecklist } from './listBuilder.js';
 
 // ═══════════════════════════════════════════════════
 // DOCUMENT BUILDER CLASS
@@ -35,11 +36,41 @@ export class WordDocumentBuilder {
    * Build document từ markdown content
    */
   async build(content: string): Promise<Buffer> {
-    const paragraphs = parseExtendedContent(content, this.theme);
-    
+    // Pre-process content for special features
+    let processedContent = content;
+    const allChildren: Paragraph[] = [];
+
     // Build title if provided
     const titleParagraphs = this.buildTitleSection();
-    
+    allChildren.push(...titleParagraphs);
+
+    // Build TOC if requested
+    if (this.options.includeToc) {
+      const headings = extractHeadings(content);
+      if (headings.length > 0) {
+        const tocParagraphs = buildManualTOC(headings, this.options.tocTitle, this.theme);
+        allChildren.push(...tocParagraphs);
+      }
+    }
+
+    // Check for checklist items and process them
+    const checklistItems = parseChecklist(processedContent);
+    if (checklistItems.length > 0) {
+      // Remove checklist lines from content to avoid double processing
+      const checklistRegex = /^(\s*)[-*]\s*\[([ xX])\]\s*(.+)$/gm;
+      processedContent = processedContent.replace(checklistRegex, '');
+    }
+
+    // Parse main content
+    const paragraphs = parseExtendedContent(processedContent, this.theme);
+    allChildren.push(...(paragraphs as Paragraph[]));
+
+    // Add checklist items at the end if any
+    if (checklistItems.length > 0) {
+      const checklistParagraphs = buildChecklist(checklistItems, this.theme);
+      allChildren.push(...checklistParagraphs);
+    }
+
     // Build section properties
     const sectionProperties = this.buildSectionProperties();
 
@@ -62,7 +93,7 @@ export class WordDocumentBuilder {
               ? buildFooter(this.options.footer, this.theme)
               : buildDefaultFooter(this.theme),
           },
-          children: [...titleParagraphs, ...paragraphs] as Paragraph[],
+          children: allChildren,
         },
       ],
     });

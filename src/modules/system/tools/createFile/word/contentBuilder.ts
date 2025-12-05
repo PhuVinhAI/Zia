@@ -202,8 +202,12 @@ export function buildPageBreak(): Paragraph {
 /**
  * Parse content với hỗ trợ extended syntax
  * - [!INFO], [!WARNING], [!SUCCESS], [!ERROR] cho callouts
+ * - [!TIP], [!NOTE], [!IMPORTANT] aliases
  * - [PAGE_BREAK] cho page break
  * - Markdown tables
+ * - Horizontal rules (---, ***, ___)
+ * - Centered text: ->text<-
+ * - Right-aligned text: ->text
  */
 export function parseExtendedContent(
   content: string,
@@ -219,6 +223,9 @@ export function parseExtendedContent(
   let i = 0;
   let tableBuffer: string[] = [];
   let inTable = false;
+  let codeBlockBuffer: string[] = [];
+  let inCodeBlock = false;
+  let codeBlockLang = '';
 
   const flushTable = () => {
     if (tableBuffer.length > 0) {
@@ -231,9 +238,37 @@ export function parseExtendedContent(
     inTable = false;
   };
 
+  const flushCodeBlock = () => {
+    if (codeBlockBuffer.length > 0) {
+      result.push(buildCodeBlock(codeBlockBuffer.join('\n'), codeBlockLang, t));
+      codeBlockBuffer = [];
+    }
+    inCodeBlock = false;
+    codeBlockLang = '';
+  };
+
   while (i < lines.length) {
     const line = lines[i];
     const trimmed = line.trim();
+
+    // Code block handling
+    if (trimmed.startsWith('```')) {
+      if (inCodeBlock) {
+        flushCodeBlock();
+      } else {
+        if (inTable) flushTable();
+        inCodeBlock = true;
+        codeBlockLang = trimmed.slice(3).trim();
+      }
+      i++;
+      continue;
+    }
+
+    if (inCodeBlock) {
+      codeBlockBuffer.push(line);
+      i++;
+      continue;
+    }
 
     // Check for table start/continuation
     if (trimmed.includes('|') && !trimmed.startsWith('```')) {
@@ -252,11 +287,36 @@ export function parseExtendedContent(
       continue;
     }
 
-    // Callouts
-    const calloutMatch = trimmed.match(/^\[!(INFO|WARNING|SUCCESS|ERROR)\]\s*(.+)$/i);
+    // Callouts (extended with aliases)
+    const calloutMatch = trimmed.match(/^\[!(INFO|WARNING|SUCCESS|ERROR|TIP|NOTE|IMPORTANT)\]\s*(.+)$/i);
     if (calloutMatch) {
-      const calloutType = calloutMatch[1].toLowerCase() as 'info' | 'warning' | 'success' | 'error';
+      const typeMap: Record<string, 'info' | 'warning' | 'success' | 'error'> = {
+        info: 'info',
+        tip: 'info',
+        note: 'info',
+        warning: 'warning',
+        important: 'warning',
+        success: 'success',
+        error: 'error',
+      };
+      const calloutType = typeMap[calloutMatch[1].toLowerCase()] || 'info';
       result.push(buildCallout(calloutMatch[2], calloutType, t));
+      i++;
+      continue;
+    }
+
+    // Centered text: ->text<-
+    const centeredMatch = trimmed.match(/^->(.+)<-$/);
+    if (centeredMatch) {
+      result.push(buildAlignedParagraph(centeredMatch[1].trim(), 'center', t));
+      i++;
+      continue;
+    }
+
+    // Right-aligned text: ->text
+    const rightMatch = trimmed.match(/^->(.+)$/);
+    if (rightMatch && !trimmed.endsWith('<-')) {
+      result.push(buildAlignedParagraph(rightMatch[1].trim(), 'right', t));
       i++;
       continue;
     }
@@ -270,8 +330,33 @@ export function parseExtendedContent(
     i++;
   }
 
-  // Flush remaining table
+  // Flush remaining buffers
   flushTable();
+  flushCodeBlock();
 
   return result;
+}
+
+/**
+ * Build aligned paragraph
+ */
+export function buildAlignedParagraph(
+  text: string,
+  alignment: 'left' | 'center' | 'right',
+  theme?: DocumentTheme
+): Paragraph {
+  const t = theme || getTheme();
+  const tokens = parseMarkdown(text)[0]?.tokens || [{ text, styles: [] }];
+  
+  const alignmentMap = {
+    left: 'left' as const,
+    center: 'center' as const,
+    right: 'right' as const,
+  };
+
+  return new Paragraph({
+    alignment: alignmentMap[alignment],
+    children: tokensToTextRuns(tokens, t) as TextRun[],
+    spacing: { after: t.spacing.paragraphAfter },
+  });
 }

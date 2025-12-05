@@ -29,33 +29,35 @@ const SUPPORTED_EXTENSIONS = Object.keys(FILE_HANDLERS);
 
 export const createFileTool: ITool = {
   name: 'createFile',
-  description: `Tạo file Office và gửi qua Zalo. CHỈ dùng cho các định dạng sau:
-- docx (Word): Tài liệu văn bản, báo cáo - HỖ TRỢ NÂNG CAO
-- pdf: Tài liệu PDF
-- pptx (PowerPoint): Bài thuyết trình
-- xlsx (Excel): Bảng tính, dữ liệu
+  description: `Tạo file Office chuyên nghiệp. Hỗ trợ: docx, pdf, pptx, xlsx
 
-⚠️ KHÔNG dùng tool này cho txt, md, json, csv, code files - chúng sẽ được gửi trực tiếp qua tin nhắn.
+**DOCX (Word) - FULL FEATURES:**
+Markdown: # heading, **bold**, *italic*, ~~strike~~, \`code\`, [link](url)
+Tables: | Col1 | Col2 | (auto-styled header, striped rows)
+Callouts: [!INFO], [!WARNING], [!SUCCESS], [!ERROR], [!TIP], [!NOTE]
+Page break: [PAGE_BREAK] hoặc ---PAGE---
+Code blocks: \`\`\`language code \`\`\`
+Alignment: ->centered<- hoặc ->right aligned
+Checklist: - [ ] unchecked, - [x] checked
+Blockquote: > quoted text
+Lists: - bullet, 1. numbered (nested supported)
 
-**DOCX FORMAT (NÂNG CAO):**
-- Hỗ trợ đầy đủ Markdown: # heading, **bold**, *italic*, ~~strike~~, \`code\`, [link](url)
-- Tables: | Col1 | Col2 | với header tự động format
-- Callouts: [!INFO] text, [!WARNING] text, [!SUCCESS] text, [!ERROR] text
-- Page break: [PAGE_BREAK] hoặc ---PAGE---
-- Code blocks: \`\`\`language ... \`\`\`
-- Themes: default, professional, modern, academic, minimal
-- Inline options: <!--OPTIONS: {"theme":{"name":"professional"},"pageSize":"A4"} -->
+Themes: default, professional, modern, academic, minimal
+Page: A4/Letter/Legal, portrait/landscape
+Header/Footer: với page numbers
 
-**PPTX FORMAT:**
-- Dùng "---" trên dòng riêng để tách các slides
-- # Heading = Tiêu đề slide
-- ## Heading = Phụ đề slide
-- Dấu - hoặc * = Bullet points
+Inline options (đầu content):
+<!--OPTIONS: {
+  "theme":{"name":"professional"},
+  "pageSize":"A4",
+  "orientation":"portrait",
+  "includeToc":true,
+  "header":{"text":"Header","includePageNumber":true},
+  "footer":{"text":"Footer","alignment":"center"}
+} -->
 
-**XLSX FORMAT:**
-- Dùng markdown table: | Col1 | Col2 |
-- Hoặc CSV: value1,value2
-- Dòng đầu tiên = Header (tự động bold + màu)`,
+**PPTX:** --- tách slides, # title, ## subtitle, - bullets
+**XLSX:** | markdown table | hoặc CSV format`,
   parameters: [
     {
       name: 'filename',
