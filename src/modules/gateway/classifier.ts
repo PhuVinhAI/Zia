@@ -55,7 +55,9 @@ export function classifyMessage(msg: any): ClassifiedMessage {
   // Image/Photo
   if (msgType === 'chat.photo' || (msgType === 'webchat' && content?.href)) {
     const url = content?.href || content?.hdUrl || content?.thumbUrl;
-    return { type: 'image', message: msg, url, mimeType: 'image/jpeg' };
+    // Lấy caption text nếu có (content.title chứa text đi kèm ảnh)
+    const caption = content?.title || '';
+    return { type: 'image', message: msg, url, mimeType: 'image/jpeg', text: caption };
   }
 
   // Video

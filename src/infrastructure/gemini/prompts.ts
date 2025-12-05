@@ -294,7 +294,11 @@ export const PROMPTS = {
           parts.push(`[${index}] Sticker: (xem hình sticker đính kèm)`);
           break;
         case 'image':
-          parts.push(`[${index}] Ảnh: (xem hình ảnh đính kèm)`);
+          if (item.text) {
+            parts.push(`[${index}] Ảnh kèm caption: "${item.text}" (xem hình ảnh đính kèm)`);
+          } else {
+            parts.push(`[${index}] Ảnh: (xem hình ảnh đính kèm)`);
+          }
           break;
         case 'doodle':
           parts.push(`[${index}] Hình vẽ tay (doodle): (xem hình vẽ đính kèm)`);
