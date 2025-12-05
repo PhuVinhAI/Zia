@@ -2,9 +2,11 @@
  * HTTP Client - Ky-based HTTP client với retry, timeout, rate limiting
  */
 
+import JSZip from 'jszip';
 import ky, { type KyInstance, type Options } from 'ky';
 import mammoth from 'mammoth';
 import PDFDocument from 'pdfkit';
+import sharp from 'sharp';
 import { debugLog, logError } from '../../core/logger/logger.js';
 import { CONFIG } from '../constants/config.js';
 
@@ -192,51 +194,75 @@ export async function fetchAndConvertToTextBase64(url: string): Promise<string |
 }
 
 /**
+ * Extract hình ảnh từ DOCX file (DOCX là ZIP chứa media/)
+ * Trả về array theo thứ tự để match với mammoth image index
+ */
+async function extractImagesFromDocx(docxBuffer: Buffer): Promise<Buffer[]> {
+  const images: Buffer[] = [];
+  try {
+    const zip = await JSZip.loadAsync(docxBuffer);
+    // Sort theo tên file để đảm bảo thứ tự đúng
+    const mediaFiles = Object.keys(zip.files)
+      .filter((f) => f.startsWith('word/media/'))
+      .sort();
+
+    for (const filePath of mediaFiles) {
+      const file = zip.files[filePath];
+      if (!file.dir) {
+        const data = await file.async('nodebuffer');
+        // Convert sang PNG để PDFKit đọc được (skip EMF, WMF)
+        try {
+          const pngBuffer = await sharp(data).png().toBuffer();
+          images.push(pngBuffer);
+        } catch {
+          // Skip unsupported formats (EMF, WMF, etc.)
+          images.push(Buffer.alloc(0)); // placeholder
+          debugLog('HTTP', `Skipped unsupported image: ${filePath}`);
+        }
+      }
+    }
+    debugLog('HTTP', `Extracted ${images.filter((b) => b.length > 0).length}/${images.length} images from DOCX`);
+  } catch (e) {
+    debugLog('HTTP', `Failed to extract images: ${e}`);
+  }
+  return images;
+}
+
+/**
  * Convert DOCX buffer sang PDF buffer
- * Sử dụng font Roboto để hỗ trợ tiếng Việt (Unicode)
- * Extract và embed hình ảnh từ DOCX
+ * Dùng JSZip để extract hình ảnh + mammoth để lấy content
+ * Render với PDFKit và font Roboto (hỗ trợ tiếng Việt)
  */
 async function convertDocxToPdf(docxBuffer: Buffer): Promise<Buffer> {
-  // Lưu trữ hình ảnh extracted từ DOCX
-  const images: Array<{ data: Buffer; contentType: string }> = [];
+  // Extract hình ảnh từ DOCX
+  const imageList = await extractImagesFromDocx(docxBuffer);
 
-  // Convert DOCX sang HTML với hình ảnh
+  // Convert DOCX sang HTML với mammoth
+  let imageIndex = 0;
   const result = await mammoth.convertToHtml(
     { buffer: docxBuffer },
     {
-      convertImage: mammoth.images.imgElement((image) => {
-        return image.read('base64').then((imageData) => {
-          const idx = images.length;
-          images.push({
-            data: Buffer.from(imageData, 'base64'),
-            contentType: image.contentType,
-          });
-          // Trả về placeholder để track vị trí hình
-          return { src: `__IMAGE_${idx}__` };
-        });
+      convertImage: mammoth.images.imgElement(() => {
+        const idx = imageIndex++;
+        return Promise.resolve({ src: `__IMG_${idx}__` });
       }),
     },
   );
 
-  // Parse HTML để lấy text và vị trí hình
   const html = result.value;
+  debugLog('HTTP', `DOCX to HTML: ${html.length} chars, ${imageList.length} images`);
 
-  // Đường dẫn font Roboto (hỗ trợ Unicode/tiếng Việt)
+  // Đường dẫn font Roboto
   const fontPath = new URL('../../assets/fonts/Roboto-Regular.ttf', import.meta.url).pathname;
   const normalizedFontPath = fontPath.replace(/^\/([A-Za-z]:)/, '$1');
 
-  // Tạo PDF từ content
   return new Promise((resolve, reject) => {
     try {
       const doc = new PDFDocument({
         size: 'A4',
-        margin: 50,
+        margin: 45,
         bufferPages: true,
-        info: {
-          Title: 'Converted Document',
-          Author: 'Zia AI Bot',
-          Creator: 'Zia AI Bot',
-        },
+        info: { Title: 'Converted Document', Author: 'Zia AI Bot' },
       });
 
       const chunks: Buffer[] = [];
@@ -247,21 +273,22 @@ async function convertDocxToPdf(docxBuffer: Buffer): Promise<Buffer> {
       // Đăng ký font Roboto
       try {
         doc.registerFont('Roboto', normalizedFontPath);
-        doc.fontSize(12).font('Roboto');
+        doc.fontSize(11).font('Roboto');
       } catch {
-        debugLog('HTTP', 'Failed to load Roboto font, using Helvetica');
-        doc.fontSize(12).font('Helvetica');
+        doc.fontSize(11).font('Helvetica');
       }
 
-      // Parse HTML đơn giản và render
-      // Remove HTML tags nhưng giữ structure
+      const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+
+      // Parse HTML và render - giữ lại image placeholders trước khi strip tags
       let content = html
+        .replace(/<img[^>]*src="(__IMG_\d+__)"[^>]*>/gi, '\n$1\n')
         .replace(/<br\s*\/?>/gi, '\n')
         .replace(/<\/p>/gi, '\n\n')
         .replace(/<\/h[1-6]>/gi, '\n\n')
         .replace(/<\/li>/gi, '\n')
         .replace(/<\/tr>/gi, '\n')
-        .replace(/<\/td>/gi, '\t')
+        .replace(/<\/td>/gi, ' | ')
         .replace(/<[^>]+>/g, '');
 
       // Decode HTML entities
@@ -273,40 +300,38 @@ async function convertDocxToPdf(docxBuffer: Buffer): Promise<Buffer> {
         .replace(/&quot;/g, '"')
         .replace(/&#39;/g, "'");
 
-      // Split content và render với hình ảnh
-      const parts = content.split(/__IMAGE_(\d+)__/);
+      // Split và render với hình ảnh
+      const parts = content.split(/__IMG_(\d+)__/);
 
       for (let i = 0; i < parts.length; i++) {
         if (i % 2 === 0) {
-          // Text part
+          // Text
           const text = parts[i].trim();
           if (text) {
-            // Split theo paragraphs
             const paragraphs = text.split(/\n\n+/);
             for (const para of paragraphs) {
-              if (para.trim()) {
-                doc.text(para.trim(), { align: 'left' });
-                doc.moveDown(0.5);
+              const trimmed = para.trim();
+              if (trimmed) {
+                if (doc.y > doc.page.height - 70) doc.addPage();
+                doc.text(trimmed, { align: 'left', width: pageWidth });
+                doc.moveDown(0.4);
               }
             }
           }
         } else {
-          // Image placeholder - render hình
+          // Image
           const imgIdx = parseInt(parts[i], 10);
-          if (images[imgIdx]) {
+          // Check image exists và có data (không phải placeholder rỗng)
+          if (imgIdx < imageList.length && imageList[imgIdx] && imageList[imgIdx].length > 0) {
             try {
-              const img = images[imgIdx];
-              // Check nếu còn đủ space trên trang
-              if (doc.y > doc.page.height - 200) {
-                doc.addPage();
-              }
-              doc.image(img.data, {
-                fit: [400, 300],
+              if (doc.y > doc.page.height - 250) doc.addPage();
+              doc.image(imageList[imgIdx], {
+                fit: [pageWidth * 0.85, 220],
                 align: 'center',
               });
-              doc.moveDown(1);
+              doc.moveDown(0.6);
             } catch (imgErr) {
-              debugLog('HTTP', `Failed to embed image ${imgIdx}: ${imgErr}`);
+              debugLog('HTTP', `Image ${imgIdx} failed: ${imgErr}`);
             }
           }
         }
