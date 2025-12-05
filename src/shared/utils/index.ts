@@ -73,5 +73,11 @@ export {
   saveAbortedMessages,
   startTask,
 } from './taskManager.js';
+// Message chunker
+export {
+  getMaxMessageLength,
+  needsChunking,
+  splitMessage,
+} from './messageChunker.js';
 // Token counter
 export { filterUnsupportedMedia, isSupportedMime } from './tokenCounter.js';

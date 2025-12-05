@@ -11,6 +11,7 @@ import {
   type MediaImage,
   parseMarkdownToZalo,
 } from '../../shared/utils/markdownToZalo.js';
+import { splitMessage } from '../../shared/utils/messageChunker.js';
 import {
   getSentMessage,
   removeSentMessage,
@@ -29,6 +30,84 @@ const reactionMap: Record<string, any> = {
   angry: Reactions.ANGRY,
   like: Reactions.LIKE,
 };
+
+/**
+ * Gửi tin nhắn text với auto-chunking nếu quá dài
+ * Tự động chia nhỏ tin nhắn để tránh lỗi "Nội dung quá dài"
+ */
+async function sendTextWithChunking(
+  api: any,
+  text: string,
+  threadId: string,
+  quoteData?: any,
+): Promise<void> {
+  const chunks = splitMessage(text);
+
+  for (let i = 0; i < chunks.length; i++) {
+    const chunk = chunks[i];
+    const isFirstChunk = i === 0;
+    const isLastChunk = i === chunks.length - 1;
+
+    try {
+      // Parse markdown cho từng chunk
+      const parsed = await parseMarkdownToZalo(chunk);
+
+      if (parsed.text.trim()) {
+        const richMsg: any = { msg: parsed.text };
+        if (parsed.styles.length > 0) {
+          richMsg.styles = parsed.styles;
+        }
+        // Chỉ quote ở chunk đầu tiên
+        if (isFirstChunk && quoteData) {
+          richMsg.quote = quoteData;
+        }
+
+        const result = await api.sendMessage(richMsg, threadId, ThreadType.User);
+        logZaloAPI('sendMessage', { message: richMsg, threadId, chunk: i + 1, total: chunks.length }, result);
+        logMessage('OUT', threadId, { type: 'text', text: parsed.text, chunk: i + 1 });
+      }
+
+      // Gửi images (tables, mermaid) - chỉ ở chunk cuối để tránh spam
+      if (isLastChunk) {
+        for (const img of parsed.images) {
+          await new Promise((r) => setTimeout(r, 300));
+          await sendMediaImage(api, img, threadId);
+        }
+      }
+
+      // Gửi code files
+      for (const codeBlock of parsed.codeBlocks) {
+        await new Promise((r) => setTimeout(r, 300));
+        await sendCodeFile(api, codeBlock, threadId);
+      }
+
+      // Gửi links - chỉ ở chunk cuối
+      if (isLastChunk) {
+        for (const link of parsed.links) {
+          await new Promise((r) => setTimeout(r, 300));
+          await sendLink(api, link.url, link.text, threadId);
+        }
+      }
+
+      // Delay giữa các chunks
+      if (!isLastChunk) {
+        await new Promise((r) => setTimeout(r, 400));
+      }
+    } catch (e: any) {
+      logError('sendTextWithChunking', e);
+      // Fallback: gửi text thuần
+      try {
+        await api.sendMessage(chunk, threadId, ThreadType.User);
+      } catch (fallbackErr: any) {
+        logError('sendTextWithChunking:fallback', fallbackErr);
+      }
+    }
+  }
+
+  if (chunks.length > 1) {
+    console.log(`[Bot] 📨 Đã chia tin nhắn thành ${chunks.length} phần`);
+  }
+}
 
 async function sendLink(api: any, link: string, message: string | undefined, threadId: string) {
   try {
@@ -391,48 +470,18 @@ export async function sendResponse(
 
     if (msg.text) {
       try {
-        // Parse markdown sang Zalo RichText + extract tables/code
-        const parsed = await parseMarkdownToZalo(msg.text);
-
-        // Gửi text message với styles
-        if (parsed.text.trim()) {
-          const richMsg: any = { msg: parsed.text };
-          if (parsed.styles.length > 0) {
-            richMsg.styles = parsed.styles;
-          }
-          if (quoteData) {
-            richMsg.quote = quoteData;
-          }
-
-          const result = await api.sendMessage(richMsg, threadId, ThreadType.User);
-          logZaloAPI('sendMessage', { message: richMsg, threadId }, result);
-          logMessage('OUT', threadId, {
-            type: 'text',
-            text: parsed.text,
-            quoteIndex: msg.quoteIndex,
-          });
-        }
-
-        // Gửi images (tables, mermaid diagrams)
-        for (const img of parsed.images) {
-          await new Promise((r) => setTimeout(r, 300));
-          await sendMediaImage(api, img, threadId);
-        }
-
-        // Gửi code files
-        for (const codeBlock of parsed.codeBlocks) {
-          await new Promise((r) => setTimeout(r, 300));
-          await sendCodeFile(api, codeBlock, threadId);
-        }
-
-        // Gửi tất cả links với preview
-        for (const link of parsed.links) {
-          await new Promise((r) => setTimeout(r, 300));
-          await sendLink(api, link.url, link.text, threadId);
-        }
+        // Sử dụng sendTextWithChunking để tự động chia nhỏ tin nhắn dài
+        await sendTextWithChunking(api, msg.text, threadId, quoteData);
       } catch (e: any) {
         logError('sendResponse:text', e);
-        await api.sendMessage(msg.text, threadId, ThreadType.User);
+        // Fallback cuối cùng: thử gửi text thuần với chunking thủ công
+        const chunks = splitMessage(msg.text);
+        for (const chunk of chunks) {
+          try {
+            await api.sendMessage(chunk, threadId, ThreadType.User);
+            await new Promise((r) => setTimeout(r, 300));
+          } catch {}
+        }
       }
     }
 
@@ -533,50 +582,19 @@ export function createStreamCallbacks(
       const quoteData = resolveQuoteData(quoteIndex, threadId, messages);
 
       try {
-        // Parse markdown sang Zalo RichText + extract tables/code
-        const parsed = await parseMarkdownToZalo(cleanText);
-
-        // Gửi text message với styles
-        if (parsed.text.trim()) {
-          const richMsg: any = { msg: parsed.text };
-          if (parsed.styles.length > 0) {
-            richMsg.styles = parsed.styles;
-          }
-          if (quoteData) {
-            richMsg.quote = quoteData;
-          }
-
-          const result = await api.sendMessage(richMsg, threadId, ThreadType.User);
-          logZaloAPI('sendMessage', { message: richMsg, threadId }, result);
-          console.log(`[Bot] 📤 Streaming: Đã gửi tin nhắn #${messageCount}`);
-          logMessage('OUT', threadId, {
-            type: 'text',
-            text: parsed.text,
-            quoteIndex,
-          });
-        }
-
-        // Gửi images (tables, mermaid diagrams)
-        for (const img of parsed.images) {
-          await new Promise((r) => setTimeout(r, 300));
-          await sendMediaImage(api, img, threadId);
-        }
-
-        // Gửi code files
-        for (const codeBlock of parsed.codeBlocks) {
-          await new Promise((r) => setTimeout(r, 300));
-          await sendCodeFile(api, codeBlock, threadId);
-        }
-
-        // Gửi tất cả links với preview
-        for (const link of parsed.links) {
-          await new Promise((r) => setTimeout(r, 300));
-          await sendLink(api, link.url, link.text, threadId);
-        }
+        // Sử dụng sendTextWithChunking để tự động chia nhỏ tin nhắn dài
+        await sendTextWithChunking(api, cleanText, threadId, quoteData);
+        console.log(`[Bot] 📤 Streaming: Đã gửi tin nhắn #${messageCount}`);
       } catch (e: any) {
         logError('onMessage', e);
-        // Fallback: gửi text thuần
-        await api.sendMessage(cleanText, threadId, ThreadType.User);
+        // Fallback: gửi text thuần với chunking
+        const chunks = splitMessage(cleanText);
+        for (const chunk of chunks) {
+          try {
+            await api.sendMessage(chunk, threadId, ThreadType.User);
+            await new Promise((r) => setTimeout(r, 300));
+          } catch {}
+        }
       }
       await new Promise((r) => setTimeout(r, 300));
     },
