@@ -3,7 +3,13 @@
  */
 
 // Connection
-export { closeDatabase, getDatabase, initDatabase } from './connection.js';
+export {
+  closeDatabase,
+  EMBEDDING_DIM,
+  getDatabase,
+  getSqliteDb,
+  initDatabase,
+} from './connection.js';
 // Service
 export { DatabaseService, databaseService } from './database.service.js';
 

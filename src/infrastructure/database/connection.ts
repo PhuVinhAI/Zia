@@ -1,11 +1,16 @@
 /**
  * Database Connection - Quản lý kết nối SQLite với Bun native driver
  * Sử dụng WAL mode để tối ưu hiệu năng
+ * Tích hợp sqlite-vec cho vector search
  */
 import { Database } from 'bun:sqlite';
 import { drizzle } from 'drizzle-orm/bun-sqlite';
+import * as sqliteVec from 'sqlite-vec';
 import { debugLog } from '../../core/logger/logger.js';
 import * as schema from './schema.js';
+
+// Embedding dimensions cho vector search
+export const EMBEDDING_DIM = 768;
 
 const DB_PATH = 'data/bot.db';
 
@@ -36,6 +41,10 @@ export function initDatabase() {
   sqliteDb.exec('PRAGMA synchronous = NORMAL;');
   sqliteDb.exec('PRAGMA cache_size = 10000;');
   sqliteDb.exec('PRAGMA temp_store = MEMORY;');
+
+  // Load sqlite-vec extension cho vector search
+  sqliteVec.load(sqliteDb);
+  debugLog('DATABASE', '✅ sqlite-vec extension loaded');
 
   // Tạo Drizzle instance
   db = drizzle(sqliteDb, { schema });
@@ -88,7 +97,31 @@ function runMigrations(sqlite: Database) {
     );
   `);
 
-  debugLog('DATABASE', '✅ Migrations completed');
+  // Tạo bảng memories (long-term memory)
+  sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS memories (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      content TEXT NOT NULL,
+      type TEXT NOT NULL DEFAULT 'note' CHECK(type IN ('conversation', 'fact', 'person', 'preference', 'task', 'note')),
+      user_id TEXT,
+      user_name TEXT,
+      importance INTEGER NOT NULL DEFAULT 5,
+      created_at INTEGER NOT NULL,
+      metadata TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_memories_type ON memories(type);
+    CREATE INDEX IF NOT EXISTS idx_memories_user ON memories(user_id);
+  `);
+
+  // Tạo virtual table cho vector search (sqlite-vec)
+  sqlite.exec(`
+    CREATE VIRTUAL TABLE IF NOT EXISTS vec_memories USING vec0(
+      memory_id INTEGER PRIMARY KEY,
+      embedding float[${EMBEDDING_DIM}]
+    );
+  `);
+
+  debugLog('DATABASE', '✅ Migrations completed (including vector tables)');
 }
 
 /**
@@ -99,6 +132,16 @@ export function getDatabase() {
     return initDatabase();
   }
   return db;
+}
+
+/**
+ * Lấy raw SQLite instance (cho sqlite-vec operations)
+ */
+export function getSqliteDb(): Database {
+  if (!sqliteDb) {
+    initDatabase();
+  }
+  return sqliteDb!;
 }
 
 /**

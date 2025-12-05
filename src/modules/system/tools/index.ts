@@ -15,3 +15,4 @@ export { solveMathTool } from './solveMath.js';
 export { textToSpeechTool } from './textToSpeech.js';
 export { youtubeChannelTool, youtubeSearchTool, youtubeVideoTool } from './youtube.js';
 export { googleSearchTool } from './googleSearch.js';
+export { recallMemoryTool, saveMemoryTool } from './memory.js';

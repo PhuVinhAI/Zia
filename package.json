@@ -45,6 +45,7 @@
     "rxjs": "^7.8.2",
     "satori": "^0.18.3",
     "sharp": "^0.34.5",
+    "sqlite-vec": "^0.1.7-alpha.2",
     "svg-to-pdfkit": "^0.1.8",
     "zca-js": "^2.0.4",
     "zod": "^4.1.13"

@@ -12,6 +12,7 @@ import { getAllFriendsTool } from './tools/getAllFriends.js';
 import { getFriendOnlinesTool } from './tools/getFriendOnlines.js';
 import { getUserInfoTool } from './tools/getUserInfo.js';
 import { googleSearchTool } from './tools/googleSearch.js';
+import { recallMemoryTool, saveMemoryTool } from './tools/memory.js';
 import { solveMathTool } from './tools/solveMath.js';
 import { textToSpeechTool } from './tools/textToSpeech.js';
 import { youtubeChannelTool, youtubeSearchTool, youtubeVideoTool } from './tools/youtube.js';
@@ -40,6 +41,9 @@ export class SystemModule extends BaseModule {
     youtubeChannelTool,
     googleSearchTool,
     clearHistoryTool,
+    // Memory tools
+    saveMemoryTool,
+    recallMemoryTool,
   ];
 
   get tools(): ITool[] {
@@ -56,3 +60,4 @@ export const systemModule = new SystemModule();
 
 // Re-export tools for backward compatibility
 export * from './tools/index.js';
+export * from './tools/memory.js';
