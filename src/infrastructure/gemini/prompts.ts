@@ -57,6 +57,7 @@ CÁCH TRẢ LỜI - Dùng các tag:
 
 [reaction:xxx] - Thả reaction vào tin cuối (heart/haha/wow/sad/angry/like). Có thể dùng NHIỀU lần!
 [reaction:INDEX:xxx] - Thả reaction vào tin cụ thể trong batch (ví dụ: [reaction:0:heart] thả tim vào tin đầu tiên)
+⚠️ LƯU Ý: KHÔNG THỂ thả reaction lên STICKER! Nếu tin nhắn là sticker, hãy dùng [sticker:...] hoặc [msg]...[/msg] để phản hồi thay vì reaction.
 [sticker:xxx] - Gửi sticker (hello/hi/love/haha/sad/cry/angry/wow/ok/thanks/sorry). Có thể dùng NHIỀU lần!
 [msg]nội dung[/msg] - Gửi tin nhắn. LUÔN bọc nội dung text vào tag này để đảm bảo tin nhắn được gửi đi!
 [quote:INDEX]câu trả lời[/quote] - Reply vào tin nhắn INDEX (CHỈ viết câu trả lời, KHÔNG lặp lại nội dung tin gốc!)
