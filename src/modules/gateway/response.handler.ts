@@ -34,6 +34,9 @@ const reactionMap: Record<string, any> = {
 /**
  * Gửi tin nhắn text với auto-chunking nếu quá dài
  * Tự động chia nhỏ tin nhắn để tránh lỗi "Nội dung quá dài"
+ *
+ * FLOW MỚI: Parse markdown TRƯỚC → extract code/table/mermaid → chunk text còn lại
+ * Điều này đảm bảo code blocks, tables, mermaid không bị cắt giữa chừng
  */
 async function sendTextWithChunking(
   api: any,
@@ -41,7 +44,12 @@ async function sendTextWithChunking(
   threadId: string,
   quoteData?: any,
 ): Promise<void> {
-  const chunks = splitMessage(text);
+  // Parse markdown TRƯỚC để extract code blocks, tables, mermaid
+  // Điều này đảm bảo các blocks được xử lý nguyên vẹn
+  const parsed = await parseMarkdownToZalo(text);
+
+  // Chunk phần text đã được clean (không còn code blocks, tables)
+  const chunks = splitMessage(parsed.text);
 
   for (let i = 0; i < chunks.length; i++) {
     const chunk = chunks[i];
@@ -49,13 +57,14 @@ async function sendTextWithChunking(
     const isLastChunk = i === chunks.length - 1;
 
     try {
-      // Parse markdown cho từng chunk
-      const parsed = await parseMarkdownToZalo(chunk);
+      // Parse inline styles cho chunk (bold, italic, links trong text)
+      // Không cần parse lại code blocks vì đã extract ở trên
+      const chunkParsed = await parseMarkdownToZalo(chunk);
 
-      if (parsed.text.trim()) {
-        const richMsg: any = { msg: parsed.text };
-        if (parsed.styles.length > 0) {
-          richMsg.styles = parsed.styles;
+      if (chunkParsed.text.trim()) {
+        const richMsg: any = { msg: chunkParsed.text };
+        if (chunkParsed.styles.length > 0) {
+          richMsg.styles = chunkParsed.styles;
         }
         // Chỉ quote ở chunk đầu tiên
         if (isFirstChunk && quoteData) {
@@ -64,10 +73,10 @@ async function sendTextWithChunking(
 
         const result = await api.sendMessage(richMsg, threadId, ThreadType.User);
         logZaloAPI('sendMessage', { message: richMsg, threadId, chunk: i + 1, total: chunks.length }, result);
-        logMessage('OUT', threadId, { type: 'text', text: parsed.text, chunk: i + 1 });
+        logMessage('OUT', threadId, { type: 'text', text: chunkParsed.text, chunk: i + 1 });
       }
 
-      // Gửi images (tables, mermaid) - chỉ ở chunk cuối để tránh spam
+      // Gửi images (tables, mermaid) - từ parsed gốc, chỉ ở chunk cuối
       if (isLastChunk) {
         for (const img of parsed.images) {
           await new Promise((r) => setTimeout(r, 300));
@@ -75,13 +84,15 @@ async function sendTextWithChunking(
         }
       }
 
-      // Gửi code files
-      for (const codeBlock of parsed.codeBlocks) {
-        await new Promise((r) => setTimeout(r, 300));
-        await sendCodeFile(api, codeBlock, threadId);
+      // Gửi code files - từ parsed gốc, chỉ ở chunk cuối
+      if (isLastChunk) {
+        for (const codeBlock of parsed.codeBlocks) {
+          await new Promise((r) => setTimeout(r, 300));
+          await sendCodeFile(api, codeBlock, threadId);
+        }
       }
 
-      // Gửi links - chỉ ở chunk cuối
+      // Gửi links - từ parsed gốc, chỉ ở chunk cuối
       if (isLastChunk) {
         for (const link of parsed.links) {
           await new Promise((r) => setTimeout(r, 300));

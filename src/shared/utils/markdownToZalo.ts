@@ -245,11 +245,98 @@ interface ExtractResult {
   mermaidCodes: string[];
 }
 
+/**
+ * Xử lý incomplete code block (bị cắt giữa chừng khi chia tin nhắn)
+ * - Nếu có ``` mở nhưng không có đóng → thêm ``` đóng
+ * - Nếu có ``` đóng nhưng không có mở → thêm ``` mở
+ */
+function fixIncompleteCodeBlocks(markdown: string): string {
+  let text = markdown;
+
+  // Đếm số lượng ``` trong text
+  const backtickMatches = text.match(/```/g);
+  const backtickCount = backtickMatches ? backtickMatches.length : 0;
+
+  // Nếu số lượng ``` lẻ, có incomplete block
+  if (backtickCount % 2 !== 0) {
+    // Tìm vị trí ``` đầu tiên và cuối cùng
+    const firstBacktick = text.indexOf('```');
+    const lastBacktick = text.lastIndexOf('```');
+
+    if (firstBacktick === lastBacktick) {
+      // Chỉ có 1 ```, kiểm tra xem là mở hay đóng
+      const beforeBacktick = text.slice(0, firstBacktick);
+      const afterBacktick = text.slice(firstBacktick + 3);
+
+      // Nếu sau ``` có language tag hoặc code → đây là mở, cần thêm đóng
+      if (afterBacktick.trim().length > 0) {
+        text = text + '\n```';
+      } else {
+        // Đây là đóng, cần thêm mở ở đầu
+        text = '```\n' + text;
+      }
+    }
+  }
+
+  return text;
+}
+
+/**
+ * Xử lý incomplete table (bị cắt giữa chừng)
+ * Table cần ít nhất: header row + separator row
+ */
+function fixIncompleteTables(markdown: string): string {
+  let text = markdown;
+
+  // Tìm các dòng bắt đầu bằng | nhưng không phải table hoàn chỉnh
+  const lines = text.split('\n');
+  const tableStartPattern = /^\|[^|]+\|$/;
+  const tableSeparatorPattern = /^\|[-:\s|]+\|$/;
+
+  let inPotentialTable = false;
+  let tableStartIndex = -1;
+  let hasSeparator = false;
+  let hasDataRows = false;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+
+    if (tableStartPattern.test(line) && !inPotentialTable) {
+      inPotentialTable = true;
+      tableStartIndex = i;
+      hasSeparator = false;
+      hasDataRows = false;
+    } else if (inPotentialTable) {
+      if (tableSeparatorPattern.test(line)) {
+        hasSeparator = true;
+      } else if (tableStartPattern.test(line) && hasSeparator) {
+        hasDataRows = true;
+      } else if (!tableStartPattern.test(line)) {
+        // Kết thúc potential table
+        if (inPotentialTable && tableStartIndex >= 0) {
+          // Nếu có header nhưng không có separator hoặc data → incomplete
+          if (!hasSeparator || !hasDataRows) {
+            // Giữ nguyên dạng text, không parse thành table
+            // (sẽ hiển thị như text bình thường)
+          }
+        }
+        inPotentialTable = false;
+        tableStartIndex = -1;
+      }
+    }
+  }
+
+  return text;
+}
+
 function extractCodeBlocksAndTables(markdown: string): ExtractResult {
   const codeBlocks: CodeBlock[] = [];
   const tables: TableData[] = [];
   const mermaidCodes: string[] = [];
-  let text = markdown;
+
+  // Fix incomplete blocks trước khi extract
+  let text = fixIncompleteCodeBlocks(markdown);
+  text = fixIncompleteTables(text);
 
   // Extract code blocks
   const codeBlockRegex = /```(\w*)\n([\s\S]*?)```/g;
