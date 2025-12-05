@@ -58,7 +58,7 @@ CÁCH TRẢ LỜI - Dùng các tag:
 [reaction:xxx] - Thả reaction vào tin cuối (heart/haha/wow/sad/angry/like). Có thể dùng NHIỀU lần!
 [reaction:INDEX:xxx] - Thả reaction vào tin cụ thể trong batch (ví dụ: [reaction:0:heart] thả tim vào tin đầu tiên)
 [sticker:xxx] - Gửi sticker (hello/hi/love/haha/sad/cry/angry/wow/ok/thanks/sorry). Có thể dùng NHIỀU lần!
-[msg]nội dung[/msg] - Gửi tin nhắn riêng biệt. Dùng khi muốn gửi NHIỀU tin nhắn.
+[msg]nội dung[/msg] - Gửi tin nhắn. LUÔN bọc nội dung text vào tag này để đảm bảo tin nhắn được gửi đi!
 [quote:INDEX]câu trả lời[/quote] - Reply vào tin nhắn INDEX (CHỈ viết câu trả lời, KHÔNG lặp lại nội dung tin gốc!)
 [quote:-1]câu trả lời[/quote] - Reply vào tin nhắn của CHÍNH BẠN đã gửi (-1 = mới nhất)
 [undo:-1] - Thu hồi tin nhắn MỚI NHẤT của bạn. Dùng khi muốn xóa/sửa tin đã gửi.
@@ -80,19 +80,38 @@ VÍ DỤ TỰ NHIÊN:
 - User: "Hôm nay buồn quá" → AI: [reaction:sad] [sticker:sad] [msg]Sao vậy? Kể mình nghe đi.[/msg]
 - User: "Haha buồn cười vãi" → AI: [reaction:haha] [msg]Công nhận! 🤣[/msg]
 - User: "Ok bye nhé" → AI: [reaction:heart] [sticker:ok]
-- User gửi batch [0]"Alo" [1]"Có đó ko" [2]"Giúp mình với" → AI: [reaction:0:like][reaction:2:heart] Có đây! Bạn cần gì?
+- User gửi batch [0]"Alo" [1]"Có đó ko" [2]"Giúp mình với" → AI: [reaction:0:like][reaction:2:heart] [msg]Có đây! Bạn cần gì?[/msg]
 - Nhiều reaction vào nhiều tin: [reaction:0:heart][reaction:1:haha][reaction:2:wow]
 - Quote tin trong batch: [quote:0]Đây là câu trả lời cho tin đầu tiên![/quote]
 - Nhiều sticker: [sticker:hello] [sticker:love]
 - Nhiều tin nhắn: [msg]Tin 1[/msg] [msg]Tin 2[/msg] [msg]Tin 3[/msg]
-- Text đơn giản: Chào bạn! (không cần tag)
-- Kết hợp: [reaction:heart][reaction:haha] Cảm ơn bạn! [sticker:love] [msg]Còn gì nữa không?[/msg]
-- Thu hồi tin sai: [undo:-1] Xin lỗi, mình gửi nhầm! (thu hồi tin mới nhất rồi gửi tin mới)
-- Quote tin mình: [quote:-1]Bổ sung thêm cho tin trước[/quote] (reply vào tin mình vừa gửi)
-- Gửi link: Dùng markdown [text](url) - ví dụ: [Video hay nè!](https://youtube.com/watch?v=xxx)
-- Gửi danh thiếp: Đây là danh thiếp của mình nè! [card]
+- Text đơn giản: [msg]Chào bạn![/msg]
+- Kết hợp: [reaction:heart][reaction:haha] [msg]Cảm ơn bạn![/msg] [sticker:love] [msg]Còn gì nữa không?[/msg]
+- Thu hồi tin sai: [undo:-1] [msg]Xin lỗi, mình gửi nhầm![/msg]
+- Quote tin mình: [quote:-1]Bổ sung thêm cho tin trước[/quote]
+- Gửi link: [msg]Xem [Video hay nè!](https://youtube.com/watch?v=xxx)[/msg]
+- Gửi danh thiếp: [msg]Đây là danh thiếp của mình nè![/msg] [card]
 
-LƯU Ý: Viết text bình thường, KHÔNG cần JSON. Các tag có thể đặt ở bất kỳ đâu. Bạn có thể dùng markdown chuẩn (bold, italic, code, table, link...) - hệ thống sẽ tự động format và gửi link với preview.
+LƯU Ý: KHÔNG cần JSON. Bạn có thể dùng markdown chuẩn (bold, italic, code, table, link...) - hệ thống sẽ tự động format.
+
+⚠️ QUAN TRỌNG - LUÔN DÙNG [msg] TAG:
+- TẤT CẢ nội dung text PHẢI được bọc trong [msg]...[/msg] để được gửi đi!
+- Nội dung viết NGOÀI tag [msg] sẽ BỊ BỎ QUA và KHÔNG được gửi!
+- Với nội dung dài (câu chuyện, bài viết...), bọc TOÀN BỘ vào MỘT tag [msg] duy nhất
+- Hệ thống sẽ TỰ ĐỘNG chia nhỏ tin nhắn dài thành nhiều phần
+
+VÍ DỤ ĐÚNG:
+✅ [reaction:heart] [msg]Đây là câu chuyện dài...
+
+Chương 1: Nội dung chương 1...
+
+Chương 2: Nội dung chương 2...
+
+Kết thúc câu chuyện.[/msg]
+
+VÍ DỤ SAI (nội dung sẽ bị mất):
+❌ [reaction:heart] Đây là câu chuyện... (không có tag [msg])
+❌ [msg]Mở đầu[/msg] Nội dung chính... (phần "Nội dung chính" nằm ngoài tag)
 `;
 
 // ═══════════════════════════════════════════════════
