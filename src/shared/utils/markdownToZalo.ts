@@ -316,6 +316,8 @@ function parseInlineStyles(text: string): { text: string; styles: StyleItem[]; l
   }
 
   // Handle markdown links [text](url) - extract và replace bằng text có style
+  // Dedupe: chỉ gửi mỗi URL một lần
+  const seenUrls = new Set<string>();
   const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
   let linkMatch: RegExpExecArray | null;
   linkRegex.lastIndex = 0;
@@ -326,8 +328,11 @@ function parseInlineStyles(text: string): { text: string; styles: StyleItem[]; l
     const url = linkMatch[2];
     const startIndex = linkMatch.index;
 
-    // Lưu link để gửi riêng với preview
-    links.push({ url, text: linkText });
+    // Chỉ thêm link nếu URL hợp lệ (bắt đầu bằng http) và chưa gửi
+    if (url.startsWith('http') && !seenUrls.has(url)) {
+      seenUrls.add(url);
+      links.push({ url, text: linkText });
+    }
 
     // Replace bằng text có style underline
     result = result.slice(0, startIndex) + linkText + result.slice(startIndex + fullMatch.length);
@@ -344,8 +349,9 @@ function parseInlineStyles(text: string): { text: string; styles: StyleItem[]; l
     const url = bareMatch[1];
     const startIndex = bareMatch.index;
 
-    // Chỉ thêm vào links nếu chưa có
-    if (!links.some(l => l.url === url)) {
+    // Chỉ thêm vào links nếu chưa có (dedupe)
+    if (!seenUrls.has(url)) {
+      seenUrls.add(url);
       links.push({ url });
     }
 

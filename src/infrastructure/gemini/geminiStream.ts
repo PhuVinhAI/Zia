@@ -25,7 +25,6 @@ export interface StreamCallbacks {
   onReaction?: (reaction: string) => Promise<void>;
   onSticker?: (keyword: string) => Promise<void>;
   onMessage?: (text: string, quoteIndex?: number) => Promise<void>;
-  onLink?: (link: string, message?: string) => Promise<void>;
   onCard?: (userId?: string) => Promise<void>;
   onUndo?: (index: number) => Promise<void>;
   onImage?: (url: string, caption?: string) => Promise<void>;
@@ -39,7 +38,6 @@ interface ParserState {
   sentReactions: Set<string>;
   sentStickers: Set<string>;
   sentMessages: Set<string>;
-  sentLinks: Set<string>;
   sentCards: Set<string>;
   sentUndos: Set<string>;
   sentImages: Set<string>;
@@ -54,7 +52,6 @@ const TAG_PATTERNS = [
   /\[quote:-?\d+\][\s\S]*?\[\/quote\]/gi,
   /\[msg\][\s\S]*?\[\/msg\]/gi,
   /\[undo:-?\d+\]/gi,
-  /\[link:https?:\/\/[^\]]+\][\s\S]*?\[\/link\]/gi,
   /\[card(?::\d+)?\]/gi,
   /\[tool:\w+(?:\s+[^\]]*?)?\](?:\s*\{[\s\S]*?\}\s*\[\/tool\])?/gi,
   /\[image:https?:\/\/[^\]]+\][\s\S]*?\[\/image\]/gi,
@@ -69,7 +66,6 @@ const INLINE_TAG_PATTERNS = [
   /\[reaction:(\d+:)?\w+\]/gi,
   /\[sticker:\w+\]/gi,
   /\[undo:-?\d+\]/gi,
-  /\[link:https?:\/\/[^\]]+\][\s\S]*?\[\/link\]/gi,
   /\[card(?::\d+)?\]/gi,
 ];
 
@@ -106,17 +102,6 @@ async function processInlineTags(
       await callbacks.onReaction(
         indexPart ? `${indexPart.replace(':', '')}:${reaction}` : reaction,
       );
-    }
-  }
-
-  // Extract links
-  for (const match of rawText.matchAll(/\[link:(https?:\/\/[^\]]+)\]([\s\S]*?)\[\/link\]/gi)) {
-    const link = match[1];
-    const message = match[2].trim();
-    const key = `link:${link}`;
-    if (!state.sentLinks.has(key) && callbacks.onLink) {
-      state.sentLinks.add(key);
-      await callbacks.onLink(link, message || undefined);
     }
   }
 
@@ -208,17 +193,6 @@ async function processStreamChunk(state: ParserState, callbacks: StreamCallbacks
     }
   }
 
-  // Parse top-level [link:url]caption[/link]
-  for (const match of buffer.matchAll(/\[link:(https?:\/\/[^\]]+)\]([\s\S]*?)\[\/link\]/gi)) {
-    const link = match[1];
-    const message = match[2].trim();
-    const key = `link:${link}`;
-    if (!state.sentLinks.has(key) && callbacks.onLink) {
-      state.sentLinks.add(key);
-      await callbacks.onLink(link, message || undefined);
-    }
-  }
-
   // Parse top-level [card:userId] hoặc [card]
   for (const match of buffer.matchAll(/\[card(?::(\d+))?\]/gi)) {
     const userId = match[1] || '';
@@ -256,7 +230,6 @@ export async function generateContentStream(
     sentReactions: new Set(),
     sentStickers: new Set(),
     sentMessages: new Set(),
-    sentLinks: new Set(),
     sentCards: new Set(),
     sentUndos: new Set(),
     sentImages: new Set(),
@@ -282,7 +255,6 @@ export async function generateContentStream(
       state.sentReactions.clear();
       state.sentStickers.clear();
       state.sentMessages.clear();
-      state.sentLinks.clear();
       state.sentCards.clear();
       state.sentUndos.clear();
       state.sentImages.clear();

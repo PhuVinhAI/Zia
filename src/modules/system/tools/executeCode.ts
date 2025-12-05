@@ -105,12 +105,12 @@ export const executeCodeTool: ITool = {
   name: 'executeCode',
   description: `Chạy code trong sandbox E2B an toàn. Hỗ trợ Python, JavaScript, TypeScript, R, Java.
 
-**KHI NÀO DÙNG:**
-- User muốn chạy thử code
-- Cần thực thi script phức tạp
-- Phân tích dữ liệu với pandas/numpy
-- Tạo biểu đồ với matplotlib/plotly
-- Test thuật toán
+⚠️ CHỈ DÙNG KHI:
+- User YÊU CẦU RÕ RÀNG chạy/test code cụ thể
+- Test thuật toán do user viết
+
+❌ KHÔNG DÙNG CHO:
+- Tạo file code -> Sài markdown mà tạo
 
 **THAM SỐ:**
 - code: Code cần chạy (bắt buộc)

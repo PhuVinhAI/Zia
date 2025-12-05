@@ -94,17 +94,6 @@ export function parseAIResponse(text: string): AIResponse {
       result.undoIndexes.push(parseInt(match[1], 10));
     }
 
-    // Parse [link:url]caption[/link] - gửi link với rich preview
-    const linkMatches = text.matchAll(/\[link:(https?:\/\/[^\]]+)\]([\s\S]*?)\[\/link\]/gi);
-    for (const match of linkMatches) {
-      result.messages.push({
-        text: match[2].trim(),
-        sticker: '',
-        quoteIndex: -1,
-        link: match[1],
-      });
-    }
-
     // Parse [card:userId] hoặc [card] - gửi danh thiếp
     const cardMatches = text.matchAll(/\[card(?::(\d+))?\]/gi);
     for (const match of cardMatches) {
@@ -123,7 +112,6 @@ export function parseAIResponse(text: string): AIResponse {
       .replace(/\[quote:\d+\][\s\S]*?\[\/quote\]/gi, '')
       .replace(/\[msg\][\s\S]*?\[\/msg\]/gi, '')
       .replace(/\[undo:-?\d+\]/gi, '')
-      .replace(/\[link:https?:\/\/[^\]]+\][\s\S]*?\[\/link\]/gi, '')
       .replace(/\[card(?::\d+)?\]/gi, '')
       .trim();
 

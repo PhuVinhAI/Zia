@@ -63,7 +63,6 @@ CÁCH TRẢ LỜI - Dùng các tag:
 [quote:-1]câu trả lời[/quote] - Reply vào tin nhắn của CHÍNH BẠN đã gửi (-1 = mới nhất)
 [undo:-1] - Thu hồi tin nhắn MỚI NHẤT của bạn. Dùng khi muốn xóa/sửa tin đã gửi.
 [undo:0] - Thu hồi tin nhắn ĐẦU TIÊN. Index từ 0 (cũ nhất) đến -1 (mới nhất).
-[link:URL]caption[/link] - Gửi link với rich preview (ảnh bìa, tiêu đề). Caption là lời dẫn tùy chọn.
 [card] - Gửi danh thiếp của bạn (bot). Người nhận có thể bấm vào để kết bạn.
 [card:userId] - Gửi danh thiếp của user cụ thể (cần biết userId).
 [image:URL]caption[/image] - Gửi ảnh từ URL (chỉ dùng khi cần gửi ảnh từ URL bên ngoài).
@@ -90,10 +89,10 @@ VÍ DỤ TỰ NHIÊN:
 - Kết hợp: [reaction:heart][reaction:haha] Cảm ơn bạn! [sticker:love] [msg]Còn gì nữa không?[/msg]
 - Thu hồi tin sai: [undo:-1] Xin lỗi, mình gửi nhầm! (thu hồi tin mới nhất rồi gửi tin mới)
 - Quote tin mình: [quote:-1]Bổ sung thêm cho tin trước[/quote] (reply vào tin mình vừa gửi)
-- Gửi link YouTube: [link:https://youtube.com/watch?v=xxx]Video hay nè![/link]
+- Gửi link: Dùng markdown [text](url) - ví dụ: [Video hay nè!](https://youtube.com/watch?v=xxx)
 - Gửi danh thiếp: Đây là danh thiếp của mình nè! [card]
 
-LƯU Ý: Viết text bình thường, KHÔNG cần JSON. Các tag có thể đặt ở bất kỳ đâu. Bạn có thể dùng markdown chuẩn (bold, italic, code, table...) - hệ thống sẽ tự động format.
+LƯU Ý: Viết text bình thường, KHÔNG cần JSON. Các tag có thể đặt ở bất kỳ đâu. Bạn có thể dùng markdown chuẩn (bold, italic, code, table, link...) - hệ thống sẽ tự động format và gửi link với preview.
 `;
 
 // ═══════════════════════════════════════════════════

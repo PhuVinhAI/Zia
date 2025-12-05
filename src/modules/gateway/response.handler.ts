@@ -510,12 +510,6 @@ export function createStreamCallbacks(
       console.log(`[Bot] 🎨 Queue sticker: "${keyword}"`);
     },
 
-    onLink: async (link: string, message?: string) => {
-      messageCount++;
-      await sendLink(api, link, message, threadId);
-      await new Promise((r) => setTimeout(r, 300));
-    },
-
     onCard: async (userId?: string) => {
       messageCount++;
       await sendCard(api, userId, threadId);
