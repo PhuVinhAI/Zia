@@ -29,55 +29,46 @@ const SUPPORTED_EXTENSIONS = Object.keys(FILE_HANDLERS);
 
 export const createFileTool: ITool = {
   name: 'createFile',
-  description: `Tạo file Office chuyên nghiệp. Hỗ trợ: docx, pdf, pptx, xlsx
+  description: `Tạo file Office chuyên nghiệp với Word Framework đầy đủ tính năng.
+Hỗ trợ: docx (Word), pdf, pptx (PowerPoint), xlsx (Excel)
 
-**DOCX (Word) - FULL FEATURES:**
+**═══ DOCX (Word) - FULL FRAMEWORK ═══**
 
-📝 **Text Formatting:**
-- Markdown: # heading (1-6), **bold**, *italic*, ~~strike~~, \`code\`, [link](url)
-- Alignment: ->centered<- hoặc ->right aligned
-- Highlight: ==highlighted text== hoặc [HIGHLIGHT:yellow]text[/HIGHLIGHT]
-- Math: $inline math$ hoặc $$block math$$ (hỗ trợ LaTeX symbols)
+**TEXT:** # heading (1-6), **bold**, *italic*, ~~strike~~, \`code\`, [link](url)
+**ALIGNMENT:** ->centered<- hoặc ->right aligned
+**HIGHLIGHT:** ==text== hoặc [HIGHLIGHT:color]text[/HIGHLIGHT] (yellow/green/cyan/magenta/blue/red)
+**MATH:** $E=mc^2$ inline, $$sum$$ block (LaTeX: \\alpha \\beta \\pi \\sum \\int \\infty ^2 _n)
 
-📋 **Lists & Structure:**
-- Bullet: - item (nested với indent)
-- Numbered: 1. item
-- Checklist: - [ ] unchecked, - [x] checked
-- Blockquote: > quoted text
+**LISTS:** - bullet, 1. numbered, - [ ] checklist, - [x] checked
+**DEFINITION:** Term rồi dòng tiếp theo : Definition
+**BLOCKQUOTE:** > quoted text
+**CODE:** \`\`\`lang code \`\`\`
 
-📊 **Tables:** | Col1 | Col2 | (auto-styled header, striped rows)
+**TABLES:** | Col1 | Col2 | (auto header styling, striped rows)
 
-📦 **Boxes & Callouts:**
-- Callouts: [!INFO], [!WARNING], [!SUCCESS], [!ERROR], [!TIP], [!NOTE] text
-- Boxes: [BOX:type:title]content[/BOX] (type: info/success/warning/error/note/quote/code)
+**CALLOUTS:** [!INFO], [!TIP], [!NOTE], [!WARNING], [!IMPORTANT], [!SUCCESS], [!ERROR] text
+**BOXES:** [BOX:type:title]content[/BOX] (info/success/warning/error/note/quote/code)
 
-🎨 **Visual Elements:**
-- Dividers: [DIVIDER], [DIVIDER:dashed], [DIVIDER:decorated:text]
-- Badges: [BADGE:text:type] (type: primary/success/warning/danger/info)
-- Icons: [ICON:star:large], emoji shortcuts :check:, :warning:, :star:
+**DIVIDERS:** [DIVIDER], [DIVIDER:dashed/dotted/double/wave/thick], [DIVIDER:decorated:text], [DIVIDER:star/floral]
+**BADGES:** [BADGE:text:type] (default/primary/success/warning/danger/info)
+**ICONS:** [ICON:emoji:size] (small/medium/large)
+**EMOJIS:** :check: :x: :warning: :info: :star: :fire: :heart: :rocket: :bulb: :thumbsup:
 
-📄 **Document Structure:**
-- Cover page: [COVER:title:subtitle:author:org:date:version:style]
-- Page break: [PAGE_BREAK] hoặc ---PAGE---
-- TOC: includeToc:true trong OPTIONS
-- Signature: [SIGNATURE:name:title:company:date]
-- Approval: [APPROVAL:approverName:title|creatorName:title]
+**COVER:** [COVER:title:subtitle:author:org:date:version:style] (simple/professional/academic/modern)
+**PAGE BREAK:** [PAGE_BREAK] hoặc ---PAGE---
+**IMAGES:** ![alt](url) hoặc [IMAGE:data,width=400,height=300,caption="text"]
+**SIGNATURE:** [SIGNATURE:name:title:company:date]
+**APPROVAL:** [APPROVAL:approverName:title|creatorName:title]
+**WATERMARK:** [WATERMARK:text] hoặc [WATERMARK:text:color] (predefined: draft/confidential/sample/urgent/approved)
 
-⚙️ **Settings (đầu content):**
-\`\`\`
-<!--OPTIONS: {
-  "theme":{"name":"professional"},
-  "pageSize":"A4",
-  "orientation":"portrait",
-  "includeToc":true,
-  "header":{"text":"Header","includePageNumber":true},
-  "footer":{"text":"Footer","alignment":"center"}
-} -->
-\`\`\`
-Themes: default, professional, modern, academic, minimal
+**OPTIONS (đầu content):**
+<!--OPTIONS: {"theme":{"name":"professional"},"pageSize":"A4","orientation":"portrait","includeToc":true,"tocTitle":"Mục Lục","header":{"text":"Header","includePageNumber":true},"footer":{"text":"Footer","alignment":"center"},"watermark":{"text":"DRAFT"}} -->
 
-**PPTX:** --- tách slides, # title, ## subtitle, - bullets
-**XLSX:** | markdown table | hoặc CSV format`,
+**THEMES:** default, professional, modern, academic, minimal
+**PAGE:** A4/Letter/Legal, portrait/landscape
+
+**═══ PPTX ═══** --- tách slides, # title, ## subtitle, - bullets
+**═══ XLSX ═══** | markdown table | hoặc CSV format`,
   parameters: [
     {
       name: 'filename',
