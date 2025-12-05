@@ -107,9 +107,28 @@ const CDN: Record<string, string> = {
   qrcodejs: '<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>',
 };
 
-// Danh sách tất cả library keys
-const LIBRARY_KEYS = Object.keys(CDN);
-
+// Error handler script - hiển thị lỗi JS trực tiếp trên trang
+const ERROR_HANDLER = `<script>
+(function(){
+  var errBox = null;
+  function showError(msg, source, line, col) {
+    if (!errBox) {
+      errBox = document.createElement('div');
+      errBox.id = 'app-error-box';
+      errBox.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#fee2e2;border-top:3px solid #ef4444;padding:16px;font-family:monospace;font-size:14px;z-index:99999;max-height:40vh;overflow:auto;';
+      errBox.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><strong style="color:#dc2626;">⚠️ Lỗi JavaScript</strong><button onclick="this.parentElement.parentElement.remove()" style="background:#ef4444;color:white;border:none;padding:4px 12px;border-radius:4px;cursor:pointer;">Đóng</button></div><div id="app-error-list"></div>';
+      document.body.appendChild(errBox);
+    }
+    var list = document.getElementById('app-error-list');
+    var item = document.createElement('div');
+    item.style.cssText = 'background:#fecaca;padding:8px;margin-top:8px;border-radius:4px;color:#991b1b;';
+    item.innerHTML = '<div style="font-weight:bold;">' + msg + '</div>' + (source ? '<div style="font-size:12px;color:#b91c1c;">Tại: ' + source + (line ? ':' + line : '') + (col ? ':' + col : '') + '</div>' : '');
+    list.appendChild(item);
+  }
+  window.onerror = function(msg, source, line, col) { showError(msg, source, line, col); return false; };
+  window.onunhandledrejection = function(e) { showError('Promise rejected: ' + (e.reason?.message || e.reason || 'Unknown')); };
+})();
+</script>`;
 
 function buildHtmlFile(params: CreateAppParams): string {
   const { name, html, css, js, title, description, libraries } = params;
@@ -130,6 +149,7 @@ function buildHtmlFile(params: CreateAppParams): string {
   <meta name="description" content="${description || appTitle}">
   <title>${appTitle}</title>
   ${libIncludes}
+  ${ERROR_HANDLER}
   ${css ? `<style>${css}</style>` : ''}
 </head>
 <body>
