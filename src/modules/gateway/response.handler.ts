@@ -8,7 +8,6 @@ import { http } from '../../shared/utils/httpClient.js';
 import {
   type CodeBlock,
   getFileExtension,
-  type LinkItem,
   type MediaImage,
   parseMarkdownToZalo,
 } from '../../shared/utils/markdownToZalo.js';
@@ -442,13 +441,8 @@ export async function sendResponse(
       await sendSticker(api, msg.sticker, threadId);
     }
 
-    if (msg.link) {
-      if (msg.text || msg.sticker) await new Promise((r) => setTimeout(r, 500));
-      await sendLink(api, msg.link, msg.text || undefined, threadId);
-    }
-
     if (msg.card !== undefined) {
-      if (msg.text || msg.sticker || msg.link) await new Promise((r) => setTimeout(r, 500));
+      if (msg.text || msg.sticker) await new Promise((r) => setTimeout(r, 500));
       await sendCard(api, msg.card || undefined, threadId);
     }
 

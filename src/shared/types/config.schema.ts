@@ -6,7 +6,6 @@ export interface AIMessage {
   text: string;
   sticker: string;
   quoteIndex: number;
-  link?: string; // URL để gửi với rich preview
   card?: string; // userId để gửi danh thiếp (rỗng = gửi card của bot)
 }
 
