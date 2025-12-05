@@ -50,6 +50,10 @@ function getMediaTypeDescription(type: string): string {
       return 'audio/voice';
     case 'sticker':
       return 'sticker';
+    case 'gif':
+      return 'GIF';
+    case 'doodle':
+      return 'hình vẽ tay';
     case 'file':
       return 'file';
     default:
@@ -180,6 +184,20 @@ export async function addQuoteMedia(
 
   if (quoteMedia.type === 'image' && quoteMedia.url) {
     console.log(`[Bot] 📎 Đang fetch ảnh từ quote...`);
+    media.push({
+      type: 'image',
+      url: quoteMedia.url,
+      mimeType: quoteMedia.mimeType || 'image/jpeg',
+    });
+  } else if (quoteMedia.type === 'gif' && quoteMedia.url) {
+    console.log(`[Bot] 📎 Đang fetch GIF từ quote...`);
+    media.push({
+      type: 'image',
+      url: quoteMedia.url,
+      mimeType: 'image/gif',
+    });
+  } else if (quoteMedia.type === 'doodle' && quoteMedia.url) {
+    console.log(`[Bot] 📎 Đang fetch doodle từ quote...`);
     media.push({
       type: 'image',
       url: quoteMedia.url,

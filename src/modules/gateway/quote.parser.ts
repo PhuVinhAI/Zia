@@ -6,7 +6,7 @@ import { debugLog } from '../../core/logger/logger.js';
 import { CONFIG } from '../../shared/constants/config.js';
 
 export interface QuoteMedia {
-  type: 'image' | 'video' | 'audio' | 'file' | 'sticker' | 'none';
+  type: 'image' | 'video' | 'audio' | 'file' | 'sticker' | 'gif' | 'doodle' | 'none';
   url?: string;
   thumbUrl?: string;
   title?: string;
@@ -83,6 +83,31 @@ export function parseQuoteAttachment(quote: any): QuoteMedia {
       };
     }
 
+    // GIF - check trước image vì GIF cũng match pattern image
+    if (
+      url &&
+      (url.includes('/gif/') || /\.gif$/i.test(url) || attach?.action === 'chat.gif')
+    ) {
+      return {
+        type: 'gif',
+        url,
+        thumbUrl: thumb,
+        title: attach?.title,
+        mimeType: 'image/gif',
+      };
+    }
+
+    // Doodle (vẽ hình)
+    if (url && (url.includes('/doodle/') || attach?.action === 'chat.doodle')) {
+      return {
+        type: 'doodle',
+        url,
+        thumbUrl: thumb,
+        title: attach?.title,
+        mimeType: 'image/jpeg',
+      };
+    }
+
     // Image
     if (
       url &&
@@ -91,7 +116,7 @@ export function parseQuoteAttachment(quote: any): QuoteMedia {
         url.includes('/jxl/') ||
         url.includes('/webp/') ||
         url.includes('photo') ||
-        /\.(jpg|jpeg|png|gif|webp|jxl)$/i.test(url))
+        /\.(jpg|jpeg|png|webp|jxl)$/i.test(url))
     ) {
       return {
         type: 'image',

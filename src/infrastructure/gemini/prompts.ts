@@ -258,7 +258,7 @@ export const PROMPTS = {
   quoteContext: (quoteContent: string) =>
     `\n[QUOTE CONTEXT] Người dùng đang reply tin nhắn cũ: "${quoteContent}"`,
 
-  // Quote có media (ảnh/video/audio/sticker/file từ tin cũ)
+  // Quote có media (ảnh/video/audio/sticker/file/gif/doodle từ tin cũ)
   quoteMedia: (quoteText?: string, mediaType?: string) => {
     const typeDesc: Record<string, string> = {
       image: 'hình ảnh',
@@ -266,6 +266,8 @@ export const PROMPTS = {
       audio: 'tin nhắn thoại/audio',
       sticker: 'sticker',
       file: 'file',
+      gif: 'ảnh GIF',
+      doodle: 'hình vẽ tay',
     };
     const desc = typeDesc[mediaType || 'image'] || 'media';
     let prompt = `\n\n[QUOTE MEDIA] Người dùng đang reply/hỏi về ${desc} từ tin nhắn cũ (xem nội dung đính kèm).`;
@@ -306,6 +308,9 @@ export const PROMPTS = {
           break;
         case 'doodle':
           parts.push(`[${index}] Hình vẽ tay (doodle): (xem hình vẽ đính kèm)`);
+          break;
+        case 'gif':
+          parts.push(`[${index}] GIF: (xem ảnh GIF đính kèm)`);
           break;
         case 'video':
           parts.push(`[${index}] Video ${item.duration || 0}s: (xem video đính kèm)`);
