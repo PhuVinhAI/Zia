@@ -2,11 +2,7 @@
  * HTTP Client - Ky-based HTTP client với retry, timeout, rate limiting
  */
 
-import JSZip from 'jszip';
 import ky, { type KyInstance, type Options } from 'ky';
-import mammoth from 'mammoth';
-import PDFDocument from 'pdfkit';
-import sharp from 'sharp';
 import { debugLog, logError } from '../../core/logger/logger.js';
 import { CONFIG } from '../constants/config.js';
 import { MIME_TYPES } from '../schemas/config.schema.js';
@@ -194,164 +190,16 @@ export async function fetchAndConvertToTextBase64(url: string): Promise<string |
   }
 }
 
-/**
- * Extract hình ảnh từ DOCX file (DOCX là ZIP chứa media/)
- * Trả về array theo thứ tự để match với mammoth image index
- */
-async function extractImagesFromDocx(docxBuffer: Buffer): Promise<Buffer[]> {
-  const images: Buffer[] = [];
-  try {
-    const zip = await JSZip.loadAsync(docxBuffer);
-    // Sort theo tên file để đảm bảo thứ tự đúng
-    const mediaFiles = Object.keys(zip.files)
-      .filter((f) => f.startsWith('word/media/'))
-      .sort();
-
-    for (const filePath of mediaFiles) {
-      const file = zip.files[filePath];
-      if (!file.dir) {
-        const data = await file.async('nodebuffer');
-        // Convert sang PNG để PDFKit đọc được (skip EMF, WMF)
-        try {
-          const pngBuffer = await sharp(data).png().toBuffer();
-          images.push(pngBuffer);
-        } catch {
-          // Skip unsupported formats (EMF, WMF, etc.)
-          images.push(Buffer.alloc(0)); // placeholder
-          debugLog('HTTP', `Skipped unsupported image: ${filePath}`);
-        }
-      }
-    }
-    debugLog('HTTP', `Extracted ${images.filter((b) => b.length > 0).length}/${images.length} images from DOCX`);
-  } catch (e) {
-    debugLog('HTTP', `Failed to extract images: ${e}`);
-  }
-  return images;
-}
+// Import ComPDF service for DOCX to PDF conversion
+import { convertDocxToPdfViaApi } from '../../modules/system/services/compdfService.js';
 
 /**
- * Convert DOCX buffer sang PDF buffer
- * Dùng JSZip để extract hình ảnh + mammoth để lấy content
- * Render với PDFKit và font Roboto (hỗ trợ tiếng Việt)
- */
-async function convertDocxToPdf(docxBuffer: Buffer): Promise<Buffer> {
-  // Extract hình ảnh từ DOCX
-  const imageList = await extractImagesFromDocx(docxBuffer);
-
-  // Convert DOCX sang HTML với mammoth
-  let imageIndex = 0;
-  const result = await mammoth.convertToHtml(
-    { buffer: docxBuffer },
-    {
-      convertImage: mammoth.images.imgElement(() => {
-        const idx = imageIndex++;
-        return Promise.resolve({ src: `__IMG_${idx}__` });
-      }),
-    },
-  );
-
-  const html = result.value;
-  debugLog('HTTP', `DOCX to HTML: ${html.length} chars, ${imageList.length} images`);
-
-  // Đường dẫn font Roboto
-  const fontPath = new URL('../../assets/fonts/Roboto-Regular.ttf', import.meta.url).pathname;
-  const normalizedFontPath = fontPath.replace(/^\/([A-Za-z]:)/, '$1');
-
-  return new Promise((resolve, reject) => {
-    try {
-      const doc = new PDFDocument({
-        size: 'A4',
-        margin: 45,
-        bufferPages: true,
-        info: { Title: 'Converted Document', Author: 'Zia AI Bot' },
-      });
-
-      const chunks: Buffer[] = [];
-      doc.on('data', (chunk: Buffer) => chunks.push(chunk));
-      doc.on('end', () => resolve(Buffer.concat(chunks)));
-      doc.on('error', reject);
-
-      // Đăng ký font Roboto
-      try {
-        doc.registerFont('Roboto', normalizedFontPath);
-        doc.fontSize(11).font('Roboto');
-      } catch {
-        doc.fontSize(11).font('Helvetica');
-      }
-
-      const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
-
-      // Parse HTML và render - giữ lại image placeholders trước khi strip tags
-      let content = html
-        .replace(/<img[^>]*src="(__IMG_\d+__)"[^>]*>/gi, '\n$1\n')
-        .replace(/<br\s*\/?>/gi, '\n')
-        .replace(/<\/p>/gi, '\n\n')
-        .replace(/<\/h[1-6]>/gi, '\n\n')
-        .replace(/<\/li>/gi, '\n')
-        .replace(/<\/tr>/gi, '\n')
-        .replace(/<\/td>/gi, ' | ')
-        .replace(/<[^>]+>/g, '');
-
-      // Decode HTML entities
-      content = content
-        .replace(/&nbsp;/g, ' ')
-        .replace(/&amp;/g, '&')
-        .replace(/&lt;/g, '<')
-        .replace(/&gt;/g, '>')
-        .replace(/&quot;/g, '"')
-        .replace(/&#39;/g, "'");
-
-      // Split và render với hình ảnh
-      const parts = content.split(/__IMG_(\d+)__/);
-
-      for (let i = 0; i < parts.length; i++) {
-        if (i % 2 === 0) {
-          // Text
-          const text = parts[i].trim();
-          if (text) {
-            const paragraphs = text.split(/\n\n+/);
-            for (const para of paragraphs) {
-              const trimmed = para.trim();
-              if (trimmed) {
-                if (doc.y > doc.page.height - 70) doc.addPage();
-                doc.text(trimmed, { align: 'left', width: pageWidth });
-                doc.moveDown(0.4);
-              }
-            }
-          }
-        } else {
-          // Image
-          const imgIdx = parseInt(parts[i], 10);
-          // Check image exists và có data (không phải placeholder rỗng)
-          if (imgIdx < imageList.length && imageList[imgIdx] && imageList[imgIdx].length > 0) {
-            try {
-              if (doc.y > doc.page.height - 250) doc.addPage();
-              doc.image(imageList[imgIdx], {
-                fit: [pageWidth * 0.85, 220],
-                align: 'center',
-              });
-              doc.moveDown(0.6);
-            } catch (imgErr) {
-              debugLog('HTTP', `Image ${imgIdx} failed: ${imgErr}`);
-            }
-          }
-        }
-      }
-
-      doc.end();
-    } catch (e) {
-      reject(e);
-    }
-  });
-}
-
-/**
- * Fetch DOCX file, convert sang PDF, trả về base64
+ * Fetch DOCX file, convert sang PDF via ComPDF API, trả về base64
  */
 export async function fetchDocxAndConvertToPdfBase64(url: string): Promise<string | null> {
   try {
     const cfg = getHttpConfig();
-    debugLog('HTTP', `Converting DOCX to PDF: ${url.substring(0, 80)}...`);
+    debugLog('HTTP', `Converting DOCX to PDF via API: ${url.substring(0, 80)}...`);
 
     const response = await http.get(url);
     const arrayBuffer = await response.arrayBuffer();
@@ -363,10 +211,14 @@ export async function fetchDocxAndConvertToPdfBase64(url: string): Promise<strin
       return null;
     }
 
-    // Convert to PDF
-    const pdfBuffer = await convertDocxToPdf(docxBuffer);
-    const base64 = pdfBuffer.toString('base64');
+    // Convert to PDF via ComPDF API
+    const pdfBuffer = await convertDocxToPdfViaApi(docxBuffer);
+    if (!pdfBuffer) {
+      debugLog('HTTP', '✗ ComPDF API conversion failed');
+      return null;
+    }
 
+    const base64 = pdfBuffer.toString('base64');
     debugLog('HTTP', `✓ DOCX→PDF→Base64: ${base64.length} chars`);
     return base64;
   } catch (e: any) {
