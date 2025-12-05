@@ -193,18 +193,45 @@ export async function fetchAndConvertToTextBase64(url: string): Promise<string |
 
 /**
  * Convert DOCX buffer sang PDF buffer
+ * Sử dụng font Roboto để hỗ trợ tiếng Việt (Unicode)
+ * Extract và embed hình ảnh từ DOCX
  */
 async function convertDocxToPdf(docxBuffer: Buffer): Promise<Buffer> {
-  // Extract text từ docx bằng mammoth
-  const result = await mammoth.extractRawText({ buffer: docxBuffer });
-  const text = result.value;
+  // Lưu trữ hình ảnh extracted từ DOCX
+  const images: Array<{ data: Buffer; contentType: string }> = [];
 
-  // Tạo PDF từ text
+  // Convert DOCX sang HTML với hình ảnh
+  const result = await mammoth.convertToHtml(
+    { buffer: docxBuffer },
+    {
+      convertImage: mammoth.images.imgElement((image) => {
+        return image.read('base64').then((imageData) => {
+          const idx = images.length;
+          images.push({
+            data: Buffer.from(imageData, 'base64'),
+            contentType: image.contentType,
+          });
+          // Trả về placeholder để track vị trí hình
+          return { src: `__IMAGE_${idx}__` };
+        });
+      }),
+    },
+  );
+
+  // Parse HTML để lấy text và vị trí hình
+  const html = result.value;
+
+  // Đường dẫn font Roboto (hỗ trợ Unicode/tiếng Việt)
+  const fontPath = new URL('../../assets/fonts/Roboto-Regular.ttf', import.meta.url).pathname;
+  const normalizedFontPath = fontPath.replace(/^\/([A-Za-z]:)/, '$1');
+
+  // Tạo PDF từ content
   return new Promise((resolve, reject) => {
     try {
       const doc = new PDFDocument({
         size: 'A4',
         margin: 50,
+        bufferPages: true,
         info: {
           Title: 'Converted Document',
           Author: 'Zia AI Bot',
@@ -217,15 +244,71 @@ async function convertDocxToPdf(docxBuffer: Buffer): Promise<Buffer> {
       doc.on('end', () => resolve(Buffer.concat(chunks)));
       doc.on('error', reject);
 
-      // Render text với font mặc định
-      doc.fontSize(12).font('Helvetica');
+      // Đăng ký font Roboto
+      try {
+        doc.registerFont('Roboto', normalizedFontPath);
+        doc.fontSize(12).font('Roboto');
+      } catch {
+        debugLog('HTTP', 'Failed to load Roboto font, using Helvetica');
+        doc.fontSize(12).font('Helvetica');
+      }
 
-      // Split theo paragraphs và render
-      const paragraphs = text.split(/\n\n+/);
-      for (const para of paragraphs) {
-        if (para.trim()) {
-          doc.text(para.trim(), { align: 'left' });
-          doc.moveDown(0.5);
+      // Parse HTML đơn giản và render
+      // Remove HTML tags nhưng giữ structure
+      let content = html
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<\/p>/gi, '\n\n')
+        .replace(/<\/h[1-6]>/gi, '\n\n')
+        .replace(/<\/li>/gi, '\n')
+        .replace(/<\/tr>/gi, '\n')
+        .replace(/<\/td>/gi, '\t')
+        .replace(/<[^>]+>/g, '');
+
+      // Decode HTML entities
+      content = content
+        .replace(/&nbsp;/g, ' ')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'");
+
+      // Split content và render với hình ảnh
+      const parts = content.split(/__IMAGE_(\d+)__/);
+
+      for (let i = 0; i < parts.length; i++) {
+        if (i % 2 === 0) {
+          // Text part
+          const text = parts[i].trim();
+          if (text) {
+            // Split theo paragraphs
+            const paragraphs = text.split(/\n\n+/);
+            for (const para of paragraphs) {
+              if (para.trim()) {
+                doc.text(para.trim(), { align: 'left' });
+                doc.moveDown(0.5);
+              }
+            }
+          }
+        } else {
+          // Image placeholder - render hình
+          const imgIdx = parseInt(parts[i], 10);
+          if (images[imgIdx]) {
+            try {
+              const img = images[imgIdx];
+              // Check nếu còn đủ space trên trang
+              if (doc.y > doc.page.height - 200) {
+                doc.addPage();
+              }
+              doc.image(img.data, {
+                fit: [400, 300],
+                align: 'center',
+              });
+              doc.moveDown(1);
+            } catch (imgErr) {
+              debugLog('HTTP', `Failed to embed image ${imgIdx}: ${imgErr}`);
+            }
+          }
         }
       }
 
