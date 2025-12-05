@@ -302,12 +302,27 @@ async function processNonStreamingResponse(
 ): Promise<void> {
   const aiReply = await generateContent(currentPrompt, currentMedia, threadId, currentHistory);
 
-  if (signal?.aborted) return;
-
   const responseText = aiReply.messages
     .map((m) => m.text)
     .filter(Boolean)
     .join(' ');
+
+  // Nếu bị abort, vẫn execute tool trước khi return (giống streaming)
+  if (signal?.aborted) {
+    debugLog('MIXED', `Aborted (non-streaming) with response`);
+    if (responseText) {
+      await saveResponseToHistory(threadId, responseText);
+
+      // Nếu có tool call trong response, vẫn execute tool trước khi return
+      const toolResult = await handleToolCalls(responseText, api, threadId, senderId, senderName);
+      if (toolResult.hasTools) {
+        debugLog('MIXED', `Executing ${toolResult.toolCalls.length} tool(s) despite abort (non-streaming)`);
+        await saveToolResultToHistory(threadId, toolResult.promptForAI);
+        markPendingToolExecution(threadId);
+      }
+    }
+    return;
+  }
 
   const toolResult = await handleToolCalls(responseText, api, threadId, senderId, senderName);
 
