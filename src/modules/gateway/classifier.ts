@@ -12,6 +12,8 @@ export type MessageType =
   | 'link'
   | 'contact'
   | 'doodle'
+  | 'friend_added'
+  | 'system'
   | 'unknown';
 
 export type ClassifiedMessage = {
@@ -144,6 +146,27 @@ export function classifyMessage(msg: any): ClassifiedMessage {
       thumbUrl: content.thumb || content.href,
       mimeType: 'image/jpeg',
       text: '(Hình vẽ tay)',
+    };
+  }
+
+  // Friend added notification (ecard kết bạn)
+  if (msgType === 'chat.ecard') {
+    const description = content?.description || '';
+    const friendName = msg.data?.dName || '';
+    // Check if this is a friend added notification
+    if (description.includes('kết bạn') || content?.action === 'show.profile') {
+      return {
+        type: 'friend_added',
+        message: msg,
+        contactName: friendName,
+        text: `[Thông báo hệ thống] Người dùng "${friendName}" vừa đồng ý kết bạn với bạn. Hãy gửi lời chào thân thiện đến họ.`,
+      };
+    }
+    // Other ecard types
+    return {
+      type: 'system',
+      message: msg,
+      text: description || '(Thông báo hệ thống)',
     };
   }
 

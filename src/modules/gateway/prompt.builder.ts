@@ -71,7 +71,7 @@ export function buildPrompt(
  */
 export function extractTextFromMessages(classified: ClassifiedMessage[]): string {
   return classified
-    .filter((c) => c.type === 'text' || c.type === 'link' || c.type === 'contact')
+    .filter((c) => ['text', 'link', 'contact', 'friend_added', 'system'].includes(c.type))
     .map((c) => c.text || c.url || '')
     .filter(Boolean)
     .join('\n');
