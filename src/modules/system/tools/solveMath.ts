@@ -44,31 +44,50 @@ function buildMathContent(params: SolveMathParams): string {
 
 export const solveMathTool: ITool = {
   name: 'solveMath',
-  description: `Giải bài toán và xuất PDF với công thức đẹp. Dùng khi user hỏi bài toán phức tạp có nhiều công thức.
+  description: `Giải bài toán và xuất PDF với công thức đẹp.
 
-**CÁCH DÙNG:**
-- problem: Đề bài (có thể chứa LaTeX trong $...$ hoặc $$...$$)
-- solution: Lời giải chi tiết với các bước, công thức LaTeX
+**CÁCH VIẾT CÔNG THỨC - BẮT BUỘC DÙNG $...$:**
+- Inline math: $x^2 + y^2 = z^2$
+- Block math (căn giữa): $$\\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}$$
 
-**LATEX SYNTAX:**
-- Inline: $x^2 + y^2 = z^2$
-- Display: $$\\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}$$
-- Phân số: \\frac{a}{b}, Căn: \\sqrt{x}
-- Mũ: x^2, x^{n+1}, Chỉ số: x_1, x_{i+1}
-- Greek: \\alpha, \\beta, \\pi, \\theta, \\Delta
-- Operators: \\times, \\div, \\pm, \\leq, \\geq, \\neq
-- Calculus: \\int, \\sum, \\lim, \\infty`,
+**LATEX SYNTAX ĐƯỢC HỖ TRỢ:**
+
+Mũ/Chỉ số: $x^2$, $x^{n+1}$, $a_1$, $a_{i+1}$, $x^0$ → x⁰
+
+Greek: $\\alpha$ $\\beta$ $\\gamma$ $\\delta$ $\\theta$ $\\pi$ $\\sigma$ $\\omega$ $\\Sigma$ $\\Delta$ $\\Omega$
+
+Operators: $\\times$ $\\div$ $\\pm$ $\\cdot$ $\\leq$ $\\geq$ $\\neq$ $\\approx$ $\\equiv$
+
+Tập hợp: $\\in$ $\\notin$ $\\subset$ $\\supset$ $\\subseteq$ $\\supseteq$ $\\emptyset$
+
+Mũi tên: $\\rightarrow$ $\\leftarrow$ $\\Rightarrow$ $\\Leftarrow$ $\\leftrightarrow$
+
+Calculus: $\\sum$ $\\prod$ $\\int$ $\\oint$ $\\infty$ $\\partial$ $\\nabla$
+
+Logic: $\\forall$ $\\exists$ $\\therefore$ $\\because$
+
+Phân số đơn giản: $\\frac{1}{2}$ $\\frac{1}{3}$ $\\frac{2}{3}$ $\\frac{1}{4}$ $\\frac{3}{4}$
+
+Căn: $\\sqrt$
+
+**VÍ DỤ ĐÚNG:**
+- Bài toán 0⁰: "Giải bài toán $0^0$"
+- Chuỗi: "$\\sum_{n=0}^{\\infty} a_n x^n$"
+- Giới hạn: "$\\lim_{x \\rightarrow 0}$"
+- Tích phân: "$\\int_0^1 x^2 dx$"
+
+**MARKDOWN:** # heading, **bold**, *italic*, - list, 1. numbered, [!INFO] callout`,
   parameters: [
     {
       name: 'problem',
       type: 'string',
-      description: 'Đề bài toán (hỗ trợ LaTeX: $inline$ hoặc $$display$$)',
+      description: 'Đề bài toán - dùng $...$ cho công thức: $x^2$, $\\alpha$, $\\sum$',
       required: true,
     },
     {
       name: 'solution',
       type: 'string',
-      description: 'Lời giải chi tiết với các bước và công thức LaTeX',
+      description: 'Lời giải chi tiết - dùng $...$ cho công thức, markdown cho format',
       required: true,
     },
     {
