@@ -1,13 +1,12 @@
 /**
  * Tool: solveMath - Giải toán và xuất PDF với công thức đẹp
- * Tạo DOCX bằng Word framework rồi convert sang PDF qua ComPDF API
+ * Sử dụng pdfHandler (DOCX -> PDF via ComPDF API)
  */
 
 import { z } from 'zod';
 import type { ITool, ToolResult } from '../../../core/types.js';
 import { validateParams } from '../../../shared/schemas/tools.schema.js';
-import { convertDocxToPdfViaApi } from '../services/compdfService.js';
-import { docxHandler } from './createFile/docxHandler.js';
+import { pdfHandler } from './createFile/pdfHandler.js';
 
 export const SolveMathSchema = z.object({
   problem: z.string().min(1, 'Thiếu đề bài toán'),
@@ -84,26 +83,16 @@ export const solveMathTool: ITool = {
     if (!validation.success) return { success: false, error: validation.error };
 
     try {
-      // Bước 1: Tạo nội dung markdown
+      // Tạo nội dung markdown
       const content = buildMathContent(validation.data);
 
-      // Bước 2: Tạo DOCX bằng Word framework
-      const docxBuffer = await docxHandler(content, {
-        filename: 'giai-toan.docx',
+      // Dùng pdfHandler (DOCX -> PDF)
+      const pdfBuffer = await pdfHandler(content, {
+        filename: 'giai-toan.pdf',
         content,
         title: validation.data.title,
         author: 'Zia AI Bot',
       });
-
-      // Bước 3: Convert DOCX sang PDF qua ComPDF API
-      const pdfBuffer = await convertDocxToPdfViaApi(docxBuffer, 'giai-toan.docx');
-
-      if (!pdfBuffer) {
-        return {
-          success: false,
-          error: 'Không thể convert sang PDF. Vui lòng kiểm tra COMPDF_API_KEY.',
-        };
-      }
 
       return {
         success: true,
