@@ -2,7 +2,6 @@
  * System Module - Core system tools và tool registry
  */
 import { BaseModule, type ITool, type ModuleMetadata } from '../../core/index.js';
-import { youtubeChannelTool, youtubeSearchTool, youtubeVideoTool } from './system.module.js';
 import { clearHistoryTool } from './tools/clearHistory.js';
 import { createAppTool } from './tools/createApp.js';
 import { createChartTool } from './tools/createChart.js';
@@ -12,8 +11,10 @@ import { freepikImageTool } from './tools/freepikImage.js';
 import { getAllFriendsTool } from './tools/getAllFriends.js';
 import { getFriendOnlinesTool } from './tools/getFriendOnlines.js';
 import { getUserInfoTool } from './tools/getUserInfo.js';
+import { googleSearchTool } from './tools/googleSearch.js';
 import { solveMathTool } from './tools/solveMath.js';
 import { textToSpeechTool } from './tools/textToSpeech.js';
+import { youtubeChannelTool, youtubeSearchTool, youtubeVideoTool } from './tools/youtube.js';
 
 export class SystemModule extends BaseModule {
   readonly metadata: ModuleMetadata = {
@@ -37,6 +38,7 @@ export class SystemModule extends BaseModule {
     youtubeSearchTool,
     youtubeVideoTool,
     youtubeChannelTool,
+    googleSearchTool,
     clearHistoryTool,
   ];
 

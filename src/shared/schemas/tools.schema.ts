@@ -242,6 +242,17 @@ export const YouTubeChannelSchema = z.object({
   channelId: z.string().min(1, 'Thiếu ID channel YouTube'),
 });
 
+// ============ GOOGLE CUSTOM SEARCH API ============
+
+// Google Search params
+export const GoogleSearchSchema = z.object({
+  q: z.string().min(1, 'Thiếu từ khóa tìm kiếm'),
+  num: z.coerce.number().min(1).max(10).default(10),
+  start: z.coerce.number().min(1).optional(),
+  searchType: z.enum(['web', 'image']).default('web'),
+  safe: z.enum(['off', 'active']).default('off'),
+});
+
 // ============ CREATE APP TOOL ============
 
 // All available CDN libraries
@@ -333,3 +344,4 @@ export type YouTubeSearchParams = z.infer<typeof YouTubeSearchSchema>;
 export type YouTubeVideoParams = z.infer<typeof YouTubeVideoSchema>;
 export type YouTubeChannelParams = z.infer<typeof YouTubeChannelSchema>;
 export type CreateAppParams = z.infer<typeof CreateAppSchema>;
+export type GoogleSearchParams = z.infer<typeof GoogleSearchSchema>;
