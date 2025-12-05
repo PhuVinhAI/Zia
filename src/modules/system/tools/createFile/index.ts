@@ -32,21 +32,39 @@ export const createFileTool: ITool = {
   description: `Tạo file Office chuyên nghiệp. Hỗ trợ: docx, pdf, pptx, xlsx
 
 **DOCX (Word) - FULL FEATURES:**
-Markdown: # heading, **bold**, *italic*, ~~strike~~, \`code\`, [link](url)
-Tables: | Col1 | Col2 | (auto-styled header, striped rows)
-Callouts: [!INFO], [!WARNING], [!SUCCESS], [!ERROR], [!TIP], [!NOTE]
-Page break: [PAGE_BREAK] hoặc ---PAGE---
-Code blocks: \`\`\`language code \`\`\`
-Alignment: ->centered<- hoặc ->right aligned
-Checklist: - [ ] unchecked, - [x] checked
-Blockquote: > quoted text
-Lists: - bullet, 1. numbered (nested supported)
 
-Themes: default, professional, modern, academic, minimal
-Page: A4/Letter/Legal, portrait/landscape
-Header/Footer: với page numbers
+📝 **Text Formatting:**
+- Markdown: # heading (1-6), **bold**, *italic*, ~~strike~~, \`code\`, [link](url)
+- Alignment: ->centered<- hoặc ->right aligned
+- Highlight: ==highlighted text== hoặc [HIGHLIGHT:yellow]text[/HIGHLIGHT]
+- Math: $inline math$ hoặc $$block math$$ (hỗ trợ LaTeX symbols)
 
-Inline options (đầu content):
+📋 **Lists & Structure:**
+- Bullet: - item (nested với indent)
+- Numbered: 1. item
+- Checklist: - [ ] unchecked, - [x] checked
+- Blockquote: > quoted text
+
+📊 **Tables:** | Col1 | Col2 | (auto-styled header, striped rows)
+
+📦 **Boxes & Callouts:**
+- Callouts: [!INFO], [!WARNING], [!SUCCESS], [!ERROR], [!TIP], [!NOTE] text
+- Boxes: [BOX:type:title]content[/BOX] (type: info/success/warning/error/note/quote/code)
+
+🎨 **Visual Elements:**
+- Dividers: [DIVIDER], [DIVIDER:dashed], [DIVIDER:decorated:text]
+- Badges: [BADGE:text:type] (type: primary/success/warning/danger/info)
+- Icons: [ICON:star:large], emoji shortcuts :check:, :warning:, :star:
+
+📄 **Document Structure:**
+- Cover page: [COVER:title:subtitle:author:org:date:version:style]
+- Page break: [PAGE_BREAK] hoặc ---PAGE---
+- TOC: includeToc:true trong OPTIONS
+- Signature: [SIGNATURE:name:title:company:date]
+- Approval: [APPROVAL:approverName:title|creatorName:title]
+
+⚙️ **Settings (đầu content):**
+\`\`\`
 <!--OPTIONS: {
   "theme":{"name":"professional"},
   "pageSize":"A4",
@@ -55,6 +73,8 @@ Inline options (đầu content):
   "header":{"text":"Header","includePageNumber":true},
   "footer":{"text":"Footer","alignment":"center"}
 } -->
+\`\`\`
+Themes: default, professional, modern, academic, minimal
 
 **PPTX:** --- tách slides, # title, ## subtitle, - bullets
 **XLSX:** | markdown table | hoặc CSV format`,

@@ -1,6 +1,6 @@
 /**
- * Word Framework - Export tất cả components
- * Full-featured Word document generation framework
+ * Word Framework - Full-featured Word document generation
+ * Export tất cả components
  */
 
 // ═══════════════════════════════════════════════════
@@ -44,6 +44,7 @@ export { buildTable, buildTableFromCSV, parseMarkdownTable } from './tableBuilde
 // ═══════════════════════════════════════════════════
 export {
   blockToParagraph,
+  buildAlignedParagraph,
   buildCallout,
   buildCodeBlock,
   buildPageBreak,
@@ -117,6 +118,119 @@ export {
   type ColumnConfig,
   type ColumnSection,
 } from './columnBuilder.js';
+
+// ═══════════════════════════════════════════════════
+// DIVIDERS
+// ═══════════════════════════════════════════════════
+export {
+  buildDecoratedDivider,
+  buildDivider,
+  buildOrnamentDivider,
+  buildStarDivider,
+  isDivider,
+  parseDividerSyntax,
+  type DividerConfig,
+  type DividerStyle,
+} from './dividerBuilder.js';
+
+// ═══════════════════════════════════════════════════
+// BADGES
+// ═══════════════════════════════════════════════════
+export {
+  buildBadgeParagraph,
+  buildBadgeRun,
+  hasBadges,
+  parseBadges,
+  removeBadgeSyntax,
+  type BadgeConfig,
+} from './badgeBuilder.js';
+
+// ═══════════════════════════════════════════════════
+// MATH
+// ═══════════════════════════════════════════════════
+export {
+  buildMathParagraph,
+  hasMathExpression,
+  parseMathExpressions,
+  renderMathExpression,
+  type MathExpression,
+} from './mathBuilder.js';
+
+// ═══════════════════════════════════════════════════
+// BOXES
+// ═══════════════════════════════════════════════════
+export {
+  buildBox,
+  buildSimpleBox,
+  hasBoxSyntax,
+  parseBoxSyntax,
+  type BoxConfig,
+  type BoxType,
+} from './boxBuilder.js';
+
+// ═══════════════════════════════════════════════════
+// HIGHLIGHTS
+// ═══════════════════════════════════════════════════
+export {
+  buildHighlightedParagraph,
+  buildHighlightedRun,
+  buildMarkedRun,
+  hasHighlights,
+  parseHighlights,
+  type HighlightColorName,
+  type HighlightConfig,
+} from './highlightBuilder.js';
+
+// ═══════════════════════════════════════════════════
+// EMOJIS
+// ═══════════════════════════════════════════════════
+export {
+  buildEmojiRun,
+  buildIconParagraph,
+  getEmojiShortcuts,
+  hasEmojiShortcuts,
+  parseIconSyntax,
+  replaceEmojiShortcuts,
+} from './emojiBuilder.js';
+
+// ═══════════════════════════════════════════════════
+// WATERMARKS
+// ═══════════════════════════════════════════════════
+export {
+  buildConfidentialWatermark,
+  buildDraftWatermark,
+  buildSampleWatermark,
+  buildWatermarkHeader,
+  getPredefinedWatermark,
+  parseWatermarkSyntax,
+  PREDEFINED_WATERMARKS,
+  removeWatermarkSyntax,
+} from './watermarkBuilder.js';
+
+// ═══════════════════════════════════════════════════
+// SIGNATURES
+// ═══════════════════════════════════════════════════
+export {
+  buildApprovalBlock,
+  buildSignatureBlock,
+  isSignatureSyntax,
+  parseApprovalSyntax,
+  parseSignatureSyntax,
+  type MultiSignatureConfig,
+  type SignatureConfig,
+} from './signatureBuilder.js';
+
+// ═══════════════════════════════════════════════════
+// COVER PAGES
+// ═══════════════════════════════════════════════════
+export {
+  buildCoverPage,
+  buildTitleBlock,
+  hasCoverPageSyntax,
+  parseCoverPageSyntax,
+  removeCoverPageSyntax,
+  type CoverPageConfig,
+} from './coverPageBuilder.js';
 
 // ═══════════════════════════════════════════════════
 // DOCUMENT BUILDER (Main)
