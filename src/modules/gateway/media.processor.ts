@@ -9,6 +9,7 @@ import { CONFIG } from '../../shared/constants/config.js';
 import {
   fetchAndConvertToTextBase64,
   fetchDocxAndConvertToPdfBase64,
+  getMimeTypeFromExt,
   isDocxConvertible,
   isGeminiSupported,
   isTextConvertible,
@@ -111,7 +112,7 @@ export async function prepareMediaParts(
         media.push({
           type: 'file',
           url: item.url,
-          mimeType: item.mimeType || 'application/octet-stream',
+          mimeType: getMimeTypeFromExt(item.fileExt),
         });
       } else if (isDocxConvertible(item.fileExt)) {
         // Convert DOCX sang PDF
@@ -220,7 +221,7 @@ export async function addQuoteMedia(
       media.push({
         type: 'file',
         url: quoteMedia.url,
-        mimeType: quoteMedia.mimeType || 'application/octet-stream',
+        mimeType: getMimeTypeFromExt(ext),
       });
     } else if (isDocxConvertible(ext)) {
       console.log(`[Bot] 📄 Convert DOCX sang PDF từ quote: ${quoteMedia.title}`);
