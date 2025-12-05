@@ -20,7 +20,7 @@ export class SystemModule extends BaseModule {
   readonly metadata: ModuleMetadata = {
     name: 'system',
     description:
-      'Core system tools (user info, friends, messaging, TTS, Word document, Charts, Code execution, YouTube)',
+      'Core system tools (user info, friends, messaging, TTS, Word document, Charts, Code execution, YouTube, Google Search)',
     version: '1.0.0',
   };
 
