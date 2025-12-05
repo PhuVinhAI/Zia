@@ -8,6 +8,7 @@ import {
   HeadingLevel,
   Packer,
   Paragraph,
+  Table,
   TextRun,
 } from 'docx';
 import type { WordDocumentOptions } from './types.js';
@@ -17,7 +18,7 @@ import { buildDocumentStyles, buildNumberingConfig } from './styleBuilder.js';
 import { parseExtendedContent } from './contentBuilder.js';
 import { buildDefaultFooter, buildDefaultHeader, buildFooter, buildHeader } from './headerFooter.js';
 import { buildManualTOC, extractHeadings } from './tocBuilder.js';
-import { parseChecklist, buildChecklist } from './listBuilder.js';
+import { parseWatermarkSyntax, removeWatermarkSyntax, getPredefinedWatermark, buildWatermarkHeader } from './watermarkBuilder.js';
 
 // ═══════════════════════════════════════════════════
 // DOCUMENT BUILDER CLASS
@@ -36,43 +37,52 @@ export class WordDocumentBuilder {
    * Build document từ markdown content
    */
   async build(content: string): Promise<Buffer> {
-    // Pre-process content for special features
     let processedContent = content;
-    const allChildren: Paragraph[] = [];
+    const allChildren: (Paragraph | Table)[] = [];
 
-    // Build title if provided
+    // 1. Check for watermark
+    let watermarkConfig = this.options.watermark;
+    const inlineWatermark = parseWatermarkSyntax(processedContent);
+    if (inlineWatermark) {
+      watermarkConfig = inlineWatermark;
+      processedContent = removeWatermarkSyntax(processedContent);
+    }
+    // Check for predefined watermark keywords
+    const predefinedMatch = processedContent.match(/\[WATERMARK:(\w+)\]/i);
+    if (predefinedMatch) {
+      const predefined = getPredefinedWatermark(predefinedMatch[1]);
+      if (predefined) {
+        watermarkConfig = predefined;
+        processedContent = processedContent.replace(predefinedMatch[0], '');
+      }
+    }
+
+    // 2. Build title if provided
     const titleParagraphs = this.buildTitleSection();
     allChildren.push(...titleParagraphs);
 
-    // Build TOC if requested
+    // 3. Build TOC if requested
     if (this.options.includeToc) {
-      const headings = extractHeadings(content);
+      const headings = extractHeadings(processedContent);
       if (headings.length > 0) {
         const tocParagraphs = buildManualTOC(headings, this.options.tocTitle, this.theme);
         allChildren.push(...tocParagraphs);
       }
     }
 
-    // Check for checklist items and process them
-    const checklistItems = parseChecklist(processedContent);
-    if (checklistItems.length > 0) {
-      // Remove checklist lines from content to avoid double processing
-      const checklistRegex = /^(\s*)[-*]\s*\[([ xX])\]\s*(.+)$/gm;
-      processedContent = processedContent.replace(checklistRegex, '');
-    }
-
-    // Parse main content
+    // 4. Parse main content (includes all features: boxes, callouts, tables, etc.)
     const paragraphs = parseExtendedContent(processedContent, this.theme);
-    allChildren.push(...(paragraphs as Paragraph[]));
+    allChildren.push(...paragraphs);
 
-    // Add checklist items at the end if any
-    if (checklistItems.length > 0) {
-      const checklistParagraphs = buildChecklist(checklistItems, this.theme);
-      allChildren.push(...checklistParagraphs);
-    }
-
-    // Build section properties
+    // 5. Build section properties
     const sectionProperties = this.buildSectionProperties();
+
+    // 6. Build headers (with watermark if specified)
+    const headerConfig = watermarkConfig
+      ? buildWatermarkHeader(watermarkConfig, this.theme)
+      : this.options.header
+        ? buildHeader(this.options.header, this.theme)
+        : buildDefaultHeader(this.options.title, this.theme);
 
     const doc = new Document({
       creator: this.options.author || 'Zia AI Bot',
@@ -83,17 +93,13 @@ export class WordDocumentBuilder {
       sections: [
         {
           properties: sectionProperties,
-          headers: {
-            default: this.options.header
-              ? buildHeader(this.options.header, this.theme)
-              : buildDefaultHeader(this.options.title, this.theme),
-          },
+          headers: { default: headerConfig },
           footers: {
             default: this.options.footer
               ? buildFooter(this.options.footer, this.theme)
               : buildDefaultFooter(this.theme),
           },
-          children: allChildren,
+          children: allChildren as Paragraph[],
         },
       ],
     });

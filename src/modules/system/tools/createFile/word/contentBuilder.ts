@@ -1,22 +1,34 @@
 /**
  * Content Builder - Chuyển đổi markdown blocks thành Word paragraphs
+ * Tích hợp TẤT CẢ tính năng của Word framework
  */
 
 import {
   BorderStyle,
   ExternalHyperlink,
-  HeadingLevel,
-  PageBreak,
   Paragraph,
   ShadingType,
+  Table,
   TextRun,
 } from 'docx';
 import type { Block, InlineToken } from '../../../../../shared/utils/markdownParser.js';
 import { hasStyle, parseMarkdown } from '../../../../../shared/utils/markdownParser.js';
-import type { DocumentTheme, ExtendedBlock } from './types.js';
+import type { DocumentTheme } from './types.js';
 import { getTheme } from './themes.js';
 import { CALLOUT_STYLES, HEADING_LEVELS } from './constants.js';
 import { buildTable, parseMarkdownTable } from './tableBuilder.js';
+import { buildBox, parseBoxSyntax, hasBoxSyntax } from './boxBuilder.js';
+import { buildDivider, buildDecoratedDivider, buildOrnamentDivider, parseDividerSyntax } from './dividerBuilder.js';
+import { buildBadgeParagraph, parseBadges, hasBadges, removeBadgeSyntax } from './badgeBuilder.js';
+import { buildMathParagraph, hasMathExpression, renderMathExpression } from './mathBuilder.js';
+import { buildHighlightedParagraph, hasHighlights } from './highlightBuilder.js';
+import { replaceEmojiShortcuts, parseIconSyntax, buildIconParagraph } from './emojiBuilder.js';
+import { buildSignatureBlock, buildApprovalBlock, parseSignatureSyntax, parseApprovalSyntax, isSignatureSyntax } from './signatureBuilder.js';
+import { buildCoverPage, parseCoverPageSyntax, hasCoverPageSyntax, removeCoverPageSyntax } from './coverPageBuilder.js';
+import { buildChecklist, parseChecklist, buildDefinitionList, parseDefinitionList } from './listBuilder.js';
+import { buildImageParagraph, parseImageSyntax } from './imageBuilder.js';
+import { parseFootnotes } from './footnoteBuilder.js';
+import { PageBreak } from 'docx';
 
 // ═══════════════════════════════════════════════════
 // INLINE TOKEN TO TEXT RUN
@@ -35,11 +47,14 @@ export function tokensToTextRuns(
     const isCode = hasStyle(token, 'code');
     const isLink = hasStyle(token, 'link');
 
+    // Process emoji shortcuts in text
+    const processedText = replaceEmojiShortcuts(token.text);
+
     if (isLink && token.href) {
       return new ExternalHyperlink({
         children: [
           new TextRun({
-            text: token.text,
+            text: processedText,
             style: 'Hyperlink',
             color: t.colors.link,
             underline: { type: 'single' },
@@ -50,7 +65,7 @@ export function tokensToTextRuns(
     }
 
     return new TextRun({
-      text: token.text,
+      text: processedText,
       bold: isBold,
       italics: isItalic,
       strike: isStrike,
@@ -111,7 +126,7 @@ export function blockToParagraph(
       });
 
     case 'codeBlock':
-      return buildCodeBlock(block.raw || '', block.language, t);
+      return buildCodeBlock(block.raw || '', t);
 
     case 'hr':
       return new Paragraph({
@@ -131,22 +146,13 @@ export function blockToParagraph(
 // SPECIAL BLOCKS
 // ═══════════════════════════════════════════════════
 
-export function buildCodeBlock(
-  code: string,
-  language?: string,
-  theme?: DocumentTheme
-): Paragraph {
+export function buildCodeBlock(code: string, theme?: DocumentTheme): Paragraph {
   const t = theme || getTheme();
   const lines = code.split('\n');
 
   return new Paragraph({
     children: lines.flatMap((line, i) => [
-      new TextRun({
-        text: line,
-        font: t.fonts.code,
-        size: 20,
-        color: t.colors.text,
-      }),
+      new TextRun({ text: line, font: t.fonts.code, size: 20, color: t.colors.text }),
       ...(i < lines.length - 1 ? [new TextRun({ break: 1 })] : []),
     ]),
     shading: { type: ShadingType.SOLID, color: t.colors.codeBackground },
@@ -170,69 +176,95 @@ export function buildCallout(
 
   return new Paragraph({
     children: [
-      new TextRun({
-        text: `${style.icon} `,
-        size: 24,
-      }),
-      new TextRun({
-        text,
-        font: t.fonts.body,
-        color: style.textColor,
-      }),
+      new TextRun({ text: `${style.icon} `, size: 24 }),
+      new TextRun({ text: replaceEmojiShortcuts(text), font: t.fonts.body, color: style.textColor }),
     ],
     shading: { type: ShadingType.SOLID, color: style.backgroundColor },
-    border: {
-      left: { style: BorderStyle.SINGLE, size: 24, color: style.borderColor },
-    },
+    border: { left: { style: BorderStyle.SINGLE, size: 24, color: style.borderColor } },
     spacing: { before: 120, after: 120 },
     indent: { left: 200, right: 200 },
   });
 }
 
 export function buildPageBreak(): Paragraph {
+  return new Paragraph({ children: [new PageBreak()] });
+}
+
+export function buildAlignedParagraph(
+  text: string,
+  alignment: 'left' | 'center' | 'right',
+  theme?: DocumentTheme
+): Paragraph {
+  const t = theme || getTheme();
+  const processedText = replaceEmojiShortcuts(text);
+  const tokens = parseMarkdown(processedText)[0]?.tokens || [{ text: processedText, styles: [] }];
+
   return new Paragraph({
-    children: [new PageBreak()],
+    alignment: alignment,
+    children: tokensToTextRuns(tokens, t) as TextRun[],
+    spacing: { after: t.spacing.paragraphAfter },
   });
 }
 
 // ═══════════════════════════════════════════════════
-// CONTENT PARSER (Extended)
+// MAIN CONTENT PARSER - TẤT CẢ TÍNH NĂNG
 // ═══════════════════════════════════════════════════
 
-/**
- * Parse content với hỗ trợ extended syntax
- * - [!INFO], [!WARNING], [!SUCCESS], [!ERROR] cho callouts
- * - [!TIP], [!NOTE], [!IMPORTANT] aliases
- * - [PAGE_BREAK] cho page break
- * - Markdown tables
- * - Horizontal rules (---, ***, ___)
- * - Centered text: ->text<-
- * - Right-aligned text: ->text
- */
 export function parseExtendedContent(
   content: string,
   theme?: DocumentTheme
-): (Paragraph | ReturnType<typeof buildTable>)[] {
+): (Paragraph | Table)[] {
   const t = theme || getTheme();
-  const result: (Paragraph | ReturnType<typeof buildTable>)[] = [];
-  
+  const result: (Paragraph | Table)[] = [];
+
   // Normalize content
-  const normalizedContent = content.replace(/\\n/g, '\n').replace(/\\r\\n/g, '\r\n');
-  const lines = normalizedContent.split('\n');
-  
+  let normalizedContent = content.replace(/\\n/g, '\n').replace(/\\r\\n/g, '\r\n');
+
+  // 1. Process Cover Page
+  if (hasCoverPageSyntax(normalizedContent)) {
+    const coverConfig = parseCoverPageSyntax(normalizedContent);
+    if (coverConfig) {
+      result.push(...buildCoverPage(coverConfig, t));
+      normalizedContent = removeCoverPageSyntax(normalizedContent);
+    }
+  }
+
+  // 2. Process BOX blocks first (multi-line)
+  if (hasBoxSyntax(normalizedContent)) {
+    const { beforeBox, boxes, afterBox } = parseBoxSyntax(normalizedContent);
+    if (beforeBox) {
+      result.push(...parseLines(beforeBox, t));
+    }
+    for (const box of boxes) {
+      result.push(...buildBox(box, t));
+    }
+    if (afterBox) {
+      result.push(...parseLines(afterBox, t));
+    }
+    return result;
+  }
+
+  // 3. Process line by line
+  result.push(...parseLines(normalizedContent, t));
+
+  return result;
+}
+
+function parseLines(content: string, theme: DocumentTheme): (Paragraph | Table)[] {
+  const result: (Paragraph | Table)[] = [];
+  const lines = content.split('\n');
+
   let i = 0;
   let tableBuffer: string[] = [];
   let inTable = false;
   let codeBlockBuffer: string[] = [];
   let inCodeBlock = false;
-  let codeBlockLang = '';
+  let checklistBuffer: string[] = [];
 
   const flushTable = () => {
     if (tableBuffer.length > 0) {
       const tableData = parseMarkdownTable(tableBuffer.join('\n'));
-      if (tableData) {
-        result.push(buildTable(tableData, t));
-      }
+      if (tableData) result.push(buildTable(tableData, theme));
       tableBuffer = [];
     }
     inTable = false;
@@ -240,11 +272,18 @@ export function parseExtendedContent(
 
   const flushCodeBlock = () => {
     if (codeBlockBuffer.length > 0) {
-      result.push(buildCodeBlock(codeBlockBuffer.join('\n'), codeBlockLang, t));
+      result.push(buildCodeBlock(codeBlockBuffer.join('\n'), theme));
       codeBlockBuffer = [];
     }
     inCodeBlock = false;
-    codeBlockLang = '';
+  };
+
+  const flushChecklist = () => {
+    if (checklistBuffer.length > 0) {
+      const items = parseChecklist(checklistBuffer.join('\n'));
+      result.push(...buildChecklist(items, theme));
+      checklistBuffer = [];
+    }
   };
 
   while (i < lines.length) {
@@ -253,12 +292,12 @@ export function parseExtendedContent(
 
     // Code block handling
     if (trimmed.startsWith('```')) {
+      flushChecklist();
       if (inCodeBlock) {
         flushCodeBlock();
       } else {
         if (inTable) flushTable();
         inCodeBlock = true;
-        codeBlockLang = trimmed.slice(3).trim();
       }
       i++;
       continue;
@@ -270,14 +309,24 @@ export function parseExtendedContent(
       continue;
     }
 
-    // Check for table start/continuation
-    if (trimmed.includes('|') && !trimmed.startsWith('```')) {
+    // Table handling
+    if (trimmed.includes('|') && !trimmed.startsWith('[')) {
+      flushChecklist();
       inTable = true;
       tableBuffer.push(line);
       i++;
       continue;
     } else if (inTable) {
       flushTable();
+    }
+
+    // Checklist: - [ ] or - [x]
+    if (/^(\s*)[-*]\s*\[([ xX])\]/.test(line)) {
+      checklistBuffer.push(line);
+      i++;
+      continue;
+    } else {
+      flushChecklist();
     }
 
     // Page break
@@ -287,28 +336,127 @@ export function parseExtendedContent(
       continue;
     }
 
-    // Callouts (extended with aliases)
+    // Dividers
+    const dividerConfig = parseDividerSyntax(trimmed);
+    if (dividerConfig) {
+      if ('decorated' in dividerConfig) {
+        result.push(buildDecoratedDivider((dividerConfig as { decorated: true; text: string }).text, theme));
+      } else {
+        result.push(buildDivider(dividerConfig, theme));
+      }
+      i++;
+      continue;
+    }
+
+    // Ornament dividers
+    if (trimmed === '[DIVIDER:star]') {
+      result.push(buildOrnamentDivider('geometric', theme));
+      i++;
+      continue;
+    }
+    if (trimmed === '[DIVIDER:floral]') {
+      result.push(buildOrnamentDivider('floral', theme));
+      i++;
+      continue;
+    }
+
+    // Icon
+    const iconConfig = parseIconSyntax(trimmed);
+    if (iconConfig) {
+      result.push(buildIconParagraph(iconConfig.emoji, iconConfig.size, theme));
+      i++;
+      continue;
+    }
+
+    // Signature
+    const sigConfig = parseSignatureSyntax(trimmed);
+    if (sigConfig) {
+      result.push(...buildSignatureBlock(sigConfig, theme));
+      i++;
+      continue;
+    }
+
+    // Approval block
+    const approvalConfig = parseApprovalSyntax(trimmed);
+    if (approvalConfig) {
+      result.push(...buildApprovalBlock(approvalConfig.approver, approvalConfig.creator, theme));
+      i++;
+      continue;
+    }
+
+    // Callouts
     const calloutMatch = trimmed.match(/^\[!(INFO|WARNING|SUCCESS|ERROR|TIP|NOTE|IMPORTANT)\]\s*(.+)$/i);
     if (calloutMatch) {
       const typeMap: Record<string, 'info' | 'warning' | 'success' | 'error'> = {
-        info: 'info',
-        tip: 'info',
-        note: 'info',
-        warning: 'warning',
-        important: 'warning',
-        success: 'success',
-        error: 'error',
+        info: 'info', tip: 'info', note: 'info',
+        warning: 'warning', important: 'warning',
+        success: 'success', error: 'error',
       };
-      const calloutType = typeMap[calloutMatch[1].toLowerCase()] || 'info';
-      result.push(buildCallout(calloutMatch[2], calloutType, t));
+      result.push(buildCallout(calloutMatch[2], typeMap[calloutMatch[1].toLowerCase()] || 'info', theme));
       i++;
       continue;
+    }
+
+    // Badges
+    if (hasBadges(trimmed)) {
+      const badges = parseBadges(trimmed);
+      const remainingText = removeBadgeSyntax(trimmed);
+      if (badges.length > 0) {
+        result.push(buildBadgeParagraph(badges, theme));
+      }
+      if (remainingText) {
+        const blocks = parseMarkdown(remainingText);
+        for (const block of blocks) {
+          const para = blockToParagraph(block, theme);
+          if (para) result.push(para);
+        }
+      }
+      i++;
+      continue;
+    }
+
+    // Math expressions
+    if (hasMathExpression(trimmed)) {
+      const isBlock = trimmed.startsWith('$$') && trimmed.endsWith('$$');
+      const expr = isBlock ? trimmed.slice(2, -2) : trimmed.replace(/\$/g, '');
+      result.push(buildMathParagraph(expr, isBlock, theme));
+      i++;
+      continue;
+    }
+
+    // Highlights
+    if (hasHighlights(trimmed)) {
+      result.push(buildHighlightedParagraph(trimmed, theme));
+      i++;
+      continue;
+    }
+
+    // Images: ![alt](url) or [IMAGE:...]
+    const imageConfig = parseImageSyntax(trimmed);
+    if (imageConfig) {
+      try {
+        result.push(...buildImageParagraph(imageConfig, theme));
+      } catch {
+        // Skip invalid images
+      }
+      i++;
+      continue;
+    }
+
+    // Definition list: Term followed by : Definition
+    if (i + 1 < lines.length && lines[i + 1]?.trim().startsWith(': ')) {
+      const defItems = parseDefinitionList(`${line}\n${lines[i + 1]}`);
+      if (defItems.length > 0) {
+        result.push(...buildDefinitionList(defItems, theme));
+        i += 2;
+        continue;
+      }
     }
 
     // Centered text: ->text<-
     const centeredMatch = trimmed.match(/^->(.+)<-$/);
     if (centeredMatch) {
-      result.push(buildAlignedParagraph(centeredMatch[1].trim(), 'center', t));
+      result.push(buildAlignedParagraph(centeredMatch[1].trim(), 'center', theme));
       i++;
       continue;
     }
@@ -316,15 +464,16 @@ export function parseExtendedContent(
     // Right-aligned text: ->text
     const rightMatch = trimmed.match(/^->(.+)$/);
     if (rightMatch && !trimmed.endsWith('<-')) {
-      result.push(buildAlignedParagraph(rightMatch[1].trim(), 'right', t));
+      result.push(buildAlignedParagraph(rightMatch[1].trim(), 'right', theme));
       i++;
       continue;
     }
 
-    // Regular markdown parsing for this line
-    const blocks = parseMarkdown(line);
+    // Regular markdown parsing
+    const processedLine = replaceEmojiShortcuts(line);
+    const blocks = parseMarkdown(processedLine);
     for (const block of blocks) {
-      const para = blockToParagraph(block, t);
+      const para = blockToParagraph(block, theme);
       if (para) result.push(para);
     }
     i++;
@@ -333,30 +482,7 @@ export function parseExtendedContent(
   // Flush remaining buffers
   flushTable();
   flushCodeBlock();
+  flushChecklist();
 
   return result;
-}
-
-/**
- * Build aligned paragraph
- */
-export function buildAlignedParagraph(
-  text: string,
-  alignment: 'left' | 'center' | 'right',
-  theme?: DocumentTheme
-): Paragraph {
-  const t = theme || getTheme();
-  const tokens = parseMarkdown(text)[0]?.tokens || [{ text, styles: [] }];
-  
-  const alignmentMap = {
-    left: 'left' as const,
-    center: 'center' as const,
-    right: 'right' as const,
-  };
-
-  return new Paragraph({
-    alignment: alignmentMap[alignment],
-    children: tokensToTextRuns(tokens, t) as TextRun[],
-    spacing: { after: t.spacing.paragraphAfter },
-  });
 }
