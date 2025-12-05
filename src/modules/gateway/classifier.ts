@@ -53,7 +53,7 @@ export function classifyMessage(msg: any): ClassifiedMessage {
     return { type: 'sticker', message: msg, stickerId: content.id };
   }
 
-  // GIF
+  // GIF - Gemini không hỗ trợ image/gif, dùng image/png
   if (msgType === 'chat.gif' && content?.href) {
     // GIF có thể có nhiều URL: href (normal), hd (HD), small (thumbnail)
     const params = content?.params ? JSON.parse(content.params) : {};
@@ -64,7 +64,7 @@ export function classifyMessage(msg: any): ClassifiedMessage {
       message: msg,
       url: hdUrl,
       thumbUrl: content?.thumb || params?.small,
-      mimeType: 'image/gif',
+      mimeType: 'image/png',
       text: keyword ? `(GIF: ${keyword})` : '(GIF)',
     };
   }

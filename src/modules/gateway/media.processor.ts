@@ -94,11 +94,11 @@ export async function prepareMediaParts(
         mimeType: item.mimeType || 'image/jpeg',
       });
     } else if (item.type === 'gif' && item.url) {
-      // GIF - xử lý như image
+      // GIF - Gemini không hỗ trợ image/gif, dùng image/png thay thế
       media.push({
         type: 'image',
         url: item.url,
-        mimeType: 'image/gif',
+        mimeType: 'image/png',
       });
     } else if (item.type === 'video') {
       if (item.url && item.fileSize && item.fileSize < 20 * 1024 * 1024) {
@@ -190,11 +190,12 @@ export async function addQuoteMedia(
       mimeType: quoteMedia.mimeType || 'image/jpeg',
     });
   } else if (quoteMedia.type === 'gif' && quoteMedia.url) {
+    // GIF - Gemini không hỗ trợ image/gif, dùng image/png thay thế
     console.log(`[Bot] 📎 Đang fetch GIF từ quote...`);
     media.push({
       type: 'image',
       url: quoteMedia.url,
-      mimeType: 'image/gif',
+      mimeType: 'image/png',
     });
   } else if (quoteMedia.type === 'doodle' && quoteMedia.url) {
     console.log(`[Bot] 📎 Đang fetch doodle từ quote...`);

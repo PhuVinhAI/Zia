@@ -255,11 +255,10 @@ const GEMINI_SUPPORTED_FORMATS = new Set([
   'xml',
   'yaml',
   'yml',
-  // Images
+  // Images (Gemini không hỗ trợ gif)
   'png',
   'jpg',
   'jpeg',
-  'gif',
   'webp',
   'heic',
   'heif',
