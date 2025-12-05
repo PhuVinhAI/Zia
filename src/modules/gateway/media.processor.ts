@@ -17,11 +17,16 @@ import type { ClassifiedMessage } from './classifier.js';
 import type { QuoteMedia } from './quote.parser.js';
 
 /**
- * Check xem history đã có media (inlineData) chưa
- * Dùng để tránh fetch lại media từ quote nếu đã có trong history
+ * Check xem history đã có media (inlineData) từ USER chưa
+ * Chỉ check media từ role='user' vì:
+ * - Media từ user: AI đã thấy binary data → có thể skip fetch
+ * - Media từ model (bot gửi từ tool): AI chỉ biết "đã gửi thành công", chưa thấy binary → cần fetch
  */
-function historyHasMedia(history: Content[]): boolean {
+function historyHasUserMedia(history: Content[]): boolean {
   for (const content of history) {
+    // Chỉ check media từ user, không check từ model
+    if (content.role !== 'user') continue;
+
     for (const part of content.parts || []) {
       if ('inlineData' in part && part.inlineData?.data) {
         return true;
@@ -156,10 +161,11 @@ export async function addQuoteMedia(
   notes: string[],
   history?: Content[],
 ): Promise<void> {
-  // Check nếu history đã có media thì không cần fetch lại
-  if (history && historyHasMedia(history)) {
+  // Check nếu history đã có media TỪ USER thì không cần fetch lại
+  // Lưu ý: Media từ bot (tool generate) không được skip vì AI chưa thấy binary data
+  if (history && historyHasUserMedia(history)) {
     const mediaDesc = getMediaTypeDescription(quoteMedia.type);
-    console.log(`[Bot] 📎 Quote media (${quoteMedia.type}) đã có trong history, skip fetch`);
+    console.log(`[Bot] 📎 Quote media (${quoteMedia.type}) đã có trong history từ user, skip fetch`);
     notes.push(`(User đang reply tin nhắn có ${mediaDesc} ở trên, hãy tham khảo ${mediaDesc} đó)`);
     return;
   }

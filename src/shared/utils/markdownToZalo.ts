@@ -218,7 +218,8 @@ async function renderMermaidToPng(code: string): Promise<Buffer | null> {
       mermaid: { theme: 'default' },
     };
     const encoded = Buffer.from(JSON.stringify(mermaidConfig)).toString('base64url');
-    const url = `https://mermaid.ink/img/${encoded}?bgColor=white`;
+    // scale=3 để tăng độ phân giải (1x mặc định quá mờ)
+    const url = `https://mermaid.ink/img/${encoded}?bgColor=white&scale=3`;
 
     const response = await http.get(url, {
       timeout: 30000,
