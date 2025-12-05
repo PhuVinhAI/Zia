@@ -4,6 +4,7 @@
 
 import {
   BorderStyle,
+  ExternalHyperlink,
   Paragraph,
   ShadingType,
   Table,
@@ -15,6 +16,50 @@ import {
 } from 'docx';
 import type { DocumentTheme, TableData, TableStyle } from './types.js';
 import { getTheme } from './themes.js';
+import { parseInline, hasStyle } from '../../../../../shared/utils/markdownParser.js';
+
+/**
+ * Parse cell text với markdown formatting
+ */
+function parseCellContent(
+  text: string,
+  theme: DocumentTheme,
+  options?: { bold?: boolean; color?: string }
+): (TextRun | ExternalHyperlink)[] {
+  const tokens = parseInline(text);
+
+  return tokens.map((token) => {
+    const isBold = options?.bold || hasStyle(token, 'bold') || hasStyle(token, 'boldItalic');
+    const isItalic = hasStyle(token, 'italic') || hasStyle(token, 'boldItalic');
+    const isStrike = hasStyle(token, 'strikethrough');
+    const isCode = hasStyle(token, 'code');
+    const isLink = hasStyle(token, 'link');
+
+    if (isLink && token.href) {
+      return new ExternalHyperlink({
+        children: [
+          new TextRun({
+            text: token.text,
+            style: 'Hyperlink',
+            color: theme.colors.link,
+            underline: { type: 'single' },
+          }),
+        ],
+        link: token.href,
+      });
+    }
+
+    return new TextRun({
+      text: token.text,
+      bold: isBold,
+      italics: isItalic,
+      strike: isStrike,
+      font: isCode ? theme.fonts.code : theme.fonts.body,
+      shading: isCode ? { type: ShadingType.SOLID, color: theme.colors.codeBackground } : undefined,
+      color: options?.color || theme.colors.text,
+    });
+  });
+}
 
 // ═══════════════════════════════════════════════════
 // TABLE PARSER
@@ -95,14 +140,7 @@ export function buildTable(
         new TableCell({
           children: [
             new Paragraph({
-              children: [
-                new TextRun({
-                  text: header,
-                  bold: true,
-                  color: style.headerTextColor,
-                  font: t.fonts.body,
-                }),
-              ],
+              children: parseCellContent(header, t, { bold: true, color: style.headerTextColor }) as TextRun[],
             }),
           ],
           shading: {
@@ -124,13 +162,7 @@ export function buildTable(
           new TableCell({
             children: [
               new Paragraph({
-                children: [
-                  new TextRun({
-                    text: cell,
-                    font: t.fonts.body,
-                    color: t.colors.text,
-                  }),
-                ],
+                children: parseCellContent(cell, t) as TextRun[],
               }),
             ],
             shading: isStriped

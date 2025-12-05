@@ -30,7 +30,15 @@ export class WordDocumentBuilder {
 
   constructor(options: Partial<WordDocumentOptions> = {}) {
     this.options = options as WordDocumentOptions;
-    this.theme = getTheme(options.theme?.name);
+    // Get base theme and merge with custom spacing if provided
+    const baseTheme = getTheme(options.theme?.name);
+    this.theme = {
+      ...baseTheme,
+      spacing: {
+        ...baseTheme.spacing,
+        ...(options.theme as any)?.spacing,
+      },
+    };
   }
 
   /**

@@ -52,6 +52,10 @@ export function buildBox(config: BoxConfig, theme?: DocumentTheme): Paragraph[] 
     color: style.border,
   };
 
+  // Filter empty lines from content
+  const contentLines = config.content.split('\n').filter((line) => line.trim());
+  const hasContent = contentLines.length > 0;
+
   // Title paragraph (if provided)
   if (config.title) {
     paragraphs.push(
@@ -68,20 +72,21 @@ export function buildBox(config: BoxConfig, theme?: DocumentTheme): Paragraph[] 
         shading: { type: ShadingType.SOLID, color: style.bg },
         border: {
           top: borderConfig,
+          bottom: !hasContent ? borderConfig : undefined,
           left: borderConfig,
           right: borderConfig,
         },
-        spacing: { before: 200 },
+        spacing: { before: 200, after: 0 },
         indent: { left: 200, right: 200 },
       })
     );
   }
 
-  // Content paragraph
-  const contentLines = config.content.split('\n');
+  // Content paragraphs
   contentLines.forEach((line, index) => {
-    const isFirst = index === 0 && !config.title;
+    const isFirst = index === 0;
     const isLast = index === contentLines.length - 1;
+    const needsTopBorder = isFirst && !config.title;
 
     paragraphs.push(
       new Paragraph({
@@ -95,12 +100,12 @@ export function buildBox(config: BoxConfig, theme?: DocumentTheme): Paragraph[] 
         ],
         shading: { type: ShadingType.SOLID, color: style.bg },
         border: {
-          top: isFirst ? borderConfig : undefined,
+          top: needsTopBorder ? borderConfig : undefined,
           bottom: isLast ? borderConfig : undefined,
           left: borderConfig,
           right: borderConfig,
         },
-        spacing: { after: isLast ? 200 : 60 },
+        spacing: { before: isFirst && config.title ? 0 : undefined, after: isLast ? 200 : 0 },
         indent: { left: 200, right: 200 },
       })
     );
@@ -115,16 +120,26 @@ export function buildBox(config: BoxConfig, theme?: DocumentTheme): Paragraph[] 
  * [BOX:type:title]
  * content
  * [/BOX]
+ * 
+ * Returns segments: array of { type: 'text' | 'box', content/config }
  */
+export interface BoxSegment {
+  type: 'text' | 'box';
+  content?: string;
+  config?: BoxConfig;
+}
+
 export function parseBoxSyntax(content: string): {
   beforeBox: string;
   boxes: BoxConfig[];
   afterBox: string;
+  segments: BoxSegment[];
 } {
   const result = {
     beforeBox: '',
     boxes: [] as BoxConfig[],
     afterBox: '',
+    segments: [] as BoxSegment[],
   };
 
   const boxRegex = /\[BOX:(\w+)(?::([^\]]+))?\]([\s\S]*?)\[\/BOX\]/gi;
@@ -132,28 +147,41 @@ export function parseBoxSyntax(content: string): {
   let match: RegExpExecArray | null;
 
   while ((match = boxRegex.exec(content)) !== null) {
+    // Add text before this box
     if (match.index > lastIndex) {
-      if (result.boxes.length === 0) {
-        result.beforeBox += content.slice(lastIndex, match.index);
+      const textBefore = content.slice(lastIndex, match.index).trim();
+      if (textBefore) {
+        result.segments.push({ type: 'text', content: textBefore });
+        if (result.boxes.length === 0) {
+          result.beforeBox = textBefore;
+        }
       }
     }
 
     const boxType = match[1].toLowerCase() as BoxType;
     if (BOX_STYLES[boxType]) {
-      result.boxes.push({
+      const boxConfig: BoxConfig = {
         type: boxType,
         title: match[2]?.trim(),
         content: match[3].trim(),
-      });
+      };
+      result.boxes.push(boxConfig);
+      result.segments.push({ type: 'box', config: boxConfig });
     }
 
     lastIndex = match.index + match[0].length;
   }
 
+  // Add remaining text after last box
   if (lastIndex < content.length) {
-    result.afterBox = content.slice(lastIndex);
+    const textAfter = content.slice(lastIndex).trim();
+    if (textAfter) {
+      result.segments.push({ type: 'text', content: textAfter });
+      result.afterBox = textAfter;
+    }
   } else if (lastIndex === 0) {
     result.beforeBox = content;
+    result.segments.push({ type: 'text', content });
   }
 
   return result;

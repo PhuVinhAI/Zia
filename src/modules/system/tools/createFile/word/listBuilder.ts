@@ -3,8 +3,6 @@
  */
 
 import {
-  AlignmentType,
-  CheckBox,
   Paragraph,
   TextRun,
 } from 'docx';
@@ -47,6 +45,7 @@ export function parseChecklist(content: string): ChecklistItem[] {
 
 /**
  * Build checklist paragraph
+ * Sử dụng emoji thay vì CheckBox vì CheckBox yêu cầu hex code
  */
 export function buildChecklistItem(
   item: ChecklistItem,
@@ -54,16 +53,18 @@ export function buildChecklistItem(
 ): Paragraph {
   const t = theme || getTheme();
   const tokens = parseInline(item.text);
+  const checkIcon = item.checked ? '☑' : '☐';
+  const checkColor = item.checked ? '4CAF50' : t.colors.text; // Green for checked
 
   return new Paragraph({
     children: [
-      new CheckBox({
-        checked: item.checked,
-        checkedState: { value: '☑' },
-        uncheckedState: { value: '☐' },
+      new TextRun({
+        text: `${checkIcon} `,
+        font: 'Segoe UI Symbol',
+        size: 22,
+        color: checkColor,
       }),
-      new TextRun({ text: ' ' }),
-      ...tokensToTextRuns(tokens, t) as TextRun[],
+      ...(tokensToTextRuns(tokens, t) as TextRun[]),
     ],
     indent: { left: item.indent * 360 },
     spacing: { after: 80 },

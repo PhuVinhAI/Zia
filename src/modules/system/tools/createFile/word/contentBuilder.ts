@@ -231,15 +231,13 @@ export function parseExtendedContent(
 
   // 2. Process BOX blocks first (multi-line)
   if (hasBoxSyntax(normalizedContent)) {
-    const { beforeBox, boxes, afterBox } = parseBoxSyntax(normalizedContent);
-    if (beforeBox) {
-      result.push(...parseLines(beforeBox, t));
-    }
-    for (const box of boxes) {
-      result.push(...buildBox(box, t));
-    }
-    if (afterBox) {
-      result.push(...parseLines(afterBox, t));
+    const { segments } = parseBoxSyntax(normalizedContent);
+    for (const segment of segments) {
+      if (segment.type === 'text' && segment.content) {
+        result.push(...parseLines(segment.content, t));
+      } else if (segment.type === 'box' && segment.config) {
+        result.push(...buildBox(segment.config, t));
+      }
     }
     return result;
   }

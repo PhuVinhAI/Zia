@@ -1,7 +1,6 @@
 /**
  * Tool: createFile - Tạo và gửi file Office qua Zalo
  * Hỗ trợ: docx (Word), pdf, pptx (PowerPoint), xlsx (Excel)
- * Các file text thuần (txt, md, code) sẽ được gửi trực tiếp qua markdown
  */
 
 import type { ITool, ToolResult } from '../../../../core/types.js';
@@ -16,7 +15,6 @@ import { pptxHandler } from './pptxHandler.js';
 import { xlsxHandler } from './xlsxHandler.js';
 import { type FileHandler, MIME_TYPES } from './types.js';
 
-// File handlers mapping (chỉ Office documents)
 const FILE_HANDLERS: Record<string, FileHandler> = {
   docx: docxHandler,
   pdf: pdfHandler,
@@ -24,68 +22,179 @@ const FILE_HANDLERS: Record<string, FileHandler> = {
   xlsx: xlsxHandler,
 };
 
-// Supported extensions
 const SUPPORTED_EXTENSIONS = Object.keys(FILE_HANDLERS);
 
 export const createFileTool: ITool = {
   name: 'createFile',
-  description: `Tạo file Office chuyên nghiệp với Word Framework đầy đủ tính năng.
-Hỗ trợ: docx (Word), pdf, pptx (PowerPoint), xlsx (Excel)
+  description: `Tạo file Office chuyên nghiệp. Hỗ trợ: docx, pdf, pptx, xlsx
 
-**═══ DOCX (Word) - FULL FRAMEWORK ═══**
+═══════════════════════════════════════════════════
+DOCX WORD FRAMEWORK - FULL FEATURES
+═══════════════════════════════════════════════════
 
-**TEXT:** # heading (1-6), **bold**, *italic*, ~~strike~~, \`code\`, [link](url)
-**ALIGNMENT:** ->centered<- hoặc ->right aligned
-**HIGHLIGHT:** ==text== hoặc [HIGHLIGHT:color]text[/HIGHLIGHT] (yellow/green/cyan/magenta/blue/red)
-**MATH:** $E=mc^2$ inline, $$sum$$ block (LaTeX: \\alpha \\beta \\pi \\sum \\int \\infty ^2 _n)
+**CƠ BẢN (Markdown chuẩn):**
+# Heading 1
+## Heading 2  
+### Heading 3
+**bold**, *italic*, ~~strikethrough~~, \`inline code\`
+- Bullet list
+1. Numbered list
+> Blockquote
+\`\`\`language
+code block
+\`\`\`
 
-**LISTS:** - bullet, 1. numbered, - [ ] checklist, - [x] checked
-**DEFINITION:** Term rồi dòng tiếp theo : Definition
-**BLOCKQUOTE:** > quoted text
-**CODE:** \`\`\`lang code \`\`\`
+**TABLES:**
+| Header 1 | Header 2 | Header 3 |
+|----------|----------|----------|
+| Cell 1   | **Bold** | *Italic* |
 
-**TABLES:** | Col1 | Col2 | (auto header styling, striped rows)
+**CALLOUTS:** (một dòng, có icon tự động)
+[!INFO] Thông tin
+[!TIP] Mẹo hay
+[!NOTE] Ghi chú
+[!WARNING] Cảnh báo
+[!IMPORTANT] Quan trọng
+[!SUCCESS] Thành công
+[!ERROR] Lỗi
 
-**CALLOUTS:** [!INFO], [!TIP], [!NOTE], [!WARNING], [!IMPORTANT], [!SUCCESS], [!ERROR] text
-**BOXES:** [BOX:type:title]content[/BOX] (info/success/warning/error/note/quote/code)
+**BOXES:** (nhiều dòng, có viền màu)
+[BOX:info:Tiêu đề]
+Nội dung box
+Nhiều dòng được
+[/BOX]
+Types: info, success, warning, error, note, quote, code
 
-**DIVIDERS:** [DIVIDER], [DIVIDER:dashed/dotted/double/wave/thick], [DIVIDER:decorated:text], [DIVIDER:star/floral]
-**BADGES:** [BADGE:text:type] (default/primary/success/warning/danger/info)
-**ICONS:** [ICON:emoji:size] (small/medium/large)
-**EMOJIS:** :check: :x: :warning: :info: :star: :fire: :heart: :rocket: :bulb: :thumbsup:
+**DIVIDERS:**
+[DIVIDER] - đường kẻ đơn
+[DIVIDER:double] - đường kẻ đôi
+[DIVIDER:dashed] - đứt nét
+[DIVIDER:dotted] - chấm chấm
+[DIVIDER:decorated:Tiêu đề] - có text giữa
+[DIVIDER:star] - hoa văn sao
+[DIVIDER:floral] - hoa văn hoa
 
-**COVER:** [COVER:title:subtitle:author:org:date:version:style] (simple/professional/academic/modern)
-**PAGE BREAK:** [PAGE_BREAK] hoặc ---PAGE---
-**IMAGES:** ![alt](url) hoặc [IMAGE:data,width=400,height=300,caption="text"]
-**SIGNATURE:** [SIGNATURE:name:title:company:date]
-**APPROVAL:** [APPROVAL:approverName:title|creatorName:title]
-**WATERMARK:** [WATERMARK:text] hoặc [WATERMARK:text:color] (predefined: draft/confidential/sample/urgent/approved)
+**BADGES:**
+[BADGE:NEW:primary] [BADGE:HOT:danger] [BADGE:SALE:success]
+Types: default, primary, success, warning, danger, info
 
-**OPTIONS (đầu content):**
-<!--OPTIONS: {"theme":{"name":"professional"},"pageSize":"A4","orientation":"portrait","includeToc":true,"tocTitle":"Mục Lục","header":{"text":"Header","includePageNumber":true},"footer":{"text":"Footer","alignment":"center"},"watermark":{"text":"DRAFT"}} -->
+**HIGHLIGHTS:**
+==text vàng== hoặc [HIGHLIGHT:green]text xanh[/HIGHLIGHT]
+Colors: yellow, green, cyan, magenta, blue, red
 
-**THEMES:** default, professional, modern, academic, minimal
-**PAGE:** A4/Letter/Legal, portrait/landscape
+**MATH:** (LaTeX cơ bản)
+$E=mc^2$ inline
+$$\\sum_{i=1}^{n} x_i$$ block
+Hỗ trợ: \\alpha \\beta \\pi \\sum \\int \\infty ^2 _n \\frac{1}{2}
 
-**═══ PPTX ═══** --- tách slides, # title, ## subtitle, - bullets
-**═══ XLSX ═══** | markdown table | hoặc CSV format`,
+**CHECKLIST:**
+- [ ] Chưa xong
+- [x] Đã xong
+
+**ALIGNMENT:**
+->Text căn giữa<-
+->Text căn phải
+
+**EMOJIS:**
+:check: ✅  :x: ❌  :warning: ⚠️  :info: ℹ️
+:star: ⭐  :fire: 🔥  :rocket: 🚀  :bulb: 💡
+:heart: ♥  :thumbsup: 👍  :question: ❓
+
+**COVER PAGE:**
+[COVER:Tiêu đề:Phụ đề:Tác giả:Tổ chức:Ngày:Version:Style]
+Styles: simple, professional, academic, modern
+
+**SIGNATURE:**
+[SIGNATURE:Họ tên:Chức vụ:Công ty:Ngày]
+
+**APPROVAL:** (2 người ký)
+[APPROVAL:Người duyệt:Chức vụ|Người lập:Chức vụ]
+
+**WATERMARK:**
+[WATERMARK:BẢN NHÁP] hoặc [WATERMARK:text:color]
+Predefined: draft, confidential, sample, urgent, approved, pending
+
+**PAGE BREAK:**
+[PAGE_BREAK] hoặc ---PAGE---
+
+**IMAGES:**
+![alt text](base64data)
+[IMAGE:base64,width=400,height=300,caption="Chú thích"]
+
+**FOOTNOTES:**
+Text có chú thích[^1]
+[^1]: Nội dung chú thích
+
+**COLUMNS:**
+[COLUMNS:2]
+Nội dung 2 cột
+[/COLUMNS]
+
+═══════════════════════════════════════════════════
+OPTIONS (đặt ở ĐẦU content)
+═══════════════════════════════════════════════════
+<!--OPTIONS: {
+  "theme": {"name": "professional", "spacing": {"lineSpacing": 360}},
+  "pageSize": "A4",
+  "orientation": "portrait",
+  "margins": {"top": 1440, "bottom": 1440, "left": 1440, "right": 1440},
+  "header": {"text": "Header", "alignment": "center", "includePageNumber": true},
+  "footer": {"text": "Footer", "alignment": "center"},
+  "includeToc": true,
+  "tocTitle": "Mục Lục",
+  "watermark": {"text": "DRAFT", "color": "CCCCCC"}
+} -->
+
+**Chi tiết OPTIONS:**
+- theme.name: default, professional, modern, academic, minimal
+- theme.spacing: {paragraphAfter, headingBefore, headingAfter, listItemAfter, lineSpacing}
+  + lineSpacing: 240=single, 276=1.15, 360=1.5, 480=double
+- pageSize: A4, Letter, Legal
+- orientation: portrait, landscape
+- margins: {top, bottom, left, right} (twips, 1440 = 1 inch)
+- header/footer: {text, alignment (left/center/right), includePageNumber}
+- includeToc: true/false - tự động tạo mục lục từ headings
+- watermark: {text, color (hex không #)}
+
+═══════════════════════════════════════════════════
+PPTX POWERPOINT
+═══════════════════════════════════════════════════
+--- để tách slides
+# Tiêu đề slide
+## Phụ đề
+- Bullet points
+
+═══════════════════════════════════════════════════
+XLSX EXCEL
+═══════════════════════════════════════════════════
+Dùng markdown table hoặc CSV format
+
+═══════════════════════════════════════════════════
+LƯU Ý QUAN TRỌNG
+═══════════════════════════════════════════════════
+- Viết markdown bình thường, framework tự style đẹp
+- Dùng \\n cho xuống dòng trong JSON string
+- Syntax phải CHÍNH XÁC với dấu : phân cách
+  ✓ [BOX:info:Title]  ✗ [BOXinfoTitle]
+  ✓ [BADGE:NEW:primary]  ✗ [BADGENEW]
+- Không cần escape ký tự đặc biệt trong content`,
   parameters: [
     {
       name: 'filename',
       type: 'string',
-      description: 'Tên file KÈM ĐUÔI. Chỉ hỗ trợ: .docx, .pdf, .pptx, .xlsx',
+      description: 'Tên file KÈM ĐUÔI (.docx, .pdf, .pptx, .xlsx)',
       required: true,
     },
     {
       name: 'content',
       type: 'string',
-      description: 'Nội dung file. PPTX: dùng --- tách slides. XLSX: dùng markdown table hoặc CSV.',
+      description: 'Nội dung markdown. Dùng \\n cho xuống dòng.',
       required: true,
     },
     {
       name: 'title',
       type: 'string',
-      description: 'Tiêu đề tài liệu',
+      description: 'Tiêu đề tài liệu (header)',
       required: false,
     },
     {
@@ -107,7 +216,7 @@ Hỗ trợ: docx (Word), pdf, pptx (PowerPoint), xlsx (Excel)
       if (!handler) {
         return {
           success: false,
-          error: `Định dạng "${ext}" không được hỗ trợ. Chỉ hỗ trợ: ${SUPPORTED_EXTENSIONS.join(', ')}. Các file text/code sẽ được gửi trực tiếp qua tin nhắn.`,
+          error: `Định dạng "${ext}" không được hỗ trợ. Chỉ hỗ trợ: ${SUPPORTED_EXTENSIONS.join(', ')}.`,
         };
       }
 
