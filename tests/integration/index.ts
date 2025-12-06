@@ -16,6 +16,15 @@ export * from './setup.js';
 
 // Test suites info
 export const TEST_SUITES = {
+  core: {
+    baseModule: 'BaseModule & BaseTool classes',
+    serviceContainer: 'Service Container (DI)',
+    eventBus: 'Event Bus (Pub/Sub)',
+    logger: 'Pino Logger',
+    moduleManager: 'Module Manager',
+    toolRegistry: 'Tool Registry',
+    context: 'Bot Context',
+  },
   entertainment: {
     jikan: 'Jikan API (MyAnimeList) - Anime/Manga search',
     nekos: 'Nekos API - Anime images',
@@ -36,14 +45,41 @@ export const TEST_SUITES = {
   },
   database: {
     database: 'SQLite + Drizzle ORM',
-    memory: 'Memory Store (Vector Search)',
+    repositories: 'Database Repositories',
+  },
+  infrastructure: {
+    keyManager: 'Gemini Key Manager',
+    geminiConfig: 'Gemini Config',
+    character: 'Character Config',
+    prompts: 'System Prompts',
+    memoryStore: 'Memory Store (Vector Search)',
+  },
+  gateway: {
+    classifier: 'Message Classifier',
+    messageProcessor: 'Message Processor',
+    quoteParser: 'Quote Parser',
+    rateLimitGuard: 'Rate Limit Guard',
+    promptBuilder: 'Prompt Builder',
+    toolHandler: 'Tool Handler',
+    userFilter: 'User Filter',
+  },
+  backgroundAgent: {
+    taskRepository: 'Task Repository',
+    contextBuilder: 'Context Builder',
   },
   files: {
     createFile: 'File Creation (DOCX, XLSX, PPTX)',
   },
   utils: {
     markdown: 'Markdown Parser & Converter',
+    markdownToZalo: 'Markdown to Zalo RichText',
     httpClient: 'HTTP Client (ky)',
+    datetime: 'DateTime Utils (Day.js)',
+    messageChunker: 'Message Chunker',
+    taskManager: 'Task Manager',
+    tokenCounter: 'Token Counter',
+    userStore: 'User Store',
+    messageStore: 'Message Store',
   },
 };
 

@@ -1,0 +1,143 @@
+/**
+ * Test: Context Builder
+ */
+import { describe, expect, it } from 'bun:test';
+import {
+  formatContextForPrompt,
+  type EnvironmentContext,
+} from '../../../src/modules/background-agent/context.builder.js';
+
+describe('Context Builder', () => {
+  describe('formatContextForPrompt()', () => {
+    it('should format basic context', () => {
+      const context: EnvironmentContext = {
+        onlineUsers: [],
+        onlineCount: 0,
+        pendingFriendRequests: [],
+        relevantMemories: [],
+        timestamp: new Date('2024-03-15T10:00:00'),
+      };
+
+      const result = formatContextForPrompt(context);
+      expect(result).toContain('Ngữ cảnh môi trường');
+      expect(result).toContain('Trạng thái online');
+      expect(result).toContain('Số người đang online: 0');
+    });
+
+    it('should include online users', () => {
+      const context: EnvironmentContext = {
+        onlineUsers: [
+          { userId: 'user1', status: 'online' },
+          { userId: 'user2', status: 'online' },
+        ],
+        onlineCount: 2,
+        pendingFriendRequests: [],
+        relevantMemories: [],
+        timestamp: new Date(),
+      };
+
+      const result = formatContextForPrompt(context);
+      expect(result).toContain('Số người đang online: 2');
+      expect(result).toContain('user1');
+      expect(result).toContain('user2');
+    });
+
+    it('should include friend requests', () => {
+      const context: EnvironmentContext = {
+        onlineUsers: [],
+        onlineCount: 0,
+        pendingFriendRequests: [
+          {
+            userId: 'friend1',
+            displayName: 'Friend One',
+            avatar: 'http://avatar.jpg',
+            message: 'Hi, add me!',
+            time: Date.now(),
+          },
+        ],
+        relevantMemories: [],
+        timestamp: new Date(),
+      };
+
+      const result = formatContextForPrompt(context);
+      expect(result).toContain('Lời mời kết bạn');
+      expect(result).toContain('Friend One');
+      expect(result).toContain('Hi, add me!');
+    });
+
+    it('should include target user info', () => {
+      const context: EnvironmentContext = {
+        onlineUsers: [],
+        onlineCount: 0,
+        pendingFriendRequests: [],
+        relevantMemories: [],
+        timestamp: new Date(),
+        targetUserInfo: {
+          userId: 'target123',
+          displayName: 'Target User',
+          zaloName: 'target_zalo',
+          gender: 0, // Nam
+          avatar: 'http://avatar.jpg',
+          birthday: '01/01/2000',
+        },
+      };
+
+      const result = formatContextForPrompt(context);
+      expect(result).toContain('Thông tin người nhận');
+      expect(result).toContain('Target User');
+      expect(result).toContain('Nam');
+      expect(result).toContain('01/01/2000');
+    });
+
+    it('should include female gender', () => {
+      const context: EnvironmentContext = {
+        onlineUsers: [],
+        onlineCount: 0,
+        pendingFriendRequests: [],
+        relevantMemories: [],
+        timestamp: new Date(),
+        targetUserInfo: {
+          userId: 'target123',
+          displayName: 'Female User',
+          zaloName: 'female_zalo',
+          gender: 1, // Nữ
+          avatar: 'http://avatar.jpg',
+        },
+      };
+
+      const result = formatContextForPrompt(context);
+      expect(result).toContain('Nữ');
+    });
+
+    it('should include memories', () => {
+      const context: EnvironmentContext = {
+        onlineUsers: [],
+        onlineCount: 0,
+        pendingFriendRequests: [],
+        relevantMemories: [
+          'User likes coffee',
+          'User birthday is March 15',
+        ],
+        timestamp: new Date(),
+      };
+
+      const result = formatContextForPrompt(context);
+      expect(result).toContain('Ký ức liên quan');
+      expect(result).toContain('User likes coffee');
+      expect(result).toContain('User birthday is March 15');
+    });
+
+    it('should include timestamp', () => {
+      const context: EnvironmentContext = {
+        onlineUsers: [],
+        onlineCount: 0,
+        pendingFriendRequests: [],
+        relevantMemories: [],
+        timestamp: new Date('2024-03-15T10:30:00'),
+      };
+
+      const result = formatContextForPrompt(context);
+      expect(result).toContain('Thời gian');
+    });
+  });
+});
