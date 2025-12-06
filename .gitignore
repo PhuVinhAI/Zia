@@ -12,4 +12,5 @@ bun.lockb
 
 # Database
 data/
-drizzle/
+# Keep drizzle migrations in git
+# drizzle/
