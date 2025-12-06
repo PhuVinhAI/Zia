@@ -61,7 +61,7 @@ class ProductionLogStream extends Writable {
 }
 
 /**
- * Gửi logs qua Zalo dưới dạng file
+ * Gửi logs qua Zalo dưới dạng file attachment
  */
 async function flushLogsToZalo(): Promise<void> {
   const adminId = process.env.LOG_RECEIVER_ID;
@@ -77,15 +77,31 @@ async function flushLogsToZalo(): Promise<void> {
     const timestamp = formatFileTimestamp();
     const fileName = `logs_${timestamp}.txt`;
 
-    // Tạo file tạm
-    const tempPath = `/tmp/${fileName}`;
-    fs.writeFileSync(tempPath, logContent, 'utf-8');
+    // Convert log content to Buffer
+    const logBuffer = Buffer.from(logContent, 'utf-8');
 
-    // Gửi file qua Zalo
-    await zaloApi.sendFile(adminId, tempPath, fileName);
+    // Gửi file qua Zalo dùng attachment
+    const attachment = {
+      filename: fileName,
+      data: logBuffer,
+      metadata: {
+        totalSize: logBuffer.length,
+        width: 0,
+        height: 0,
+      },
+    };
 
-    // Xóa file tạm
-    fs.unlinkSync(tempPath);
+    // Import ThreadType từ zca-js
+    const { ThreadType } = await import('../../infrastructure/zalo/zalo.service.js');
+
+    await zaloApi.sendMessage(
+      {
+        msg: `📋 Log file (${logsToSend.length} dòng)`,
+        attachments: [attachment],
+      },
+      adminId,
+      ThreadType.User,
+    );
 
     console.log(`📤 Sent ${logsToSend.length} log lines to admin`);
   } catch (error) {
