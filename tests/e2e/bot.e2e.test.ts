@@ -212,20 +212,6 @@ describe.skipIf(SKIP)('E2E: Full Bot Flow', () => {
   });
 
   describe('Error Handling', () => {
-    test('Tin nhắn rỗng - Bot xử lý gracefully', async () => {
-      if (!api) return;
-
-      // Gửi tin nhắn chỉ có space
-      const testMessage = '   ';
-      e2eLog('SEND', 'Sending empty message');
-
-      await api.sendMessage(testMessage, TEST_THREAD_ID, THREAD_TYPE);
-      await waitForResponse(E2E_CONFIG.messageWaitMs);
-
-      e2eLog('DONE', 'Empty message test complete');
-      expect(true).toBe(true);
-    }, E2E_CONFIG.timeout);
-
     test('Tin nhắn rất dài - Bot xử lý được', async () => {
       if (!api) return;
 

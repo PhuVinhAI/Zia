@@ -69,7 +69,8 @@ describe('Task Repository Integration', () => {
     }, TEST_CONFIG.timeout);
 
     test('createTask - các loại task khác nhau', async () => {
-      const types = ['send_message', 'accept_friend', 'send_friend_request'] as const;
+      // accept_friend được xử lý tự động, không cần task
+      const types = ['send_message', 'send_friend_request'] as const;
 
       for (const type of types) {
         const task = await createTask({
