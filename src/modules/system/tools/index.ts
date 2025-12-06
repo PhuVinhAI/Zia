@@ -7,6 +7,7 @@ export { createAppTool } from './createApp.js';
 export { createChartTool } from './createChart.js';
 export { createFileTool } from './createFile/index.js';
 export { executeCodeTool } from './executeCode.js';
+export { flushLogsTool } from './flushLogs.js';
 export { freepikImageTool } from './freepikImage.js';
 export { getAllFriendsTool } from './getAllFriends.js';
 export { getFriendOnlinesTool } from './getFriendOnlines.js';
