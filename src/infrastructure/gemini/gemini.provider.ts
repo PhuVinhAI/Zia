@@ -74,15 +74,19 @@ export async function generateContent(
   }
 
   let lastError: any = null;
+  let skipDelay = false; // Skip delay khi vừa đổi key (rate limit)
 
   // Retry loop
   for (let attempt = 0; attempt <= CONFIG.retry.maxRetries; attempt++) {
-    if (attempt > 0) {
+    if (attempt > 0 && !skipDelay) {
       const delayMs = CONFIG.retry.baseDelayMs * 2 ** (attempt - 1);
       console.log(`[Gemini] 🔄 Retry ${attempt}/${CONFIG.retry.maxRetries} sau ${delayMs}ms...`);
       debugLog('GEMINI', `Retry attempt ${attempt}, delay=${delayMs}ms`);
       await sleep(delayMs);
+    }
+    skipDelay = false; // Reset flag
 
+    if (attempt > 0) {
       deleteChatSession(sessionId);
     }
 
@@ -108,23 +112,23 @@ export async function generateContent(
     } catch (error: any) {
       lastError = error;
 
-      // Xử lý lỗi 429 (rate limit) - chuyển key/model
+      // Xử lý lỗi 429 (rate limit) - chuyển key/model và gọi NGAY
       if (isRateLimitError(error)) {
         const rotated = keyManager.handleRateLimitError();
         if (rotated && attempt < CONFIG.retry.maxRetries) {
           console.log(
-            `[Gemini] ⚠️ Lỗi 429: Rate limit, chuyển sang key #${keyManager.getCurrentKeyIndex()}/${keyManager.getTotalKeys()} (${keyManager.getCurrentModelName()})`,
+            `[Gemini] ⚠️ Lỗi 429: Rate limit, chuyển sang key #${keyManager.getCurrentKeyIndex()}/${keyManager.getTotalKeys()} (${keyManager.getCurrentModelName()}) - gọi ngay`,
           );
           debugLog(
             'GEMINI',
-            `Rate limit, rotated to key #${keyManager.getCurrentKeyIndex()}, model=${keyManager.getCurrentModelName()}`,
+            `Rate limit, rotated to key #${keyManager.getCurrentKeyIndex()}, model=${keyManager.getCurrentModelName()}, calling immediately`,
           );
-          deleteChatSession(sessionId);
+          skipDelay = true; // Đổi key rồi, gọi ngay không cần delay
           continue;
         }
       }
 
-      // Xử lý các lỗi retryable khác (503, etc.)
+      // Xử lý các lỗi retryable khác (503, etc.) - CẦN delay
       if (isRetryableError(error) && attempt < CONFIG.retry.maxRetries) {
         console.log(`[Gemini] ⚠️ Lỗi ${error.status || error.code}: Model overloaded, sẽ retry...`);
         debugLog('GEMINI', `Retryable error: ${error.status || error.code}`);
