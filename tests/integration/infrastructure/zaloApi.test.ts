@@ -8,10 +8,10 @@
 import { describe, test, expect, beforeAll, afterAll } from 'bun:test';
 import { hasApiKey, TEST_CONFIG } from '../setup.js';
 
-const SKIP = !hasApiKey('zaloCredentials');
+const SKIP = !hasApiKey('zaloCredentials') || !process.env.E2E_TEST_THREAD_ID;
 
-// Thread ID để test - User chat
-const TEST_THREAD_ID = '7960202764469574489';
+// Thread ID để test - đọc từ env
+const TEST_THREAD_ID = process.env.E2E_TEST_THREAD_ID || '';
 const THREAD_TYPE = 0; // 0 = User, 1 = Group
 
 let api: any = null;
@@ -21,7 +21,9 @@ let lastMsgId: string = '';
 describe.skipIf(SKIP)('Zalo API Real Connection', () => {
   beforeAll(async () => {
     if (SKIP) {
-      console.log('⏭️  Skipping Zalo API tests: ZALO_CREDENTIALS_BASE64 not configured');
+      console.log('⏭️  Skipping Zalo API tests:');
+      if (!hasApiKey('zaloCredentials')) console.log('   - ZALO_CREDENTIALS_BASE64 not configured');
+      if (!process.env.E2E_TEST_THREAD_ID) console.log('   - E2E_TEST_THREAD_ID not configured');
       return;
     }
 

@@ -25,7 +25,8 @@
     "test:core": "bun test tests/integration/core --timeout 60000",
     "test:gateway": "bun test tests/integration/gateway --timeout 60000",
     "test:academic": "bun test tests/integration/academic --timeout 60000",
-    "test:agent": "bun test tests/integration/background-agent --timeout 60000"
+    "test:agent": "bun test tests/integration/background-agent --timeout 60000",
+    "test:e2e": "bun test tests/e2e --timeout 120000"
   },
   "keywords": [
     "zalo",
