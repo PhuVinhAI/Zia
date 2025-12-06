@@ -4,10 +4,10 @@
  */
 
 import { desc, eq, sql } from 'drizzle-orm';
-import { GoogleGenAI } from '@google/genai';
 import { debugLog } from '../../core/logger/logger.js';
 import { EMBEDDING_DIM, getDatabase, getSqliteDb } from '../database/connection.js';
 import { memories, type Memory, type MemoryType, type NewMemory } from '../database/schema.js';
+import { isRateLimitError, keyManager } from '../gemini/keyManager.js';
 
 // ═══════════════════════════════════════════════════
 // CONFIG
@@ -31,35 +31,43 @@ export interface SearchResult extends Memory {
 export type { Memory, MemoryType };
 
 // ═══════════════════════════════════════════════════
-// EMBEDDING SERVICE
+// EMBEDDING SERVICE (dùng keyManager để xoay key khi rate limit)
 // ═══════════════════════════════════════════════════
 
 class EmbeddingService {
-  private ai: GoogleGenAI | null = null;
-
-  private getAI(): GoogleGenAI {
-    if (!this.ai) {
-      const apiKey = Bun.env.GEMINI_API_KEY?.split(',')[0]?.trim();
-      if (!apiKey) throw new Error('Missing GEMINI_API_KEY');
-      this.ai = new GoogleGenAI({ apiKey });
-    }
-    return this.ai;
-  }
-
   async createEmbedding(
     text: string,
     taskType: 'RETRIEVAL_DOCUMENT' | 'RETRIEVAL_QUERY',
   ): Promise<Float32Array> {
-    const result = await this.getAI().models.embedContent({
-      model: EMBEDDING_MODEL,
-      contents: text,
-      config: { taskType, outputDimensionality: EMBEDDING_DIM },
-    });
+    // Retry loop với key rotation khi gặp rate limit
+    while (true) {
+      try {
+        const ai = keyManager.getCurrentAI();
+        const result = await ai.models.embedContent({
+          model: EMBEDDING_MODEL,
+          contents: text,
+          config: { taskType, outputDimensionality: EMBEDDING_DIM },
+        });
 
-    const values = result.embeddings?.[0]?.values || [];
-    // Normalize
-    const norm = Math.sqrt(values.reduce((sum, v) => sum + v * v, 0));
-    return new Float32Array(norm > 0 ? values.map((v) => v / norm) : values);
+        const values = result.embeddings?.[0]?.values || [];
+        // Normalize
+        const norm = Math.sqrt(values.reduce((sum, v) => sum + v * v, 0));
+        return new Float32Array(norm > 0 ? values.map((v) => v / norm) : values);
+      } catch (error: any) {
+        // Rate limit (429) - đổi key và thử lại ngay
+        if (isRateLimitError(error)) {
+          const rotated = keyManager.handleRateLimitError();
+          if (rotated) {
+            debugLog(
+              'EMBEDDING',
+              `Rate limit, đổi sang key #${keyManager.getCurrentKeyIndex()} và thử lại`,
+            );
+            continue;
+          }
+        }
+        throw error;
+      }
+    }
   }
 }
 
