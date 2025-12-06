@@ -9,6 +9,9 @@
  *
  * Environment:
  *   TEST_VERBOSE=true  - Hiển thị chi tiết response data
+ *   
+ * Config:
+ *   Tests đọc API keys từ .env.test (không phải .env)
  */
 
 // Re-export setup utilities
@@ -38,21 +41,30 @@ export const TEST_SUITES = {
     elevenlabs: 'ElevenLabs TTS (requires ELEVENLABS_API_KEY)',
     compdf: 'ComPDF DOCX to PDF (requires COMPDF_API_KEY)',
     createChart: 'Chart.js Chart Creation',
+    createApp: 'HTML App Creation',
+    clearHistory: 'Clear Chat History',
+    memory: 'Long-term Memory',
+    scheduleTask: 'Task Scheduling',
+    solveMath: 'Math Solver',
   },
   ai: {
-    gemini: 'Google Gemini AI (requires GEMINI_API_KEY)',
     groq: 'Groq AI (requires GROQ_API_KEY)',
   },
   database: {
     database: 'SQLite + Drizzle ORM',
+    databaseService: 'Database Service',
     repositories: 'Database Repositories',
   },
   infrastructure: {
     keyManager: 'Gemini Key Manager',
     geminiConfig: 'Gemini Config',
+    geminiProvider: 'Gemini Provider (generateContent, parseAIResponse)',
+    geminiStream: 'Gemini Streaming',
     character: 'Character Config',
     prompts: 'System Prompts',
     memoryStore: 'Memory Store (Vector Search)',
+    zalo: 'Zalo Service (zca-js)',
+    zaloTypes: 'Zalo Types (TextStyle)',
   },
   gateway: {
     classifier: 'Message Classifier',
@@ -64,6 +76,7 @@ export const TEST_SUITES = {
     userFilter: 'User Filter',
     messageBuffer: 'Message Buffer (RxJS)',
     mediaProcessor: 'Media Processor (Gemini)',
+    responseHandler: 'Response Handler (Stream Callbacks)',
   },
   backgroundAgent: {
     taskRepository: 'Task Repository',
@@ -87,6 +100,9 @@ export const TEST_SUITES = {
     historyLoader: 'History Loader',
     historyStore: 'History Store',
   },
+  academic: {
+    tvuTools: 'TVU Student System',
+  },
 };
 
 console.log(`
@@ -96,5 +112,7 @@ console.log(`
 ║  Run: bun test:integration                                   ║
 ║  Watch: bun test:integration:watch                           ║
 ║  Filter: bun test:integration -- --grep "pattern"            ║
+║                                                              ║
+║  Config: Tests đọc API keys từ .env.test                     ║
 ╚══════════════════════════════════════════════════════════════╝
 `);

@@ -7,6 +7,10 @@ Hệ thống integration test cho Zia Bot - test thật với API thật.
 ```bash
 # Đảm bảo đã cài dependencies
 bun install
+
+# Tạo file .env.test với API keys (copy từ .env.example)
+cp .env.example .env.test
+# Sau đó điền các API keys vào .env.test
 ```
 
 ## Chạy Tests
@@ -18,9 +22,18 @@ bun test:integration
 # Chạy với watch mode
 bun test:integration:watch
 
+# Chạy tests theo category
+bun test:core          # Core modules
+bun test:gateway       # Gateway components
+bun test:ai            # AI services
+bun test:system        # System tools
+bun test:utils         # Utilities
+bun test:database      # Database
+bun test:entertainment # Entertainment APIs
+bun test:agent         # Background agent
+
 # Chạy tests cụ thể
 bun test:integration -- --grep "Giphy"
-bun test:integration -- --grep "YouTube"
 bun test:integration -- --grep "Gemini"
 
 # Chạy với verbose output
@@ -31,25 +44,35 @@ TEST_VERBOSE=true bun test:integration
 
 ```
 tests/integration/
-├── setup.ts                    # Setup và utilities
+├── setup.ts                    # Setup và utilities (đọc .env.test)
 ├── index.ts                    # Entry point
 ├── README.md                   # Documentation
 │
 ├── ai/                         # AI services
-│   ├── gemini.test.ts         # Google Gemini
 │   └── groq.test.ts           # Groq AI
 │
 ├── academic/                   # Academic tools
 │   └── tvuTools.test.ts       # TVU student system
 │
 ├── background-agent/           # Background agent
+│   ├── actionExecutor.test.ts # Action execution
+│   ├── agentRunner.test.ts    # Agent runner
+│   ├── contextBuilder.test.ts # Context building
 │   └── taskRepository.test.ts # Task management
 │
 ├── core/                       # Core functionality
-│   └── toolRegistry.test.ts   # Tool parsing & registry
+│   ├── baseModule.test.ts     # BaseModule & BaseTool
+│   ├── context.test.ts        # Bot Context
+│   ├── eventBus.test.ts       # Event Bus (Pub/Sub)
+│   ├── logger.test.ts         # Pino Logger
+│   ├── moduleManager.test.ts  # Module Manager
+│   ├── serviceContainer.test.ts # Service Container (DI)
+│   └── toolRegistry.test.ts   # Tool Registry
 │
 ├── database/                   # Database
-│   └── database.test.ts       # SQLite + Drizzle
+│   ├── database.test.ts       # SQLite + Drizzle
+│   ├── databaseService.test.ts # Database Service
+│   └── repositories.test.ts   # Repositories
 │
 ├── entertainment/              # Entertainment APIs
 │   ├── giphy.test.ts          # Giphy GIF search
@@ -61,9 +84,26 @@ tests/integration/
 │
 ├── gateway/                    # Message processing
 │   ├── classifier.test.ts     # Message classification
-│   ├── messageProcessor.test.ts # Message chunking
+│   ├── mediaProcessor.test.ts # Media processing
+│   ├── messageBuffer.test.ts  # Message buffering (RxJS)
+│   ├── messageProcessor.test.ts # Message processing
+│   ├── promptBuilder.test.ts  # Prompt building
 │   ├── quoteParser.test.ts    # Quote parsing
-│   └── rateLimitGuard.test.ts # Rate limiting
+│   ├── rateLimitGuard.test.ts # Rate limiting
+│   ├── responseHandler.test.ts # Response handling
+│   ├── toolHandler.test.ts    # Tool handling
+│   └── userFilter.test.ts     # User filtering
+│
+├── infrastructure/             # Infrastructure
+│   ├── character.test.ts      # Character config
+│   ├── geminiConfig.test.ts   # Gemini config
+│   ├── geminiProvider.test.ts # Gemini provider (generateContent)
+│   ├── geminiStream.test.ts   # Gemini streaming
+│   ├── keyManager.test.ts     # Key manager
+│   ├── memoryStore.test.ts    # Memory store
+│   ├── prompts.test.ts        # System prompts
+│   ├── zalo.test.ts           # Zalo service
+│   └── zaloTypes.test.ts      # Zalo types
 │
 ├── system/                     # System tools
 │   ├── clearHistory.test.ts   # Clear chat history
@@ -80,14 +120,23 @@ tests/integration/
 │   └── youtube.test.ts        # YouTube Data API
 │
 └── utils/                      # Utilities
+    ├── datetime.test.ts       # DateTime utils
+    ├── historyConverter.test.ts # History converter
+    ├── historyLoader.test.ts  # History loader
+    ├── historyStore.test.ts   # History store
     ├── httpClient.test.ts     # HTTP client
-    └── markdown.test.ts       # Markdown parser
+    ├── markdown.test.ts       # Markdown parser
+    ├── messageChunker.test.ts # Message chunker
+    ├── messageStore.test.ts   # Message store
+    ├── taskManager.test.ts    # Task manager
+    ├── tokenCounter.test.ts   # Token counter
+    └── userStore.test.ts      # User store
 ```
-
 
 ## API Keys Required
 
-Một số tests yêu cầu API keys. Tests sẽ tự động skip nếu key không có.
+Tests đọc API keys từ file `.env.test` (không phải `.env`).
+Tests sẽ tự động skip nếu key không có.
 
 | Test Suite | Required Key | Get Key At |
 |------------|--------------|------------|
@@ -98,8 +147,9 @@ Một số tests yêu cầu API keys. Tests sẽ tự động skip nếu key kh�
 | E2B | `E2B_API_KEY` | https://e2b.dev |
 | ElevenLabs | `ELEVENLABS_API_KEY` | https://elevenlabs.io |
 | ComPDF | `COMPDF_API_KEY` | https://www.compdf.com |
-| Gemini | `GEMINI_API_KEY` | https://aistudio.google.com |
+| Gemini | `GEMINI_API_KEY_1` ... `GEMINI_API_KEY_N` | https://aistudio.google.com |
 | Groq | `GROQ_API_KEY` | https://console.groq.com |
+| Zalo | `ZALO_CREDENTIALS_BASE64` | Zalo login |
 | TVU | `TVU_USERNAME`, `TVU_PASSWORD` | TVU student portal |
 
 ## Tests Không Cần API Key
@@ -114,6 +164,8 @@ Các tests sau chạy được mà không cần API key:
 - **Markdown Utils** - Parser & converter
 - **HTTP Client** - Using public APIs
 - **Gateway** - Message processing, classification
+- **Core** - BaseModule, EventBus, ServiceContainer
+- **Utils** - DateTime, MessageChunker, TaskManager
 
 ## Viết Test Mới
 
@@ -138,13 +190,17 @@ describe.skipIf(SKIP)('Your Test Suite', () => {
 
 ## Tips
 
-1. **Rate Limiting**: Một số API có rate limit. Tests đã được thiết kế để handle điều này.
+1. **Environment**: Tests đọc từ `.env.test`, không phải `.env`. Điều này cho phép tách biệt config test và production.
 
-2. **Timeout**: Default timeout là 60s. Có thể tăng cho các tests chậm:
+2. **Rate Limiting**: Một số API có rate limit. Tests đã được thiết kế để handle điều này với key rotation.
+
+3. **Timeout**: Default timeout là 60s. Có thể tăng cho các tests chậm:
    ```typescript
    test('slow test', async () => { ... }, 120000);
    ```
 
-3. **Cleanup**: Tests tự động cleanup data sau khi chạy.
+4. **Cleanup**: Tests tự động cleanup data sau khi chạy.
 
-4. **Tool Context**: Luôn truyền `mockToolContext` làm argument thứ 2 khi gọi `tool.execute()`.
+5. **Tool Context**: Luôn truyền `mockToolContext` làm argument thứ 2 khi gọi `tool.execute()`.
+
+6. **Gemini Keys**: Hỗ trợ nhiều keys (`GEMINI_API_KEY_1` đến `GEMINI_API_KEY_N`) với auto-rotation khi bị rate limit.
