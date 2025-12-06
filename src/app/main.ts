@@ -37,7 +37,33 @@ import {
   shouldSkipMessage,
 } from './botSetup.js';
 
+// Health check server cho Render/cloud platforms
+function startHealthServer() {
+  const port = Number(process.env.PORT) || 10000;
+  const startTime = Date.now();
+
+  Bun.serve({
+    port,
+    fetch(req) {
+      const url = new URL(req.url);
+      if (url.pathname === '/' || url.pathname === '/health') {
+        const uptime = Math.floor((Date.now() - startTime) / 1000);
+        return new Response(
+          JSON.stringify({ status: 'ok', service: 'Zia Bot', uptime: `${uptime}s` }),
+          { headers: { 'Content-Type': 'application/json' } },
+        );
+      }
+      return new Response('Not Found', { status: 404 });
+    },
+  });
+
+  console.log(`🌐 Health server running on port ${port}`);
+}
+
 async function main() {
+  // 0. Start health server
+  startHealthServer();
+
   // 1. Khởi tạo logging
   initLogging();
   printStartupInfo();

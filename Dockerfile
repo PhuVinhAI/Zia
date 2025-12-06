@@ -39,8 +39,12 @@ RUN mkdir -p /app/data /app/logs
 
 # Set environment
 ENV NODE_ENV=production
+ENV PORT=10000
+
+# Expose port for health check
+EXPOSE 10000
 
 # Expose volume for persistent data
 VOLUME ["/app/data", "/app/logs"]
 
-CMD ["bun", "--env-file=.env", "src/index.ts"]
+CMD ["bun", "src/app/main.ts"]
