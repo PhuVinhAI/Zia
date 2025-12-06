@@ -63,6 +63,7 @@ export const TEST_SUITES = {
     toolHandler: 'Tool Handler',
     userFilter: 'User Filter',
     messageBuffer: 'Message Buffer (RxJS)',
+    mediaProcessor: 'Media Processor (Gemini)',
   },
   backgroundAgent: {
     taskRepository: 'Task Repository',
