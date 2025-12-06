@@ -2,8 +2,9 @@
  * Action Executor - Thực thi các actions từ background agent
  */
 import { debugLog } from '../../core/logger/logger.js';
-import type { AgentTask, TaskType } from '../../infrastructure/database/schema.js';
+import type { AgentTask } from '../../infrastructure/database/schema.js';
 import { ThreadType } from '../../infrastructure/zalo/zalo.service.js';
+import { saveResponseToHistory, saveSentMessage } from '../../shared/utils/history.js';
 
 export interface ExecutionResult {
   success: boolean;
@@ -51,10 +52,23 @@ async function executeSendMessage(
 
     const result = await api.sendMessage(payload.message, threadId, ThreadType.User);
 
+    // Lưu vào history để AI nhớ đã gửi tin nhắn này
+    await saveResponseToHistory(threadId, payload.message);
+
+    // Lưu vào sent messages để AI có thể quote và undo
+    const msgIndex = saveSentMessage(
+      threadId,
+      result.msgId,
+      result.cliMsgId || '',
+      payload.message,
+    );
+
+    debugLog('EXECUTOR', `Message saved to history and sent_messages (index=${msgIndex})`);
+
     debugLog('EXECUTOR', `Message sent successfully`);
     return {
       success: true,
-      data: { msgId: result.msgId, threadId },
+      data: { msgId: result.msgId, threadId, msgIndex, savedToHistory: true },
     };
   } catch (error: any) {
     debugLog('EXECUTOR', `Failed to send message: ${error.message}`);
