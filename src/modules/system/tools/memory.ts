@@ -136,6 +136,8 @@ export const recallMemoryTool: ToolDefinition = {
             content: m.content,
             type: m.type,
             relevance: Math.round(m.relevance * 100) + '%',
+            effectiveScore: Math.round(m.effectiveScore * 10) / 10,
+            accessCount: m.accessCount,
             userName: m.userName,
             createdAt:
               m.createdAt instanceof Date

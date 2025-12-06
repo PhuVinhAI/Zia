@@ -14,6 +14,8 @@ import { memories, type Memory, type MemoryType, type NewMemory } from '../datab
 // ═══════════════════════════════════════════════════
 
 const EMBEDDING_MODEL = 'gemini-embedding-001';
+const DECAY_HALF_LIFE_DAYS = 30; // Memory giảm 50% importance sau 30 ngày không access
+const ACCESS_BOOST_FACTOR = 0.2; // Hệ số boost cho mỗi lần access
 
 // ═══════════════════════════════════════════════════
 // TYPES
@@ -22,6 +24,7 @@ const EMBEDDING_MODEL = 'gemini-embedding-001';
 export interface SearchResult extends Memory {
   distance: number;
   relevance: number; // 0-1, cao = liên quan hơn
+  effectiveScore: number; // Score sau khi apply decay + access boost
 }
 
 // Re-export types
@@ -68,6 +71,27 @@ const embeddingService = new EmbeddingService();
 
 class MemoryStore {
   /**
+   * Tính effective score với decay + access boost
+   */
+  private calculateEffectiveScore(
+    importance: number,
+    lastAccessedAt: Date | null,
+    accessCount: number,
+  ): number {
+    const now = Date.now();
+    const lastAccess = lastAccessedAt?.getTime() || now;
+    const daysSinceAccess = (now - lastAccess) / (1000 * 60 * 60 * 24);
+
+    // Decay factor: e^(-t/halfLife), giảm 50% sau DECAY_HALF_LIFE_DAYS ngày
+    const decayFactor = Math.exp(-daysSinceAccess / DECAY_HALF_LIFE_DAYS);
+
+    // Access boost: 1 + log(accessCount + 1) * factor
+    const accessBoost = 1 + Math.log(accessCount + 1) * ACCESS_BOOST_FACTOR;
+
+    return importance * decayFactor * accessBoost;
+  }
+
+  /**
    * Thêm memory mới
    */
   async add(
@@ -105,7 +129,7 @@ class MemoryStore {
   }
 
   /**
-   * Tìm kiếm memories liên quan (semantic search)
+   * Tìm kiếm memories liên quan (semantic search) với decay scoring
    */
   async search(
     query: string,
@@ -116,6 +140,7 @@ class MemoryStore {
       minImportance?: number;
     },
   ): Promise<SearchResult[]> {
+    const db = getDatabase();
     const sqlite = getSqliteDb();
     const queryEmb = await embeddingService.createEmbedding(query, 'RETRIEVAL_QUERY');
     const limit = options?.limit || 5;
@@ -124,12 +149,13 @@ class MemoryStore {
     let sqlQuery = `
       SELECT
         m.id, m.content, m.type, m.user_id as userId, m.user_name as userName,
-        m.importance, m.created_at as createdAt, m.metadata, v.distance
+        m.importance, m.created_at as createdAt, m.last_accessed_at as lastAccessedAt,
+        m.access_count as accessCount, m.metadata, v.distance
       FROM vec_memories v
       LEFT JOIN memories m ON m.id = v.memory_id
       WHERE v.embedding MATCH ? AND k = ?
     `;
-    const params: any[] = [queryEmb, limit * 2];
+    const params: any[] = [queryEmb, limit * 3]; // Fetch more để filter sau khi apply decay
 
     if (options?.type) {
       sqlQuery += ' AND m.type = ?';
@@ -144,17 +170,57 @@ class MemoryStore {
       params.push(options.minImportance);
     }
 
-    sqlQuery += ' ORDER BY v.distance LIMIT ?';
-    params.push(limit);
-
     const rows = sqlite.prepare(sqlQuery).all(...params) as any[];
 
-    return rows.map((r) => ({
-      ...r,
-      createdAt: new Date(r.createdAt * 1000),
-      metadata: r.metadata ? JSON.parse(r.metadata) : undefined,
-      relevance: Math.max(0, 1 - r.distance / 2),
-    }));
+    // Map và tính effective score
+    const results = rows.map((r) => {
+      const lastAccessedAt = r.lastAccessedAt ? new Date(r.lastAccessedAt * 1000) : null;
+      const effectiveScore = this.calculateEffectiveScore(
+        r.importance,
+        lastAccessedAt,
+        r.accessCount || 0,
+      );
+
+      return {
+        ...r,
+        createdAt: new Date(r.createdAt * 1000),
+        lastAccessedAt,
+        accessCount: r.accessCount || 0,
+        metadata: r.metadata ? JSON.parse(r.metadata) : undefined,
+        relevance: Math.max(0, 1 - r.distance / 2),
+        effectiveScore,
+      };
+    });
+
+    // Sort by combined score (relevance * effectiveScore) và limit
+    results.sort((a, b) => b.relevance * b.effectiveScore - a.relevance * a.effectiveScore);
+    const topResults = results.slice(0, limit);
+
+    // Update access tracking cho các memories được trả về
+    if (topResults.length > 0) {
+      const ids = topResults.map((r) => r.id);
+      await this.trackAccess(ids);
+    }
+
+    return topResults;
+  }
+
+  /**
+   * Track access cho memories (tăng accessCount, update lastAccessedAt)
+   */
+  private async trackAccess(ids: number[]): Promise<void> {
+    const db = getDatabase();
+    const now = new Date();
+
+    for (const id of ids) {
+      await db
+        .update(memories)
+        .set({
+          lastAccessedAt: now,
+          accessCount: sql`${memories.accessCount} + 1`,
+        })
+        .where(eq(memories.id, id));
+    }
   }
 
   /**
@@ -199,7 +265,12 @@ class MemoryStore {
   /**
    * Thống kê
    */
-  async getStats(): Promise<{ total: number; byType: Record<string, number> }> {
+  async getStats(): Promise<{
+    total: number;
+    byType: Record<string, number>;
+    avgAccessCount: number;
+    staleCount: number; // Memories không được access > 30 ngày
+  }> {
     const db = getDatabase();
 
     const totalResult = await db
@@ -214,11 +285,26 @@ class MemoryStore {
       .from(memories)
       .groupBy(memories.type);
 
+    const accessStats = await db
+      .select({
+        avgAccess: sql<number>`avg(access_count)`,
+      })
+      .from(memories);
+
+    const staleThreshold = Math.floor(Date.now() / 1000) - DECAY_HALF_LIFE_DAYS * 24 * 60 * 60;
+    const staleResult = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(memories)
+      .where(sql`${memories.lastAccessedAt} < ${staleThreshold} OR ${memories.lastAccessedAt} IS NULL`);
+
     return {
       total: totalResult[0]?.count || 0,
       byType: Object.fromEntries(byTypeResult.map((r) => [r.type, r.count])),
+      avgAccessCount: Math.round((accessStats[0]?.avgAccess || 0) * 10) / 10,
+      staleCount: staleResult[0]?.count || 0,
     };
   }
+
 }
 
 // Singleton export

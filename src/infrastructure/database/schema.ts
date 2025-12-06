@@ -71,6 +71,10 @@ export const memories = sqliteTable(
     createdAt: integer('created_at', { mode: 'timestamp' })
       .notNull()
       .$defaultFn(() => new Date()),
+    // Access tracking fields
+    lastAccessedAt: integer('last_accessed_at', { mode: 'timestamp' })
+      .$defaultFn(() => new Date()),
+    accessCount: integer('access_count').notNull().default(0),
     metadata: text('metadata'), // JSON string
   },
   (table) => [

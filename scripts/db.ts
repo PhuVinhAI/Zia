@@ -162,7 +162,8 @@ function cmdMemories(db: Database, limit = 20) {
 
   const rows = db
     .prepare(
-      `SELECT id, type, substr(content, 1, 50) as content, user_name, importance, created_at
+      `SELECT id, type, substr(content, 1, 40) as content, user_name, importance,
+              access_count, last_accessed_at, created_at
        FROM memories ORDER BY id DESC LIMIT ?`,
     )
     .all(limit) as any[];
@@ -170,10 +171,11 @@ function cmdMemories(db: Database, limit = 20) {
   const formatted = rows.map((r) => ({
     id: r.id,
     type: r.type,
-    content: r.content.replace(/\n/g, ' ') + (r.content.length > 50 ? '...' : ''),
+    content: r.content.replace(/\n/g, ' ') + (r.content.length > 40 ? '...' : ''),
     user: r.user_name || '-',
     imp: r.importance,
-    created: formatDate(r.created_at * 1000),
+    access: r.access_count || 0,
+    lastAccess: r.last_accessed_at ? formatDate(r.last_accessed_at * 1000) : '-',
   }));
 
   printTable(formatted);

@@ -23,7 +23,7 @@
     "logFile": "logs/bot.txt",
     "unauthorizedLogFile": "logs/unauthorized.json",
     "maxToolDepth": 10,
-    "showToolCalls": true,
+    "showToolCalls": false,
     "allowNSFW": false,
     "cloudDebug": {
       "enabled": true,
