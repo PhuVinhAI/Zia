@@ -103,14 +103,12 @@ async function processBatch(batch: BufferedMessage[]) {
         'BUFFER',
         `Previous task had tool executed, processing ${batch.length} new messages only`,
       );
-      // KHÔNG clear history vì tool result đã được lưu
     } else {
       // Không có tool, merge messages như cũ
+      // KHÔNG clear history - giữ nguyên context conversation
       messages = [...abortedMsgs, ...messages];
-      // Xóa history cũ để giảm context khi gom nhóm
-      clearHistory(threadId);
       console.log(
-        `[Bot] 🔄 Gom nhóm ${abortedMsgs.length} tin cũ + ${batch.length} tin mới, đã xóa history cũ`,
+        `[Bot] 🔄 Gom nhóm ${abortedMsgs.length} tin cũ + ${batch.length} tin mới`,
       );
       debugLog('BUFFER', `Merged ${abortedMsgs.length} aborted + ${batch.length} new messages`);
     }
