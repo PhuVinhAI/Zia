@@ -21,9 +21,10 @@ setAIService({
 });
 
 // Re-export key manager utilities
-export { keyManager } from './keyManager.js';
+export { keyManager, type GeminiModel, GEMINI_MODELS } from './keyManager.js';
 
-export const GEMINI_MODEL = 'models/gemini-2.5-pro';
+// Model động - lấy từ keyManager (hỗ trợ fallback)
+export const getGeminiModel = () => keyManager.getCurrentModel();
 
 export const GEMINI_CONFIG = {
   temperature: 1,

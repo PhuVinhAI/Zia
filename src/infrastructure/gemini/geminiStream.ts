@@ -323,18 +323,18 @@ export async function generateContentStream(
         return state.buffer;
       }
 
-      // Xử lý lỗi 429 (rate limit) - đổi key và gọi ngay, KHÔNG delay
+      // Xử lý lỗi 429 (rate limit) - đổi key/model và gọi ngay, KHÔNG delay
       if (isRateLimitError(error)) {
         const rotated = keyManager.handleRateLimitError();
         if (rotated) {
           console.log(
-            `[Gemini] ⚠️ Lỗi 429: Rate limit, đổi sang key #${keyManager.getCurrentKeyIndex()}/${keyManager.getTotalKeys()} và gọi ngay`,
+            `[Gemini] ⚠️ Lỗi 429: Rate limit, đổi sang key #${keyManager.getCurrentKeyIndex()}/${keyManager.getTotalKeys()} (${keyManager.getCurrentModelName()}) và gọi ngay`,
           );
-          debugLog('STREAM', `Rate limit, rotated to key #${keyManager.getCurrentKeyIndex()}, calling immediately`);
-          continue; // Gọi ngay với key mới, không delay
+          debugLog('STREAM', `Rate limit, rotated to key #${keyManager.getCurrentKeyIndex()}, model=${keyManager.getCurrentModelName()}, calling immediately`);
+          continue; // Gọi ngay với key/model mới, không delay
         }
-        // Không còn key khả dụng
-        console.log('[Gemini] ❌ Tất cả keys đều bị rate limit');
+        // Không còn key/model khả dụng
+        console.log('[Gemini] ❌ Tất cả keys và models đều bị rate limit/block');
         break;
       }
 

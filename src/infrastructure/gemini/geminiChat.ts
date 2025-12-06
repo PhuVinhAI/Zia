@@ -5,7 +5,7 @@ import type { Chat, Content, Part } from '@google/genai';
 import { debugLog } from '../../core/logger/logger.js';
 import { CONFIG } from '../../shared/constants/config.js';
 import { fetchAsBase64 } from '../../shared/utils/httpClient.js';
-import { GEMINI_CONFIG, GEMINI_MODEL, getAI, keyManager, type MediaPart } from './geminiConfig.js';
+import { GEMINI_CONFIG, getGeminiModel, getAI, keyManager, type MediaPart } from './geminiConfig.js';
 import { getSystemPrompt } from './prompts.js';
 
 // Chat session storage
@@ -22,12 +22,13 @@ export function getChatSession(threadId: string, history?: Content[]): Chat {
   let chat = chatSessions.get(threadId);
 
   if (!chat) {
+    const model = getGeminiModel();
     debugLog(
       'GEMINI',
-      `Creating new chat session for thread ${threadId} with key #${keyManager.getCurrentKeyIndex()}`,
+      `Creating new chat session for thread ${threadId} with key #${keyManager.getCurrentKeyIndex()}, model=${model}`,
     );
     chat = getAI().chats.create({
-      model: GEMINI_MODEL,
+      model,
       config: {
         ...GEMINI_CONFIG,
         systemInstruction: getPrompt(),

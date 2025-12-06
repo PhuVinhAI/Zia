@@ -38,7 +38,7 @@ export {
   ai,
   extractYouTubeUrls,
   GEMINI_CONFIG,
-  GEMINI_MODEL,
+  getGeminiModel,
   getAI,
   keyManager,
 } from './geminiConfig.js';
@@ -108,14 +108,14 @@ export async function generateContent(
     } catch (error: any) {
       lastError = error;
 
-      // Xử lý lỗi 429 (rate limit) - chuyển key
+      // Xử lý lỗi 429 (rate limit) - chuyển key/model
       if (isRateLimitError(error)) {
         const rotated = keyManager.handleRateLimitError();
         if (rotated && attempt < CONFIG.retry.maxRetries) {
           console.log(
-            `[Gemini] ⚠️ Lỗi 429: Rate limit, chuyển sang key #${keyManager.getCurrentKeyIndex()}/${keyManager.getTotalKeys()}`,
+            `[Gemini] ⚠️ Lỗi 429: Rate limit, chuyển sang key #${keyManager.getCurrentKeyIndex()}/${keyManager.getTotalKeys()} (${keyManager.getCurrentModelName()})`,
           );
-          debugLog('GEMINI', `Rate limit, rotated to key #${keyManager.getCurrentKeyIndex()}`);
+          debugLog('GEMINI', `Rate limit, rotated to key #${keyManager.getCurrentKeyIndex()}, model=${keyManager.getCurrentModelName()}`);
           deleteChatSession(sessionId);
           continue;
         }

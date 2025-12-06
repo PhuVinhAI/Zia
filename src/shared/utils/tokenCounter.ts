@@ -4,8 +4,7 @@
 import type { Content } from '@google/genai';
 import { debugLog, logError } from '../../core/logger/logger.js';
 import { getAIService } from '../types/ai.types.js';
-
-const GEMINI_MODEL = 'models/gemini-2.5-pro';
+import { getGeminiModel } from '../../infrastructure/gemini/geminiConfig.js';
 
 // MIME types mà Gemini API hỗ trợ cho countTokens
 const SUPPORTED_MIME_PREFIXES = ['image/', 'video/', 'audio/', 'application/pdf', 'text/'];
@@ -36,7 +35,7 @@ export async function countTokens(contents: Content[]): Promise<number> {
   try {
     const ai = getAIService();
     const result = await ai.countTokens({
-      model: GEMINI_MODEL,
+      model: getGeminiModel(),
       contents: filterUnsupportedMedia(contents),
     });
     return result.totalTokens || 0;
