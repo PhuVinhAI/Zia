@@ -50,7 +50,7 @@ Sử dụng tool tags để ra quyết định:
 [tool:decide action="execute" reason="Lý do"]{"message": "Nội dung đã chỉnh sửa"}[/tool]
 
 ## QUY TẮC:
-- Nếu target đang offline và task không urgent → có thể delay
+- LUÔN execute task ngay lập tức, không delay vì lý do online/offline
 - Nếu đã có pending friend request từ target → skip send_friend_request
 - Điều chỉnh tone dựa trên giới tính và context
 - Luôn giải thích lý do quyết định trong reason`;

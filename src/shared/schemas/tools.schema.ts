@@ -254,14 +254,21 @@ export const YouTubeChannelSchema = z.object({
 
 // ============ GOOGLE CUSTOM SEARCH API ============
 
-// Google Search params
-export const GoogleSearchSchema = z.object({
-  q: z.string().min(1, 'Thiếu từ khóa tìm kiếm'),
-  num: z.coerce.number().min(1).max(10).default(10),
-  start: z.coerce.number().min(1).optional(),
-  searchType: z.enum(['web', 'image']).default('web'),
-  safe: z.enum(['off', 'active']).default('off'),
-});
+// Google Search params (chấp nhận cả q và query)
+export const GoogleSearchSchema = z
+  .object({
+    q: z.string().optional(),
+    query: z.string().optional(),
+    num: z.coerce.number().min(1).max(10).default(10),
+    start: z.coerce.number().min(1).optional(),
+    searchType: z.enum(['web', 'image']).default('web'),
+    safe: z.enum(['off', 'active']).default('off'),
+  })
+  .transform((data) => ({
+    ...data,
+    q: data.q || data.query || '',
+  }))
+  .refine((data) => data.q.length > 0, { message: 'Thiếu từ khóa tìm kiếm (q hoặc query)' });
 
 // ============ MEMORY TOOLS ============
 
