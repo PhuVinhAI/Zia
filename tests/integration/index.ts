@@ -62,10 +62,13 @@ export const TEST_SUITES = {
     promptBuilder: 'Prompt Builder',
     toolHandler: 'Tool Handler',
     userFilter: 'User Filter',
+    messageBuffer: 'Message Buffer (RxJS)',
   },
   backgroundAgent: {
     taskRepository: 'Task Repository',
     contextBuilder: 'Context Builder',
+    actionExecutor: 'Action Executor',
+    agentRunner: 'Agent Runner',
   },
   files: {
     createFile: 'File Creation (DOCX, XLSX, PPTX)',
@@ -80,6 +83,9 @@ export const TEST_SUITES = {
     tokenCounter: 'Token Counter',
     userStore: 'User Store',
     messageStore: 'Message Store',
+    historyConverter: 'History Converter',
+    historyLoader: 'History Loader',
+    historyStore: 'History Store',
   },
 };
 
