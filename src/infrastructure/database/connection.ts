@@ -107,6 +107,8 @@ function runMigrations(sqlite: Database) {
       user_name TEXT,
       importance INTEGER NOT NULL DEFAULT 5,
       created_at INTEGER NOT NULL,
+      last_accessed_at INTEGER,
+      access_count INTEGER NOT NULL DEFAULT 0,
       metadata TEXT
     );
     CREATE INDEX IF NOT EXISTS idx_memories_type ON memories(type);
