@@ -4,6 +4,7 @@ dist/
 temp/
 qr.png
 credentials.json
+credentials.base64.txt
 logs/
 
 # Bun
