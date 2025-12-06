@@ -23,8 +23,13 @@ const MODEL_NAMES: Record<GeminiModel, string> = {
   'models/gemini-flash-lite-latest': 'Flash Lite Latest',
 };
 
-// Thời gian block model (24 giờ)
-const MODEL_BLOCK_DURATION_MS = 24 * 60 * 60 * 1000;
+// Thời gian block theo loại rate limit
+const RATE_LIMIT_DURATIONS = {
+  minute: 2 * 60 * 1000, // 2 phút cho RPM (requests per minute) - an toàn hơn
+  day: 24 * 60 * 60 * 1000, // 24 giờ cho RPD (requests per day)
+} as const;
+
+type RateLimitType = 'minute' | 'day' | 'default';
 
 // Parse keys từ env
 // Hỗ trợ 2 cách:
@@ -69,7 +74,7 @@ class GeminiKeyManager {
   private currentKeyIndex = 0;
   private currentModelIndex = 0;
   private aiInstances: Map<number, GoogleGenAI> = new Map();
-  private rateLimitedKeys: Set<number> = new Set(); // Track keys đang bị rate limit (429)
+  private rateLimitedKeys: Map<number, { blockedUntil: number; retryCount: number }> = new Map();
   private blockedModels: Map<number, number> = new Map(); // modelIndex -> blockedUntil timestamp
 
   constructor() {
@@ -84,12 +89,28 @@ class GeminiKeyManager {
   }
 
   /**
+   * Check và unblock keys đã hết thời gian chờ
+   */
+  private checkBlockedKeys(): void {
+    const now = Date.now();
+    for (const [keyIndex, data] of this.rateLimitedKeys) {
+      if (now >= data.blockedUntil) {
+        this.rateLimitedKeys.delete(keyIndex);
+        debugLog('KEY_MANAGER', `Key #${keyIndex + 1} unblocked (rate limit expired)`);
+      }
+    }
+  }
+
+  /**
    * Check và unblock models đã hết thời gian chờ
    * Ưu tiên theo thứ tự: 2.5 pro > flash-latest > flash-lite-latest
    */
   private checkBlockedModels(): void {
     const now = Date.now();
     let unblocked = false;
+
+    // Check keys trước
+    this.checkBlockedKeys();
 
     // Check từ model ưu tiên cao nhất
     for (let i = 0; i < GEMINI_MODELS.length; i++) {
@@ -104,7 +125,9 @@ class GeminiKeyManager {
         // Chuyển về model ưu tiên cao nhất vừa được unblock
         if (!unblocked) {
           this.currentModelIndex = i;
+          this.currentKeyIndex = 0;
           this.rateLimitedKeys.clear(); // Reset keys khi đổi model
+          console.log(`[KeyManager] 🔄 Quay lại model ${MODEL_NAMES[GEMINI_MODELS[i]]}`);
           unblocked = true;
         }
       }
@@ -169,21 +192,42 @@ class GeminiKeyManager {
 
   /**
    * Đánh dấu key hiện tại bị rate limit
+   * Lần đầu: block 2 phút (có thể là per-minute limit)
+   * Lần 2+: block 24h (chắc chắn là daily limit)
    */
-  private markCurrentKeyRateLimited(): void {
-    this.rateLimitedKeys.add(this.currentKeyIndex);
-    debugLog('KEY_MANAGER', `Key #${this.currentKeyIndex + 1} marked as rate limited`);
+  private markCurrentKeyRateLimited(): { duration: number; isDaily: boolean } {
+    const existing = this.rateLimitedKeys.get(this.currentKeyIndex);
+    const retryCount = (existing?.retryCount || 0) + 1;
+
+    // Lần đầu: block 2 phút, lần 2+: block 24h
+    const isDaily = retryCount > 1;
+    const duration = isDaily ? RATE_LIMIT_DURATIONS.day : RATE_LIMIT_DURATIONS.minute;
+    const blockedUntil = Date.now() + duration;
+
+    this.rateLimitedKeys.set(this.currentKeyIndex, { blockedUntil, retryCount });
+
+    const durationText = isDaily ? '24h (daily limit confirmed)' : '2 phút (checking...)';
+    debugLog(
+      'KEY_MANAGER',
+      `Key #${this.currentKeyIndex + 1} marked as rate limited (retry #${retryCount}) for ${durationText}`,
+    );
+
+    return { duration, isDaily };
   }
 
   /**
-   * Đánh dấu model hiện tại không sử dụng trong 24h
+   * Đánh dấu model hiện tại không sử dụng
+   * @param isDaily - true nếu đã xác định là daily limit
    */
-  private blockCurrentModel(): void {
-    const blockedUntil = Date.now() + MODEL_BLOCK_DURATION_MS;
+  private blockCurrentModel(isDaily: boolean): void {
+    const duration = isDaily ? RATE_LIMIT_DURATIONS.day : RATE_LIMIT_DURATIONS.minute;
+    const blockedUntil = Date.now() + duration;
     this.blockedModels.set(this.currentModelIndex, blockedUntil);
     const model = GEMINI_MODELS[this.currentModelIndex];
+
+    const durationText = isDaily ? '24h (daily limit)' : '2 phút';
     console.log(
-      `[KeyManager] 🚫 Model ${MODEL_NAMES[model]} bị block 24h (tất cả keys đều rate limit)`,
+      `[KeyManager] 🚫 Model ${MODEL_NAMES[model]} bị block ${durationText} (tất cả keys đều rate limit)`,
     );
     debugLog('KEY_MANAGER', `Model ${model} blocked until ${new Date(blockedUntil).toISOString()}`);
   }
@@ -219,6 +263,9 @@ class GeminiKeyManager {
    * @returns true nếu chuyển thành công, false nếu không còn key khả dụng
    */
   rotateToNextKey(): boolean {
+    // Check và unblock keys đã hết thời gian chờ trước
+    this.checkBlockedKeys();
+
     if (this.keys.length === 1) {
       debugLog('KEY_MANAGER', 'Only 1 key available, cannot rotate');
       return false;
@@ -226,13 +273,19 @@ class GeminiKeyManager {
 
     const startIndex = this.currentKeyIndex;
     let attempts = 0;
+    const now = Date.now();
 
-    // Tìm key tiếp theo chưa bị rate limit
+    // Tìm key tiếp theo chưa bị rate limit hoặc đã hết thời gian block
     do {
       this.currentKeyIndex = (this.currentKeyIndex + 1) % this.keys.length;
       attempts++;
 
-      if (!this.rateLimitedKeys.has(this.currentKeyIndex)) {
+      const data = this.rateLimitedKeys.get(this.currentKeyIndex);
+      if (!data || now >= data.blockedUntil) {
+        // Xóa khỏi danh sách nếu đã hết thời gian block
+        if (data && now >= data.blockedUntil) {
+          this.rateLimitedKeys.delete(this.currentKeyIndex);
+        }
         console.log(
           `[KeyManager] 🔄 Chuyển sang key #${this.currentKeyIndex + 1}/${this.keys.length} (${this.getCurrentModelName()})`,
         );
@@ -247,11 +300,16 @@ class GeminiKeyManager {
 
   /**
    * Xử lý lỗi 429 (rate limit) - đánh dấu key và chuyển sang key khác
-   * Nếu tất cả keys đều rate limit → block model 24h và chuyển model
+   * Logic thông minh:
+   * - Lần đầu bị 429: block key 2 phút (có thể là per-minute limit)
+   * - Sau 2 phút vẫn bị 429: block key 24h (xác định là daily limit)
    * @returns true nếu đã chuyển key/model thành công
    */
   handleRateLimitError(): boolean {
-    this.markCurrentKeyRateLimited();
+    const { isDaily } = this.markCurrentKeyRateLimited();
+
+    const durationText = isDaily ? '24h (daily limit confirmed)' : '2 phút (checking...)';
+    console.log(`[KeyManager] ⏳ Key #${this.currentKeyIndex + 1} bị rate limit ${durationText}`);
 
     // Thử chuyển key trước
     if (this.rotateToNextKey()) {
@@ -262,7 +320,7 @@ class GeminiKeyManager {
     console.log(
       `[KeyManager] ⚠️ Tất cả ${this.keys.length} keys đều bị rate limit cho model ${this.getCurrentModelName()}`,
     );
-    this.blockCurrentModel();
+    this.blockCurrentModel(isDaily);
 
     // Thử chuyển sang model khác
     if (this.rotateToNextModel()) {
@@ -288,12 +346,24 @@ class GeminiKeyManager {
   /**
    * Lấy thông tin status của tất cả keys
    */
-  getStatus(): { index: number; masked: string; available: boolean }[] {
-    return this.keys.map((key, index) => ({
-      index: index + 1,
-      masked: `${key.substring(0, 8)}...${key.substring(key.length - 4)}`,
-      available: !this.rateLimitedKeys.has(index),
-    }));
+  getStatus(): {
+    index: number;
+    masked: string;
+    available: boolean;
+    blockedUntil?: Date;
+    retryCount?: number;
+  }[] {
+    const now = Date.now();
+    return this.keys.map((key, index) => {
+      const data = this.rateLimitedKeys.get(index);
+      return {
+        index: index + 1,
+        masked: `${key.substring(0, 8)}...${key.substring(key.length - 4)}`,
+        available: !data || now >= data.blockedUntil,
+        blockedUntil: data && now < data.blockedUntil ? new Date(data.blockedUntil) : undefined,
+        retryCount: data?.retryCount,
+      };
+    });
   }
 
   /**
@@ -328,3 +398,5 @@ export function isRateLimitError(error: any): boolean {
   const status = error?.status || error?.code;
   return status === 429;
 }
+
+

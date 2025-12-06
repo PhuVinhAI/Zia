@@ -7,7 +7,11 @@ import { fetchAsBase64 } from './httpClient.js';
 import { isSupportedMime } from './tokenCounter.js';
 
 /** Lấy URL media từ message content */
-export function getMediaUrl(content: any): string | null {
+export function getMediaUrl(content: any, msgType?: string): string | null {
+  // Sticker có format đặc biệt - lấy URL từ sticker ID
+  if (msgType?.includes('sticker') && content?.id) {
+    return `https://zalo-api.zadn.vn/api/emoticon/sticker/webpc?eid=${content.id}&size=130`;
+  }
   return content?.href || content?.hdUrl || content?.thumbUrl || content?.thumb || null;
 }
 
@@ -42,7 +46,7 @@ export async function toGeminiContent(msg: any): Promise<Content> {
   }
 
   // Media messages
-  const mediaUrl = getMediaUrl(content);
+  const mediaUrl = getMediaUrl(content, msgType);
   const isMedia =
     msgType.includes('photo') ||
     msgType.includes('video') ||
