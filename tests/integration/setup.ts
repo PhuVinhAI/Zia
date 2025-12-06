@@ -3,7 +3,23 @@
  * Cấu hình và utilities cho integration tests
  */
 
-// Bun automatically loads .env files, no need for dotenv
+import { readFileSync, existsSync } from 'node:fs';
+import { resolve } from 'node:path';
+
+// Load .env.test explicitly for test environment
+const envTestPath = resolve(process.cwd(), '.env.test');
+if (existsSync(envTestPath)) {
+  const envContent = readFileSync(envTestPath, 'utf-8');
+  for (const line of envContent.split('\n')) {
+    const trimmed = line.trim();
+    if (trimmed && !trimmed.startsWith('#')) {
+      const [key, ...valueParts] = trimmed.split('=');
+      if (key && valueParts.length > 0) {
+        process.env[key.trim()] = valueParts.join('=').trim();
+      }
+    }
+  }
+}
 
 // Test configuration
 export const TEST_CONFIG = {
@@ -24,6 +40,7 @@ export const API_KEYS = {
   elevenlabs: process.env.ELEVENLABS_API_KEY,
   compdf: process.env.COMPDF_API_KEY,
   groq: process.env.GROQ_API_KEY,
+  zaloCredentials: process.env.ZALO_CREDENTIALS_BASE64,
 };
 
 /**
