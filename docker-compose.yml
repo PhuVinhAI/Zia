@@ -9,6 +9,7 @@ services:
       - ./data:/app/data
       - ./logs:/app/logs
       - ./settings.json:/app/settings.json:ro
+      - ./.env:/app/.env:ro
     # Uncomment if you need to expose any ports
     # ports:
     #   - "3000:3000"

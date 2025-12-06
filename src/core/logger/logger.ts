@@ -102,47 +102,52 @@ class RotatingFileStream extends Writable {
 
 /**
  * Khởi tạo Pino logger với auto-rotation
+ * Production (cloud): chỉ log ra console
+ * Development (local): log ra console + file
  */
 export function initFileLogger(basePath: string): void {
-  const logsRoot = path.dirname(basePath);
+  const isProduction = process.env.NODE_ENV === 'production';
+  const streams: pino.StreamEntry[] = [];
 
-  // Tạo thư mục logs nếu chưa có
-  if (!fs.existsSync(logsRoot)) {
-    fs.mkdirSync(logsRoot, { recursive: true });
-  }
+  // Console output (pretty) - luôn có
+  streams.push({
+    level: (process.env.LOG_LEVEL || 'info') as pino.Level,
+    stream: pino.transport({
+      target: 'pino-pretty',
+      options: {
+        colorize: !isProduction,
+        translateTime: 'SYS:standard',
+        ignore: 'pid,hostname',
+      },
+    }),
+  });
 
-  // Session dir cho history files
-  sessionDir = path.join(logsRoot, getTimestamp());
-  if (!fs.existsSync(sessionDir)) {
-    fs.mkdirSync(sessionDir, { recursive: true });
-  }
+  // File output - chỉ khi không phải production
+  if (!isProduction) {
+    const logsRoot = path.dirname(basePath);
 
-  // Log file trong session dir
-  const logFile = path.join(sessionDir, 'bot.txt');
+    // Tạo thư mục logs nếu chưa có
+    if (!fs.existsSync(logsRoot)) {
+      fs.mkdirSync(logsRoot, { recursive: true });
+    }
 
-  // Tạo rotating file stream
-  const rotatingStream = new RotatingFileStream(logFile);
+    // Session dir cho history files
+    sessionDir = path.join(logsRoot, getTimestamp());
+    if (!fs.existsSync(sessionDir)) {
+      fs.mkdirSync(sessionDir, { recursive: true });
+    }
 
-  // Pino multistream: console pretty + rotating file
-  const streams: pino.StreamEntry[] = [
-    // Console output (pretty) - dùng transport riêng
-    {
-      level: (process.env.LOG_LEVEL || 'info') as pino.Level,
-      stream: pino.transport({
-        target: 'pino-pretty',
-        options: {
-          colorize: true,
-          translateTime: 'SYS:standard',
-          ignore: 'pid,hostname',
-        },
-      }),
-    },
-    // File output với rotation theo số dòng
-    {
+    // Log file trong session dir
+    const logFile = path.join(sessionDir, 'bot.txt');
+
+    // Tạo rotating file stream
+    const rotatingStream = new RotatingFileStream(logFile);
+
+    streams.push({
       level: 'debug',
       stream: rotatingStream,
-    },
-  ];
+    });
+  }
 
   logger = pino(
     {
@@ -152,7 +157,7 @@ export function initFileLogger(basePath: string): void {
     pino.multistream(streams),
   );
 
-  logger.info({ session: sessionDir }, '🚀 Bot started');
+  logger.info({ session: sessionDir || 'cloud', env: isProduction ? 'production' : 'development' }, '🚀 Bot started');
 }
 
 /**

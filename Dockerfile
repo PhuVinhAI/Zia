@@ -9,8 +9,8 @@ RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt
 # Copy package files
 COPY package.json bun.lock ./
 
-# Install dependencies
-RUN bun install --frozen-lockfile
+# Install dependencies (skip frozen lockfile for Docker compatibility)
+RUN bun install
 
 # Copy source code
 COPY . .
@@ -41,4 +41,4 @@ ENV NODE_ENV=production
 # Expose volume for persistent data
 VOLUME ["/app/data", "/app/logs"]
 
-CMD ["bun", "src/index.ts"]
+CMD ["bun", "--env-file=.env", "src/index.ts"]
