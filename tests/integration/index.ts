@@ -76,7 +76,6 @@ export const TEST_SUITES = {
   },
   utils: {
     markdown: 'Markdown Parser & Converter',
-    markdownToZalo: 'Markdown to Zalo RichText',
     httpClient: 'HTTP Client (ky)',
     datetime: 'DateTime Utils (Day.js)',
     messageChunker: 'Message Chunker',
