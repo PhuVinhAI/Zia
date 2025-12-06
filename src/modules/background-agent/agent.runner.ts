@@ -25,37 +25,6 @@ const POLL_INTERVAL_MS = 90_000; // 1 phút 30 giây
 const GROQ_ENABLED = true; // Set false để skip Groq và execute trực tiếp
 
 /**
- * System prompt cho background agent
- * Sử dụng cơ chế tag giống Gemini
- */
-const AGENT_SYSTEM_PROMPT = `Bạn là một AI assistant chạy nền, nhiệm vụ của bạn là thực hiện các tasks được giao một cách thông minh.
-
-Với mỗi task, bạn sẽ nhận được:
-1. Thông tin task (loại, target, payload)
-2. Ngữ cảnh môi trường (ai online, friend requests, memories)
-
-## CÁCH TRẢ LỜI:
-Sử dụng tool tags để ra quyết định:
-
-1. Execute task ngay:
-[tool:decide action="execute" reason="Lý do"]
-
-2. Skip task (không thực hiện):
-[tool:decide action="skip" reason="Lý do"]
-
-3. Delay task (thực hiện sau):
-[tool:decide action="delay" reason="Lý do"]
-
-4. Execute với payload đã điều chỉnh:
-[tool:decide action="execute" reason="Lý do"]{"message": "Nội dung đã chỉnh sửa"}[/tool]
-
-## QUY TẮC:
-- LUÔN execute task ngay lập tức, không delay vì lý do online/offline
-- Hệ thống TỰ ĐỘNG accept friend requests, không cần task accept_friend
-- Điều chỉnh tone dựa trên giới tính và context
-- Luôn giải thích lý do quyết định trong reason`;
-
-/**
  * Khởi động background agent
  */
 export function startBackgroundAgent(api: any): void {
@@ -232,37 +201,6 @@ async function processTaskWithDecision(
     await markTaskFailed(task.id, error.message, task.retryCount, task.maxRetries);
     debugLog('AGENT', `Task #${task.id} error: ${error.message}`);
   }
-}
-
-/**
- * Parse decision từ Groq response sử dụng tag parser
- */
-function parseDecisionFromResponse(
-  response: string,
-): { action: 'execute' | 'skip' | 'delay'; reason: string; adjustedPayload?: any } {
-  // Sử dụng tool parser có sẵn
-  const toolCalls = parseToolCalls(response);
-
-  // Tìm tool "decide"
-  const decideCall = toolCalls.find((call) => call.toolName === 'decide');
-
-  if (decideCall) {
-    const { action, reason } = decideCall.params;
-    return {
-      action: action || 'execute',
-      reason: reason || 'No reason provided',
-      adjustedPayload: decideCall.params.message ? { message: decideCall.params.message } : undefined,
-    };
-  }
-
-  // Fallback: tìm pattern cũ nếu không có tool tag
-  const actionMatch = response.match(/action[=:]\s*["']?(execute|skip|delay)["']?/i);
-  const reasonMatch = response.match(/reason[=:]\s*["']([^"']+)["']/i);
-
-  return {
-    action: (actionMatch?.[1] as 'execute' | 'skip' | 'delay') || 'execute',
-    reason: reasonMatch?.[1] || 'Default execution',
-  };
 }
 
 /**

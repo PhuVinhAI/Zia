@@ -1,7 +1,7 @@
 /**
  * Logger Module - Pino-based structured logging
- * Auto-rotate files daily, keep 7 days
- * Log rotation: tạo file mới khi đạt MAX_LINES_PER_FILE dòng
+ * Production: cache logs in memory, send to Zalo when reaching threshold
+ * Development: log to console + file with rotation
  */
 
 import * as fs from 'node:fs';
@@ -14,7 +14,18 @@ let logger: pino.Logger;
 let sessionDir: string = '';
 let fileLoggingEnabled = false;
 
+// Production log cache
+let logCache: string[] = [];
+let zaloApi: any = null;
+const LOG_CACHE_THRESHOLD = 1000; // Gửi khi đủ 1000 dòng
 const MAX_LINES_PER_FILE = 1000;
+
+/**
+ * Set Zalo API để gửi log (gọi sau khi login)
+ */
+export function setLoggerZaloApi(api: any): void {
+  zaloApi = api;
+}
 
 /**
  * Tạo timestamp cho tên thư mục
@@ -24,7 +35,81 @@ function getTimestamp(): string {
 }
 
 /**
- * Custom writable stream với log rotation theo số dòng
+ * Custom writable stream cho production - cache và gửi qua Zalo
+ */
+class ProductionLogStream extends Writable {
+  _write(chunk: Buffer, _encoding: string, callback: (error?: Error | null) => void): void {
+    const data = chunk.toString().trim();
+    if (data) {
+      logCache.push(data);
+
+      // Kiểm tra threshold và gửi
+      if (logCache.length >= LOG_CACHE_THRESHOLD) {
+        flushLogsToZalo().catch(console.error);
+      }
+    }
+    callback();
+  }
+
+  _final(callback: (error?: Error | null) => void): void {
+    // Flush remaining logs khi shutdown
+    if (logCache.length > 0) {
+      flushLogsToZalo().catch(console.error);
+    }
+    callback();
+  }
+}
+
+/**
+ * Gửi logs qua Zalo dưới dạng file
+ */
+async function flushLogsToZalo(): Promise<void> {
+  const adminId = process.env.LOG_RECEIVER_ID;
+  if (!zaloApi || !adminId || logCache.length === 0) {
+    return;
+  }
+
+  try {
+    const logsToSend = [...logCache];
+    logCache = []; // Clear cache ngay để tránh duplicate
+
+    const logContent = logsToSend.join('\n');
+    const timestamp = formatFileTimestamp();
+    const fileName = `logs_${timestamp}.txt`;
+
+    // Tạo file tạm
+    const tempPath = `/tmp/${fileName}`;
+    fs.writeFileSync(tempPath, logContent, 'utf-8');
+
+    // Gửi file qua Zalo
+    await zaloApi.sendFile(adminId, tempPath, fileName);
+
+    // Xóa file tạm
+    fs.unlinkSync(tempPath);
+
+    console.log(`📤 Sent ${logsToSend.length} log lines to admin`);
+  } catch (error) {
+    console.error('Failed to send logs to Zalo:', error);
+    // Không push lại vào cache để tránh loop vô hạn
+  }
+}
+
+/**
+ * Force flush logs (gọi khi cần gửi ngay)
+ */
+export async function forceFlushLogs(): Promise<void> {
+  await flushLogsToZalo();
+}
+
+/**
+ * Get current log cache size
+ */
+export function getLogCacheSize(): number {
+  return logCache.length;
+}
+
+/**
+ * Custom writable stream với log rotation theo số dòng (development)
  */
 class RotatingFileStream extends Writable {
   private basePath: string;
@@ -47,12 +132,10 @@ class RotatingFileStream extends Writable {
   }
 
   private initStream(): void {
-    // Đếm số dòng hiện có nếu file đã tồn tại
     if (fs.existsSync(this.currentFile)) {
       const content = fs.readFileSync(this.currentFile, 'utf-8');
       this.lineCount = content.split('\n').filter((line) => line.trim()).length;
 
-      // Nếu file đã đầy, tìm file tiếp theo
       while (this.lineCount >= MAX_LINES_PER_FILE) {
         this.fileIndex++;
         this.currentFile = this.getFileName(this.fileIndex);
@@ -82,7 +165,6 @@ class RotatingFileStream extends Writable {
     const data = chunk.toString();
     const lines = data.split('\n').filter((line) => line.trim()).length;
 
-    // Kiểm tra nếu cần rotate
     if (this.lineCount + lines > MAX_LINES_PER_FILE) {
       this.rotate();
     }
@@ -101,9 +183,9 @@ class RotatingFileStream extends Writable {
 }
 
 /**
- * Khởi tạo Pino logger với auto-rotation
- * Production (cloud): chỉ log ra console
- * Development (local): log ra console + file
+ * Khởi tạo Pino logger
+ * Production: console + cache (gửi qua Zalo khi đủ threshold)
+ * Development: console + file rotation
  */
 export function initFileLogger(basePath: string): void {
   const isProduction = process.env.NODE_ENV === 'production';
@@ -122,25 +204,27 @@ export function initFileLogger(basePath: string): void {
     }),
   });
 
-  // File output - chỉ khi không phải production
-  if (!isProduction) {
+  if (isProduction) {
+    // Production: cache logs và gửi qua Zalo
+    streams.push({
+      level: 'debug',
+      stream: new ProductionLogStream(),
+    });
+    console.log('📝 Production mode: logs will be sent to Zalo');
+  } else {
+    // Development: ghi file như cũ
     const logsRoot = path.dirname(basePath);
 
-    // Tạo thư mục logs nếu chưa có
     if (!fs.existsSync(logsRoot)) {
       fs.mkdirSync(logsRoot, { recursive: true });
     }
 
-    // Session dir cho history files
     sessionDir = path.join(logsRoot, getTimestamp());
     if (!fs.existsSync(sessionDir)) {
       fs.mkdirSync(sessionDir, { recursive: true });
     }
 
-    // Log file trong session dir
     const logFile = path.join(sessionDir, 'bot.txt');
-
-    // Tạo rotating file stream
     const rotatingStream = new RotatingFileStream(logFile);
 
     streams.push({
@@ -157,7 +241,10 @@ export function initFileLogger(basePath: string): void {
     pino.multistream(streams),
   );
 
-  logger.info({ session: sessionDir || 'cloud', env: isProduction ? 'production' : 'development' }, '🚀 Bot started');
+  logger.info(
+    { session: sessionDir || 'cloud', env: isProduction ? 'production' : 'development' },
+    '🚀 Bot started',
+  );
 }
 
 /**
@@ -182,8 +269,12 @@ export function isFileLoggingEnabled(): boolean {
  * Close logger (compatibility)
  */
 export function closeFileLogger(): void {
-  // Pino handles cleanup automatically
+  // Flush remaining logs in production
+  if (process.env.NODE_ENV === 'production' && logCache.length > 0) {
+    flushLogsToZalo().catch(console.error);
+  }
 }
+
 
 // ═══════════════════════════════════════════════════
 // LOGGING FUNCTIONS
@@ -259,14 +350,16 @@ export function logError(context: string, error: any): void {
 }
 
 /**
- * Log AI history
+ * Log AI history (chỉ ghi file ở development)
  */
 export function logAIHistory(threadId: string, history: any[]): void {
-  if (!logger || !sessionDir) return;
+  if (!logger) return;
 
   logger.debug({ threadId, messageCount: history.length }, 'AI History updated');
 
-  // Ghi raw JSON vào file riêng
+  // Chỉ ghi file ở development
+  if (!sessionDir) return;
+
   const historyFile = path.join(sessionDir, `history_${threadId}.json`);
   const data = {
     threadId,
@@ -309,12 +402,15 @@ export function logZaloAPI(action: string, request: any, response?: any, error?:
 }
 
 /**
- * Log system prompt
+ * Log system prompt (chỉ ghi file ở development)
  */
 export function logSystemPrompt(threadId: string, systemPrompt: string): void {
-  if (!logger || !sessionDir) return;
+  if (!logger) return;
 
   logger.debug({ threadId }, 'System prompt set');
+
+  // Chỉ ghi file ở development
+  if (!sessionDir) return;
 
   const promptFile = path.join(sessionDir, `system_prompt_${threadId}.txt`);
   const promptData = `Thread: ${threadId}\nTimestamp: ${now()}\n${'='.repeat(80)}\n\n${systemPrompt}`;

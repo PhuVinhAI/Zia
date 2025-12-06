@@ -18,6 +18,7 @@ import {
   logMessage,
   logStep,
   Services,
+  setLoggerZaloApi,
 } from '../core/index.js';
 import { addToBuffer } from '../modules/gateway/message.buffer.js';
 import { startBackgroundAgent } from '../modules/background-agent/index.js';
@@ -69,10 +70,13 @@ async function main() {
   printStartupInfo();
 
   // 2. Đăng nhập Zalo
-  const { api, myId } = await loginZalo();
+  const { api } = await loginZalo();
 
   // Register Zalo API vào container
   container.register(Services.ZALO_API, api);
+
+  // Set Zalo API cho logger (production: gửi log qua Zalo)
+  setLoggerZaloApi(api);
 
   // 3. Khởi tạo và load tất cả modules
   console.log('\n📦 Initializing modules...');
