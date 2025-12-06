@@ -7,6 +7,7 @@ import { createAppTool } from './tools/createApp.js';
 import { createChartTool } from './tools/createChart.js';
 import { createFileTool } from './tools/createFile/index.js';
 import { executeCodeTool } from './tools/executeCode.js';
+import { flushLogsTool } from './tools/flushLogs.js';
 import { freepikImageTool } from './tools/freepikImage.js';
 import { getAllFriendsTool } from './tools/getAllFriends.js';
 import { getFriendOnlinesTool } from './tools/getFriendOnlines.js';
@@ -47,6 +48,8 @@ export class SystemModule extends BaseModule {
     recallMemoryTool,
     // Background agent
     scheduleTaskTool,
+    // Admin tools
+    flushLogsTool,
   ];
 
   get tools(): ITool[] {
