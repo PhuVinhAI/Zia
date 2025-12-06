@@ -2,21 +2,17 @@
  * Chart Builder - Tạo biểu đồ trong PowerPoint
  */
 
-import type { ChartConfig, ChartData, PresentationTheme } from './types.js';
 import { CHART_TYPES, COLORS } from './constants.js';
+import type { ChartConfig, ChartData, PresentationTheme } from './types.js';
 
 // ═══════════════════════════════════════════════════
 // MAIN CHART BUILDER
 // ═══════════════════════════════════════════════════
 
-export function buildChart(
-  slide: any,
-  config: ChartConfig,
-  theme: PresentationTheme
-): void {
+export function buildChart(slide: any, config: ChartConfig, theme: PresentationTheme): void {
   const chartType = CHART_TYPES[config.type] || 'bar';
   const chartData = prepareChartData(config.data, theme);
-  
+
   const chartOptions: any = {
     x: config.x || 0.5,
     y: config.y || 2.0,
@@ -34,7 +30,7 @@ export function buildChart(
     catAxisTitle: '',
     valGridLine: { color: 'E0E0E0', style: 'dash' },
   };
-  
+
   // Type-specific options
   switch (config.type) {
     case 'pie':
@@ -51,7 +47,7 @@ export function buildChart(
       chartOptions.barGapWidthPct = 50;
       break;
   }
-  
+
   slide.addChart(chartType, chartData.data, chartOptions);
 }
 
@@ -61,7 +57,7 @@ export function buildChart(
 
 function prepareChartData(
   data: ChartData[],
-  theme: PresentationTheme
+  theme: PresentationTheme,
 ): { data: any[]; colors: string[] } {
   const defaultColors = [
     theme.colors.primary,
@@ -73,17 +69,17 @@ function prepareChartData(
     COLORS.purple,
     COLORS.pink,
   ];
-  
+
   const chartData = data.map((series, index) => ({
     name: series.name,
     labels: series.labels,
     values: series.values,
   }));
-  
-  const colors = data.map((series, index) => 
-    series.color || defaultColors[index % defaultColors.length]
+
+  const colors = data.map(
+    (series, index) => series.color || defaultColors[index % defaultColors.length],
   );
-  
+
   return { data: chartData, colors };
 }
 
@@ -104,34 +100,38 @@ export function buildBarChart(
     height?: number | string;
     horizontal?: boolean;
     stacked?: boolean;
-  }
+  },
 ): void {
   const chartType = options?.horizontal ? 'bar' : 'bar';
-  
-  slide.addChart(chartType, [
+
+  slide.addChart(
+    chartType,
+    [
+      {
+        name: title,
+        labels,
+        values,
+      },
+    ],
     {
-      name: title,
-      labels,
-      values,
+      x: options?.x || 0.5,
+      y: options?.y || 2.0,
+      w: options?.width || 9.0,
+      h: options?.height || 3.5,
+      chartColors: [theme.colors.primary],
+      showTitle: true,
+      title,
+      titleFontSize: 14,
+      titleColor: theme.colors.titleText,
+      barGapWidthPct: 50,
+      showValue: true,
+      dataLabelPosition: 'outEnd',
+      dataLabelFontSize: 10,
+      valGridLine: { color: 'E0E0E0', style: 'dash' },
+      barDir: options?.horizontal ? 'bar' : 'col',
+      barGrouping: options?.stacked ? 'stacked' : 'clustered',
     },
-  ], {
-    x: options?.x || 0.5,
-    y: options?.y || 2.0,
-    w: options?.width || 9.0,
-    h: options?.height || 3.5,
-    chartColors: [theme.colors.primary],
-    showTitle: true,
-    title,
-    titleFontSize: 14,
-    titleColor: theme.colors.titleText,
-    barGapWidthPct: 50,
-    showValue: true,
-    dataLabelPosition: 'outEnd',
-    dataLabelFontSize: 10,
-    valGridLine: { color: 'E0E0E0', style: 'dash' },
-    barDir: options?.horizontal ? 'bar' : 'col',
-    barGrouping: options?.stacked ? 'stacked' : 'clustered',
-  });
+  );
 }
 
 export function buildLineChart(
@@ -146,7 +146,7 @@ export function buildLineChart(
     height?: number | string;
     smooth?: boolean;
     showMarkers?: boolean;
-  }
+  },
 ): void {
   const defaultColors = [
     theme.colors.primary,
@@ -154,7 +154,7 @@ export function buildLineChart(
     theme.colors.accent,
     COLORS.success,
   ];
-  
+
   slide.addChart('line', series, {
     x: options?.x || 0.5,
     y: options?.y || 2.0,
@@ -187,7 +187,7 @@ export function buildPieChart(
     height?: number | string;
     doughnut?: boolean;
     showPercent?: boolean;
-  }
+  },
 ): void {
   const chartType = options?.doughnut ? 'doughnut' : 'pie';
   const defaultColors = [
@@ -200,28 +200,32 @@ export function buildPieChart(
     COLORS.purple,
     COLORS.pink,
   ];
-  
-  slide.addChart(chartType, [
+
+  slide.addChart(
+    chartType,
+    [
+      {
+        name: title,
+        labels,
+        values,
+      },
+    ],
     {
-      name: title,
-      labels,
-      values,
+      x: options?.x || 2.0,
+      y: options?.y || 1.5,
+      w: options?.width || 6.0,
+      h: options?.height || 4.0,
+      chartColors: defaultColors.slice(0, labels.length),
+      showTitle: true,
+      title,
+      titleFontSize: 14,
+      titleColor: theme.colors.titleText,
+      showLegend: true,
+      legendPos: 'r',
+      showPercent: options?.showPercent !== false,
+      showValue: false,
     },
-  ], {
-    x: options?.x || 2.0,
-    y: options?.y || 1.5,
-    w: options?.width || 6.0,
-    h: options?.height || 4.0,
-    chartColors: defaultColors.slice(0, labels.length),
-    showTitle: true,
-    title,
-    titleFontSize: 14,
-    titleColor: theme.colors.titleText,
-    showLegend: true,
-    legendPos: 'r',
-    showPercent: options?.showPercent !== false,
-    showValue: false,
-  });
+  );
 }
 
 export function buildAreaChart(
@@ -235,14 +239,14 @@ export function buildAreaChart(
     width?: number | string;
     height?: number | string;
     stacked?: boolean;
-  }
+  },
 ): void {
   const defaultColors = [
     theme.colors.primary + '80',
     theme.colors.secondary + '80',
     theme.colors.accent + '80',
   ];
-  
+
   slide.addChart('area', series, {
     x: options?.x || 0.5,
     y: options?.y || 2.0,
@@ -274,11 +278,11 @@ export function buildMiniChart(
     height?: number | string;
     color?: string;
     theme: PresentationTheme;
-  }
+  },
 ): void {
   const { x, y, width = 2.0, height = 1.5, color, theme } = options;
   const labels = values.map((_, i) => String(i + 1));
-  
+
   const chartOptions: any = {
     x,
     y,
@@ -293,12 +297,12 @@ export function buildMiniChart(
     valAxisHidden: true,
     valGridLine: { style: 'none' },
   };
-  
+
   if (type === 'line') {
     chartOptions.lineSmooth = true;
     chartOptions.lineDataSymbol = 'none';
   }
-  
+
   slide.addChart(type, [{ name: '', labels, values }], chartOptions);
 }
 
@@ -316,11 +320,11 @@ export function buildStatCard(
     sparkline?: number[];
   },
   position: { x: number | string; y: number | string; width?: number | string },
-  theme: PresentationTheme
+  theme: PresentationTheme,
 ): void {
   const { x, y, width = 2.5 } = position;
   const cardHeight = 1.8;
-  
+
   // Card background
   slide.addShape('roundRect', {
     x,
@@ -331,7 +335,7 @@ export function buildStatCard(
     line: { color: 'E0E0E0', pt: 1 },
     shadow: { type: 'outer', blur: 3, offset: 1, angle: 45, color: '000000', opacity: 0.1 },
   });
-  
+
   // Title
   slide.addText(stat.title, {
     x: typeof x === 'number' ? x + 0.15 : x,
@@ -342,7 +346,7 @@ export function buildStatCard(
     color: theme.colors.bodyText + 'AA',
     fontFace: theme.fonts.body,
   });
-  
+
   // Value
   slide.addText(String(stat.value), {
     x: typeof x === 'number' ? x + 0.15 : x,
@@ -354,14 +358,17 @@ export function buildStatCard(
     color: theme.colors.titleText,
     fontFace: theme.fonts.title,
   });
-  
+
   // Change indicator
   if (stat.change) {
-    const changeColor = stat.changeType === 'up' ? COLORS.success 
-      : stat.changeType === 'down' ? COLORS.danger 
-      : theme.colors.bodyText;
+    const changeColor =
+      stat.changeType === 'up'
+        ? COLORS.success
+        : stat.changeType === 'down'
+          ? COLORS.danger
+          : theme.colors.bodyText;
     const arrow = stat.changeType === 'up' ? '↑' : stat.changeType === 'down' ? '↓' : '';
-    
+
     slide.addText(`${arrow} ${stat.change}`, {
       x: typeof x === 'number' ? x + 0.15 : x,
       y: typeof y === 'number' ? y + 0.9 : y,
@@ -372,7 +379,7 @@ export function buildStatCard(
       fontFace: theme.fonts.body,
     });
   }
-  
+
   // Sparkline
   if (stat.sparkline && stat.sparkline.length > 0) {
     buildMiniChart(slide, 'line', stat.sparkline, {

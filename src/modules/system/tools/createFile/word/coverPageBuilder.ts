@@ -3,8 +3,8 @@
  */
 
 import { AlignmentType, PageBreak, Paragraph, TextRun } from 'docx';
-import type { DocumentTheme } from './types.js';
 import { getTheme } from './themes.js';
+import type { DocumentTheme } from './types.js';
 
 // ═══════════════════════════════════════════════════
 // COVER PAGE TYPES
@@ -28,10 +28,7 @@ export interface CoverPageConfig {
 /**
  * Build cover page paragraphs
  */
-export function buildCoverPage(
-  config: CoverPageConfig,
-  theme?: DocumentTheme
-): Paragraph[] {
+export function buildCoverPage(config: CoverPageConfig, theme?: DocumentTheme): Paragraph[] {
   const t = theme || getTheme();
   const paragraphs: Paragraph[] = [];
   const style = config.style || 'simple';
@@ -40,7 +37,7 @@ export function buildCoverPage(
   paragraphs.push(
     new Paragraph({
       spacing: { before: 2000 },
-    })
+    }),
   );
 
   // Organization (if provided)
@@ -58,7 +55,7 @@ export function buildCoverPage(
           }),
         ],
         spacing: { after: 400 },
-      })
+      }),
     );
   }
 
@@ -75,7 +72,7 @@ export function buildCoverPage(
           }),
         ],
         spacing: { after: 600 },
-      })
+      }),
     );
   }
 
@@ -93,7 +90,7 @@ export function buildCoverPage(
         }),
       ],
       spacing: { after: 400, line: 360 },
-    })
+    }),
   );
 
   // Subtitle
@@ -111,7 +108,7 @@ export function buildCoverPage(
           }),
         ],
         spacing: { before: 200, after: 600, line: 300 },
-      })
+      }),
     );
   }
 
@@ -128,7 +125,7 @@ export function buildCoverPage(
           }),
         ],
         spacing: { after: 600 },
-      })
+      }),
     );
   }
 
@@ -146,7 +143,7 @@ export function buildCoverPage(
           }),
         ],
         spacing: { after: 200 },
-      })
+      }),
     );
   }
 
@@ -154,7 +151,7 @@ export function buildCoverPage(
   paragraphs.push(
     new Paragraph({
       spacing: { before: 2000 },
-    })
+    }),
   );
 
   // Author
@@ -172,7 +169,7 @@ export function buildCoverPage(
           }),
         ],
         spacing: { after: 200 },
-      })
+      }),
     );
   }
 
@@ -190,7 +187,7 @@ export function buildCoverPage(
           }),
         ],
         spacing: { after: 200 },
-      })
+      }),
     );
   }
 
@@ -198,7 +195,7 @@ export function buildCoverPage(
   paragraphs.push(
     new Paragraph({
       children: [new PageBreak()],
-    })
+    }),
   );
 
   return paragraphs;
@@ -210,7 +207,7 @@ export function buildCoverPage(
 export function buildTitleBlock(
   title: string,
   subtitle?: string,
-  theme?: DocumentTheme
+  theme?: DocumentTheme,
 ): Paragraph[] {
   const t = theme || getTheme();
   const paragraphs: Paragraph[] = [];
@@ -228,7 +225,7 @@ export function buildTitleBlock(
         }),
       ],
       spacing: { before: 400, after: 400, line: 340 },
-    })
+    }),
   );
 
   if (subtitle) {
@@ -245,7 +242,7 @@ export function buildTitleBlock(
           }),
         ],
         spacing: { before: 200, after: 400, line: 300 },
-      })
+      }),
     );
   }
 
@@ -260,8 +257,8 @@ export function parseCoverPageSyntax(content: string): CoverPageConfig | null {
   const match = content.match(/\[COVER:([^\]]+)\]/i);
   if (!match) return null;
 
-  const parts = match[1].split(':').map(s => s.trim());
-  
+  const parts = match[1].split(':').map((s) => s.trim());
+
   return {
     title: parts[0] || 'Untitled',
     subtitle: parts[1] || undefined,

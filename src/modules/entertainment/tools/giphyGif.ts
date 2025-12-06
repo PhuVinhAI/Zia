@@ -22,7 +22,8 @@ export const giphyGifTool: ToolDefinition = {
     {
       name: 'mode',
       type: 'string',
-      description: "Chế độ: 'search' (tìm kiếm), 'trending' (xu hướng), 'random' (ngẫu nhiên). Mặc định: search",
+      description:
+        "Chế độ: 'search' (tìm kiếm), 'trending' (xu hướng), 'random' (ngẫu nhiên). Mặc định: search",
       required: false,
     },
     {
@@ -40,7 +41,8 @@ export const giphyGifTool: ToolDefinition = {
     {
       name: 'rating',
       type: 'string',
-      description: "Độ tuổi: 'y' (trẻ em), 'g' (mọi lứa tuổi), 'pg' (cần hướng dẫn), 'pg-13' (13+), 'r' (17+). Mặc định: r",
+      description:
+        "Độ tuổi: 'y' (trẻ em), 'g' (mọi lứa tuổi), 'pg' (cần hướng dẫn), 'pg-13' (13+), 'r' (17+). Mặc định: r",
       required: false,
     },
   ],
@@ -106,9 +108,7 @@ export const giphyGifTool: ToolDefinition = {
       for (const gif of gifs) {
         // Ưu tiên downsized để tối ưu kích thước
         const gifUrl =
-          gif.images.downsized?.url ||
-          gif.images.fixed_height?.url ||
-          gif.images.original?.url;
+          gif.images.downsized?.url || gif.images.fixed_height?.url || gif.images.original?.url;
 
         if (!gifUrl) continue;
 

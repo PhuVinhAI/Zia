@@ -2,13 +2,9 @@
  * Column Builder - Tạo layout nhiều cột
  */
 
-import {
-  Paragraph,
-  SectionType,
-  TextRun,
-} from 'docx';
-import type { DocumentTheme } from './types.js';
+import { Paragraph, SectionType, TextRun } from 'docx';
 import { getTheme } from './themes.js';
+import type { DocumentTheme } from './types.js';
 
 // ═══════════════════════════════════════════════════
 // COLUMN TYPES
@@ -61,7 +57,7 @@ export function buildSingleColumnSectionProperties() {
 
 /**
  * Parse column syntax từ content
- * Syntax: 
+ * Syntax:
  * [COLUMNS:2]
  * content...
  * [/COLUMNS]

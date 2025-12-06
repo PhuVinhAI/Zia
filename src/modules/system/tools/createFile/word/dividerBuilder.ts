@@ -3,14 +3,21 @@
  */
 
 import { BorderStyle, Paragraph, TextRun } from 'docx';
-import type { DocumentTheme } from './types.js';
 import { getTheme } from './themes.js';
+import type { DocumentTheme } from './types.js';
 
 // ═══════════════════════════════════════════════════
 // DIVIDER TYPES
 // ═══════════════════════════════════════════════════
 
-export type DividerStyle = 'solid' | 'dashed' | 'dotted' | 'double' | 'wave' | 'thick' | 'decorated';
+export type DividerStyle =
+  | 'solid'
+  | 'dashed'
+  | 'dotted'
+  | 'double'
+  | 'wave'
+  | 'thick'
+  | 'decorated';
 
 export interface DividerConfig {
   style?: DividerStyle;
@@ -32,7 +39,7 @@ export function buildDivider(config?: DividerConfig, theme?: DocumentTheme): Par
   const color = config?.color || t.colors.tableBorder;
   const spacing = config?.spacing || 200;
 
-  const borderStyleMap: Record<DividerStyle, typeof BorderStyle[keyof typeof BorderStyle]> = {
+  const borderStyleMap: Record<DividerStyle, (typeof BorderStyle)[keyof typeof BorderStyle]> = {
     solid: BorderStyle.SINGLE,
     dashed: BorderStyle.DASHED,
     dotted: BorderStyle.DOTTED,
@@ -67,10 +74,7 @@ export function buildDivider(config?: DividerConfig, theme?: DocumentTheme): Par
 /**
  * Build decorated divider với text ở giữa
  */
-export function buildDecoratedDivider(
-  text: string,
-  theme?: DocumentTheme
-): Paragraph {
+export function buildDecoratedDivider(text: string, theme?: DocumentTheme): Paragraph {
   const t = theme || getTheme();
 
   return new Paragraph({
@@ -112,7 +116,7 @@ export function buildStarDivider(theme?: DocumentTheme): Paragraph {
  */
 export function buildOrnamentDivider(
   ornament: 'floral' | 'geometric' | 'classic' | 'modern',
-  theme?: DocumentTheme
+  theme?: DocumentTheme,
 ): Paragraph {
   const t = theme || getTheme();
 
@@ -141,7 +145,9 @@ export function buildOrnamentDivider(
  * Parse divider syntax
  * Syntax: [DIVIDER], [DIVIDER:style], [DIVIDER:decorated:text]
  */
-export function parseDividerSyntax(line: string): DividerConfig | { decorated: true; text: string } | null {
+export function parseDividerSyntax(
+  line: string,
+): DividerConfig | { decorated: true; text: string } | null {
   const trimmed = line.trim();
 
   // Simple divider

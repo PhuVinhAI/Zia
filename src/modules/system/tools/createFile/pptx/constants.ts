@@ -10,14 +10,14 @@ export const LAYOUTS = {
   '16x9': 'LAYOUT_16x9',
   '16x10': 'LAYOUT_16x10',
   '4x3': 'LAYOUT_4x3',
-  'wide': 'LAYOUT_WIDE',
+  wide: 'LAYOUT_WIDE',
 } as const;
 
 export const LAYOUT_DIMENSIONS = {
-  'LAYOUT_16x9': { width: 10, height: 5.625 },
-  'LAYOUT_16x10': { width: 10, height: 6.25 },
-  'LAYOUT_4x3': { width: 10, height: 7.5 },
-  'LAYOUT_WIDE': { width: 13.33, height: 7.5 },
+  LAYOUT_16x9: { width: 10, height: 5.625 },
+  LAYOUT_16x10: { width: 10, height: 6.25 },
+  LAYOUT_4x3: { width: 10, height: 7.5 },
+  LAYOUT_WIDE: { width: 13.33, height: 7.5 },
 } as const;
 
 // ═══════════════════════════════════════════════════
@@ -157,7 +157,7 @@ export const COLORS = {
   gray: '808080',
   lightGray: 'D3D3D3',
   darkGray: '404040',
-  
+
   // Primary
   blue: '0066CC',
   red: 'CC0000',
@@ -167,13 +167,13 @@ export const COLORS = {
   purple: '6600CC',
   pink: 'FF66CC',
   cyan: '00CCCC',
-  
+
   // Status
   success: '28A745',
   warning: 'FFC107',
   danger: 'DC3545',
   info: '17A2B8',
-  
+
   // Semantic
   primary: '0066CC',
   secondary: '6C757D',

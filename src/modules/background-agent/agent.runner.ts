@@ -5,7 +5,7 @@
  */
 import { debugLog } from '../../core/logger/logger.js';
 import { parseToolCalls } from '../../core/tool-registry/tool-registry.js';
-import { generateGroqResponse, type GroqMessage } from '../../infrastructure/groq/groqClient.js';
+import { type GroqMessage, generateGroqResponse } from '../../infrastructure/groq/groqClient.js';
 import { executeTask } from './action.executor.js';
 import { buildEnvironmentContext, formatContextForPrompt } from './context.builder.js';
 import {
@@ -132,21 +132,29 @@ async function processTasksInParallel(tasks: any[]): Promise<void> {
   const sharedContext = await buildEnvironmentContext(zaloApi, firstTaskWithUser?.targetUserId);
 
   // Gọi Groq 1 lần duy nhất cho tất cả tasks
-  let decisions: Map<number, { action: 'execute' | 'skip' | 'delay'; reason: string; adjustedPayload?: any }>;
+  let decisions: Map<
+    number,
+    { action: 'execute' | 'skip' | 'delay'; reason: string; adjustedPayload?: any }
+  >;
 
   if (GROQ_ENABLED && process.env.GROQ_API_KEY) {
     decisions = await getBatchGroqDecisions(tasks, sharedContext);
   } else {
     // Fallback: execute tất cả
-    decisions = new Map(tasks.map((t) => [t.id, { action: 'execute' as const, reason: 'Groq disabled' }]));
+    decisions = new Map(
+      tasks.map((t) => [t.id, { action: 'execute' as const, reason: 'Groq disabled' }]),
+    );
   }
 
   // Execute tất cả tasks song song
   await Promise.allSettled(
     tasks.map(async (task) => {
-      const decision = decisions.get(task.id) || { action: 'execute' as const, reason: 'No decision' };
+      const decision = decisions.get(task.id) || {
+        action: 'execute' as const,
+        reason: 'No decision',
+      };
       await processTaskWithDecision(task, decision);
-    })
+    }),
   );
 }
 
@@ -155,7 +163,7 @@ async function processTasksInParallel(tasks: any[]): Promise<void> {
  */
 async function processTaskWithDecision(
   task: any,
-  decision: { action: 'execute' | 'skip' | 'delay'; reason: string; adjustedPayload?: any }
+  decision: { action: 'execute' | 'skip' | 'delay'; reason: string; adjustedPayload?: any },
 ): Promise<void> {
   debugLog('AGENT', `Processing task #${task.id}: ${task.type}`);
 
@@ -209,7 +217,9 @@ async function processTaskWithDecision(
 async function getBatchGroqDecisions(
   tasks: any[],
   context: any,
-): Promise<Map<number, { action: 'execute' | 'skip' | 'delay'; reason: string; adjustedPayload?: any }>> {
+): Promise<
+  Map<number, { action: 'execute' | 'skip' | 'delay'; reason: string; adjustedPayload?: any }>
+> {
   const contextStr = formatContextForPrompt(context);
 
   // Format tất cả tasks vào 1 prompt
@@ -273,7 +283,10 @@ function parseBatchDecisions(
   response: string,
   tasks: any[],
 ): Map<number, { action: 'execute' | 'skip' | 'delay'; reason: string; adjustedPayload?: any }> {
-  const decisions = new Map<number, { action: 'execute' | 'skip' | 'delay'; reason: string; adjustedPayload?: any }>();
+  const decisions = new Map<
+    number,
+    { action: 'execute' | 'skip' | 'delay'; reason: string; adjustedPayload?: any }
+  >();
 
   // Parse tất cả tool calls
   const toolCalls = parseToolCalls(response);

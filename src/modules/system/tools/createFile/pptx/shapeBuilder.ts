@@ -2,21 +2,17 @@
  * Shape Builder - Tạo các hình dạng trong PowerPoint
  */
 
+import { BADGE_STYLES, BOX_STYLES, CALLOUT_STYLES, FONT_SIZES, SHAPE_TYPES } from './constants.js';
 import type { PresentationTheme, ShapeConfig } from './types.js';
-import { SHAPE_TYPES, CALLOUT_STYLES, BOX_STYLES, BADGE_STYLES, FONT_SIZES } from './constants.js';
 import { lightenColor } from './utils.js';
 
 // ═══════════════════════════════════════════════════
 // BASIC SHAPES
 // ═══════════════════════════════════════════════════
 
-export function buildShape(
-  slide: any,
-  config: ShapeConfig,
-  theme: PresentationTheme
-): void {
+export function buildShape(slide: any, config: ShapeConfig, theme: PresentationTheme): void {
   const shapeType = SHAPE_TYPES[config.type] || 'rect';
-  
+
   const shapeOptions: any = {
     x: config.x,
     y: config.y,
@@ -25,9 +21,9 @@ export function buildShape(
     fill: config.fill ? { color: config.fill } : { color: theme.colors.primary },
     line: config.line ? { color: config.line.color, pt: config.line.width } : undefined,
   };
-  
+
   slide.addShape(shapeType, shapeOptions);
-  
+
   // Add text if provided
   if (config.text) {
     slide.addText(config.text, {
@@ -57,11 +53,11 @@ export function buildCallout(
     y?: number | string;
     width?: number | string;
     theme: PresentationTheme;
-  }
+  },
 ): void {
   const { x = 0.5, y = 2.0, width = 9.0, theme } = options;
   const style = CALLOUT_STYLES[type] || CALLOUT_STYLES.info;
-  
+
   // Background
   slide.addShape('roundRect', {
     x,
@@ -71,7 +67,7 @@ export function buildCallout(
     fill: { color: style.backgroundColor },
     line: { color: style.borderColor, pt: 2 },
   });
-  
+
   // Icon and text
   slide.addText(`${style.icon} ${text}`, {
     x: typeof x === 'number' ? x + 0.15 : x,
@@ -100,11 +96,11 @@ export function buildBox(
     width?: number | string;
     height?: number | string;
     theme: PresentationTheme;
-  }
+  },
 ): void {
   const { x = 0.5, y = 2.0, width = 9.0, height = 2.0, theme } = options;
   const style = BOX_STYLES[type] || BOX_STYLES.info;
-  
+
   // Main box
   slide.addShape('roundRect', {
     x,
@@ -114,7 +110,7 @@ export function buildBox(
     fill: { color: style.fill },
     line: { color: style.border, pt: 2 },
   });
-  
+
   // Title bar
   if (title) {
     slide.addShape('rect', {
@@ -124,7 +120,7 @@ export function buildBox(
       h: 0.5,
       fill: { color: style.border },
     });
-    
+
     slide.addText(title, {
       x: typeof x === 'number' ? x + 0.15 : x,
       y,
@@ -137,7 +133,7 @@ export function buildBox(
       valign: 'middle',
     });
   }
-  
+
   // Content
   slide.addText(content, {
     x: typeof x === 'number' ? x + 0.15 : x,
@@ -163,14 +159,14 @@ export function buildBadge(
     x: number | string;
     y: number | string;
     theme: PresentationTheme;
-  }
+  },
 ): void {
   const { x, y, theme } = options;
   const style = BADGE_STYLES[type] || BADGE_STYLES.default;
-  
+
   // Calculate width based on text length
   const width = Math.max(text.length * 0.12 + 0.3, 0.8);
-  
+
   // Badge background
   slide.addShape('roundRect', {
     x,
@@ -179,7 +175,7 @@ export function buildBadge(
     h: 0.35,
     fill: { color: style.fill },
   });
-  
+
   // Badge text
   slide.addText(text, {
     x,
@@ -203,7 +199,7 @@ export function buildDivider(
   slide: any,
   y: number,
   theme: PresentationTheme,
-  style: 'solid' | 'dashed' | 'dotted' | 'double' = 'solid'
+  style: 'solid' | 'dashed' | 'dotted' | 'double' = 'solid',
 ): void {
   const dashTypes: Record<string, string> = {
     solid: 'solid',
@@ -211,7 +207,7 @@ export function buildDivider(
     dotted: 'sysDot',
     double: 'solid',
   };
-  
+
   slide.addShape('line', {
     x: 0.5,
     y,
@@ -223,7 +219,7 @@ export function buildDivider(
       dashType: dashTypes[style],
     },
   });
-  
+
   if (style === 'double') {
     slide.addShape('line', {
       x: 0.5,
@@ -247,7 +243,7 @@ export function buildDecoratedDivider(
   slide: any,
   y: number,
   text: string,
-  theme: PresentationTheme
+  theme: PresentationTheme,
 ): void {
   // Left line
   slide.addShape('line', {
@@ -257,7 +253,7 @@ export function buildDecoratedDivider(
     h: 0,
     line: { color: lightenColor(theme.colors.primary, 40), pt: 1 },
   });
-  
+
   // Center text
   slide.addText(text, {
     x: 4.0,
@@ -270,7 +266,7 @@ export function buildDecoratedDivider(
     align: 'center',
     valign: 'middle',
   });
-  
+
   // Right line
   slide.addShape('line', {
     x: 6.0,
@@ -295,10 +291,10 @@ export function buildArrow(
     width?: number;
     style?: 'solid' | 'dashed';
     headType?: 'arrow' | 'triangle' | 'stealth';
-  }
+  },
 ): void {
   const { color, width = 2, style = 'solid', headType = 'arrow' } = options || {};
-  
+
   slide.addShape('line', {
     x: from.x,
     y: from.y,
@@ -321,16 +317,16 @@ export function buildProcessFlow(
   slide: any,
   steps: Array<{ title: string; description?: string }>,
   theme: PresentationTheme,
-  y: number = 2.5
+  y: number = 2.5,
 ): void {
   const stepWidth = 2.0;
   const arrowWidth = 0.5;
   const totalWidth = steps.length * stepWidth + (steps.length - 1) * arrowWidth;
   const startX = (10 - totalWidth) / 2;
-  
+
   steps.forEach((step, index) => {
     const x = startX + index * (stepWidth + arrowWidth);
-    
+
     // Step circle/box
     slide.addShape('roundRect', {
       x,
@@ -340,7 +336,7 @@ export function buildProcessFlow(
       fill: { color: theme.colors.primary },
       line: { pt: 0 },
     });
-    
+
     // Step number
     slide.addText(String(index + 1), {
       x,
@@ -353,7 +349,7 @@ export function buildProcessFlow(
       fontFace: theme.fonts.body,
       align: 'center',
     });
-    
+
     // Step title
     slide.addText(step.title, {
       x,
@@ -366,7 +362,7 @@ export function buildProcessFlow(
       align: 'center',
       valign: 'middle',
     });
-    
+
     // Description below
     if (step.description) {
       slide.addText(step.description, {
@@ -381,7 +377,7 @@ export function buildProcessFlow(
         valign: 'top',
       });
     }
-    
+
     // Arrow to next step
     if (index < steps.length - 1) {
       slide.addText('→', {
@@ -406,10 +402,10 @@ export function buildTimeline(
   slide: any,
   events: Array<{ date: string; title: string; description?: string }>,
   theme: PresentationTheme,
-  y: number = 2.5
+  y: number = 2.5,
 ): void {
   const lineY = y + 0.5;
-  
+
   // Main timeline line
   slide.addShape('line', {
     x: 0.5,
@@ -418,13 +414,13 @@ export function buildTimeline(
     h: 0,
     line: { color: theme.colors.primary, pt: 3 },
   });
-  
+
   const eventWidth = 9.0 / events.length;
-  
+
   events.forEach((event, index) => {
     const x = 0.5 + index * eventWidth + eventWidth / 2;
     const isTop = index % 2 === 0;
-    
+
     // Event dot
     slide.addShape('ellipse', {
       x: x - 0.1,
@@ -434,7 +430,7 @@ export function buildTimeline(
       fill: { color: theme.colors.accent },
       line: { color: theme.colors.primary, pt: 2 },
     });
-    
+
     // Connector line
     slide.addShape('line', {
       x,
@@ -443,7 +439,7 @@ export function buildTimeline(
       h: 0.7,
       line: { color: lightenColor(theme.colors.primary, 40), pt: 1 },
     });
-    
+
     // Date
     slide.addText(event.date, {
       x: x - eventWidth / 2,
@@ -456,7 +452,7 @@ export function buildTimeline(
       fontFace: theme.fonts.body,
       align: 'center',
     });
-    
+
     // Title
     slide.addText(event.title, {
       x: x - eventWidth / 2,
@@ -484,19 +480,19 @@ export function buildIconGrid(
     y?: number;
     columns?: number;
     iconSize?: number;
-  }
+  },
 ): void {
   const { x = 0.5, y = 2.0, columns = 4, iconSize = 36 } = options || {};
-  
+
   const itemWidth = 9.0 / columns;
   const itemHeight = 1.2;
-  
+
   items.forEach((item, index) => {
     const col = index % columns;
     const row = Math.floor(index / columns);
     const itemX = x + col * itemWidth;
     const itemY = y + row * itemHeight;
-    
+
     // Icon
     slide.addText(item.icon, {
       x: itemX,
@@ -507,7 +503,7 @@ export function buildIconGrid(
       align: 'center',
       valign: 'middle',
     });
-    
+
     // Label
     slide.addText(item.label, {
       x: itemX,

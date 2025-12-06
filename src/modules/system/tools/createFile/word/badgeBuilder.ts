@@ -3,8 +3,8 @@
  */
 
 import { BorderStyle, Paragraph, ShadingType, TextRun } from 'docx';
-import type { DocumentTheme } from './types.js';
 import { getTheme } from './themes.js';
+import type { DocumentTheme } from './types.js';
 
 // ═══════════════════════════════════════════════════
 // BADGE TYPES
@@ -57,10 +57,7 @@ export function buildBadgeRun(config: BadgeConfig, theme?: DocumentTheme): TextR
 /**
  * Build badge paragraph
  */
-export function buildBadgeParagraph(
-  badges: BadgeConfig[],
-  theme?: DocumentTheme
-): Paragraph {
+export function buildBadgeParagraph(badges: BadgeConfig[], theme?: DocumentTheme): Paragraph {
   const children: TextRun[] = [];
 
   for (let i = 0; i < badges.length; i++) {

@@ -3,14 +3,14 @@
  */
 
 import { debugLog } from '../../../core/logger/logger.js';
+import type { MemoryType } from '../../../infrastructure/database/schema.js';
+import { memoryStore } from '../../../infrastructure/memory/index.js';
 import {
   RecallMemorySchema,
   SaveMemorySchema,
   validateParams,
 } from '../../../shared/schemas/tools.schema.js';
 import type { ToolContext, ToolDefinition, ToolResult } from '../../../shared/types/tools.types.js';
-import { memoryStore } from '../../../infrastructure/memory/index.js';
-import type { MemoryType } from '../../../infrastructure/database/schema.js';
 
 // ═══════════════════════════════════════════════════
 // SAVE MEMORY TOOL
@@ -33,7 +33,8 @@ export const saveMemoryTool: ToolDefinition = {
     {
       name: 'type',
       type: 'string',
-      description: 'Loại memory: person (thông tin người), fact (sự kiện), preference (sở thích), task (công việc), note (ghi chú)',
+      description:
+        'Loại memory: person (thông tin người), fact (sự kiện), preference (sở thích), task (công việc), note (ghi chú)',
       required: false,
     },
     {

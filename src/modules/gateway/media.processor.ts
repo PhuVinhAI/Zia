@@ -177,7 +177,9 @@ export async function addQuoteMedia(
   // Lưu ý: Media từ bot (tool generate) không được skip vì AI chưa thấy binary data
   if (history && historyHasUserMedia(history)) {
     const mediaDesc = getMediaTypeDescription(quoteMedia.type);
-    console.log(`[Bot] 📎 Quote media (${quoteMedia.type}) đã có trong history từ user, skip fetch`);
+    console.log(
+      `[Bot] 📎 Quote media (${quoteMedia.type}) đã có trong history từ user, skip fetch`,
+    );
     notes.push(`(User đang reply tin nhắn có ${mediaDesc} ở trên, hãy tham khảo ${mediaDesc} đó)`);
     return;
   }

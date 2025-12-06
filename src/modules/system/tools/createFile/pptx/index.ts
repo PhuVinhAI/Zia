@@ -4,14 +4,27 @@
  */
 
 // ═══════════════════════════════════════════════════
-// TYPES
+// CHART BUILDER
 // ═══════════════════════════════════════════════════
-export * from './types.js';
-
+export {
+  buildAreaChart,
+  buildBarChart,
+  buildChart,
+  buildLineChart,
+  buildMiniChart,
+  buildPieChart,
+  buildStatCard,
+} from './chartBuilder.js';
 // ═══════════════════════════════════════════════════
-// THEMES
+// CODE BUILDER
 // ═══════════════════════════════════════════════════
-export { getTheme, getThemeNames, isDarkTheme, THEMES } from './themes.js';
+export {
+  buildCodeBlock,
+  buildCodeComparison,
+  buildInlineCode,
+  buildStyledCodeBlock,
+  highlightCode,
+} from './codeBuilder.js';
 
 // ═══════════════════════════════════════════════════
 // CONSTANTS
@@ -42,55 +55,6 @@ export {
   parseSlide,
   splitIntoSlides,
 } from './contentParser.js';
-
-// ═══════════════════════════════════════════════════
-// MASTER SLIDES
-// ═══════════════════════════════════════════════════
-export {
-  createMasterSlides,
-  getMasterForSlideType,
-} from './masterSlide.js';
-
-// ═══════════════════════════════════════════════════
-// SLIDE BUILDER
-// ═══════════════════════════════════════════════════
-export { buildSlide } from './slideBuilder.js';
-
-// ═══════════════════════════════════════════════════
-// TABLE BUILDER
-// ═══════════════════════════════════════════════════
-export {
-  buildComparisonTable,
-  buildFeatureTable,
-  buildStyledTable,
-  buildTable,
-  parseMarkdownTable,
-} from './tableBuilder.js';
-
-// ═══════════════════════════════════════════════════
-// CODE BUILDER
-// ═══════════════════════════════════════════════════
-export {
-  buildCodeBlock,
-  buildCodeComparison,
-  buildInlineCode,
-  buildStyledCodeBlock,
-  highlightCode,
-} from './codeBuilder.js';
-
-// ═══════════════════════════════════════════════════
-// CHART BUILDER
-// ═══════════════════════════════════════════════════
-export {
-  buildAreaChart,
-  buildBarChart,
-  buildChart,
-  buildLineChart,
-  buildMiniChart,
-  buildPieChart,
-  buildStatCard,
-} from './chartBuilder.js';
-
 // ═══════════════════════════════════════════════════
 // IMAGE BUILDER
 // ═══════════════════════════════════════════════════
@@ -104,7 +68,21 @@ export {
   buildPositionedImage,
   setBackgroundImage,
 } from './imageBuilder.js';
-
+// ═══════════════════════════════════════════════════
+// MASTER SLIDES
+// ═══════════════════════════════════════════════════
+export {
+  createMasterSlides,
+  getMasterForSlideType,
+} from './masterSlide.js';
+// ═══════════════════════════════════════════════════
+// PRESENTATION BUILDER (Main)
+// ═══════════════════════════════════════════════════
+export {
+  buildPresentation,
+  buildSimplePresentation,
+  PresentationBuilder,
+} from './presentationBuilder.js';
 // ═══════════════════════════════════════════════════
 // SHAPE BUILDER
 // ═══════════════════════════════════════════════════
@@ -120,17 +98,29 @@ export {
   buildShape,
   buildTimeline,
 } from './shapeBuilder.js';
-
+// ═══════════════════════════════════════════════════
+// SLIDE BUILDER
+// ═══════════════════════════════════════════════════
+export { buildSlide } from './slideBuilder.js';
+// ═══════════════════════════════════════════════════
+// TABLE BUILDER
+// ═══════════════════════════════════════════════════
+export {
+  buildComparisonTable,
+  buildFeatureTable,
+  buildStyledTable,
+  buildTable,
+  parseMarkdownTable,
+} from './tableBuilder.js';
+// ═══════════════════════════════════════════════════
+// THEMES
+// ═══════════════════════════════════════════════════
+export { getTheme, getThemeNames, isDarkTheme, THEMES } from './themes.js';
+// ═══════════════════════════════════════════════════
+// TYPES
+// ═══════════════════════════════════════════════════
+export * from './types.js';
 // ═══════════════════════════════════════════════════
 // UTILS
 // ═══════════════════════════════════════════════════
 export { darkenColor, lightenColor, safeColor } from './utils.js';
-
-// ═══════════════════════════════════════════════════
-// PRESENTATION BUILDER (Main)
-// ═══════════════════════════════════════════════════
-export {
-  buildPresentation,
-  buildSimplePresentation,
-  PresentationBuilder,
-} from './presentationBuilder.js';

@@ -2,7 +2,7 @@
  * Word Document Constants - Các hằng số cho Word framework
  */
 
-import { AlignmentType, HeadingLevel, PageOrientation, convertMillimetersToTwip } from 'docx';
+import { AlignmentType, convertMillimetersToTwip, HeadingLevel, PageOrientation } from 'docx';
 
 // ═══════════════════════════════════════════════════
 // PAGE SIZES (in mm)
@@ -27,7 +27,7 @@ export function getPageSize(size: 'A4' | 'Letter' | 'Legal' = 'A4') {
 // ═══════════════════════════════════════════════════
 
 export const DEFAULT_MARGINS = {
-  top: 25.4,    // 1 inch
+  top: 25.4, // 1 inch
   bottom: 25.4,
   left: 25.4,
   right: 25.4,
@@ -38,7 +38,12 @@ export const DEFAULT_MARGINS = {
  * If value > 100, assume it's already in twips (1 inch = 1440 twips)
  * Otherwise, treat as mm and convert to twips
  */
-export function getMargins(margins?: { top?: number; bottom?: number; left?: number; right?: number }) {
+export function getMargins(margins?: {
+  top?: number;
+  bottom?: number;
+  left?: number;
+  right?: number;
+}) {
   const convertValue = (value: number | undefined, defaultMm: number): number => {
     if (value === undefined) {
       return convertMillimetersToTwip(defaultMm);
@@ -74,17 +79,17 @@ export const HEADING_LEVELS = {
 // ═══════════════════════════════════════════════════
 
 export const FONT_SIZES = {
-  title: 56,      // 28pt
-  heading1: 48,   // 24pt
-  heading2: 40,   // 20pt
-  heading3: 32,   // 16pt
-  heading4: 28,   // 14pt
-  heading5: 24,   // 12pt
-  heading6: 22,   // 11pt
-  body: 24,       // 12pt
-  small: 20,      // 10pt
-  code: 20,       // 10pt
-  footnote: 18,   // 9pt
+  title: 56, // 28pt
+  heading1: 48, // 24pt
+  heading2: 40, // 20pt
+  heading3: 32, // 16pt
+  heading4: 28, // 14pt
+  heading5: 24, // 12pt
+  heading6: 22, // 11pt
+  body: 24, // 12pt
+  small: 20, // 10pt
+  code: 20, // 10pt
+  footnote: 18, // 9pt
 } as const;
 
 // ═══════════════════════════════════════════════════

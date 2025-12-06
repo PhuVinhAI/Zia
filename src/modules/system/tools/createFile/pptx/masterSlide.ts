@@ -90,11 +90,7 @@ function createDefaultMaster(
   });
 }
 
-function createTitleMaster(
-  pptx: any,
-  theme: PresentationTheme,
-  config?: MasterSlideConfig,
-): void {
+function createTitleMaster(pptx: any, theme: PresentationTheme, config?: MasterSlideConfig): void {
   const objects: any[] = [];
 
   // Decorative top bar

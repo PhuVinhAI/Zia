@@ -316,7 +316,10 @@ async function processNonStreamingResponse(
       // Nếu có tool call trong response, vẫn execute tool trước khi return
       const toolResult = await handleToolCalls(responseText, api, threadId, senderId, senderName);
       if (toolResult.hasTools) {
-        debugLog('MIXED', `Executing ${toolResult.toolCalls.length} tool(s) despite abort (non-streaming)`);
+        debugLog(
+          'MIXED',
+          `Executing ${toolResult.toolCalls.length} tool(s) despite abort (non-streaming)`,
+        );
         await saveToolResultToHistory(threadId, toolResult.promptForAI);
         markPendingToolExecution(threadId);
       }

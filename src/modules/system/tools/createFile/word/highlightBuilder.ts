@@ -3,8 +3,8 @@
  */
 
 import { HighlightColor, Paragraph, ShadingType, TextRun } from 'docx';
-import type { DocumentTheme } from './types.js';
 import { getTheme } from './themes.js';
+import type { DocumentTheme } from './types.js';
 
 // ═══════════════════════════════════════════════════
 // HIGHLIGHT TYPES
@@ -35,7 +35,10 @@ export interface HighlightConfig {
 // HIGHLIGHT COLOR MAPPING
 // ═══════════════════════════════════════════════════
 
-const HIGHLIGHT_COLORS: Record<HighlightColorName, typeof HighlightColor[keyof typeof HighlightColor]> = {
+const HIGHLIGHT_COLORS: Record<
+  HighlightColorName,
+  (typeof HighlightColor)[keyof typeof HighlightColor]
+> = {
   yellow: HighlightColor.YELLOW,
   green: HighlightColor.GREEN,
   cyan: HighlightColor.CYAN,
@@ -62,7 +65,7 @@ const HIGHLIGHT_COLORS: Record<HighlightColorName, typeof HighlightColor[keyof t
 export function buildHighlightedRun(
   text: string,
   color: HighlightColorName = 'yellow',
-  theme?: DocumentTheme
+  theme?: DocumentTheme,
 ): TextRun {
   const t = theme || getTheme();
 
@@ -76,10 +79,7 @@ export function buildHighlightedRun(
 /**
  * Build marked/underlined TextRun
  */
-export function buildMarkedRun(
-  text: string,
-  theme?: DocumentTheme
-): TextRun {
+export function buildMarkedRun(text: string, theme?: DocumentTheme): TextRun {
   const t = theme || getTheme();
 
   return new TextRun({
@@ -100,19 +100,19 @@ export function parseHighlights(text: string): {
   segments: { text: string; highlight?: HighlightColorName }[];
 } {
   const segments: { text: string; highlight?: HighlightColorName }[] = [];
-  let remaining = text;
+  const remaining = text;
 
   // Pattern for ==text== (default yellow highlight)
   const simplePattern = /==([^=]+)==/g;
   // Pattern for [HIGHLIGHT:color]text[/HIGHLIGHT]
-  const colorPattern = /\[HIGHLIGHT:(\w+)\]([^\[]+)\[\/HIGHLIGHT\]/gi;
+  const colorPattern = /\[HIGHLIGHT:(\w+)\]([^[]+)\[\/HIGHLIGHT\]/gi;
 
   // First, handle colored highlights
   let lastIndex = 0;
   let match: RegExpExecArray | null;
 
   // Combine both patterns
-  const combinedPattern = /==([^=]+)==|\[HIGHLIGHT:(\w+)\]([^\[]+)\[\/HIGHLIGHT\]/gi;
+  const combinedPattern = /==([^=]+)==|\[HIGHLIGHT:(\w+)\]([^[]+)\[\/HIGHLIGHT\]/gi;
 
   while ((match = combinedPattern.exec(text)) !== null) {
     // Add text before match
@@ -147,16 +147,13 @@ export function parseHighlights(text: string): {
  * Check if text contains highlights
  */
 export function hasHighlights(text: string): boolean {
-  return /==([^=]+)==/.test(text) || /\[HIGHLIGHT:\w+\][^\[]+\[\/HIGHLIGHT\]/i.test(text);
+  return /==([^=]+)==/.test(text) || /\[HIGHLIGHT:\w+\][^[]+\[\/HIGHLIGHT\]/i.test(text);
 }
 
 /**
  * Build paragraph with highlights
  */
-export function buildHighlightedParagraph(
-  text: string,
-  theme?: DocumentTheme
-): Paragraph {
+export function buildHighlightedParagraph(text: string, theme?: DocumentTheme): Paragraph {
   const t = theme || getTheme();
   const { segments } = parseHighlights(text);
 

@@ -6,29 +6,50 @@
 import {
   BorderStyle,
   ExternalHyperlink,
+  PageBreak,
   Paragraph,
   ShadingType,
-  Table,
+  type Table,
   TextRun,
 } from 'docx';
 import type { Block, InlineToken } from '../../../../../shared/utils/markdownParser.js';
 import { hasStyle, parseMarkdown } from '../../../../../shared/utils/markdownParser.js';
-import type { DocumentTheme } from './types.js';
-import { getTheme } from './themes.js';
+import { buildBadgeParagraph, hasBadges, parseBadges, removeBadgeSyntax } from './badgeBuilder.js';
+import { buildBox, hasBoxSyntax, parseBoxSyntax } from './boxBuilder.js';
 import { CALLOUT_STYLES, HEADING_LEVELS } from './constants.js';
-import { buildTable, parseMarkdownTable } from './tableBuilder.js';
-import { buildBox, parseBoxSyntax, hasBoxSyntax } from './boxBuilder.js';
-import { buildDivider, buildDecoratedDivider, buildOrnamentDivider, parseDividerSyntax } from './dividerBuilder.js';
-import { buildBadgeParagraph, parseBadges, hasBadges, removeBadgeSyntax } from './badgeBuilder.js';
-import { buildMathParagraph, hasMathExpression, renderMathExpression } from './mathBuilder.js';
-import { buildHighlightedParagraph, hasHighlights } from './highlightBuilder.js';
-import { replaceEmojiShortcuts, parseIconSyntax, buildIconParagraph } from './emojiBuilder.js';
-import { buildSignatureBlock, buildApprovalBlock, parseSignatureSyntax, parseApprovalSyntax, isSignatureSyntax } from './signatureBuilder.js';
-import { buildCoverPage, parseCoverPageSyntax, hasCoverPageSyntax, removeCoverPageSyntax } from './coverPageBuilder.js';
-import { buildChecklist, parseChecklist, buildDefinitionList, parseDefinitionList } from './listBuilder.js';
-import { buildImageParagraph, parseImageSyntax } from './imageBuilder.js';
+import {
+  buildCoverPage,
+  hasCoverPageSyntax,
+  parseCoverPageSyntax,
+  removeCoverPageSyntax,
+} from './coverPageBuilder.js';
+import {
+  buildDecoratedDivider,
+  buildDivider,
+  buildOrnamentDivider,
+  parseDividerSyntax,
+} from './dividerBuilder.js';
+import { buildIconParagraph, parseIconSyntax, replaceEmojiShortcuts } from './emojiBuilder.js';
 import { parseFootnotes } from './footnoteBuilder.js';
-import { PageBreak } from 'docx';
+import { buildHighlightedParagraph, hasHighlights } from './highlightBuilder.js';
+import { buildImageParagraph, parseImageSyntax } from './imageBuilder.js';
+import {
+  buildChecklist,
+  buildDefinitionList,
+  parseChecklist,
+  parseDefinitionList,
+} from './listBuilder.js';
+import { buildMathParagraph, hasMathExpression, renderMathExpression } from './mathBuilder.js';
+import {
+  buildApprovalBlock,
+  buildSignatureBlock,
+  isSignatureSyntax,
+  parseApprovalSyntax,
+  parseSignatureSyntax,
+} from './signatureBuilder.js';
+import { buildTable, parseMarkdownTable } from './tableBuilder.js';
+import { getTheme } from './themes.js';
+import type { DocumentTheme } from './types.js';
 
 // ═══════════════════════════════════════════════════
 // INLINE TOKEN TO TEXT RUN
@@ -36,7 +57,7 @@ import { PageBreak } from 'docx';
 
 export function tokensToTextRuns(
   tokens: InlineToken[],
-  theme?: DocumentTheme
+  theme?: DocumentTheme,
 ): (TextRun | ExternalHyperlink)[] {
   const t = theme || getTheme();
 
@@ -80,10 +101,7 @@ export function tokensToTextRuns(
 // BLOCK TO PARAGRAPH
 // ═══════════════════════════════════════════════════
 
-export function blockToParagraph(
-  block: Block,
-  theme?: DocumentTheme
-): Paragraph | null {
+export function blockToParagraph(block: Block, theme?: DocumentTheme): Paragraph | null {
   const t = theme || getTheme();
 
   switch (block.type) {
@@ -169,7 +187,7 @@ export function buildCodeBlock(code: string, theme?: DocumentTheme): Paragraph {
 export function buildCallout(
   text: string,
   type: 'info' | 'warning' | 'success' | 'error',
-  theme?: DocumentTheme
+  theme?: DocumentTheme,
 ): Paragraph {
   const style = CALLOUT_STYLES[type];
   const t = theme || getTheme();
@@ -177,7 +195,11 @@ export function buildCallout(
   return new Paragraph({
     children: [
       new TextRun({ text: `${style.icon} `, size: 24 }),
-      new TextRun({ text: replaceEmojiShortcuts(text), font: t.fonts.body, color: style.textColor }),
+      new TextRun({
+        text: replaceEmojiShortcuts(text),
+        font: t.fonts.body,
+        color: style.textColor,
+      }),
     ],
     shading: { type: ShadingType.SOLID, color: style.backgroundColor },
     border: { left: { style: BorderStyle.SINGLE, size: 24, color: style.borderColor } },
@@ -193,7 +215,7 @@ export function buildPageBreak(): Paragraph {
 export function buildAlignedParagraph(
   text: string,
   alignment: 'left' | 'center' | 'right',
-  theme?: DocumentTheme
+  theme?: DocumentTheme,
 ): Paragraph {
   const t = theme || getTheme();
   const processedText = replaceEmojiShortcuts(text);
@@ -212,7 +234,7 @@ export function buildAlignedParagraph(
 
 export function parseExtendedContent(
   content: string,
-  theme?: DocumentTheme
+  theme?: DocumentTheme,
 ): (Paragraph | Table)[] {
   const t = theme || getTheme();
   const result: (Paragraph | Table)[] = [];
@@ -338,7 +360,9 @@ function parseLines(content: string, theme: DocumentTheme): (Paragraph | Table)[
     const dividerConfig = parseDividerSyntax(trimmed);
     if (dividerConfig) {
       if ('decorated' in dividerConfig) {
-        result.push(buildDecoratedDivider((dividerConfig as { decorated: true; text: string }).text, theme));
+        result.push(
+          buildDecoratedDivider((dividerConfig as { decorated: true; text: string }).text, theme),
+        );
       } else {
         result.push(buildDivider(dividerConfig, theme));
       }
@@ -383,14 +407,22 @@ function parseLines(content: string, theme: DocumentTheme): (Paragraph | Table)[
     }
 
     // Callouts
-    const calloutMatch = trimmed.match(/^\[!(INFO|WARNING|SUCCESS|ERROR|TIP|NOTE|IMPORTANT)\]\s*(.+)$/i);
+    const calloutMatch = trimmed.match(
+      /^\[!(INFO|WARNING|SUCCESS|ERROR|TIP|NOTE|IMPORTANT)\]\s*(.+)$/i,
+    );
     if (calloutMatch) {
       const typeMap: Record<string, 'info' | 'warning' | 'success' | 'error'> = {
-        info: 'info', tip: 'info', note: 'info',
-        warning: 'warning', important: 'warning',
-        success: 'success', error: 'error',
+        info: 'info',
+        tip: 'info',
+        note: 'info',
+        warning: 'warning',
+        important: 'warning',
+        success: 'success',
+        error: 'error',
       };
-      result.push(buildCallout(calloutMatch[2], typeMap[calloutMatch[1].toLowerCase()] || 'info', theme));
+      result.push(
+        buildCallout(calloutMatch[2], typeMap[calloutMatch[1].toLowerCase()] || 'info', theme),
+      );
       i++;
       continue;
     }

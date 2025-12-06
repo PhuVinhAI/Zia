@@ -72,7 +72,11 @@ async function sendTextWithChunking(
         }
 
         const result = await api.sendMessage(richMsg, threadId, ThreadType.User);
-        logZaloAPI('sendMessage', { message: richMsg, threadId, chunk: i + 1, total: chunks.length }, result);
+        logZaloAPI(
+          'sendMessage',
+          { message: richMsg, threadId, chunk: i + 1, total: chunks.length },
+          result,
+        );
         logMessage('OUT', threadId, { type: 'text', text: chunkParsed.text, chunk: i + 1 });
       }
 
@@ -295,9 +299,17 @@ async function sendMediaImage(api: any, image: MediaImage, threadId: string) {
       ThreadType.User,
     );
 
-    logZaloAPI('sendMessage:mediaImage', { filename: image.filename, type: image.type, threadId }, result);
+    logZaloAPI(
+      'sendMessage:mediaImage',
+      { filename: image.filename, type: image.type, threadId },
+      result,
+    );
     console.log(`[Bot] ✅ Đã gửi ${typeLabel}!`);
-    logMessage('OUT', threadId, { type: 'mediaImage', filename: image.filename, mediaType: image.type });
+    logMessage('OUT', threadId, {
+      type: 'mediaImage',
+      filename: image.filename,
+      mediaType: image.type,
+    });
   } catch (e: any) {
     logZaloAPI('sendMessage:mediaImage', { threadId }, null, e);
     logError('sendMediaImage', e);

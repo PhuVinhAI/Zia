@@ -3,14 +3,22 @@
  */
 
 import { AlignmentType, BorderStyle, Paragraph, ShadingType, TextRun } from 'docx';
-import type { DocumentTheme } from './types.js';
 import { getTheme } from './themes.js';
+import type { DocumentTheme } from './types.js';
 
 // ═══════════════════════════════════════════════════
 // BOX TYPES
 // ═══════════════════════════════════════════════════
 
-export type BoxType = 'default' | 'info' | 'success' | 'warning' | 'error' | 'note' | 'quote' | 'code';
+export type BoxType =
+  | 'default'
+  | 'info'
+  | 'success'
+  | 'warning'
+  | 'error'
+  | 'note'
+  | 'quote'
+  | 'code';
 
 export interface BoxConfig {
   type: BoxType;
@@ -23,7 +31,10 @@ export interface BoxConfig {
 // BOX STYLES
 // ═══════════════════════════════════════════════════
 
-const BOX_STYLES: Record<BoxType, { bg: string; border: string; icon: string; titleColor: string }> = {
+const BOX_STYLES: Record<
+  BoxType,
+  { bg: string; border: string; icon: string; titleColor: string }
+> = {
   default: { bg: 'F5F5F5', border: 'BDBDBD', icon: '📋', titleColor: '424242' },
   info: { bg: 'E3F2FD', border: '2196F3', icon: 'ℹ️', titleColor: '1565C0' },
   success: { bg: 'E8F5E9', border: '4CAF50', icon: '✅', titleColor: '2E7D32' },
@@ -78,7 +89,7 @@ export function buildBox(config: BoxConfig, theme?: DocumentTheme): Paragraph[] 
         },
         spacing: { before: 200, after: 0 },
         indent: { left: 200, right: 200 },
-      })
+      }),
     );
   }
 
@@ -107,7 +118,7 @@ export function buildBox(config: BoxConfig, theme?: DocumentTheme): Paragraph[] 
         },
         spacing: { before: isFirst && config.title ? 0 : undefined, after: isLast ? 200 : 0 },
         indent: { left: 200, right: 200 },
-      })
+      }),
     );
   });
 
@@ -120,7 +131,7 @@ export function buildBox(config: BoxConfig, theme?: DocumentTheme): Paragraph[] 
  * [BOX:type:title]
  * content
  * [/BOX]
- * 
+ *
  * Returns segments: array of { type: 'text' | 'box', content/config }
  */
 export interface BoxSegment {
@@ -194,7 +205,7 @@ export function buildSimpleBox(
   content: string,
   borderColor?: string,
   bgColor?: string,
-  theme?: DocumentTheme
+  theme?: DocumentTheme,
 ): Paragraph {
   const t = theme || getTheme();
 

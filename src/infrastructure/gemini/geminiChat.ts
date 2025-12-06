@@ -5,7 +5,13 @@ import type { Chat, Content, Part } from '@google/genai';
 import { debugLog } from '../../core/logger/logger.js';
 import { CONFIG } from '../../shared/constants/config.js';
 import { fetchAsBase64 } from '../../shared/utils/httpClient.js';
-import { GEMINI_CONFIG, getGeminiModel, getAI, keyManager, type MediaPart } from './geminiConfig.js';
+import {
+  GEMINI_CONFIG,
+  getAI,
+  getGeminiModel,
+  keyManager,
+  type MediaPart,
+} from './geminiConfig.js';
 import { getSystemPrompt } from './prompts.js';
 
 // Chat session storage

@@ -2,14 +2,11 @@
  * List Builder - Xử lý các loại list nâng cao
  */
 
-import {
-  Paragraph,
-  TextRun,
-} from 'docx';
-import type { DocumentTheme } from './types.js';
-import { getTheme } from './themes.js';
-import { tokensToTextRuns } from './contentBuilder.js';
+import { Paragraph, TextRun } from 'docx';
 import { parseInline } from '../../../../../shared/utils/markdownParser.js';
+import { tokensToTextRuns } from './contentBuilder.js';
+import { getTheme } from './themes.js';
+import type { DocumentTheme } from './types.js';
 
 // ═══════════════════════════════════════════════════
 // CHECKLIST BUILDER
@@ -47,10 +44,7 @@ export function parseChecklist(content: string): ChecklistItem[] {
  * Build checklist paragraph
  * Sử dụng emoji thay vì CheckBox vì CheckBox yêu cầu hex code
  */
-export function buildChecklistItem(
-  item: ChecklistItem,
-  theme?: DocumentTheme
-): Paragraph {
+export function buildChecklistItem(item: ChecklistItem, theme?: DocumentTheme): Paragraph {
   const t = theme || getTheme();
   const tokens = parseInline(item.text);
   const checkIcon = item.checked ? '☑' : '☐';
@@ -74,11 +68,8 @@ export function buildChecklistItem(
 /**
  * Build full checklist
  */
-export function buildChecklist(
-  items: ChecklistItem[],
-  theme?: DocumentTheme
-): Paragraph[] {
-  return items.map(item => buildChecklistItem(item, theme));
+export function buildChecklist(items: ChecklistItem[], theme?: DocumentTheme): Paragraph[] {
+  return items.map((item) => buildChecklistItem(item, theme));
 }
 
 // ═══════════════════════════════════════════════════
@@ -119,10 +110,7 @@ export function parseDefinitionList(content: string): DefinitionItem[] {
 /**
  * Build definition list paragraphs
  */
-export function buildDefinitionList(
-  items: DefinitionItem[],
-  theme?: DocumentTheme
-): Paragraph[] {
+export function buildDefinitionList(items: DefinitionItem[], theme?: DocumentTheme): Paragraph[] {
   const t = theme || getTheme();
   const paragraphs: Paragraph[] = [];
 
@@ -139,7 +127,7 @@ export function buildDefinitionList(
           }),
         ],
         spacing: { before: 120, after: 40 },
-      })
+      }),
     );
 
     // Definition (indented)
@@ -154,7 +142,7 @@ export function buildDefinitionList(
         ],
         indent: { left: 360 },
         spacing: { after: 120 },
-      })
+      }),
     );
   }
 
@@ -177,7 +165,9 @@ export function calculateIndentLevel(line: string): number {
 /**
  * Check if line is a list item
  */
-export function isListItem(line: string): { type: 'bullet' | 'numbered' | 'checklist'; indent: number } | null {
+export function isListItem(
+  line: string,
+): { type: 'bullet' | 'numbered' | 'checklist'; indent: number } | null {
   const trimmed = line.trim();
   const indent = calculateIndentLevel(line);
 

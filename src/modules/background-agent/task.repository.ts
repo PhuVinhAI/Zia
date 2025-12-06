@@ -4,8 +4,8 @@
 import { and, eq, lte, sql } from 'drizzle-orm';
 import { getDatabase } from '../../infrastructure/database/connection.js';
 import {
-  agentTasks,
   type AgentTask,
+  agentTasks,
   type NewAgentTask,
   type TaskStatus,
   type TaskType,

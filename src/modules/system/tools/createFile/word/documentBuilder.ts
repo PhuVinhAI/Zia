@@ -8,17 +8,27 @@ import {
   HeadingLevel,
   Packer,
   Paragraph,
-  Table,
+  type Table,
   TextRun,
 } from 'docx';
-import type { WordDocumentOptions } from './types.js';
-import { getTheme } from './themes.js';
 import { getMargins, getPageSize, ORIENTATIONS } from './constants.js';
-import { buildDocumentStyles, buildNumberingConfig } from './styleBuilder.js';
 import { parseExtendedContent } from './contentBuilder.js';
-import { buildDefaultFooter, buildDefaultHeader, buildFooter, buildHeader } from './headerFooter.js';
+import {
+  buildDefaultFooter,
+  buildDefaultHeader,
+  buildFooter,
+  buildHeader,
+} from './headerFooter.js';
+import { buildDocumentStyles, buildNumberingConfig } from './styleBuilder.js';
+import { getTheme } from './themes.js';
 import { buildManualTOC, extractHeadings } from './tocBuilder.js';
-import { parseWatermarkSyntax, removeWatermarkSyntax, getPredefinedWatermark, buildWatermarkHeader } from './watermarkBuilder.js';
+import type { WordDocumentOptions } from './types.js';
+import {
+  buildWatermarkHeader,
+  getPredefinedWatermark,
+  parseWatermarkSyntax,
+  removeWatermarkSyntax,
+} from './watermarkBuilder.js';
 
 // ═══════════════════════════════════════════════════
 // DOCUMENT BUILDER CLASS
@@ -67,7 +77,7 @@ export class WordDocumentBuilder {
 
     // 2. Check if content has cover page - skip title section if so
     const hasCover = /\[COVER:[^\]]+\]/i.test(processedContent);
-    
+
     // 3. Build title if provided AND no cover page in content
     if (!hasCover) {
       const titleParagraphs = this.buildTitleSection();
@@ -141,7 +151,7 @@ export class WordDocumentBuilder {
             }),
           ],
           spacing: { after: 400, line: 340 },
-        })
+        }),
       );
 
       // Add subtitle if author is provided
@@ -159,7 +169,7 @@ export class WordDocumentBuilder {
               }),
             ],
             spacing: { before: 200, after: 400 },
-          })
+          }),
         );
       }
     }
@@ -197,7 +207,7 @@ export class WordDocumentBuilder {
  */
 export async function buildWordDocument(
   content: string,
-  options?: WordDocumentOptions
+  options?: WordDocumentOptions,
 ): Promise<Buffer> {
   const builder = new WordDocumentBuilder(options);
   return builder.build(content);
@@ -206,10 +216,7 @@ export async function buildWordDocument(
 /**
  * Build simple document - Không có header/footer
  */
-export async function buildSimpleDocument(
-  content: string,
-  title?: string
-): Promise<Buffer> {
+export async function buildSimpleDocument(content: string, title?: string): Promise<Buffer> {
   const theme = getTheme();
   const paragraphs = parseExtendedContent(content, theme);
 

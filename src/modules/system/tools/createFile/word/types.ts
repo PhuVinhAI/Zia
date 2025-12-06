@@ -16,20 +16,20 @@ export interface WordDocumentOptions {
   pageSize?: 'A4' | 'Letter' | 'Legal';
   orientation?: 'portrait' | 'landscape';
   margins?: PageMargins;
-  
+
   // Header/Footer
   header?: HeaderFooterConfig;
   footer?: HeaderFooterConfig;
-  
+
   // Styling
   theme?: DocumentTheme;
   defaultFont?: string;
   defaultFontSize?: number;
-  
+
   // Table of Contents
   includeToc?: boolean;
   tocTitle?: string;
-  
+
   // Watermark
   watermark?: WatermarkConfig;
 }
@@ -167,12 +167,12 @@ export interface InlineToken {
   footnoteId?: string;
 }
 
-export type InlineStyle = 
-  | 'bold' 
-  | 'italic' 
-  | 'boldItalic' 
-  | 'strikethrough' 
-  | 'code' 
+export type InlineStyle =
+  | 'bold'
+  | 'italic'
+  | 'boldItalic'
+  | 'strikethrough'
+  | 'code'
   | 'link'
   | 'underline'
   | 'subscript'

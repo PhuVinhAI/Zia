@@ -91,7 +91,7 @@ function isInsideBlock(position: number, blocks: MarkdownBlock[]): MarkdownBlock
 function findPlaceholders(text: string): MarkdownBlock[] {
   const blocks: MarkdownBlock[] = [];
   // Match: 📄 [Code: ...] hoặc 📊 [Bảng ...] hoặc 📊 [Sơ đồ ...]
-  const regex = /[📄📊]\s*\[[^\]]+\]/g;
+  const regex = /[📄📊]\s*\[[^\]]+\]/gu;
   let match: RegExpExecArray | null;
 
   while ((match = regex.exec(text)) !== null) {
@@ -171,8 +171,8 @@ export function splitMessage(text: string, maxLength: number = MAX_MESSAGE_LENGT
 
     // Điều chỉnh blocks offset cho phần text còn lại
     const adjustedBlocks = blocks
-      .filter(b => b.start >= offset && b.end > offset)
-      .map(b => ({
+      .filter((b) => b.start >= offset && b.end > offset)
+      .map((b) => ({
         ...b,
         start: b.start - offset,
         end: b.end - offset,
@@ -203,7 +203,7 @@ export function splitMessage(text: string, maxLength: number = MAX_MESSAGE_LENGT
     remaining = remaining.slice(cutPoint).trim();
   }
 
-  return chunks.filter(c => c.length > 0);
+  return chunks.filter((c) => c.length > 0);
 }
 
 /**
@@ -241,7 +241,7 @@ function findBestCutPoint(text: string, maxLength: number): number {
   const commaBreak = Math.max(
     searchRange.lastIndexOf(', '),
     searchRange.lastIndexOf('; '),
-    searchRange.lastIndexOf(': ')
+    searchRange.lastIndexOf(': '),
   );
   if (commaBreak > maxLength * 0.5) {
     return commaBreak + 2;

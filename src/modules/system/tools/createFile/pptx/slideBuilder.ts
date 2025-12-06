@@ -2,12 +2,12 @@
  * Slide Builder - Xây dựng các loại slide
  */
 
-import type { ParsedSlide, PresentationTheme } from './types.js';
+import { buildCodeBlock } from './codeBuilder.js';
 import { FONT_SIZES } from './constants.js';
+import { buildImage } from './imageBuilder.js';
 import { getMasterForSlideType } from './masterSlide.js';
 import { buildTable } from './tableBuilder.js';
-import { buildCodeBlock } from './codeBuilder.js';
-import { buildImage } from './imageBuilder.js';
+import type { ParsedSlide, PresentationTheme } from './types.js';
 import { lightenColor } from './utils.js';
 
 // ═══════════════════════════════════════════════════
@@ -23,12 +23,12 @@ function calculateTitleFontSize(text: string, maxSize: number, minSize: number =
   const len = text.length;
   const slideWidth = 9.0; // inches
   const charWidthFactor = 0.55; // approximate width per character per point of font size
-  
+
   // Calculate max font size that fits in one line
   // Formula: slideWidth = len * (fontSize * charWidthFactor / 72)
   // fontSize = (slideWidth * 72) / (len * charWidthFactor)
   const calculatedSize = Math.floor((slideWidth * 72) / (len * charWidthFactor));
-  
+
   // Clamp between minSize and maxSize
   return Math.max(minSize, Math.min(maxSize, calculatedSize));
 }
@@ -42,7 +42,7 @@ export function buildSlide(
   slideData: ParsedSlide,
   index: number,
   theme: PresentationTheme,
-  showSlideNumbers: boolean = true
+  showSlideNumbers: boolean = true,
 ): void {
   const masterName = getMasterForSlideType(slideData.type);
   const slide = pptx.addSlide({ masterName });
@@ -95,11 +95,7 @@ export function buildSlide(
 // TITLE SLIDE
 // ═══════════════════════════════════════════════════
 
-function buildTitleSlide(
-  slide: any,
-  data: ParsedSlide,
-  theme: PresentationTheme,
-): void {
+function buildTitleSlide(slide: any, data: ParsedSlide, theme: PresentationTheme): void {
   // Main title with auto-sizing
   if (data.title) {
     const titleFontSize = calculateTitleFontSize(data.title, FONT_SIZES.titleSlide);
@@ -136,7 +132,7 @@ function buildTitleSlide(
 
   // Additional info from bullets (author, date, etc.)
   if (data.bullets.length > 0) {
-    const infoText = data.bullets.map(b => b.text).join(' | ');
+    const infoText = data.bullets.map((b) => b.text).join(' | ');
     slide.addText(infoText, {
       x: 0.5,
       y: 4.5,
@@ -154,11 +150,7 @@ function buildTitleSlide(
 // SECTION SLIDE
 // ═══════════════════════════════════════════════════
 
-function buildSectionSlide(
-  slide: any,
-  data: ParsedSlide,
-  theme: PresentationTheme,
-): void {
+function buildSectionSlide(slide: any, data: ParsedSlide, theme: PresentationTheme): void {
   // Section title (white text on primary background)
   if (data.title) {
     const fontSize = calculateTitleFontSize(data.title, FONT_SIZES.sectionTitle, 28);
@@ -196,11 +188,7 @@ function buildSectionSlide(
 // CONTENT SLIDE
 // ═══════════════════════════════════════════════════
 
-function buildContentSlide(
-  slide: any,
-  data: ParsedSlide,
-  theme: PresentationTheme,
-): void {
+function buildContentSlide(slide: any, data: ParsedSlide, theme: PresentationTheme): void {
   let currentY = 0.5;
 
   // Title with auto-sizing
@@ -236,7 +224,7 @@ function buildContentSlide(
 
   // Bullets
   if (data.bullets.length > 0) {
-    const bulletItems = data.bullets.map(bullet => ({
+    const bulletItems = data.bullets.map((bullet) => ({
       text: formatBulletText(bullet.text, bullet.checked),
       options: {
         bullet: bullet.checked !== undefined ? false : { type: 'bullet' },
@@ -306,11 +294,7 @@ function buildContentSlide(
 // TWO COLUMN SLIDE
 // ═══════════════════════════════════════════════════
 
-function buildTwoColumnSlide(
-  slide: any,
-  data: ParsedSlide,
-  theme: PresentationTheme
-): void {
+function buildTwoColumnSlide(slide: any, data: ParsedSlide, theme: PresentationTheme): void {
   // Title
   if (data.title) {
     slide.addText(data.title, {
@@ -332,7 +316,7 @@ function buildTwoColumnSlide(
 
   // Left column
   if (leftBullets.length > 0) {
-    const leftItems = leftBullets.map(bullet => ({
+    const leftItems = leftBullets.map((bullet) => ({
       text: formatBulletText(bullet.text, bullet.checked),
       options: {
         bullet: { type: 'bullet' },
@@ -355,7 +339,7 @@ function buildTwoColumnSlide(
 
   // Right column
   if (rightBullets.length > 0) {
-    const rightItems = rightBullets.map(bullet => ({
+    const rightItems = rightBullets.map((bullet) => ({
       text: formatBulletText(bullet.text, bullet.checked),
       options: {
         bullet: { type: 'bullet' },
@@ -381,11 +365,7 @@ function buildTwoColumnSlide(
 // IMAGE SLIDE
 // ═══════════════════════════════════════════════════
 
-function buildImageSlide(
-  slide: any,
-  data: ParsedSlide,
-  theme: PresentationTheme
-): void {
+function buildImageSlide(slide: any, data: ParsedSlide, theme: PresentationTheme): void {
   // Title
   if (data.title) {
     slide.addText(data.title, {
@@ -410,11 +390,7 @@ function buildImageSlide(
 // QUOTE SLIDE
 // ═══════════════════════════════════════════════════
 
-function buildQuoteSlide(
-  slide: any,
-  data: ParsedSlide,
-  theme: PresentationTheme
-): void {
+function buildQuoteSlide(slide: any, data: ParsedSlide, theme: PresentationTheme): void {
   if (data.quote) {
     // Quote text
     slide.addText(`"${data.quote.text}"`, {
@@ -465,11 +441,7 @@ function buildQuoteSlide(
 // THANK YOU SLIDE
 // ═══════════════════════════════════════════════════
 
-function buildThankYouSlide(
-  slide: any,
-  data: ParsedSlide,
-  theme: PresentationTheme
-): void {
+function buildThankYouSlide(slide: any, data: ParsedSlide, theme: PresentationTheme): void {
   // Main text
   const mainText = data.title || 'Thank You!';
   slide.addText(mainText, {
@@ -487,7 +459,7 @@ function buildThankYouSlide(
 
   // Subtitle/contact info
   if (data.subtitle || data.bullets.length > 0) {
-    const subText = data.subtitle || data.bullets.map(b => b.text).join('\n');
+    const subText = data.subtitle || data.bullets.map((b) => b.text).join('\n');
     slide.addText(subText, {
       x: 0.5,
       y: 3.8,

@@ -294,35 +294,79 @@ export const RecallMemorySchema = z.object({
 // All available CDN libraries
 const APP_LIBRARIES = [
   // CSS
-  'tailwind', 'bootstrap', 'daisyui',
+  'tailwind',
+  'bootstrap',
+  'daisyui',
   // JS Frameworks
-  'alpine', 'petite', 'jquery',
+  'alpine',
+  'petite',
+  'jquery',
   // 2D Game Engines
-  'phaser', 'pixijs', 'kaboom', 'kontra', 'excalibur',
+  'phaser',
+  'pixijs',
+  'kaboom',
+  'kontra',
+  'excalibur',
   // 3D Engines
-  'three', 'babylon', 'aframe', 'playcanvas',
+  'three',
+  'babylon',
+  'aframe',
+  'playcanvas',
   // Physics
-  'matter', 'p2', 'cannon',
+  'matter',
+  'p2',
+  'cannon',
   // Animation
-  'anime', 'gsap', 'motion', 'lottie', 'confetti', 'particles',
+  'anime',
+  'gsap',
+  'motion',
+  'lottie',
+  'confetti',
+  'particles',
   // Charts
-  'chartjs', 'apexcharts', 'echarts', 'd3',
+  'chartjs',
+  'apexcharts',
+  'echarts',
+  'd3',
   // Audio
-  'howler', 'tone', 'pizzicato',
+  'howler',
+  'tone',
+  'pizzicato',
   // Utilities
-  'lodash', 'dayjs', 'axios', 'localforage', 'uuid',
+  'lodash',
+  'dayjs',
+  'axios',
+  'localforage',
+  'uuid',
   // UI Components
-  'sweetalert', 'toastify', 'tippy', 'sortable', 'swiper',
+  'sweetalert',
+  'toastify',
+  'tippy',
+  'sortable',
+  'swiper',
   // Markdown & Code
-  'marked', 'prism', 'highlight', 'katex',
+  'marked',
+  'prism',
+  'highlight',
+  'katex',
   // Icons
-  'fontawesome', 'lucide', 'boxicons', 'heroicons',
+  'fontawesome',
+  'lucide',
+  'boxicons',
+  'heroicons',
   // Forms
-  'imask', 'cleave',
+  'imask',
+  'cleave',
   // Canvas & Drawing
-  'fabric', 'konva', 'paper', 'rough',
+  'fabric',
+  'konva',
+  'paper',
+  'rough',
   // Export
-  'html2canvas', 'jspdf', 'qrcode', 'qrcodejs',
+  'html2canvas',
+  'jspdf',
+  'qrcode',
+  'qrcodejs',
 ] as const;
 
 // Create App params (HTML single-file app with CDN libraries)

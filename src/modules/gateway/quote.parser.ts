@@ -85,10 +85,7 @@ export function parseQuoteAttachment(quote: any): QuoteMedia {
 
     // GIF - check trước image vì GIF cũng match pattern image
     // Gemini không hỗ trợ image/gif, dùng image/png
-    if (
-      url &&
-      (url.includes('/gif/') || /\.gif$/i.test(url) || attach?.action === 'chat.gif')
-    ) {
+    if (url && (url.includes('/gif/') || /\.gif$/i.test(url) || attach?.action === 'chat.gif')) {
       return {
         type: 'gif',
         url,

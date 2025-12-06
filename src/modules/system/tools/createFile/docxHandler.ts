@@ -11,9 +11,12 @@ import { buildWordDocument, getTheme, type WordDocumentOptions } from './word/in
  * Parse extended options từ content
  * Syntax: <!--OPTIONS: {...} -->
  */
-function parseOptionsFromContent(content: string): { cleanContent: string; options: Partial<WordDocumentOptions> } {
+function parseOptionsFromContent(content: string): {
+  cleanContent: string;
+  options: Partial<WordDocumentOptions>;
+} {
   const optionsMatch = content.match(/<!--OPTIONS:\s*(\{[\s\S]*?\})\s*-->/);
-  
+
   if (!optionsMatch) {
     return { cleanContent: content, options: {} };
   }

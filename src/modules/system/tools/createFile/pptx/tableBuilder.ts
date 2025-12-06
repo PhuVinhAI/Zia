@@ -2,8 +2,8 @@
  * Table Builder - Tạo bảng trong PowerPoint
  */
 
-import type { ParsedTable, PresentationTheme, TableStyle } from './types.js';
 import { FONT_SIZES } from './constants.js';
+import type { ParsedTable, PresentationTheme, TableStyle } from './types.js';
 import { lightenColor } from './utils.js';
 
 // ═══════════════════════════════════════════════════
@@ -15,10 +15,10 @@ export function buildTable(
   table: ParsedTable,
   startY: number,
   theme: PresentationTheme,
-  style?: TableStyle
+  style?: TableStyle,
 ): void {
   const tableData = buildTableData(table, theme, style);
-  
+
   slide.addTable(tableData, {
     x: 0.5,
     y: startY,
@@ -35,16 +35,12 @@ export function buildTable(
 // TABLE DATA BUILDER
 // ═══════════════════════════════════════════════════
 
-function buildTableData(
-  table: ParsedTable,
-  theme: PresentationTheme,
-  style?: TableStyle
-): any[][] {
+function buildTableData(table: ParsedTable, theme: PresentationTheme, style?: TableStyle): any[][] {
   const rows: any[][] = [];
-  
+
   // Header row
   if (table.headers.length > 0) {
-    const headerRow = table.headers.map(header => ({
+    const headerRow = table.headers.map((header) => ({
       text: header,
       options: {
         bold: true,
@@ -56,17 +52,17 @@ function buildTableData(
     }));
     rows.push(headerRow);
   }
-  
+
   // Data rows
   table.rows.forEach((row, rowIndex) => {
     const isAlternate = rowIndex % 2 === 1;
-    const rowData = row.map(cell => ({
+    const rowData = row.map((cell) => ({
       text: cell,
       options: {
         fill: {
           color: isAlternate
-            ? (style?.alternateRowBackground || theme.colors.codeBackground)
-            : (style?.rowBackground || theme.colors.background),
+            ? style?.alternateRowBackground || theme.colors.codeBackground
+            : style?.rowBackground || theme.colors.background,
         },
         color: theme.colors.bodyText,
         align: 'left',
@@ -75,7 +71,7 @@ function buildTableData(
     }));
     rows.push(rowData);
   });
-  
+
   return rows;
 }
 
@@ -92,12 +88,12 @@ export function buildStyledTable(
     width?: number;
     theme: PresentationTheme;
     style?: 'default' | 'striped' | 'bordered' | 'minimal' | 'colorful';
-  }
+  },
 ): void {
   const { x = 0.5, y = 2.0, width = 9.0, theme, style = 'default' } = options;
   const tableStyle = getTableStyle(style, theme);
   const tableData = buildTableData(table, theme, tableStyle);
-  
+
   slide.addTable(tableData, {
     x,
     y,
@@ -105,9 +101,7 @@ export function buildStyledTable(
     colW: calculateColumnWidths(table.headers.length, width),
     fontSize: FONT_SIZES.body - 2,
     fontFace: theme.fonts.body,
-    border: tableStyle.borderColor
-      ? { pt: 1, color: tableStyle.borderColor }
-      : { pt: 0 },
+    border: tableStyle.borderColor ? { pt: 1, color: tableStyle.borderColor } : { pt: 0 },
     autoPage: false,
   });
 }
@@ -116,10 +110,7 @@ export function buildStyledTable(
 // TABLE STYLES
 // ═══════════════════════════════════════════════════
 
-function getTableStyle(
-  styleName: string,
-  theme: PresentationTheme
-): TableStyle {
+function getTableStyle(styleName: string, theme: PresentationTheme): TableStyle {
   const styles: Record<string, TableStyle> = {
     default: {
       headerBackground: theme.colors.primary,
@@ -157,7 +148,7 @@ function getTableStyle(
       borderColor: lightenColor(theme.colors.accent, 60),
     },
   };
-  
+
   return styles[styleName] || styles.default;
 }
 
@@ -172,11 +163,11 @@ export function buildComparisonTable(
   leftItems: string[],
   rightItems: string[],
   theme: PresentationTheme,
-  y: number = 2.0
+  y: number = 2.0,
 ): void {
   const maxRows = Math.max(leftItems.length, rightItems.length);
   const rows: any[][] = [];
-  
+
   // Header
   rows.push([
     {
@@ -198,7 +189,7 @@ export function buildComparisonTable(
       },
     },
   ]);
-  
+
   // Data rows
   for (let i = 0; i < maxRows; i++) {
     rows.push([
@@ -218,7 +209,7 @@ export function buildComparisonTable(
       },
     ]);
   }
-  
+
   slide.addTable(rows, {
     x: 0.5,
     y,
@@ -238,10 +229,10 @@ export function buildFeatureTable(
   slide: any,
   features: Array<{ name: string; description: string; status?: 'yes' | 'no' | 'partial' }>,
   theme: PresentationTheme,
-  y: number = 2.0
+  y: number = 2.0,
 ): void {
   const rows: any[][] = [];
-  
+
   // Header
   rows.push([
     {
@@ -272,12 +263,13 @@ export function buildFeatureTable(
       },
     },
   ]);
-  
+
   // Data rows
   features.forEach((feature, i) => {
     const statusIcon = feature.status === 'yes' ? '✓' : feature.status === 'no' ? '✗' : '◐';
-    const statusColor = feature.status === 'yes' ? '28A745' : feature.status === 'no' ? 'DC3545' : 'FFC107';
-    
+    const statusColor =
+      feature.status === 'yes' ? '28A745' : feature.status === 'no' ? 'DC3545' : 'FFC107';
+
     rows.push([
       {
         text: feature.name,
@@ -305,7 +297,7 @@ export function buildFeatureTable(
       },
     ]);
   });
-  
+
   slide.addTable(rows, {
     x: 0.5,
     y,
@@ -329,22 +321,22 @@ function calculateColumnWidths(columnCount: number, totalWidth: number): number[
 export function parseMarkdownTable(markdown: string): ParsedTable | null {
   const lines = markdown.trim().split('\n');
   if (lines.length < 2) return null;
-  
+
   const parseRow = (line: string): string[] => {
     return line
       .split('|')
       .slice(1, -1)
-      .map(cell => cell.trim());
+      .map((cell) => cell.trim());
   };
-  
+
   // Check if it's a valid table
   if (!lines[0].includes('|')) return null;
-  
+
   const headers = parseRow(lines[0]);
-  
+
   // Skip separator line
   const dataLines = lines.filter((line, i) => i > 0 && !line.match(/^\|[\s-:|]+\|$/));
   const rows = dataLines.map(parseRow);
-  
+
   return { headers, rows };
 }

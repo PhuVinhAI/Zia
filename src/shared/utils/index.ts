@@ -49,7 +49,20 @@ export {
   isGeminiSupported,
   isTextConvertible,
 } from './httpClient.js';
-
+// Markdown to Zalo
+export {
+  type CodeBlock,
+  getFileExtension,
+  type MediaImage,
+  type ParsedMarkdown,
+  parseMarkdownToZalo,
+} from './markdownToZalo.js';
+// Message chunker
+export {
+  getMaxMessageLength,
+  needsChunking,
+  splitMessage,
+} from './messageChunker.js';
 // Message store
 export {
   cleanupOldMessages,
@@ -57,14 +70,6 @@ export {
   removeSentMessage,
   saveSentMessage,
 } from './messageStore.js';
-// Markdown to Zalo
-export {
-  getFileExtension,
-  parseMarkdownToZalo,
-  type CodeBlock,
-  type MediaImage,
-  type ParsedMarkdown,
-} from './markdownToZalo.js';
 // Task manager
 export {
   abortTask,
@@ -73,11 +78,5 @@ export {
   saveAbortedMessages,
   startTask,
 } from './taskManager.js';
-// Message chunker
-export {
-  getMaxMessageLength,
-  needsChunking,
-  splitMessage,
-} from './messageChunker.js';
 // Token counter
 export { filterUnsupportedMedia, isSupportedMime } from './tokenCounter.js';

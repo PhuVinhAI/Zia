@@ -3,9 +3,9 @@
  */
 import { debugLog } from '../../../core/logger/logger.js';
 import {
+  type ScheduleTaskParams,
   ScheduleTaskSchema,
   validateParams,
-  type ScheduleTaskParams,
 } from '../../../shared/schemas/tools.schema.js';
 import type { ToolContext, ToolDefinition, ToolResult } from '../../../shared/types/tools.types.js';
 import { createTask } from '../../background-agent/index.js';

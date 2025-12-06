@@ -3,8 +3,8 @@
  */
 
 import { Paragraph, TextRun } from 'docx';
-import type { DocumentTheme } from './types.js';
 import { getTheme } from './themes.js';
+import type { DocumentTheme } from './types.js';
 
 // ═══════════════════════════════════════════════════
 // EMOJI MAPPINGS
@@ -155,7 +155,7 @@ export function buildEmojiRun(emoji: string): TextRun {
 export function buildIconParagraph(
   emoji: string,
   size: 'small' | 'medium' | 'large' = 'medium',
-  theme?: DocumentTheme
+  theme?: DocumentTheme,
 ): Paragraph {
   const sizeMap = {
     small: 24,
@@ -180,7 +180,9 @@ export function buildIconParagraph(
  * Parse icon syntax
  * Syntax: [ICON:emoji:size]
  */
-export function parseIconSyntax(line: string): { emoji: string; size: 'small' | 'medium' | 'large' } | null {
+export function parseIconSyntax(
+  line: string,
+): { emoji: string; size: 'small' | 'medium' | 'large' } | null {
   const match = line.trim().match(/^\[ICON:([^:\]]+)(?::(\w+))?\]$/i);
   if (!match) return null;
 

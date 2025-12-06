@@ -3,8 +3,8 @@
  */
 
 import { Math as DocxMath, MathRun, Paragraph, TextRun } from 'docx';
-import type { DocumentTheme } from './types.js';
 import { getTheme } from './themes.js';
+import type { DocumentTheme } from './types.js';
 
 // ═══════════════════════════════════════════════════
 // MATH TYPES
@@ -29,8 +29,8 @@ export function parseMathExpressions(content: string): {
   mathBlocks: { index: number; expression: MathExpression }[];
 } {
   const mathBlocks: { index: number; expression: MathExpression }[] = [];
-  let cleanContent = content;
-  let offset = 0;
+  const cleanContent = content;
+  const offset = 0;
 
   // Block math: $$...$$
   const blockRegex = /\$\$([^$]+)\$\$/g;
@@ -64,7 +64,7 @@ export function parseMathExpressions(content: string): {
 export function buildMathParagraph(
   expression: string,
   isBlock: boolean,
-  theme?: DocumentTheme
+  theme?: DocumentTheme,
 ): Paragraph {
   const t = theme || getTheme();
 

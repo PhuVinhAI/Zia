@@ -6,7 +6,7 @@
 import { desc, eq, sql } from 'drizzle-orm';
 import { debugLog } from '../../core/logger/logger.js';
 import { EMBEDDING_DIM, getDatabase, getSqliteDb } from '../database/connection.js';
-import { memories, type Memory, type MemoryType, type NewMemory } from '../database/schema.js';
+import { type Memory, type MemoryType, memories, type NewMemory } from '../database/schema.js';
 import { isRateLimitError, keyManager } from '../gemini/keyManager.js';
 
 // ═══════════════════════════════════════════════════
@@ -130,7 +130,9 @@ class MemoryStore {
 
     // Tạo embedding và insert vào vec_memories (raw SQL vì virtual table)
     const embedding = await embeddingService.createEmbedding(content, 'RETRIEVAL_DOCUMENT');
-    sqlite.prepare('INSERT INTO vec_memories (memory_id, embedding) VALUES (?, ?)').run(memoryId, embedding);
+    sqlite
+      .prepare('INSERT INTO vec_memories (memory_id, embedding) VALUES (?, ?)')
+      .run(memoryId, embedding);
 
     debugLog('MEMORY', `Added memory #${memoryId}: ${content.substring(0, 50)}...`);
     return memoryId;
@@ -281,9 +283,7 @@ class MemoryStore {
   }> {
     const db = getDatabase();
 
-    const totalResult = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(memories);
+    const totalResult = await db.select({ count: sql<number>`count(*)` }).from(memories);
 
     const byTypeResult = await db
       .select({
@@ -303,7 +303,9 @@ class MemoryStore {
     const staleResult = await db
       .select({ count: sql<number>`count(*)` })
       .from(memories)
-      .where(sql`${memories.lastAccessedAt} < ${staleThreshold} OR ${memories.lastAccessedAt} IS NULL`);
+      .where(
+        sql`${memories.lastAccessedAt} < ${staleThreshold} OR ${memories.lastAccessedAt} IS NULL`,
+      );
 
     return {
       total: totalResult[0]?.count || 0,
@@ -312,7 +314,6 @@ class MemoryStore {
       staleCount: staleResult[0]?.count || 0,
     };
   }
-
 }
 
 // Singleton export

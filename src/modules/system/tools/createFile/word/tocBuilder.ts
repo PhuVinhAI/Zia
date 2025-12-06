@@ -2,14 +2,9 @@
  * Table of Contents Builder - Tạo mục lục tự động
  */
 
-import {
-  AlignmentType,
-  Paragraph,
-  TableOfContents,
-  TextRun,
-} from 'docx';
-import type { DocumentTheme } from './types.js';
+import { AlignmentType, Paragraph, TableOfContents, TextRun } from 'docx';
 import { getTheme } from './themes.js';
+import type { DocumentTheme } from './types.js';
 
 // ═══════════════════════════════════════════════════
 // TOC BUILDER
@@ -20,7 +15,7 @@ import { getTheme } from './themes.js';
  */
 export function buildTableOfContents(
   title?: string,
-  theme?: DocumentTheme
+  theme?: DocumentTheme,
 ): (Paragraph | TableOfContents)[] {
   const t = theme || getTheme();
   const result: (Paragraph | TableOfContents)[] = [];
@@ -40,7 +35,7 @@ export function buildTableOfContents(
           }),
         ],
         spacing: { before: 200, after: 300 },
-      })
+      }),
     );
   }
 
@@ -55,14 +50,14 @@ export function buildTableOfContents(
         { styleName: 'Heading3', level: 3 },
         { styleName: 'Heading4', level: 4 },
       ],
-    })
+    }),
   );
 
   // Page break after TOC
   result.push(
     new Paragraph({
       pageBreakBefore: true,
-    })
+    }),
   );
 
   return result;
@@ -74,7 +69,7 @@ export function buildTableOfContents(
 export function buildManualTOC(
   headings: { level: number; text: string }[],
   title?: string,
-  theme?: DocumentTheme
+  theme?: DocumentTheme,
 ): Paragraph[] {
   const t = theme || getTheme();
   const result: Paragraph[] = [];
@@ -93,7 +88,7 @@ export function buildManualTOC(
         }),
       ],
       spacing: { before: 200, after: 300 },
-    })
+    }),
   );
 
   // TOC entries
@@ -113,7 +108,7 @@ export function buildManualTOC(
         ],
         indent: { left: indent },
         spacing: { after: 80 },
-      })
+      }),
     );
   }
 
@@ -121,7 +116,7 @@ export function buildManualTOC(
   result.push(
     new Paragraph({
       spacing: { after: 400 },
-    })
+    }),
   );
 
   return result;

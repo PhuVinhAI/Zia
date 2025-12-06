@@ -2,6 +2,7 @@
  * Content Parser - Parse markdown content thành slides
  */
 
+import { SLIDE_SEPARATORS } from './constants.js';
 import type {
   BackgroundConfig,
   ParsedBullet,
@@ -14,7 +15,6 @@ import type {
   SlideType,
   TransitionType,
 } from './types.js';
-import { SLIDE_SEPARATORS } from './constants.js';
 
 // ═══════════════════════════════════════════════════
 // MAIN PARSER
@@ -28,16 +28,19 @@ export function parseContent(content: string): ParsedSlide[] {
 export function splitIntoSlides(content: string): string[] {
   // Try each separator pattern
   for (const separator of SLIDE_SEPARATORS) {
-    const parts = content.split(separator).map(s => s.trim()).filter(s => s.length > 0);
+    const parts = content
+      .split(separator)
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
     if (parts.length > 1) return parts;
   }
-  
+
   // Fallback: split by double newline + heading
   const headingSplit = content.split(/\n(?=# )/);
   if (headingSplit.length > 1) {
-    return headingSplit.map(s => s.trim()).filter(s => s.length > 0);
+    return headingSplit.map((s) => s.trim()).filter((s) => s.length > 0);
   }
-  
+
   // No split found, return as single slide
   return [content.trim()];
 }
@@ -177,7 +180,7 @@ export function parseSlide(text: string, index: number): ParsedSlide {
       const level = Math.floor(indent / 2);
       const text = bulletMatch[2].trim();
       const styles = extractTextStyles(text);
-      
+
       // Check for checkbox
       const checkMatch = text.match(/^\[([ x])\]\s*(.+)$/i);
       if (checkMatch) {
@@ -255,8 +258,8 @@ export function parseSlide(text: string, index: number): ParsedSlide {
 // ═══════════════════════════════════════════════════
 
 function parseBackground(value: string): BackgroundConfig {
-  const parts = value.split(':').map(p => p.trim());
-  
+  const parts = value.split(':').map((p) => p.trim());
+
   if (parts[0] === 'gradient') {
     return {
       type: 'gradient',
@@ -264,14 +267,14 @@ function parseBackground(value: string): BackgroundConfig {
       gradientDirection: 'vertical',
     };
   }
-  
+
   if (parts[0] === 'image') {
     return {
       type: 'image',
       imageData: parts[1],
     };
   }
-  
+
   return {
     type: 'solid',
     color: parts[0].replace('#', ''),
@@ -280,12 +283,12 @@ function parseBackground(value: string): BackgroundConfig {
 
 function parseTable(lines: string[]): ParsedTable {
   const rows = lines
-    .filter(line => !line.match(/^\|[\s-:|]+\|$/)) // Remove separator line
-    .map(line => 
+    .filter((line) => !line.match(/^\|[\s-:|]+\|$/)) // Remove separator line
+    .map((line) =>
       line
         .split('|')
         .slice(1, -1) // Remove empty first/last from split
-        .map(cell => cell.trim())
+        .map((cell) => cell.trim()),
     );
 
   return {
@@ -303,11 +306,11 @@ function parseImage(alt: string, src: string): ParsedImage {
 }
 
 function parseExtendedImage(params: string): ParsedImage {
-  const parts = params.split(',').map(p => p.trim());
+  const parts = params.split(',').map((p) => p.trim());
   const image: ParsedImage = { src: parts[0] };
-  
+
   for (const part of parts.slice(1)) {
-    const [key, value] = part.split('=').map(s => s.trim());
+    const [key, value] = part.split('=').map((s) => s.trim());
     switch (key) {
       case 'width':
         image.width = parseInt(value);
@@ -323,7 +326,7 @@ function parseExtendedImage(params: string): ParsedImage {
         break;
     }
   }
-  
+
   return image;
 }
 
@@ -352,13 +355,16 @@ function cleanText(text: string): string {
 // OPTIONS PARSER
 // ═══════════════════════════════════════════════════
 
-export function parseOptions(content: string): { options: Partial<PresentationOptions>; cleanContent: string } {
+export function parseOptions(content: string): {
+  options: Partial<PresentationOptions>;
+  cleanContent: string;
+} {
   const optionsMatch = content.match(/<!--\s*OPTIONS:\s*(\{[\s\S]*?\})\s*-->/);
-  
+
   if (!optionsMatch) {
     return { options: {}, cleanContent: content };
   }
-  
+
   try {
     const options = JSON.parse(optionsMatch[1]) as Partial<PresentationOptions>;
     const cleanContent = content.replace(optionsMatch[0], '').trim();

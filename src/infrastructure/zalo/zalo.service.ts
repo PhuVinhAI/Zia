@@ -25,12 +25,12 @@ function saveCredentials(api: any): void {
   try {
     const ctx = api.getContext();
     const credentialsJson = JSON.stringify(ctx, null, 2);
-    
+
     // Lưu vào file
     fs.writeFileSync(CREDENTIALS_PATH, credentialsJson);
     console.log(`💾 Đã lưu phiên đăng nhập vào ${CREDENTIALS_PATH}`);
     debugLog('ZALO', `Credentials saved to ${CREDENTIALS_PATH}`);
-    
+
     // Log base64 để user có thể copy vào env var (cho cloud deployment)
     const base64 = Buffer.from(JSON.stringify(ctx)).toString('base64');
     console.log(`\n📋 Để deploy lên cloud, thêm env var:`);

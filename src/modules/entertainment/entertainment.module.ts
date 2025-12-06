@@ -2,6 +2,7 @@
  * Entertainment Module - Anime/Manga via Jikan API
  */
 import { BaseModule, type ITool, type ModuleMetadata } from '../../core/index.js';
+import { giphyGifTool } from './tools/giphyGif.js';
 import { jikanCharactersTool } from './tools/jikanCharacters.js';
 import { jikanDetailsTool } from './tools/jikanDetails.js';
 import { jikanEpisodesTool } from './tools/jikanEpisodes.js';
@@ -11,7 +12,6 @@ import { jikanRecommendationsTool } from './tools/jikanRecommendations.js';
 import { jikanSearchTool } from './tools/jikanSearch.js';
 import { jikanSeasonTool } from './tools/jikanSeason.js';
 import { jikanTopTool } from './tools/jikanTop.js';
-import { giphyGifTool } from './tools/giphyGif.js';
 import { nekosImagesTool } from './tools/nekosImages.js';
 
 export class EntertainmentModule extends BaseModule {

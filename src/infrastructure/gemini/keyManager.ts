@@ -55,7 +55,9 @@ function parseApiKeys(): string[] {
   const uniqueKeys = [...new Set(keys)];
 
   if (uniqueKeys.length === 0) {
-    console.error('❌ Vui lòng cấu hình GEMINI_API_KEY hoặc GEMINI_API_KEY_1, GEMINI_API_KEY_2... trong file .env');
+    console.error(
+      '❌ Vui lòng cấu hình GEMINI_API_KEY hoặc GEMINI_API_KEY_1, GEMINI_API_KEY_2... trong file .env',
+    );
     process.exit(1);
   }
 
@@ -94,9 +96,11 @@ class GeminiKeyManager {
       const blockedUntil = this.blockedModels.get(i);
       if (blockedUntil && now >= blockedUntil) {
         this.blockedModels.delete(i);
-        console.log(`[KeyManager] ✅ Model ${MODEL_NAMES[GEMINI_MODELS[i]]} đã hết thời gian chờ, có thể sử dụng lại`);
+        console.log(
+          `[KeyManager] ✅ Model ${MODEL_NAMES[GEMINI_MODELS[i]]} đã hết thời gian chờ, có thể sử dụng lại`,
+        );
         debugLog('KEY_MANAGER', `Model ${GEMINI_MODELS[i]} unblocked`);
-        
+
         // Chuyển về model ưu tiên cao nhất vừa được unblock
         if (!unblocked) {
           this.currentModelIndex = i;
@@ -178,7 +182,9 @@ class GeminiKeyManager {
     const blockedUntil = Date.now() + MODEL_BLOCK_DURATION_MS;
     this.blockedModels.set(this.currentModelIndex, blockedUntil);
     const model = GEMINI_MODELS[this.currentModelIndex];
-    console.log(`[KeyManager] 🚫 Model ${MODEL_NAMES[model]} bị block 24h (tất cả keys đều rate limit)`);
+    console.log(
+      `[KeyManager] 🚫 Model ${MODEL_NAMES[model]} bị block 24h (tất cả keys đều rate limit)`,
+    );
     debugLog('KEY_MANAGER', `Model ${model} blocked until ${new Date(blockedUntil).toISOString()}`);
   }
 
@@ -191,12 +197,12 @@ class GeminiKeyManager {
 
     for (let i = 1; i < GEMINI_MODELS.length; i++) {
       const nextIndex = (this.currentModelIndex + i) % GEMINI_MODELS.length;
-      
+
       if (!this.blockedModels.has(nextIndex)) {
         this.currentModelIndex = nextIndex;
         this.rateLimitedKeys.clear(); // Reset keys khi đổi model
         this.currentKeyIndex = 0;
-        
+
         const model = GEMINI_MODELS[nextIndex];
         console.log(`[KeyManager] 🔄 Chuyển sang model ${MODEL_NAMES[model]}`);
         debugLog('KEY_MANAGER', `Rotated to model ${model}`);
@@ -246,16 +252,18 @@ class GeminiKeyManager {
    */
   handleRateLimitError(): boolean {
     this.markCurrentKeyRateLimited();
-    
+
     // Thử chuyển key trước
     if (this.rotateToNextKey()) {
       return true;
     }
 
     // Tất cả keys đều rate limit → block model và chuyển model
-    console.log(`[KeyManager] ⚠️ Tất cả ${this.keys.length} keys đều bị rate limit cho model ${this.getCurrentModelName()}`);
+    console.log(
+      `[KeyManager] ⚠️ Tất cả ${this.keys.length} keys đều bị rate limit cho model ${this.getCurrentModelName()}`,
+    );
     this.blockCurrentModel();
-    
+
     // Thử chuyển sang model khác
     if (this.rotateToNextModel()) {
       return true;
@@ -291,7 +299,12 @@ class GeminiKeyManager {
   /**
    * Lấy thông tin status của tất cả models
    */
-  getModelStatus(): { model: GeminiModel; name: string; available: boolean; blockedUntil?: Date }[] {
+  getModelStatus(): {
+    model: GeminiModel;
+    name: string;
+    available: boolean;
+    blockedUntil?: Date;
+  }[] {
     const now = Date.now();
     return GEMINI_MODELS.map((model, index) => {
       const blockedUntil = this.blockedModels.get(index);

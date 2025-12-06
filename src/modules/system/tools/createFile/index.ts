@@ -12,8 +12,8 @@ import {
 import { docxHandler } from './docxHandler.js';
 import { pdfHandler } from './pdfHandler.js';
 import { pptxHandler } from './pptxHandler.js';
-import { xlsxHandler } from './xlsxHandler.js';
 import { type FileHandler, MIME_TYPES } from './types.js';
+import { xlsxHandler } from './xlsxHandler.js';
 
 const FILE_HANDLERS: Record<string, FileHandler> = {
   docx: docxHandler,

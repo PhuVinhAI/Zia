@@ -3,6 +3,44 @@
  */
 
 import PptxGenJS from 'pptxgenjs';
+import {
+  buildAreaChart,
+  buildBarChart,
+  buildChart,
+  buildLineChart,
+  buildPieChart,
+  buildStatCard,
+} from './chartBuilder.js';
+import { buildCodeBlock, buildCodeComparison, buildStyledCodeBlock } from './codeBuilder.js';
+import { LAYOUTS } from './constants.js';
+import { parseContent, parseOptions } from './contentParser.js';
+import {
+  buildImage,
+  buildImageGallery,
+  buildImageWithText,
+  buildLogo,
+  buildPositionedImage,
+} from './imageBuilder.js';
+import { createMasterSlides, getMasterForSlideType } from './masterSlide.js';
+import {
+  buildBadge,
+  buildBox,
+  buildCallout,
+  buildDecoratedDivider,
+  buildDivider,
+  buildIconGrid,
+  buildProcessFlow,
+  buildShape,
+  buildTimeline,
+} from './shapeBuilder.js';
+import { buildSlide } from './slideBuilder.js';
+import {
+  buildComparisonTable,
+  buildFeatureTable,
+  buildStyledTable,
+  buildTable,
+} from './tableBuilder.js';
+import { getTheme } from './themes.js';
 import type {
   ChartConfig,
   MasterSlideConfig,
@@ -11,16 +49,6 @@ import type {
   PresentationTheme,
   SlideType,
 } from './types.js';
-import { getTheme } from './themes.js';
-import { LAYOUTS } from './constants.js';
-import { createMasterSlides, getMasterForSlideType } from './masterSlide.js';
-import { parseContent, parseOptions } from './contentParser.js';
-import { buildSlide } from './slideBuilder.js';
-import { buildTable, buildStyledTable, buildComparisonTable, buildFeatureTable } from './tableBuilder.js';
-import { buildCodeBlock, buildStyledCodeBlock, buildCodeComparison } from './codeBuilder.js';
-import { buildChart, buildBarChart, buildLineChart, buildPieChart, buildAreaChart, buildStatCard } from './chartBuilder.js';
-import { buildImage, buildPositionedImage, buildImageGallery, buildImageWithText, buildLogo } from './imageBuilder.js';
-import { buildShape, buildCallout, buildBox, buildBadge, buildDivider, buildDecoratedDivider, buildProcessFlow, buildTimeline, buildIconGrid } from './shapeBuilder.js';
 
 // ═══════════════════════════════════════════════════
 // PRESENTATION BUILDER CLASS
@@ -37,7 +65,7 @@ export class PresentationBuilder {
     this.pptx = new Pptx();
     this.options = options;
     this.theme = options.theme ? getTheme(options.theme.name) : getTheme();
-    
+
     this.initializePresentation();
   }
 
@@ -47,11 +75,11 @@ export class PresentationBuilder {
     this.pptx.title = this.options.title || 'Presentation';
     this.pptx.subject = this.options.subject || 'Created by Zia AI Bot';
     this.pptx.company = this.options.company || 'Zia AI';
-    
+
     // Set layout
     const layout = this.options.layout || 'LAYOUT_16x9';
     this.pptx.layout = layout;
-    
+
     // Create master slides
     createMasterSlides(this.pptx, this.theme, this.options.masterSlide);
   }
@@ -69,7 +97,7 @@ export class PresentationBuilder {
 
   addTitleSlide(title: string, subtitle?: string, author?: string): this {
     const slide = this.addSlide('title');
-    
+
     slide.addText(title, {
       x: 0.5,
       y: 2.0,
@@ -82,7 +110,7 @@ export class PresentationBuilder {
       align: 'center',
       valign: 'middle',
     });
-    
+
     if (subtitle) {
       slide.addText(subtitle, {
         x: 0.5,
@@ -95,7 +123,7 @@ export class PresentationBuilder {
         align: 'center',
       });
     }
-    
+
     if (author) {
       slide.addText(author, {
         x: 0.5,
@@ -108,13 +136,13 @@ export class PresentationBuilder {
         align: 'center',
       });
     }
-    
+
     return this;
   }
 
   addSectionSlide(title: string, subtitle?: string): this {
     const slide = this.addSlide('section');
-    
+
     slide.addText(title, {
       x: 0.5,
       y: 2.2,
@@ -126,7 +154,7 @@ export class PresentationBuilder {
       fontFace: this.theme.fonts.title,
       align: 'left',
     });
-    
+
     if (subtitle) {
       slide.addText(subtitle, {
         x: 0.5,
@@ -139,14 +167,14 @@ export class PresentationBuilder {
         align: 'left',
       });
     }
-    
+
     return this;
   }
 
   addContentSlide(title: string, bullets: string[], subtitle?: string): this {
     const slide = this.addSlide('content');
     let currentY = 0.5;
-    
+
     slide.addText(title, {
       x: 0.5,
       y: currentY,
@@ -158,7 +186,7 @@ export class PresentationBuilder {
       fontFace: this.theme.fonts.title,
     });
     currentY = 1.6;
-    
+
     if (subtitle) {
       slide.addText(subtitle, {
         x: 0.5,
@@ -171,12 +199,12 @@ export class PresentationBuilder {
       });
       currentY += 0.6;
     }
-    
-    const bulletItems = bullets.map(text => ({
+
+    const bulletItems = bullets.map((text) => ({
       text,
       options: { bullet: { type: 'bullet' }, indentLevel: 0 },
     }));
-    
+
     slide.addText(bulletItems, {
       x: 0.5,
       y: currentY,
@@ -188,13 +216,13 @@ export class PresentationBuilder {
       valign: 'top',
       paraSpaceAfter: this.theme.spacing.bulletSpacing,
     });
-    
+
     return this;
   }
 
   addTwoColumnSlide(title: string, leftContent: string[], rightContent: string[]): this {
     const slide = this.addSlide('twoColumn');
-    
+
     slide.addText(title, {
       x: 0.5,
       y: 0.5,
@@ -205,13 +233,13 @@ export class PresentationBuilder {
       color: this.theme.colors.titleText,
       fontFace: this.theme.fonts.title,
     });
-    
+
     // Left column
-    const leftItems = leftContent.map(text => ({
+    const leftItems = leftContent.map((text) => ({
       text,
       options: { bullet: { type: 'bullet' } },
     }));
-    
+
     slide.addText(leftItems, {
       x: 0.5,
       y: 1.8,
@@ -223,13 +251,13 @@ export class PresentationBuilder {
       valign: 'top',
       paraSpaceAfter: this.theme.spacing.bulletSpacing,
     });
-    
+
     // Right column
-    const rightItems = rightContent.map(text => ({
+    const rightItems = rightContent.map((text) => ({
       text,
       options: { bullet: { type: 'bullet' } },
     }));
-    
+
     slide.addText(rightItems, {
       x: 5.2,
       y: 1.8,
@@ -241,13 +269,13 @@ export class PresentationBuilder {
       valign: 'top',
       paraSpaceAfter: this.theme.spacing.bulletSpacing,
     });
-    
+
     return this;
   }
 
   addQuoteSlide(quote: string, author?: string, source?: string): this {
     const slide = this.addSlide('quote');
-    
+
     slide.addText(`"${quote}"`, {
       x: 1.0,
       y: 1.5,
@@ -260,7 +288,7 @@ export class PresentationBuilder {
       align: 'center',
       valign: 'middle',
     });
-    
+
     if (author) {
       slide.addText(`— ${author}`, {
         x: 1.0,
@@ -273,7 +301,7 @@ export class PresentationBuilder {
         align: 'right',
       });
     }
-    
+
     if (source) {
       slide.addText(source, {
         x: 1.0,
@@ -287,13 +315,13 @@ export class PresentationBuilder {
         align: 'right',
       });
     }
-    
+
     return this;
   }
 
   addThankYouSlide(title: string = 'Thank You!', contactInfo?: string[]): this {
     const slide = this.addSlide('thankyou');
-    
+
     slide.addText(title, {
       x: 0.5,
       y: 2.0,
@@ -306,7 +334,7 @@ export class PresentationBuilder {
       align: 'center',
       valign: 'middle',
     });
-    
+
     if (contactInfo && contactInfo.length > 0) {
       slide.addText(contactInfo.join('\n'), {
         x: 0.5,
@@ -319,7 +347,7 @@ export class PresentationBuilder {
         align: 'center',
       });
     }
-    
+
     return this;
   }
 
@@ -327,7 +355,11 @@ export class PresentationBuilder {
   // CONTENT BUILDERS (delegated)
   // ═══════════════════════════════════════════════════
 
-  addTableToSlide(slide: any, table: { headers: string[]; rows: string[][] }, y: number = 2.0): this {
+  addTableToSlide(
+    slide: any,
+    table: { headers: string[]; rows: string[][] },
+    y: number = 2.0,
+  ): this {
     buildTable(slide, table, y, this.theme);
     return this;
   }
@@ -342,7 +374,11 @@ export class PresentationBuilder {
     return this;
   }
 
-  addImageToSlide(slide: any, imageData: string, options?: { x?: number; y?: number; width?: number; height?: number; caption?: string }): this {
+  addImageToSlide(
+    slide: any,
+    imageData: string,
+    options?: { x?: number; y?: number; width?: number; height?: number; caption?: string },
+  ): this {
     buildPositionedImage(slide, imageData, {
       x: options?.x || 2.5,
       y: options?.y || 1.5,
@@ -354,22 +390,41 @@ export class PresentationBuilder {
     return this;
   }
 
-  addCalloutToSlide(slide: any, type: 'info' | 'tip' | 'note' | 'warning' | 'important' | 'success' | 'error', text: string, y: number = 2.0): this {
+  addCalloutToSlide(
+    slide: any,
+    type: 'info' | 'tip' | 'note' | 'warning' | 'important' | 'success' | 'error',
+    text: string,
+    y: number = 2.0,
+  ): this {
     buildCallout(slide, type, text, { y, theme: this.theme });
     return this;
   }
 
-  addBoxToSlide(slide: any, type: 'info' | 'success' | 'warning' | 'error' | 'note' | 'quote' | 'code', title: string, content: string, y: number = 2.0): this {
+  addBoxToSlide(
+    slide: any,
+    type: 'info' | 'success' | 'warning' | 'error' | 'note' | 'quote' | 'code',
+    title: string,
+    content: string,
+    y: number = 2.0,
+  ): this {
     buildBox(slide, type, title, content, { y, theme: this.theme });
     return this;
   }
 
-  addProcessFlowToSlide(slide: any, steps: Array<{ title: string; description?: string }>, y: number = 2.5): this {
+  addProcessFlowToSlide(
+    slide: any,
+    steps: Array<{ title: string; description?: string }>,
+    y: number = 2.5,
+  ): this {
     buildProcessFlow(slide, steps, this.theme, y);
     return this;
   }
 
-  addTimelineToSlide(slide: any, events: Array<{ date: string; title: string; description?: string }>, y: number = 2.5): this {
+  addTimelineToSlide(
+    slide: any,
+    events: Array<{ date: string; title: string; description?: string }>,
+    y: number = 2.5,
+  ): this {
     buildTimeline(slide, events, this.theme, y);
     return this;
   }
@@ -380,7 +435,7 @@ export class PresentationBuilder {
 
   buildFromMarkdown(content: string): this {
     const { options, cleanContent } = parseOptions(content);
-    
+
     // Apply options
     if (options.theme?.name) {
       this.theme = getTheme(options.theme.name);
@@ -391,14 +446,14 @@ export class PresentationBuilder {
     if (options.author) {
       this.pptx.author = options.author;
     }
-    
+
     // Parse and build slides
     const slides = parseContent(cleanContent);
-    
+
     for (let i = 0; i < slides.length; i++) {
       buildSlide(this.pptx, slides[i], i, this.theme, this.options.showSlideNumbers !== false);
     }
-    
+
     return this;
   }
 
@@ -431,7 +486,7 @@ export class PresentationBuilder {
 
 export async function buildPresentation(
   content: string,
-  options?: PresentationOptions
+  options?: PresentationOptions,
 ): Promise<Buffer> {
   const builder = new PresentationBuilder(options);
   return builder.buildFromMarkdown(content).build();
@@ -443,10 +498,10 @@ export async function buildSimplePresentation(
     bullets?: string[];
     type?: SlideType;
   }>,
-  options?: PresentationOptions
+  options?: PresentationOptions,
 ): Promise<Buffer> {
   const builder = new PresentationBuilder(options);
-  
+
   for (const slideData of slides) {
     if (slideData.type === 'title') {
       builder.addTitleSlide(slideData.title, slideData.bullets?.[0]);
@@ -456,6 +511,6 @@ export async function buildSimplePresentation(
       builder.addContentSlide(slideData.title, slideData.bullets || []);
     }
   }
-  
+
   return builder.build();
 }

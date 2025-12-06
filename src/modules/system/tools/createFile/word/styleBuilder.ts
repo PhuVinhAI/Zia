@@ -3,8 +3,8 @@
  */
 
 import { AlignmentType, UnderlineType } from 'docx';
-import type { DocumentTheme } from './types.js';
 import { FONT_SIZES } from './constants.js';
+import type { DocumentTheme } from './types.js';
 
 // ═══════════════════════════════════════════════════
 // DOCUMENT STYLES
@@ -210,25 +210,79 @@ export function buildNumberingConfig() {
       {
         reference: 'default-numbering',
         levels: [
-          { level: 0, format: 'decimal' as const, text: '%1.', alignment: AlignmentType.START, style: { paragraph: { indent: { left: 720, hanging: 360 } } } },
-          { level: 1, format: 'lowerLetter' as const, text: '%2)', alignment: AlignmentType.START, style: { paragraph: { indent: { left: 1440, hanging: 360 } } } },
-          { level: 2, format: 'lowerRoman' as const, text: '%3.', alignment: AlignmentType.START, style: { paragraph: { indent: { left: 2160, hanging: 360 } } } },
-          { level: 3, format: 'decimal' as const, text: '%4.', alignment: AlignmentType.START, style: { paragraph: { indent: { left: 2880, hanging: 360 } } } },
+          {
+            level: 0,
+            format: 'decimal' as const,
+            text: '%1.',
+            alignment: AlignmentType.START,
+            style: { paragraph: { indent: { left: 720, hanging: 360 } } },
+          },
+          {
+            level: 1,
+            format: 'lowerLetter' as const,
+            text: '%2)',
+            alignment: AlignmentType.START,
+            style: { paragraph: { indent: { left: 1440, hanging: 360 } } },
+          },
+          {
+            level: 2,
+            format: 'lowerRoman' as const,
+            text: '%3.',
+            alignment: AlignmentType.START,
+            style: { paragraph: { indent: { left: 2160, hanging: 360 } } },
+          },
+          {
+            level: 3,
+            format: 'decimal' as const,
+            text: '%4.',
+            alignment: AlignmentType.START,
+            style: { paragraph: { indent: { left: 2880, hanging: 360 } } },
+          },
         ],
       },
       {
         reference: 'bullet-list',
         levels: [
-          { level: 0, format: 'bullet' as const, text: '•', alignment: AlignmentType.START, style: { paragraph: { indent: { left: 720, hanging: 360 } } } },
-          { level: 1, format: 'bullet' as const, text: '○', alignment: AlignmentType.START, style: { paragraph: { indent: { left: 1440, hanging: 360 } } } },
-          { level: 2, format: 'bullet' as const, text: '■', alignment: AlignmentType.START, style: { paragraph: { indent: { left: 2160, hanging: 360 } } } },
-          { level: 3, format: 'bullet' as const, text: '–', alignment: AlignmentType.START, style: { paragraph: { indent: { left: 2880, hanging: 360 } } } },
+          {
+            level: 0,
+            format: 'bullet' as const,
+            text: '•',
+            alignment: AlignmentType.START,
+            style: { paragraph: { indent: { left: 720, hanging: 360 } } },
+          },
+          {
+            level: 1,
+            format: 'bullet' as const,
+            text: '○',
+            alignment: AlignmentType.START,
+            style: { paragraph: { indent: { left: 1440, hanging: 360 } } },
+          },
+          {
+            level: 2,
+            format: 'bullet' as const,
+            text: '■',
+            alignment: AlignmentType.START,
+            style: { paragraph: { indent: { left: 2160, hanging: 360 } } },
+          },
+          {
+            level: 3,
+            format: 'bullet' as const,
+            text: '–',
+            alignment: AlignmentType.START,
+            style: { paragraph: { indent: { left: 2880, hanging: 360 } } },
+          },
         ],
       },
       {
         reference: 'checklist',
         levels: [
-          { level: 0, format: 'bullet' as const, text: '☐', alignment: AlignmentType.START, style: { paragraph: { indent: { left: 720, hanging: 360 } } } },
+          {
+            level: 0,
+            format: 'bullet' as const,
+            text: '☐',
+            alignment: AlignmentType.START,
+            style: { paragraph: { indent: { left: 720, hanging: 360 } } },
+          },
         ],
       },
     ],

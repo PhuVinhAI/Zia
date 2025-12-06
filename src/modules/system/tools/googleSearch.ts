@@ -3,10 +3,7 @@
  */
 
 import { debugLog } from '../../../core/logger/logger.js';
-import {
-  GoogleSearchSchema,
-  validateParams,
-} from '../../../shared/schemas/tools.schema.js';
+import { GoogleSearchSchema, validateParams } from '../../../shared/schemas/tools.schema.js';
 import type { ToolDefinition, ToolResult } from '../../../shared/types/tools.types.js';
 import { googleSearch } from '../services/googleSearchClient.js';
 

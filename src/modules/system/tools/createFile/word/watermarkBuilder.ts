@@ -3,9 +3,9 @@
  * Note: docx library có hạn chế với watermark, đây là workaround
  */
 
-import { AlignmentType, Paragraph, TextRun, Header } from 'docx';
-import type { DocumentTheme, WatermarkConfig } from './types.js';
+import { AlignmentType, Header, Paragraph, TextRun } from 'docx';
 import { getTheme } from './themes.js';
+import type { DocumentTheme, WatermarkConfig } from './types.js';
 
 // ═══════════════════════════════════════════════════
 // WATERMARK BUILDER
@@ -15,10 +15,7 @@ import { getTheme } from './themes.js';
  * Build watermark header (workaround for watermark)
  * Watermark sẽ xuất hiện ở header của mỗi trang
  */
-export function buildWatermarkHeader(
-  config: WatermarkConfig,
-  theme?: DocumentTheme
-): Header {
+export function buildWatermarkHeader(config: WatermarkConfig, theme?: DocumentTheme): Header {
   const t = theme || getTheme();
   const color = config.color || 'E0E0E0';
 

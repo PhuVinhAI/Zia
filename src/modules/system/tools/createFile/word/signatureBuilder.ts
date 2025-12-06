@@ -3,8 +3,8 @@
  */
 
 import { AlignmentType, BorderStyle, Paragraph, TextRun } from 'docx';
-import type { DocumentTheme } from './types.js';
 import { getTheme } from './themes.js';
+import type { DocumentTheme } from './types.js';
 
 // ═══════════════════════════════════════════════════
 // SIGNATURE TYPES
@@ -31,23 +31,21 @@ export interface MultiSignatureConfig {
 /**
  * Build signature block
  */
-export function buildSignatureBlock(
-  config: SignatureConfig,
-  theme?: DocumentTheme
-): Paragraph[] {
+export function buildSignatureBlock(config: SignatureConfig, theme?: DocumentTheme): Paragraph[] {
   const t = theme || getTheme();
   const paragraphs: Paragraph[] = [];
-  const alignment = config.alignment === 'left' 
-    ? AlignmentType.LEFT 
-    : config.alignment === 'right' 
-      ? AlignmentType.RIGHT 
-      : AlignmentType.CENTER;
+  const alignment =
+    config.alignment === 'left'
+      ? AlignmentType.LEFT
+      : config.alignment === 'right'
+        ? AlignmentType.RIGHT
+        : AlignmentType.CENTER;
 
   // Spacing before signature
   paragraphs.push(
     new Paragraph({
       spacing: { before: 600 },
-    })
+    }),
   );
 
   // Signature line
@@ -63,7 +61,7 @@ export function buildSignatureBlock(
           }),
         ],
         spacing: { after: 80 },
-      })
+      }),
     );
   }
 
@@ -81,7 +79,7 @@ export function buildSignatureBlock(
         }),
       ],
       spacing: { after: 40 },
-    })
+    }),
   );
 
   // Title
@@ -98,7 +96,7 @@ export function buildSignatureBlock(
           }),
         ],
         spacing: { after: 40 },
-      })
+      }),
     );
   }
 
@@ -117,7 +115,7 @@ export function buildSignatureBlock(
           }),
         ],
         spacing: { after: 40 },
-      })
+      }),
     );
   }
 
@@ -134,7 +132,7 @@ export function buildSignatureBlock(
             color: t.colors.secondary,
           }),
         ],
-      })
+      }),
     );
   }
 
@@ -147,7 +145,7 @@ export function buildSignatureBlock(
 export function buildApprovalBlock(
   approver: SignatureConfig,
   creator: SignatureConfig,
-  theme?: DocumentTheme
+  theme?: DocumentTheme,
 ): Paragraph[] {
   const t = theme || getTheme();
   const paragraphs: Paragraph[] = [];
@@ -156,7 +154,7 @@ export function buildApprovalBlock(
   paragraphs.push(
     new Paragraph({
       spacing: { before: 600 },
-    })
+    }),
   );
 
   // Two-column signature using tabs
@@ -182,7 +180,7 @@ export function buildApprovalBlock(
         }),
       ],
       spacing: { after: 400 },
-    })
+    }),
   );
 
   // Signature lines
@@ -202,7 +200,7 @@ export function buildApprovalBlock(
         }),
       ],
       spacing: { after: 80 },
-    })
+    }),
   );
 
   // Names
@@ -226,7 +224,7 @@ export function buildApprovalBlock(
         }),
       ],
       spacing: { after: 40 },
-    })
+    }),
   );
 
   // Titles
@@ -250,7 +248,7 @@ export function buildApprovalBlock(
             color: t.colors.secondary,
           }),
         ],
-      })
+      }),
     );
   }
 
@@ -262,7 +260,9 @@ export function buildApprovalBlock(
  * Syntax: [SIGNATURE:name:title:company:date]
  */
 export function parseSignatureSyntax(line: string): SignatureConfig | null {
-  const match = line.trim().match(/^\[SIGNATURE:([^:\]]+)(?::([^:\]]+))?(?::([^:\]]+))?(?::([^\]]+))?\]$/i);
+  const match = line
+    .trim()
+    .match(/^\[SIGNATURE:([^:\]]+)(?::([^:\]]+))?(?::([^:\]]+))?(?::([^\]]+))?\]$/i);
   if (!match) return null;
 
   return {
@@ -277,12 +277,14 @@ export function parseSignatureSyntax(line: string): SignatureConfig | null {
  * Parse approval block syntax
  * Syntax: [APPROVAL:approverName:approverTitle|creatorName:creatorTitle]
  */
-export function parseApprovalSyntax(line: string): { approver: SignatureConfig; creator: SignatureConfig } | null {
+export function parseApprovalSyntax(
+  line: string,
+): { approver: SignatureConfig; creator: SignatureConfig } | null {
   const match = line.trim().match(/^\[APPROVAL:([^|]+)\|([^\]]+)\]$/i);
   if (!match) return null;
 
-  const approverParts = match[1].split(':').map(s => s.trim());
-  const creatorParts = match[2].split(':').map(s => s.trim());
+  const approverParts = match[1].split(':').map((s) => s.trim());
+  const creatorParts = match[2].split(':').map((s) => s.trim());
 
   return {
     approver: {

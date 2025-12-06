@@ -4,15 +4,39 @@
  */
 
 // ═══════════════════════════════════════════════════
-// TYPES
+// BADGES
 // ═══════════════════════════════════════════════════
-export * from './types.js';
-
+export {
+  type BadgeConfig,
+  buildBadgeParagraph,
+  buildBadgeRun,
+  hasBadges,
+  parseBadges,
+  removeBadgeSyntax,
+} from './badgeBuilder.js';
 // ═══════════════════════════════════════════════════
-// THEMES
+// BOXES
 // ═══════════════════════════════════════════════════
-export { getTheme, getThemeNames, THEMES } from './themes.js';
-
+export {
+  type BoxConfig,
+  type BoxType,
+  buildBox,
+  buildSimpleBox,
+  hasBoxSyntax,
+  parseBoxSyntax,
+} from './boxBuilder.js';
+// ═══════════════════════════════════════════════════
+// COLUMNS
+// ═══════════════════════════════════════════════════
+export {
+  buildColumnBreak,
+  buildColumnSectionProperties,
+  buildSingleColumnSectionProperties,
+  type ColumnConfig,
+  type ColumnSection,
+  isColumnBreak,
+  parseColumnSections,
+} from './columnBuilder.js';
 // ═══════════════════════════════════════════════════
 // CONSTANTS
 // ═══════════════════════════════════════════════════
@@ -28,17 +52,6 @@ export {
   ORIENTATIONS,
   PAGE_SIZES,
 } from './constants.js';
-
-// ═══════════════════════════════════════════════════
-// STYLE BUILDER
-// ═══════════════════════════════════════════════════
-export { buildDocumentStyles, buildNumberingConfig } from './styleBuilder.js';
-
-// ═══════════════════════════════════════════════════
-// TABLE BUILDER
-// ═══════════════════════════════════════════════════
-export { buildTable, buildTableFromCSV, parseMarkdownTable } from './tableBuilder.js';
-
 // ═══════════════════════════════════════════════════
 // CONTENT BUILDER
 // ═══════════════════════════════════════════════════
@@ -51,74 +64,17 @@ export {
   parseExtendedContent,
   tokensToTextRuns,
 } from './contentBuilder.js';
-
 // ═══════════════════════════════════════════════════
-// HEADER/FOOTER
-// ═══════════════════════════════════════════════════
-export {
-  buildDefaultFooter,
-  buildDefaultHeader,
-  buildFooter,
-  buildHeader,
-} from './headerFooter.js';
-
-// ═══════════════════════════════════════════════════
-// TABLE OF CONTENTS
+// COVER PAGES
 // ═══════════════════════════════════════════════════
 export {
-  buildManualTOC,
-  buildTableOfContents,
-  extractHeadings,
-} from './tocBuilder.js';
-
-// ═══════════════════════════════════════════════════
-// FOOTNOTES
-// ═══════════════════════════════════════════════════
-export {
-  buildFootnoteContent,
-  buildFootnoteReference,
-  hasFootnoteReference,
-  markFootnoteReferences,
-  parseFootnotes,
-  type FootnoteData,
-} from './footnoteBuilder.js';
-
-// ═══════════════════════════════════════════════════
-// IMAGES
-// ═══════════════════════════════════════════════════
-export {
-  buildImageParagraph,
-  parseImageSyntax,
-} from './imageBuilder.js';
-
-// ═══════════════════════════════════════════════════
-// LISTS (Advanced)
-// ═══════════════════════════════════════════════════
-export {
-  buildChecklist,
-  buildChecklistItem,
-  buildDefinitionList,
-  calculateIndentLevel,
-  isListItem,
-  parseChecklist,
-  parseDefinitionList,
-  type ChecklistItem,
-  type DefinitionItem,
-} from './listBuilder.js';
-
-// ═══════════════════════════════════════════════════
-// COLUMNS
-// ═══════════════════════════════════════════════════
-export {
-  buildColumnBreak,
-  buildColumnSectionProperties,
-  buildSingleColumnSectionProperties,
-  isColumnBreak,
-  parseColumnSections,
-  type ColumnConfig,
-  type ColumnSection,
-} from './columnBuilder.js';
-
+  buildCoverPage,
+  buildTitleBlock,
+  type CoverPageConfig,
+  hasCoverPageSyntax,
+  parseCoverPageSyntax,
+  removeCoverPageSyntax,
+} from './coverPageBuilder.js';
 // ═══════════════════════════════════════════════════
 // DIVIDERS
 // ═══════════════════════════════════════════════════
@@ -127,60 +83,19 @@ export {
   buildDivider,
   buildOrnamentDivider,
   buildStarDivider,
-  isDivider,
-  parseDividerSyntax,
   type DividerConfig,
   type DividerStyle,
+  isDivider,
+  parseDividerSyntax,
 } from './dividerBuilder.js';
-
 // ═══════════════════════════════════════════════════
-// BADGES
-// ═══════════════════════════════════════════════════
-export {
-  buildBadgeParagraph,
-  buildBadgeRun,
-  hasBadges,
-  parseBadges,
-  removeBadgeSyntax,
-  type BadgeConfig,
-} from './badgeBuilder.js';
-
-// ═══════════════════════════════════════════════════
-// MATH
+// DOCUMENT BUILDER (Main)
 // ═══════════════════════════════════════════════════
 export {
-  buildMathParagraph,
-  hasMathExpression,
-  parseMathExpressions,
-  renderMathExpression,
-  type MathExpression,
-} from './mathBuilder.js';
-
-// ═══════════════════════════════════════════════════
-// BOXES
-// ═══════════════════════════════════════════════════
-export {
-  buildBox,
-  buildSimpleBox,
-  hasBoxSyntax,
-  parseBoxSyntax,
-  type BoxConfig,
-  type BoxType,
-} from './boxBuilder.js';
-
-// ═══════════════════════════════════════════════════
-// HIGHLIGHTS
-// ═══════════════════════════════════════════════════
-export {
-  buildHighlightedParagraph,
-  buildHighlightedRun,
-  buildMarkedRun,
-  hasHighlights,
-  parseHighlights,
-  type HighlightColorName,
-  type HighlightConfig,
-} from './highlightBuilder.js';
-
+  buildSimpleDocument,
+  buildWordDocument,
+  WordDocumentBuilder,
+} from './documentBuilder.js';
 // ═══════════════════════════════════════════════════
 // EMOJIS
 // ═══════════════════════════════════════════════════
@@ -192,7 +107,106 @@ export {
   parseIconSyntax,
   replaceEmojiShortcuts,
 } from './emojiBuilder.js';
+// ═══════════════════════════════════════════════════
+// FOOTNOTES
+// ═══════════════════════════════════════════════════
+export {
+  buildFootnoteContent,
+  buildFootnoteReference,
+  type FootnoteData,
+  hasFootnoteReference,
+  markFootnoteReferences,
+  parseFootnotes,
+} from './footnoteBuilder.js';
+// ═══════════════════════════════════════════════════
+// HEADER/FOOTER
+// ═══════════════════════════════════════════════════
+export {
+  buildDefaultFooter,
+  buildDefaultHeader,
+  buildFooter,
+  buildHeader,
+} from './headerFooter.js';
+// ═══════════════════════════════════════════════════
+// HIGHLIGHTS
+// ═══════════════════════════════════════════════════
+export {
+  buildHighlightedParagraph,
+  buildHighlightedRun,
+  buildMarkedRun,
+  type HighlightColorName,
+  type HighlightConfig,
+  hasHighlights,
+  parseHighlights,
+} from './highlightBuilder.js';
+// ═══════════════════════════════════════════════════
+// IMAGES
+// ═══════════════════════════════════════════════════
+export {
+  buildImageParagraph,
+  parseImageSyntax,
+} from './imageBuilder.js';
+// ═══════════════════════════════════════════════════
+// LISTS (Advanced)
+// ═══════════════════════════════════════════════════
+export {
+  buildChecklist,
+  buildChecklistItem,
+  buildDefinitionList,
+  type ChecklistItem,
+  calculateIndentLevel,
+  type DefinitionItem,
+  isListItem,
+  parseChecklist,
+  parseDefinitionList,
+} from './listBuilder.js';
 
+// ═══════════════════════════════════════════════════
+// MATH
+// ═══════════════════════════════════════════════════
+export {
+  buildMathParagraph,
+  hasMathExpression,
+  type MathExpression,
+  parseMathExpressions,
+  renderMathExpression,
+} from './mathBuilder.js';
+// ═══════════════════════════════════════════════════
+// SIGNATURES
+// ═══════════════════════════════════════════════════
+export {
+  buildApprovalBlock,
+  buildSignatureBlock,
+  isSignatureSyntax,
+  type MultiSignatureConfig,
+  parseApprovalSyntax,
+  parseSignatureSyntax,
+  type SignatureConfig,
+} from './signatureBuilder.js';
+// ═══════════════════════════════════════════════════
+// STYLE BUILDER
+// ═══════════════════════════════════════════════════
+export { buildDocumentStyles, buildNumberingConfig } from './styleBuilder.js';
+// ═══════════════════════════════════════════════════
+// TABLE BUILDER
+// ═══════════════════════════════════════════════════
+export { buildTable, buildTableFromCSV, parseMarkdownTable } from './tableBuilder.js';
+// ═══════════════════════════════════════════════════
+// THEMES
+// ═══════════════════════════════════════════════════
+export { getTheme, getThemeNames, THEMES } from './themes.js';
+// ═══════════════════════════════════════════════════
+// TABLE OF CONTENTS
+// ═══════════════════════════════════════════════════
+export {
+  buildManualTOC,
+  buildTableOfContents,
+  extractHeadings,
+} from './tocBuilder.js';
+// ═══════════════════════════════════════════════════
+// TYPES
+// ═══════════════════════════════════════════════════
+export * from './types.js';
 // ═══════════════════════════════════════════════════
 // WATERMARKS
 // ═══════════════════════════════════════════════════
@@ -202,41 +216,7 @@ export {
   buildSampleWatermark,
   buildWatermarkHeader,
   getPredefinedWatermark,
-  parseWatermarkSyntax,
   PREDEFINED_WATERMARKS,
+  parseWatermarkSyntax,
   removeWatermarkSyntax,
 } from './watermarkBuilder.js';
-
-// ═══════════════════════════════════════════════════
-// SIGNATURES
-// ═══════════════════════════════════════════════════
-export {
-  buildApprovalBlock,
-  buildSignatureBlock,
-  isSignatureSyntax,
-  parseApprovalSyntax,
-  parseSignatureSyntax,
-  type MultiSignatureConfig,
-  type SignatureConfig,
-} from './signatureBuilder.js';
-
-// ═══════════════════════════════════════════════════
-// COVER PAGES
-// ═══════════════════════════════════════════════════
-export {
-  buildCoverPage,
-  buildTitleBlock,
-  hasCoverPageSyntax,
-  parseCoverPageSyntax,
-  removeCoverPageSyntax,
-  type CoverPageConfig,
-} from './coverPageBuilder.js';
-
-// ═══════════════════════════════════════════════════
-// DOCUMENT BUILDER (Main)
-// ═══════════════════════════════════════════════════
-export {
-  buildSimpleDocument,
-  buildWordDocument,
-  WordDocumentBuilder,
-} from './documentBuilder.js';

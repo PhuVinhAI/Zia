@@ -13,30 +13,26 @@ export interface PresentationOptions {
   author?: string;
   subject?: string;
   company?: string;
-  
+
   // Layout
   layout?: LayoutType;
-  
+
   // Theme
   theme?: PresentationTheme;
-  
+
   // Master slide
   masterSlide?: MasterSlideConfig;
-  
+
   // Slide numbering
   showSlideNumbers?: boolean;
-  
+
   // Transitions
   defaultTransition?: TransitionType;
 }
 
-export type LayoutType = 
-  | 'LAYOUT_16x9' 
-  | 'LAYOUT_16x10' 
-  | 'LAYOUT_4x3' 
-  | 'LAYOUT_WIDE';
+export type LayoutType = 'LAYOUT_16x9' | 'LAYOUT_16x10' | 'LAYOUT_4x3' | 'LAYOUT_WIDE';
 
-export type TransitionType = 
+export type TransitionType =
   | 'none'
   | 'fade'
   | 'push'
@@ -133,7 +129,7 @@ export interface FooterBarConfig {
 // SLIDE TYPES
 // ═══════════════════════════════════════════════════
 
-export type SlideType = 
+export type SlideType =
   | 'title'
   | 'content'
   | 'section'
@@ -267,7 +263,7 @@ export interface ShapeConfig {
   fontColor?: string;
 }
 
-export type ShapeType = 
+export type ShapeType =
   | 'rect'
   | 'roundRect'
   | 'ellipse'
@@ -341,14 +337,7 @@ export interface AnimationConfig {
   duration?: number;
 }
 
-export type AnimationType = 
-  | 'appear'
-  | 'fade'
-  | 'fly'
-  | 'float'
-  | 'split'
-  | 'wipe'
-  | 'zoom';
+export type AnimationType = 'appear' | 'fade' | 'fly' | 'float' | 'split' | 'wipe' | 'zoom';
 
 // ═══════════════════════════════════════════════════
 // EXPORT

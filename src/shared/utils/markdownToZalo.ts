@@ -61,20 +61,23 @@ interface TableData {
 }
 
 function parseMarkdownTable(tableText: string): TableData | null {
-  const lines = tableText.trim().split('\n').filter(line => line.trim());
+  const lines = tableText
+    .trim()
+    .split('\n')
+    .filter((line) => line.trim());
   if (lines.length < 2) return null;
 
   const headers = lines[0]
     .split('|')
-    .map(cell => cell.trim())
-    .filter(cell => cell);
+    .map((cell) => cell.trim())
+    .filter((cell) => cell);
 
   const rows: string[][] = [];
   for (let i = 2; i < lines.length; i++) {
     const cells = lines[i]
       .split('|')
-      .map(cell => cell.trim())
-      .filter(cell => cell);
+      .map((cell) => cell.trim())
+      .filter((cell) => cell);
     if (cells.length > 0) rows.push(cells);
   }
 
@@ -111,88 +114,90 @@ async function renderTableToPng(table: TableData): Promise<Buffer> {
     type: 'bar',
     data: { labels: [], datasets: [] },
     options: { responsive: false },
-    plugins: [{
-      id: 'tableRenderer',
-      beforeDraw: (chart: any) => {
-        const ctx = chart.ctx;
-        const w = chart.width;
-        const h = chart.height;
+    plugins: [
+      {
+        id: 'tableRenderer',
+        beforeDraw: (chart: any) => {
+          const ctx = chart.ctx;
+          const w = chart.width;
+          const h = chart.height;
 
-        // Background
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, w, h);
+          // Background
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, w, h);
 
-        // Draw header background
-        ctx.fillStyle = '#4a90d9';
-        ctx.fillRect(1, 1, w - 2, headerHeight);
+          // Draw header background
+          ctx.fillStyle = '#4a90d9';
+          ctx.fillRect(1, 1, w - 2, headerHeight);
 
-        // Draw header text
-        ctx.fillStyle = '#ffffff';
-        ctx.font = `bold ${headerFontSize}px Arial`;
-        ctx.textBaseline = 'middle';
-        let x = 1;
-        headers.forEach((header, i) => {
-          ctx.fillText(header, x + cellPadding, headerHeight / 2 + 1);
-          x += colWidths[i];
-        });
-
-        // Draw rows
-        ctx.font = `${fontSize}px Arial`;
-        rows.forEach((row, rowIndex) => {
-          const y = headerHeight + rowIndex * lineHeight + 1;
-
-          // Alternate row background
-          ctx.fillStyle = rowIndex % 2 === 0 ? '#f8f9fa' : '#ffffff';
-          ctx.fillRect(1, y, w - 2, lineHeight);
-
-          // Row text
-          ctx.fillStyle = '#333333';
-          let cellX = 1;
-          row.forEach((cell, colIndex) => {
-            ctx.fillText(cell, cellX + cellPadding, y + lineHeight / 2);
-            cellX += colWidths[colIndex];
+          // Draw header text
+          ctx.fillStyle = '#ffffff';
+          ctx.font = `bold ${headerFontSize}px Arial`;
+          ctx.textBaseline = 'middle';
+          let x = 1;
+          headers.forEach((header, i) => {
+            ctx.fillText(header, x + cellPadding, headerHeight / 2 + 1);
+            x += colWidths[i];
           });
-        });
 
-        // Draw grid lines
-        ctx.strokeStyle = '#dee2e6';
-        ctx.lineWidth = 1;
+          // Draw rows
+          ctx.font = `${fontSize}px Arial`;
+          rows.forEach((row, rowIndex) => {
+            const y = headerHeight + rowIndex * lineHeight + 1;
 
-        // Vertical lines
-        x = 1;
-        for (let i = 0; i <= colWidths.length; i++) {
+            // Alternate row background
+            ctx.fillStyle = rowIndex % 2 === 0 ? '#f8f9fa' : '#ffffff';
+            ctx.fillRect(1, y, w - 2, lineHeight);
+
+            // Row text
+            ctx.fillStyle = '#333333';
+            let cellX = 1;
+            row.forEach((cell, colIndex) => {
+              ctx.fillText(cell, cellX + cellPadding, y + lineHeight / 2);
+              cellX += colWidths[colIndex];
+            });
+          });
+
+          // Draw grid lines
+          ctx.strokeStyle = '#dee2e6';
+          ctx.lineWidth = 1;
+
+          // Vertical lines
+          x = 1;
+          for (let i = 0; i <= colWidths.length; i++) {
+            ctx.beginPath();
+            ctx.moveTo(x, 1);
+            ctx.lineTo(x, h - 1);
+            ctx.stroke();
+            x += colWidths[i] || 0;
+          }
+
+          // Horizontal lines
           ctx.beginPath();
-          ctx.moveTo(x, 1);
-          ctx.lineTo(x, h - 1);
+          ctx.moveTo(1, 1);
+          ctx.lineTo(w - 1, 1);
           ctx.stroke();
-          x += colWidths[i] || 0;
-        }
 
-        // Horizontal lines
-        ctx.beginPath();
-        ctx.moveTo(1, 1);
-        ctx.lineTo(w - 1, 1);
-        ctx.stroke();
-
-        ctx.beginPath();
-        ctx.moveTo(1, headerHeight + 1);
-        ctx.lineTo(w - 1, headerHeight + 1);
-        ctx.stroke();
-
-        for (let i = 0; i <= rows.length; i++) {
-          const y = headerHeight + i * lineHeight + 1;
           ctx.beginPath();
-          ctx.moveTo(1, y);
-          ctx.lineTo(w - 1, y);
+          ctx.moveTo(1, headerHeight + 1);
+          ctx.lineTo(w - 1, headerHeight + 1);
           ctx.stroke();
-        }
 
-        // Border
-        ctx.strokeStyle = '#4a90d9';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(1, 1, w - 2, h - 2);
-      }
-    }]
+          for (let i = 0; i <= rows.length; i++) {
+            const y = headerHeight + i * lineHeight + 1;
+            ctx.beginPath();
+            ctx.moveTo(1, y);
+            ctx.lineTo(w - 1, y);
+            ctx.stroke();
+          }
+
+          // Border
+          ctx.strokeStyle = '#4a90d9';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(1, 1, w - 2, h - 2);
+        },
+      },
+    ],
   };
 
   return await canvas.renderToBuffer(config);
@@ -204,11 +209,22 @@ async function renderTableToPng(table: TableData): Promise<Buffer> {
 
 import { http } from './httpClient.js';
 
-const MERMAID_TYPES = ['flowchart', 'sequencediagram', 'classDiagram', 'stateDiagram', 'erDiagram', 'gantt', 'pie', 'mindmap', 'timeline', 'graph'];
+const MERMAID_TYPES = [
+  'flowchart',
+  'sequencediagram',
+  'classDiagram',
+  'stateDiagram',
+  'erDiagram',
+  'gantt',
+  'pie',
+  'mindmap',
+  'timeline',
+  'graph',
+];
 
 function isMermaidCode(code: string): boolean {
   const firstLine = code.trim().split('\n')[0].toLowerCase();
-  return MERMAID_TYPES.some(type => firstLine.startsWith(type.toLowerCase()));
+  return MERMAID_TYPES.some((type) => firstLine.startsWith(type.toLowerCase()));
 }
 
 async function renderMermaidToPng(code: string): Promise<Buffer | null> {
@@ -286,7 +302,7 @@ function fixIncompleteCodeBlocks(markdown: string): string {
  * Table cần ít nhất: header row + separator row
  */
 function fixIncompleteTables(markdown: string): string {
-  let text = markdown;
+  const text = markdown;
 
   // Tìm các dòng bắt đầu bằng | nhưng không phải table hoàn chỉnh
   const lines = text.split('\n');
@@ -423,12 +439,16 @@ function parseInlineStyles(text: string): { text: string; styles: StyleItem[]; l
 
     // Replace bằng text có style underline
     result = result.slice(0, startIndex) + linkText + result.slice(startIndex + fullMatch.length);
-    styles.push({ start: startIndex, len: linkText.length, st: TextStyle.Blue | TextStyle.Underline });
+    styles.push({
+      start: startIndex,
+      len: linkText.length,
+      st: TextStyle.Blue | TextStyle.Underline,
+    });
     linkRegex.lastIndex = 0;
   }
 
   // Handle bare URLs (http:// hoặc https://)
-  const bareUrlRegex = /(?<!\()(https?:\/\/[^\s\)]+)/g;
+  const bareUrlRegex = /(?<!\()(https?:\/\/[^\s)]+)/g;
   let bareMatch: RegExpExecArray | null;
   bareUrlRegex.lastIndex = 0;
 
@@ -457,7 +477,12 @@ function parseInlineStyles(text: string): { text: string; styles: StyleItem[]; l
 
 export async function parseMarkdownToZalo(markdown: string): Promise<ParsedMarkdown> {
   const normalized = markdown.replace(/\r\n/g, '\n').replace(/\\n/g, '\n');
-  const { text: withoutCodeAndTables, codeBlocks, tables, mermaidCodes } = extractCodeBlocksAndTables(normalized);
+  const {
+    text: withoutCodeAndTables,
+    codeBlocks,
+    tables,
+    mermaidCodes,
+  } = extractCodeBlocksAndTables(normalized);
   const { text: finalText, styles, links } = parseInlineStyles(withoutCodeAndTables);
 
   const images: MediaImage[] = [];
@@ -484,11 +509,32 @@ export async function parseMarkdownToZalo(markdown: string): Promise<ParsedMarkd
 
 export function getFileExtension(language: string): string {
   const map: Record<string, string> = {
-    javascript: 'js', typescript: 'ts', python: 'py', java: 'java',
-    cpp: 'cpp', c: 'c', csharp: 'cs', go: 'go', rust: 'rs', ruby: 'rb',
-    php: 'php', swift: 'swift', kotlin: 'kt', html: 'html', css: 'css',
-    json: 'json', yaml: 'yaml', yml: 'yml', xml: 'xml', sql: 'sql',
-    bash: 'sh', shell: 'sh', sh: 'sh', markdown: 'md', md: 'md', txt: 'txt',
+    javascript: 'js',
+    typescript: 'ts',
+    python: 'py',
+    java: 'java',
+    cpp: 'cpp',
+    c: 'c',
+    csharp: 'cs',
+    go: 'go',
+    rust: 'rs',
+    ruby: 'rb',
+    php: 'php',
+    swift: 'swift',
+    kotlin: 'kt',
+    html: 'html',
+    css: 'css',
+    json: 'json',
+    yaml: 'yaml',
+    yml: 'yml',
+    xml: 'xml',
+    sql: 'sql',
+    bash: 'sh',
+    shell: 'sh',
+    sh: 'sh',
+    markdown: 'md',
+    md: 'md',
+    txt: 'txt',
     mermaid: 'mmd',
   };
   return map[language.toLowerCase()] || language || 'txt';

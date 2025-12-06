@@ -330,7 +330,10 @@ export async function generateContentStream(
           console.log(
             `[Gemini] ⚠️ Lỗi 429: Rate limit, đổi sang key #${keyManager.getCurrentKeyIndex()}/${keyManager.getTotalKeys()} (${keyManager.getCurrentModelName()}) và gọi ngay`,
           );
-          debugLog('STREAM', `Rate limit, rotated to key #${keyManager.getCurrentKeyIndex()}, model=${keyManager.getCurrentModelName()}, calling immediately`);
+          debugLog(
+            'STREAM',
+            `Rate limit, rotated to key #${keyManager.getCurrentKeyIndex()}, model=${keyManager.getCurrentModelName()}, calling immediately`,
+          );
           continue; // Gọi ngay với key/model mới, không delay
         }
         // Không còn key/model khả dụng

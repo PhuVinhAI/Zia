@@ -2,28 +2,26 @@
  * Background Agent Module - Export public APIs
  */
 
+// Action executor
+export { type ExecutionResult, executeTask } from './action.executor.js';
 // Agent runner
 export {
+  isAgentRunning,
   startBackgroundAgent,
   stopBackgroundAgent,
-  isAgentRunning,
 } from './agent.runner.js';
-
-// Task repository
-export {
-  createTask,
-  getPendingTasks,
-  getTaskById,
-  cancelTask,
-  countTasksByStatus,
-} from './task.repository.js';
 
 // Context builder
 export {
   buildEnvironmentContext,
-  formatContextForPrompt,
   type EnvironmentContext,
+  formatContextForPrompt,
 } from './context.builder.js';
-
-// Action executor
-export { executeTask, type ExecutionResult } from './action.executor.js';
+// Task repository
+export {
+  cancelTask,
+  countTasksByStatus,
+  createTask,
+  getPendingTasks,
+  getTaskById,
+} from './task.repository.js';

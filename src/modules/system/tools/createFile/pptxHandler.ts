@@ -4,8 +4,8 @@
  */
 
 import type { CreateFileParams } from '../../../../shared/schemas/tools.schema.js';
-import type { FileHandler } from './types.js';
 import { buildPresentation, getTheme } from './pptx/index.js';
+import type { FileHandler } from './types.js';
 
 export const pptxHandler: FileHandler = async (
   content: string,

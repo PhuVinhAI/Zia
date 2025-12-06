@@ -3,8 +3,8 @@
  */
 import type { Content } from '@google/genai';
 import { debugLog, logError } from '../../core/logger/logger.js';
-import { getAIService } from '../types/ai.types.js';
 import { getGeminiModel } from '../../infrastructure/gemini/geminiConfig.js';
+import { getAIService } from '../types/ai.types.js';
 
 // MIME types mà Gemini API hỗ trợ cho countTokens
 const SUPPORTED_MIME_PREFIXES = ['image/', 'video/', 'audio/', 'application/pdf', 'text/'];

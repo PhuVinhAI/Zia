@@ -20,8 +20,8 @@ import {
   Services,
   setLoggerZaloApi,
 } from '../core/index.js';
-import { addToBuffer } from '../modules/gateway/message.buffer.js';
 import { startBackgroundAgent } from '../modules/background-agent/index.js';
+import { addToBuffer } from '../modules/gateway/message.buffer.js';
 import { isAllowedUser } from '../modules/gateway/user.filter.js';
 import { CONFIG } from '../shared/constants/config.js';
 import { initThreadHistory, isThreadInitialized } from '../shared/utils/history.js';

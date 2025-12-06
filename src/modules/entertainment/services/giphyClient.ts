@@ -72,11 +72,7 @@ export async function searchGifs(
  * Get trending GIFs
  */
 export async function getTrendingGifs(
-  options: {
-    limit?: number;
-    offset?: number;
-    rating?: GiphyRating;
-  } = {},
+  options: { limit?: number; offset?: number; rating?: GiphyRating } = {},
 ): Promise<GiphySearchResponse> {
   const searchParams = new URLSearchParams({
     api_key: API_KEY,
@@ -92,10 +88,7 @@ export async function getTrendingGifs(
  * Get random GIF
  */
 export async function getRandomGif(
-  options: {
-    tag?: string;
-    rating?: GiphyRating;
-  } = {},
+  options: { tag?: string; rating?: GiphyRating } = {},
 ): Promise<GiphyRandomResponse> {
   const searchParams = new URLSearchParams({
     api_key: API_KEY,

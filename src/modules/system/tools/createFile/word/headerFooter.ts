@@ -2,25 +2,16 @@
  * Header & Footer Builder - Tạo header/footer cho Word document
  */
 
-import {
-  Footer,
-  Header,
-  PageNumber,
-  Paragraph,
-  TextRun,
-} from 'docx';
-import type { DocumentTheme, HeaderFooterConfig } from './types.js';
-import { getTheme } from './themes.js';
+import { Footer, Header, PageNumber, Paragraph, TextRun } from 'docx';
 import { ALIGNMENTS } from './constants.js';
+import { getTheme } from './themes.js';
+import type { DocumentTheme, HeaderFooterConfig } from './types.js';
 
 // ═══════════════════════════════════════════════════
 // HEADER BUILDER
 // ═══════════════════════════════════════════════════
 
-export function buildHeader(
-  config: HeaderFooterConfig,
-  theme?: DocumentTheme
-): Header {
+export function buildHeader(config: HeaderFooterConfig, theme?: DocumentTheme): Header {
   const t = theme || getTheme();
   const alignment = ALIGNMENTS[config.alignment || 'center'];
 
@@ -33,7 +24,7 @@ export function buildHeader(
         font: t.fonts.body,
         size: 20,
         color: t.colors.secondary,
-      })
+      }),
     );
   }
 
@@ -47,7 +38,7 @@ export function buildHeader(
         font: t.fonts.body,
         size: 20,
         color: t.colors.secondary,
-      })
+      }),
     );
   }
 
@@ -73,10 +64,7 @@ export function buildHeader(
 // FOOTER BUILDER
 // ═══════════════════════════════════════════════════
 
-export function buildFooter(
-  config: HeaderFooterConfig,
-  theme?: DocumentTheme
-): Footer {
+export function buildFooter(config: HeaderFooterConfig, theme?: DocumentTheme): Footer {
   const t = theme || getTheme();
   const alignment = ALIGNMENTS[config.alignment || 'center'];
 
@@ -89,7 +77,7 @@ export function buildFooter(
         font: t.fonts.body,
         size: 18,
         color: t.colors.secondary,
-      })
+      }),
     );
   }
 
@@ -103,7 +91,7 @@ export function buildFooter(
         font: t.fonts.body,
         size: 18,
         color: t.colors.secondary,
-      })
+      }),
     );
   }
 
@@ -136,7 +124,7 @@ export function buildDefaultHeader(title?: string, theme?: DocumentTheme): Heade
       alignment: 'left',
       includePageNumber: false,
     },
-    theme
+    theme,
   );
 }
 
@@ -147,6 +135,6 @@ export function buildDefaultFooter(theme?: DocumentTheme): Footer {
       alignment: 'center',
       includePageNumber: true,
     },
-    theme
+    theme,
   );
 }

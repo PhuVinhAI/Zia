@@ -2,13 +2,9 @@
  * Footnote Builder - Xử lý footnotes trong Word document
  */
 
-import {
-  FootnoteReferenceRun,
-  Paragraph,
-  TextRun,
-} from 'docx';
-import type { DocumentTheme } from './types.js';
+import { FootnoteReferenceRun, Paragraph, TextRun } from 'docx';
 import { getTheme } from './themes.js';
+import type { DocumentTheme } from './types.js';
 
 // ═══════════════════════════════════════════════════
 // FOOTNOTE TYPES
@@ -62,7 +58,7 @@ export function buildFootnoteReference(id: number): FootnoteReferenceRun {
  */
 export function buildFootnoteContent(
   footnotes: FootnoteData[],
-  theme?: DocumentTheme
+  theme?: DocumentTheme,
 ): { [key: number]: { children: Paragraph[] } } {
   const t = theme || getTheme();
   const result: { [key: number]: { children: Paragraph[] } } = {};

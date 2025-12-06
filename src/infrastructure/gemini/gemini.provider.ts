@@ -38,8 +38,8 @@ export {
   ai,
   extractYouTubeUrls,
   GEMINI_CONFIG,
-  getGeminiModel,
   getAI,
+  getGeminiModel,
   keyManager,
 } from './geminiConfig.js';
 export type { StreamCallbacks } from './geminiStream.js';
@@ -115,7 +115,10 @@ export async function generateContent(
           console.log(
             `[Gemini] ⚠️ Lỗi 429: Rate limit, chuyển sang key #${keyManager.getCurrentKeyIndex()}/${keyManager.getTotalKeys()} (${keyManager.getCurrentModelName()})`,
           );
-          debugLog('GEMINI', `Rate limit, rotated to key #${keyManager.getCurrentKeyIndex()}, model=${keyManager.getCurrentModelName()}`);
+          debugLog(
+            'GEMINI',
+            `Rate limit, rotated to key #${keyManager.getCurrentKeyIndex()}, model=${keyManager.getCurrentModelName()}`,
+          );
           deleteChatSession(sessionId);
           continue;
         }

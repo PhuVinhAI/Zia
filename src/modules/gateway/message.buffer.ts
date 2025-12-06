@@ -107,9 +107,7 @@ async function processBatch(batch: BufferedMessage[]) {
       // Không có tool, merge messages như cũ
       // KHÔNG clear history - giữ nguyên context conversation
       messages = [...abortedMsgs, ...messages];
-      console.log(
-        `[Bot] 🔄 Gom nhóm ${abortedMsgs.length} tin cũ + ${batch.length} tin mới`,
-      );
+      console.log(`[Bot] 🔄 Gom nhóm ${abortedMsgs.length} tin cũ + ${batch.length} tin mới`);
       debugLog('BUFFER', `Merged ${abortedMsgs.length} aborted + ${batch.length} new messages`);
     }
   }

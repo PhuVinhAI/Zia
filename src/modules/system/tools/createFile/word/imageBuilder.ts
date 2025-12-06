@@ -2,15 +2,10 @@
  * Image Builder - Xử lý hình ảnh trong Word document
  */
 
-import {
-  AlignmentType,
-  ImageRun,
-  Paragraph,
-  TextRun,
-} from 'docx';
-import type { DocumentTheme, ImageConfig } from './types.js';
-import { getTheme } from './themes.js';
+import { AlignmentType, ImageRun, Paragraph, TextRun } from 'docx';
 import { ALIGNMENTS } from './constants.js';
+import { getTheme } from './themes.js';
+import type { DocumentTheme, ImageConfig } from './types.js';
 
 // ═══════════════════════════════════════════════════
 // IMAGE BUILDER
@@ -19,10 +14,7 @@ import { ALIGNMENTS } from './constants.js';
 /**
  * Build image paragraph từ config
  */
-export function buildImageParagraph(
-  config: ImageConfig,
-  theme?: DocumentTheme
-): Paragraph[] {
+export function buildImageParagraph(config: ImageConfig, theme?: DocumentTheme): Paragraph[] {
   const t = theme || getTheme();
   const paragraphs: Paragraph[] = [];
 
@@ -53,7 +45,7 @@ export function buildImageParagraph(
         }),
       ],
       spacing: { before: 200, after: config.caption ? 80 : 200 },
-    })
+    }),
   );
 
   // Caption if provided
@@ -71,7 +63,7 @@ export function buildImageParagraph(
           }),
         ],
         spacing: { after: 200 },
-      })
+      }),
     );
   }
 
@@ -89,7 +81,7 @@ export function parseImageSyntax(line: string): ImageConfig | null {
   if (mdMatch) {
     const alt = mdMatch[1];
     const urlPart = mdMatch[2];
-    
+
     // Check for title/caption in quotes
     const titleMatch = urlPart.match(/^(.+?)\s+"([^"]+)"$/);
     if (titleMatch) {
@@ -98,7 +90,7 @@ export function parseImageSyntax(line: string): ImageConfig | null {
         caption: titleMatch[2] || alt,
       };
     }
-    
+
     return {
       data: urlPart.trim(),
       caption: alt || undefined,
@@ -110,20 +102,20 @@ export function parseImageSyntax(line: string): ImageConfig | null {
   if (extMatch) {
     const data = extMatch[1].trim();
     const options = extMatch[2] || '';
-    
+
     const config: ImageConfig = { data };
-    
+
     // Parse options
     const widthMatch = options.match(/width=(\d+)/i);
     const heightMatch = options.match(/height=(\d+)/i);
     const captionMatch = options.match(/caption="([^"]+)"/i);
     const alignMatch = options.match(/align=(left|center|right)/i);
-    
+
     if (widthMatch) config.width = parseInt(widthMatch[1]);
     if (heightMatch) config.height = parseInt(heightMatch[1]);
     if (captionMatch) config.caption = captionMatch[1];
     if (alignMatch) config.alignment = alignMatch[1] as 'left' | 'center' | 'right';
-    
+
     return config;
   }
 
