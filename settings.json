@@ -45,7 +45,7 @@
     "baseDelayMs": 1000,
     "retryableStatusCodes": [503, 429, 500, 502, 504]
   },
-  "allowedUserIds": [],
+  "allowedUserIds": ["7960202764469574489"],
   "stickers": {
     "keywords": [
       "hello",
