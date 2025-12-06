@@ -136,3 +136,66 @@ describe.skipIf(SKIP)('TVU Academic Tools Integration', () => {
     }, TEST_CONFIG.timeout);
   });
 });
+
+
+// ═══════════════════════════════════════════════════
+// TVU Client Service Tests (từ tvu.test.ts đã merge)
+// ═══════════════════════════════════════════════════
+
+import { tvuRequest, getTvuToken } from '../../../src/modules/academic/services/tvuClient.js';
+
+describe.skipIf(SKIP)('TVU Client Service', () => {
+  test('tvuLogin - đăng nhập thành công', async () => {
+    clearTvuToken();
+    const result = await tvuLogin(TVU_USERNAME!, TVU_PASSWORD!);
+
+    expect(result).toBeDefined();
+    expect(result.access_token).toBeDefined();
+    expect(result.user_id).toBeDefined();
+    expect(result.user_name).toBeDefined();
+  }, TEST_CONFIG.timeout);
+
+  test('getTvuToken - lấy token sau khi login', () => {
+    const token = getTvuToken();
+    expect(token).toBeDefined();
+    expect(typeof token).toBe('string');
+  });
+
+  test('tvuRequest - raw API call thông tin sinh viên', async () => {
+    const result = await tvuRequest<any>('/api/sinhvien/thongtinsinhvien');
+
+    expect(result).toBeDefined();
+    expect(result.result).toBe(true);
+    expect(result.data).toBeDefined();
+  }, TEST_CONFIG.timeout);
+
+  test('tvuRequest - raw API call danh sách học kỳ', async () => {
+    const result = await tvuRequest<any>('/api/sinhvien/danhsachhocky');
+
+    expect(result).toBeDefined();
+    expect(result.result).toBe(true);
+    expect(result.data).toBeArray();
+  }, TEST_CONFIG.timeout);
+
+  test('clearTvuToken - xóa token', () => {
+    clearTvuToken();
+    const token = getTvuToken();
+    expect(token).toBeNull();
+  });
+});
+
+// Tests không cần authentication
+describe('TVU Client Utilities', () => {
+  test('getTvuToken - trả về null khi chưa login', () => {
+    clearTvuToken();
+    const token = getTvuToken();
+    expect(token).toBeNull();
+  });
+
+  test('clearTvuToken - không lỗi khi gọi nhiều lần', () => {
+    clearTvuToken();
+    clearTvuToken();
+    clearTvuToken();
+    expect(getTvuToken()).toBeNull();
+  });
+});

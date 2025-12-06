@@ -39,37 +39,51 @@ tests/integration/
 │   ├── gemini.test.ts         # Google Gemini
 │   └── groq.test.ts           # Groq AI
 │
+├── academic/                   # Academic tools
+│   └── tvuTools.test.ts       # TVU student system
+│
+├── background-agent/           # Background agent
+│   └── taskRepository.test.ts # Task management
+│
 ├── core/                       # Core functionality
 │   └── toolRegistry.test.ts   # Tool parsing & registry
 │
 ├── database/                   # Database
-│   ├── database.test.ts       # SQLite + Drizzle
-│   └── memory.test.ts         # Vector memory store
+│   └── database.test.ts       # SQLite + Drizzle
 │
 ├── entertainment/              # Entertainment APIs
-│   ├── jikan.test.ts          # MyAnimeList API
-│   ├── nekos.test.ts          # Nekos anime images
-│   └── giphy.test.ts          # Giphy GIF search
+│   ├── giphy.test.ts          # Giphy GIF search
+│   ├── jikanTools.test.ts     # MyAnimeList tools
+│   └── nekos.test.ts          # Nekos anime images
 │
 ├── files/                      # File creation
 │   └── createFile.test.ts     # DOCX, XLSX, PPTX
 │
 ├── gateway/                    # Message processing
-│   └── messageProcessor.test.ts # Message chunking
+│   ├── classifier.test.ts     # Message classification
+│   ├── messageProcessor.test.ts # Message chunking
+│   ├── quoteParser.test.ts    # Quote parsing
+│   └── rateLimitGuard.test.ts # Rate limiting
 │
 ├── system/                     # System tools
-│   ├── youtube.test.ts        # YouTube Data API
-│   ├── googleSearch.test.ts   # Google Custom Search
-│   ├── freepik.test.ts        # Freepik AI images
-│   ├── executeCode.test.ts    # E2B code execution
+│   ├── clearHistory.test.ts   # Clear chat history
+│   ├── compdf.test.ts         # DOCX to PDF
+│   ├── createApp.test.ts      # HTML app creation
+│   ├── createChart.test.ts    # Chart.js charts
 │   ├── elevenlabs.test.ts     # ElevenLabs TTS
-│   ├── compdf.test.ts         # DOCX to PDF conversion
-│   └── createChart.test.ts    # Chart.js charts
+│   ├── executeCode.test.ts    # E2B code execution
+│   ├── freepik.test.ts        # Freepik AI images
+│   ├── googleSearch.test.ts   # Google Custom Search
+│   ├── memory.test.ts         # Long-term memory
+│   ├── scheduleTask.test.ts   # Task scheduling
+│   ├── solveMath.test.ts      # Math solver
+│   └── youtube.test.ts        # YouTube Data API
 │
 └── utils/                      # Utilities
-    ├── markdown.test.ts       # Markdown parser
-    └── httpClient.test.ts     # HTTP client
+    ├── httpClient.test.ts     # HTTP client
+    └── markdown.test.ts       # Markdown parser
 ```
+
 
 ## API Keys Required
 
@@ -86,6 +100,7 @@ Một số tests yêu cầu API keys. Tests sẽ tự động skip nếu key kh�
 | ComPDF | `COMPDF_API_KEY` | https://www.compdf.com |
 | Gemini | `GEMINI_API_KEY` | https://aistudio.google.com |
 | Groq | `GROQ_API_KEY` | https://console.groq.com |
+| TVU | `TVU_USERNAME`, `TVU_PASSWORD` | TVU student portal |
 
 ## Tests Không Cần API Key
 
@@ -94,17 +109,17 @@ Các tests sau chạy được mà không cần API key:
 - **Jikan API** - MyAnimeList (public API)
 - **Nekos API** - Anime images (public API)
 - **Database** - SQLite local
-- **Memory Store** - Vector search local
 - **File Creation** - DOCX, XLSX, PPTX
 - **Chart Creation** - Chart.js
 - **Markdown Utils** - Parser & converter
 - **HTTP Client** - Using public APIs
+- **Gateway** - Message processing, classification
 
 ## Viết Test Mới
 
 ```typescript
 import { describe, test, expect, beforeAll } from 'bun:test';
-import { hasApiKey, TEST_CONFIG } from '../setup.js';
+import { hasApiKey, TEST_CONFIG, mockToolContext } from '../setup.js';
 
 const SKIP = !hasApiKey('yourApiKey');
 
@@ -114,8 +129,9 @@ describe.skipIf(SKIP)('Your Test Suite', () => {
   });
 
   test('your test case', async () => {
-    // Test implementation
-    expect(result).toBeDefined();
+    // Tool execute cần 2 arguments: (params, context)
+    const result = await yourTool.execute({ param: 'value' }, mockToolContext);
+    expect(result.success).toBe(true);
   }, TEST_CONFIG.timeout);
 });
 ```
@@ -131,7 +147,4 @@ describe.skipIf(SKIP)('Your Test Suite', () => {
 
 3. **Cleanup**: Tests tự động cleanup data sau khi chạy.
 
-4. **Parallel**: Bun test runner chạy tests parallel. Nếu cần sequential:
-   ```bash
-   bun test:integration -- --no-parallel
-   ```
+4. **Tool Context**: Luôn truyền `mockToolContext` làm argument thứ 2 khi gọi `tool.execute()`.
