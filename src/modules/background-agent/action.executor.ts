@@ -14,6 +14,7 @@ export interface ExecutionResult {
 
 /**
  * Execute task dựa trên type
+ * Note: accept_friend đã được xử lý tự động trong agent.runner, không cần task
  */
 export async function executeTask(api: any, task: AgentTask): Promise<ExecutionResult> {
   const payload = JSON.parse(task.payload);
@@ -21,8 +22,6 @@ export async function executeTask(api: any, task: AgentTask): Promise<ExecutionR
   switch (task.type) {
     case 'send_message':
       return executeSendMessage(api, task, payload);
-    case 'accept_friend':
-      return executeAcceptFriend(api, task, payload);
     case 'send_friend_request':
       return executeSendFriendRequest(api, task, payload);
     default:
@@ -72,35 +71,6 @@ async function executeSendMessage(
     };
   } catch (error: any) {
     debugLog('EXECUTOR', `Failed to send message: ${error.message}`);
-    return { success: false, error: error.message };
-  }
-}
-
-/**
- * Chấp nhận lời mời kết bạn
- */
-async function executeAcceptFriend(
-  api: any,
-  task: AgentTask,
-  payload: Record<string, any>,
-): Promise<ExecutionResult> {
-  const friendId = task.targetUserId;
-  if (!friendId) {
-    return { success: false, error: 'Missing targetUserId (friendId)' };
-  }
-
-  try {
-    debugLog('EXECUTOR', `Accepting friend request from ${friendId}`);
-
-    await api.acceptFriendRequest(friendId);
-
-    debugLog('EXECUTOR', `Friend request accepted`);
-    return {
-      success: true,
-      data: { friendId, action: 'accepted' },
-    };
-  } catch (error: any) {
-    debugLog('EXECUTOR', `Failed to accept friend: ${error.message}`);
     return { success: false, error: error.message };
   }
 }

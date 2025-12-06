@@ -7,9 +7,9 @@ import { executeTask } from '../../../src/modules/background-agent/action.execut
 import type { AgentTask } from '../../../src/infrastructure/database/schema.js';
 
 // Mock Zalo API
+// Note: acceptFriendRequest đã được xử lý tự động trong agent.runner
 const createMockApi = () => ({
   sendMessage: mock(() => Promise.resolve({ msgId: 'msg123', cliMsgId: 'cli123' })),
-  acceptFriendRequest: mock(() => Promise.resolve()),
   sendFriendRequest: mock(() => Promise.resolve()),
 });
 
@@ -80,36 +80,7 @@ describe('Action Executor', () => {
       });
     });
 
-    describe('accept_friend', () => {
-      it('should accept friend request successfully', async () => {
-        const api = createMockApi();
-        const task = createTask({
-          type: 'accept_friend',
-          targetUserId: 'friend123',
-          payload: JSON.stringify({}),
-        });
-
-        const result = await executeTask(api, task);
-
-        expect(result.success).toBe(true);
-        expect(result.data?.action).toBe('accepted');
-        expect(api.acceptFriendRequest).toHaveBeenCalled();
-      });
-
-      it('should fail without targetUserId', async () => {
-        const api = createMockApi();
-        const task = createTask({
-          type: 'accept_friend',
-          targetUserId: null,
-          payload: JSON.stringify({}),
-        });
-
-        const result = await executeTask(api, task);
-
-        expect(result.success).toBe(false);
-        expect(result.error).toContain('Missing targetUserId');
-      });
-    });
+    // Note: accept_friend đã được xử lý tự động trong agent.runner, không cần task
 
     describe('send_friend_request', () => {
       it('should send friend request successfully', async () => {
@@ -175,7 +146,6 @@ describe('Action Executor', () => {
       it('should handle API errors gracefully', async () => {
         const api = {
           sendMessage: mock(() => Promise.reject(new Error('Network error'))),
-          acceptFriendRequest: mock(() => Promise.resolve()),
           sendFriendRequest: mock(() => Promise.resolve()),
         };
         const task = createTask({

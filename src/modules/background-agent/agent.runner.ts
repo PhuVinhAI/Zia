@@ -21,7 +21,7 @@ let pollInterval: ReturnType<typeof setInterval> | null = null;
 let zaloApi: any = null;
 
 // Config
-const POLL_INTERVAL_MS = 30_000; // 30 giây
+const POLL_INTERVAL_MS = 90_000; // 1 phút 30 giây
 const GROQ_ENABLED = true; // Set false để skip Groq và execute trực tiếp
 
 /**
@@ -51,7 +51,7 @@ Sử dụng tool tags để ra quyết định:
 
 ## QUY TẮC:
 - LUÔN execute task ngay lập tức, không delay vì lý do online/offline
-- Nếu đã có pending friend request từ target → skip send_friend_request
+- Hệ thống TỰ ĐỘNG accept friend requests, không cần task accept_friend
 - Điều chỉnh tone dựa trên giới tính và context
 - Luôn giải thích lý do quyết định trong reason`;
 
@@ -98,60 +98,119 @@ async function runAgentCycle(): Promise<void> {
   if (!isRunning || !zaloApi) return;
 
   try {
-    const tasks = await getPendingTasks(5);
+    // 1. Auto-accept friend requests đang chờ
+    await autoAcceptFriendRequests();
+
+    // 2. Lấy pending tasks
+    const tasks = await getPendingTasks(10);
 
     if (tasks.length === 0) {
       debugLog('AGENT', 'No pending tasks');
       return;
     }
 
-    debugLog('AGENT', `Processing ${tasks.length} tasks`);
+    debugLog('AGENT', `Processing ${tasks.length} tasks in parallel`);
 
-    for (const task of tasks) {
-      if (!isRunning) break;
-      await processTask(task);
-    }
+    // 3. Xử lý tất cả tasks song song với Groq
+    await processTasksInParallel(tasks);
   } catch (error) {
     debugLog('AGENT', `Cycle error: ${error}`);
   }
 }
 
 /**
- * Xử lý một task
+ * Tự động accept tất cả friend requests đang chờ (tuần tự, từng cái một)
  */
-async function processTask(task: any): Promise<void> {
+async function autoAcceptFriendRequests(): Promise<void> {
+  try {
+    // Lấy danh sách friend requests đang chờ (người khác gửi cho mình)
+    const pendingRequests = await zaloApi.getReceivedFriendRequests?.();
+
+    if (!pendingRequests || Object.keys(pendingRequests).length === 0) {
+      debugLog('AGENT', 'No pending friend requests');
+      return;
+    }
+
+    const requests = Object.values(pendingRequests) as any[];
+    debugLog('AGENT', `Found ${requests.length} pending friend requests, auto-accepting...`);
+
+    // Accept tuần tự từng cái một (tránh rate limit)
+    let accepted = 0;
+    for (const req of requests) {
+      try {
+        await zaloApi.acceptFriendRequest(req.userId);
+        debugLog('AGENT', `Accepted friend request from ${req.displayName || req.userId}`);
+        accepted++;
+        // Delay 1s giữa mỗi request để tránh spam
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+      } catch (error: any) {
+        debugLog('AGENT', `Failed to accept friend from ${req.userId}: ${error.message}`);
+      }
+    }
+
+    debugLog('AGENT', `Auto-accepted ${accepted}/${requests.length} friend requests`);
+  } catch (error) {
+    debugLog('AGENT', `Error auto-accepting friends: ${error}`);
+  }
+}
+
+/**
+ * Xử lý tất cả tasks với 1 lần gọi Groq duy nhất
+ */
+async function processTasksInParallel(tasks: any[]): Promise<void> {
+  // Build context chung (dùng context của task đầu tiên có targetUserId)
+  const firstTaskWithUser = tasks.find((t) => t.targetUserId);
+  const sharedContext = await buildEnvironmentContext(zaloApi, firstTaskWithUser?.targetUserId);
+
+  // Gọi Groq 1 lần duy nhất cho tất cả tasks
+  let decisions: Map<number, { action: 'execute' | 'skip' | 'delay'; reason: string; adjustedPayload?: any }>;
+
+  if (GROQ_ENABLED && process.env.GROQ_API_KEY) {
+    decisions = await getBatchGroqDecisions(tasks, sharedContext);
+  } else {
+    // Fallback: execute tất cả
+    decisions = new Map(tasks.map((t) => [t.id, { action: 'execute' as const, reason: 'Groq disabled' }]));
+  }
+
+  // Execute tất cả tasks song song
+  await Promise.allSettled(
+    tasks.map(async (task) => {
+      const decision = decisions.get(task.id) || { action: 'execute' as const, reason: 'No decision' };
+      await processTaskWithDecision(task, decision);
+    })
+  );
+}
+
+/**
+ * Xử lý một task với decision đã có từ Groq
+ */
+async function processTaskWithDecision(
+  task: any,
+  decision: { action: 'execute' | 'skip' | 'delay'; reason: string; adjustedPayload?: any }
+): Promise<void> {
   debugLog('AGENT', `Processing task #${task.id}: ${task.type}`);
 
   try {
     // Mark as processing
     await markTaskProcessing(task.id);
 
-    // Build context
-    const context = await buildEnvironmentContext(zaloApi, task.targetUserId);
+    if (decision.action === 'skip') {
+      debugLog('AGENT', `Task #${task.id} skipped: ${decision.reason}`);
+      await markTaskCompleted(task.id, { skipped: true, reason: decision.reason });
+      return;
+    }
 
+    if (decision.action === 'delay') {
+      debugLog('AGENT', `Task #${task.id} delayed: ${decision.reason}`);
+      // Reset về pending để retry sau
+      await markTaskFailed(task.id, `Delayed: ${decision.reason}`, 0, task.maxRetries + 1);
+      return;
+    }
+
+    // Merge adjusted payload nếu có
     let finalPayload = JSON.parse(task.payload);
-
-    // Gọi Groq để quyết định (nếu enabled)
-    if (GROQ_ENABLED && process.env.GROQ_API_KEY) {
-      const decision = await getGroqDecision(task, context);
-
-      if (decision.action === 'skip') {
-        debugLog('AGENT', `Task #${task.id} skipped: ${decision.reason}`);
-        await markTaskCompleted(task.id, { skipped: true, reason: decision.reason });
-        return;
-      }
-
-      if (decision.action === 'delay') {
-        debugLog('AGENT', `Task #${task.id} delayed: ${decision.reason}`);
-        // Reset về pending để retry sau
-        await markTaskFailed(task.id, `Delayed: ${decision.reason}`, 0, task.maxRetries + 1);
-        return;
-      }
-
-      // Merge adjusted payload nếu có
-      if (decision.adjustedPayload) {
-        finalPayload = { ...finalPayload, ...decision.adjustedPayload };
-      }
+    if (decision.adjustedPayload) {
+      finalPayload = { ...finalPayload, ...decision.adjustedPayload };
     }
 
     // Execute task
@@ -207,43 +266,101 @@ function parseDecisionFromResponse(
 }
 
 /**
- * Gọi Groq để quyết định cách xử lý task
+ * Gọi Groq 1 lần duy nhất để quyết định cho tất cả tasks
  */
-async function getGroqDecision(
-  task: any,
+async function getBatchGroqDecisions(
+  tasks: any[],
   context: any,
-): Promise<{ action: 'execute' | 'skip' | 'delay'; reason: string; adjustedPayload?: any }> {
-  const payload = JSON.parse(task.payload);
+): Promise<Map<number, { action: 'execute' | 'skip' | 'delay'; reason: string; adjustedPayload?: any }>> {
   const contextStr = formatContextForPrompt(context);
 
-  const userPrompt = `
-## Task cần xử lý:
-- ID: ${task.id}
+  // Format tất cả tasks vào 1 prompt
+  const tasksDescription = tasks
+    .map((task, index) => {
+      const payload = JSON.parse(task.payload);
+      return `### Task ${index + 1} (ID: ${task.id})
 - Loại: ${task.type}
 - Target User: ${task.targetUserId || 'N/A'}
 - Target Thread: ${task.targetThreadId || 'N/A'}
-- Payload: ${JSON.stringify(payload, null, 2)}
-- Context từ người tạo: ${task.context || 'Không có'}
+- Payload: ${JSON.stringify(payload)}
+- Context: ${task.context || 'Không có'}`;
+    })
+    .join('\n\n');
+
+  const batchSystemPrompt = `Bạn là một AI assistant chạy nền, nhiệm vụ của bạn là xử lý NHIỀU tasks cùng lúc.
+
+## CÁCH TRẢ LỜI:
+Với MỖI task, sử dụng tool tag với task_id:
+[tool:decide task_id="<ID>" action="execute|skip|delay" reason="Lý do"]
+
+Nếu cần điều chỉnh message:
+[tool:decide task_id="<ID>" action="execute" reason="Lý do"]{"message": "Nội dung mới"}[/tool]
+
+## QUY TẮC:
+- LUÔN execute task ngay, không delay vì online/offline
+- Hệ thống TỰ ĐỘNG accept friend requests
+- Điều chỉnh tone dựa trên giới tính
+- Trả lời cho TẤT CẢ tasks trong 1 response`;
+
+  const userPrompt = `
+## Danh sách ${tasks.length} tasks cần xử lý:
+
+${tasksDescription}
 
 ${contextStr}
 
-Hãy phân tích và sử dụng [tool:decide] để ra quyết định.`;
+Hãy phân tích và sử dụng [tool:decide] cho TỪNG task (theo task_id).`;
 
   const messages: GroqMessage[] = [
-    { role: 'system', content: AGENT_SYSTEM_PROMPT },
+    { role: 'system', content: batchSystemPrompt },
     { role: 'user', content: userPrompt },
   ];
 
   try {
     const response = await generateGroqResponse(messages, { temperature: 0.3 });
-    debugLog('AGENT', `Groq response: ${response.substring(0, 200)}...`);
+    debugLog('AGENT', `Groq batch response: ${response.substring(0, 300)}...`);
 
-    return parseDecisionFromResponse(response);
+    return parseBatchDecisions(response, tasks);
   } catch (error) {
-    debugLog('AGENT', `Groq decision error: ${error}`);
-    // Fallback: execute anyway
-    return { action: 'execute', reason: 'Groq error, executing anyway' };
+    debugLog('AGENT', `Groq batch error: ${error}`);
+    // Fallback: execute tất cả
+    return new Map(tasks.map((t) => [t.id, { action: 'execute' as const, reason: 'Groq error' }]));
   }
+}
+
+/**
+ * Parse decisions cho nhiều tasks từ 1 response
+ */
+function parseBatchDecisions(
+  response: string,
+  tasks: any[],
+): Map<number, { action: 'execute' | 'skip' | 'delay'; reason: string; adjustedPayload?: any }> {
+  const decisions = new Map<number, { action: 'execute' | 'skip' | 'delay'; reason: string; adjustedPayload?: any }>();
+
+  // Parse tất cả tool calls
+  const toolCalls = parseToolCalls(response);
+  const decideCalls = toolCalls.filter((call) => call.toolName === 'decide');
+
+  for (const call of decideCalls) {
+    const taskId = Number.parseInt(call.params.task_id, 10);
+    if (Number.isNaN(taskId)) continue;
+
+    decisions.set(taskId, {
+      action: call.params.action || 'execute',
+      reason: call.params.reason || 'No reason',
+      adjustedPayload: call.params.message ? { message: call.params.message } : undefined,
+    });
+  }
+
+  // Fallback cho tasks không có decision
+  for (const task of tasks) {
+    if (!decisions.has(task.id)) {
+      decisions.set(task.id, { action: 'execute', reason: 'No decision from Groq' });
+    }
+  }
+
+  debugLog('AGENT', `Parsed ${decisions.size} decisions from batch response`);
+  return decisions;
 }
 
 /**
