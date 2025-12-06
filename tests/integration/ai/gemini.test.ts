@@ -1,9 +1,11 @@
 /**
  * Integration Test: Google Gemini AI
  * Test các chức năng chat và generate với Gemini API
+ * Sử dụng model flash để tránh rate limit (2.5 pro chỉ 2 req/min)
  */
 
-import { describe, test, expect, beforeAll, afterEach } from 'bun:test';
+import type { Chat } from '@google/genai';
+import { describe, test, expect, beforeAll } from 'bun:test';
 import {
   getChatSession,
   deleteChatSession,
@@ -15,14 +17,25 @@ import { hasApiKey, TEST_CONFIG } from '../setup.js';
 const SKIP = !hasApiKey('gemini');
 const TEST_THREAD_ID = 'test-thread-' + Date.now();
 
+// Sử dụng model flash cho test để tránh rate limit
+const TEST_MODEL = 'models/gemini-flash-latest';
+
+// Helper: Tạo chat session với model flash cho test
+function createTestChat(history: any[] = []): Chat {
+  return getAI().chats.create({
+    model: TEST_MODEL,
+    config: {
+      temperature: 1,
+      topP: 0.95,
+      maxOutputTokens: 1024,
+    },
+    history,
+  });
+}
+
 describe.skipIf(SKIP)('Gemini AI Integration', () => {
   beforeAll(() => {
     if (SKIP) console.log('⏭️  Skipping Gemini tests: GEMINI_API_KEY not configured');
-  });
-
-  afterEach(() => {
-    // Cleanup test sessions
-    deleteChatSession(TEST_THREAD_ID);
   });
 
   test('getAI - khởi tạo Gemini client', () => {
@@ -40,6 +53,7 @@ describe.skipIf(SKIP)('Gemini AI Integration', () => {
   test('getChatSession - tạo chat session mới', () => {
     const session = getChatSession(TEST_THREAD_ID);
     expect(session).toBeDefined();
+    deleteChatSession(TEST_THREAD_ID);
   });
 
   test('buildMessageParts - tạo message parts từ text', async () => {
@@ -50,10 +64,10 @@ describe.skipIf(SKIP)('Gemini AI Integration', () => {
     expect(parts[0]).toHaveProperty('text', 'Hello, how are you?');
   });
 
-  test('Chat session - gửi tin nhắn đơn giản', async () => {
-    const session = getChatSession(TEST_THREAD_ID);
+  test('Chat với model flash - gửi tin nhắn đơn giản', async () => {
+    const chat = createTestChat();
 
-    const response = await session.sendMessage({
+    const response = await chat.sendMessage({
       message: 'Say "Hello Test" and nothing else.',
     });
 
@@ -62,70 +76,43 @@ describe.skipIf(SKIP)('Gemini AI Integration', () => {
     expect(response.text.toLowerCase()).toContain('hello');
   }, TEST_CONFIG.timeout);
 
-  // Note: These tests may fail due to rate limiting on free tier (2 req/min)
-  // They are marked as potentially flaky
+  test('Chat với model flash - conversation context', async () => {
+    const chat = createTestChat();
 
-  test('Chat session - conversation context', async () => {
-    try {
-      const session = getChatSession(TEST_THREAD_ID + '-ctx');
+    // First message
+    await chat.sendMessage({
+      message: 'My name is TestUser. Remember this.',
+    });
 
-      // First message
-      await session.sendMessage({
-        message: 'My name is TestUser. Remember this.',
-      });
+    // Second message - should remember context
+    const response = await chat.sendMessage({
+      message: 'What is my name?',
+    });
 
-      // Second message - should remember context
-      const response = await session.sendMessage({
-        message: 'What is my name?',
-      });
-
-      // May use tool or respond directly
-      expect(response.text).toBeDefined();
-    } catch (error: any) {
-      // Skip if rate limited
-      if (error.status === 429) {
-        console.log('⏭️  Skipped due to rate limit');
-        return;
-      }
-      throw error;
-    }
+    expect(response.text).toBeDefined();
+    expect(response.text.toLowerCase()).toContain('testuser');
   }, TEST_CONFIG.timeout);
 
-  test('Chat session - xử lý câu hỏi phức tạp', async () => {
-    try {
-      const session = getChatSession(TEST_THREAD_ID + '-math');
+  test('Chat với model flash - xử lý câu hỏi phức tạp', async () => {
+    const chat = createTestChat();
 
-      const response = await session.sendMessage({
-        message: 'What is 15 * 23? Just give me the number.',
-      });
+    const response = await chat.sendMessage({
+      message: 'What is 15 * 23? Just give me the number.',
+    });
 
-      expect(response.text).toBeDefined();
-    } catch (error: any) {
-      if (error.status === 429) {
-        console.log('⏭️  Skipped due to rate limit');
-        return;
-      }
-      throw error;
-    }
+    expect(response.text).toBeDefined();
+    expect(response.text).toContain('345');
   }, TEST_CONFIG.timeout);
 
-  test('Direct generate - không cần session', async () => {
-    try {
-      const ai = getAI();
-      const model = getGeminiModel();
+  test('Direct generate với model flash', async () => {
+    const ai = getAI();
 
-      const response = await ai.models.generateContent({
-        model,
-        contents: [{ role: 'user', parts: [{ text: 'Say "OK" only.' }] }],
-      });
+    const response = await ai.models.generateContent({
+      model: TEST_MODEL,
+      contents: [{ role: 'user', parts: [{ text: 'Say "OK" only.' }] }],
+    });
 
-      expect(response).toBeDefined();
-    } catch (error: any) {
-      if (error.status === 429) {
-        console.log('⏭️  Skipped due to rate limit');
-        return;
-      }
-      throw error;
-    }
+    expect(response).toBeDefined();
+    expect(response.text).toBeDefined();
   }, TEST_CONFIG.timeout);
 });
