@@ -121,7 +121,33 @@ function runMigrations(sqlite: Database) {
     );
   `);
 
-  debugLog('DATABASE', '✅ Migrations completed (including vector tables)');
+  // Tạo bảng agent_tasks (background task queue)
+  sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS agent_tasks (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      type TEXT NOT NULL CHECK(type IN ('send_message', 'accept_friend', 'send_friend_request')),
+      status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'processing', 'completed', 'failed', 'cancelled')),
+      target_user_id TEXT,
+      target_thread_id TEXT,
+      payload TEXT NOT NULL,
+      context TEXT,
+      scheduled_at INTEGER NOT NULL,
+      started_at INTEGER,
+      completed_at INTEGER,
+      retry_count INTEGER NOT NULL DEFAULT 0,
+      max_retries INTEGER NOT NULL DEFAULT 3,
+      last_error TEXT,
+      result TEXT,
+      created_by TEXT,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_tasks_status ON agent_tasks(status);
+    CREATE INDEX IF NOT EXISTS idx_tasks_scheduled ON agent_tasks(scheduled_at);
+    CREATE INDEX IF NOT EXISTS idx_tasks_type ON agent_tasks(type);
+  `);
+
+  debugLog('DATABASE', '✅ Migrations completed (including vector tables and agent_tasks)');
 }
 
 /**

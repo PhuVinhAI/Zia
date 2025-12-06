@@ -13,6 +13,7 @@ import { getFriendOnlinesTool } from './tools/getFriendOnlines.js';
 import { getUserInfoTool } from './tools/getUserInfo.js';
 import { googleSearchTool } from './tools/googleSearch.js';
 import { recallMemoryTool, saveMemoryTool } from './tools/memory.js';
+import { scheduleTaskTool } from './tools/scheduleTask.js';
 import { solveMathTool } from './tools/solveMath.js';
 import { textToSpeechTool } from './tools/textToSpeech.js';
 import { youtubeChannelTool, youtubeSearchTool, youtubeVideoTool } from './tools/youtube.js';
@@ -44,6 +45,8 @@ export class SystemModule extends BaseModule {
     // Memory tools
     saveMemoryTool,
     recallMemoryTool,
+    // Background agent
+    scheduleTaskTool,
   ];
 
   get tools(): ITool[] {

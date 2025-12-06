@@ -329,6 +329,21 @@ export const CreateAppSchema = z.object({
   libraries: z.array(z.enum(APP_LIBRARIES)).optional().default(['tailwind']),
 });
 
+// ============ BACKGROUND AGENT TOOLS ============
+
+// Task types
+const TASK_TYPES = ['send_message', 'accept_friend', 'send_friend_request'] as const;
+
+// Schedule Task params
+export const ScheduleTaskSchema = z.object({
+  type: z.enum(TASK_TYPES).describe('Loại task: send_message, accept_friend, send_friend_request'),
+  targetUserId: z.string().optional().describe('ID người dùng đích'),
+  targetThreadId: z.string().optional().describe('ID thread/nhóm đích (cho send_message)'),
+  message: z.string().optional().describe('Nội dung tin nhắn'),
+  delayMinutes: z.coerce.number().min(0).default(0).describe('Số phút delay (0 = ngay lập tức)'),
+  context: z.string().optional().describe('Ngữ cảnh/lý do tạo task'),
+});
+
 // ============ HELPER FUNCTION ============
 
 /**
@@ -377,3 +392,4 @@ export type CreateAppParams = z.infer<typeof CreateAppSchema>;
 export type GoogleSearchParams = z.infer<typeof GoogleSearchSchema>;
 export type SaveMemoryParams = z.infer<typeof SaveMemorySchema>;
 export type RecallMemoryParams = z.infer<typeof RecallMemorySchema>;
+export type ScheduleTaskParams = z.infer<typeof ScheduleTaskSchema>;

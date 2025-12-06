@@ -32,6 +32,7 @@
     "docx-parser": "^0.2.1",
     "drizzle-orm": "^0.44.7",
     "exceljs": "^4.4.0",
+    "groq-sdk": "^0.37.0",
     "jsonrepair": "^3.13.1",
     "jszip": "^3.10.1",
     "katex": "^0.16.25",

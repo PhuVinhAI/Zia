@@ -1,0 +1,254 @@
+/**
+ * Agent Runner - Main loop cho background agent
+ * Poll tasks từ DB, build context, gọi Groq để quyết định, execute actions
+ * Sử dụng cơ chế tag [tool:xxx] giống Gemini để dễ mở rộng custom tools
+ */
+import { debugLog } from '../../core/logger/logger.js';
+import { parseToolCalls } from '../../core/tool-registry/tool-registry.js';
+import { generateGroqResponse, type GroqMessage } from '../../infrastructure/groq/groqClient.js';
+import { executeTask } from './action.executor.js';
+import { buildEnvironmentContext, formatContextForPrompt } from './context.builder.js';
+import {
+  getPendingTasks,
+  markTaskCompleted,
+  markTaskFailed,
+  markTaskProcessing,
+} from './task.repository.js';
+
+// Agent state
+let isRunning = false;
+let pollInterval: ReturnType<typeof setInterval> | null = null;
+let zaloApi: any = null;
+
+// Config
+const POLL_INTERVAL_MS = 30_000; // 30 giây
+const GROQ_ENABLED = true; // Set false để skip Groq và execute trực tiếp
+
+/**
+ * System prompt cho background agent
+ * Sử dụng cơ chế tag giống Gemini
+ */
+const AGENT_SYSTEM_PROMPT = `Bạn là một AI assistant chạy nền, nhiệm vụ của bạn là thực hiện các tasks được giao một cách thông minh.
+
+Với mỗi task, bạn sẽ nhận được:
+1. Thông tin task (loại, target, payload)
+2. Ngữ cảnh môi trường (ai online, friend requests, memories)
+
+## CÁCH TRẢ LỜI:
+Sử dụng tool tags để ra quyết định:
+
+1. Execute task ngay:
+[tool:decide action="execute" reason="Lý do"]
+
+2. Skip task (không thực hiện):
+[tool:decide action="skip" reason="Lý do"]
+
+3. Delay task (thực hiện sau):
+[tool:decide action="delay" reason="Lý do"]
+
+4. Execute với payload đã điều chỉnh:
+[tool:decide action="execute" reason="Lý do"]{"message": "Nội dung đã chỉnh sửa"}[/tool]
+
+## QUY TẮC:
+- Nếu target đang offline và task không urgent → có thể delay
+- Nếu đã có pending friend request từ target → skip send_friend_request
+- Điều chỉnh tone dựa trên giới tính và context
+- Luôn giải thích lý do quyết định trong reason`;
+
+/**
+ * Khởi động background agent
+ */
+export function startBackgroundAgent(api: any): void {
+  if (isRunning) {
+    debugLog('AGENT', 'Agent already running');
+    return;
+  }
+
+  zaloApi = api;
+  isRunning = true;
+
+  debugLog('AGENT', `Starting background agent (poll interval: ${POLL_INTERVAL_MS}ms)`);
+  console.log('🤖 Background Agent started');
+
+  // Run immediately, then poll
+  runAgentCycle();
+  pollInterval = setInterval(runAgentCycle, POLL_INTERVAL_MS);
+}
+
+/**
+ * Dừng background agent
+ */
+export function stopBackgroundAgent(): void {
+  if (!isRunning) return;
+
+  isRunning = false;
+  if (pollInterval) {
+    clearInterval(pollInterval);
+    pollInterval = null;
+  }
+
+  debugLog('AGENT', 'Background agent stopped');
+  console.log('🛑 Background Agent stopped');
+}
+
+/**
+ * Main cycle - Poll và xử lý tasks
+ */
+async function runAgentCycle(): Promise<void> {
+  if (!isRunning || !zaloApi) return;
+
+  try {
+    const tasks = await getPendingTasks(5);
+
+    if (tasks.length === 0) {
+      debugLog('AGENT', 'No pending tasks');
+      return;
+    }
+
+    debugLog('AGENT', `Processing ${tasks.length} tasks`);
+
+    for (const task of tasks) {
+      if (!isRunning) break;
+      await processTask(task);
+    }
+  } catch (error) {
+    debugLog('AGENT', `Cycle error: ${error}`);
+  }
+}
+
+/**
+ * Xử lý một task
+ */
+async function processTask(task: any): Promise<void> {
+  debugLog('AGENT', `Processing task #${task.id}: ${task.type}`);
+
+  try {
+    // Mark as processing
+    await markTaskProcessing(task.id);
+
+    // Build context
+    const context = await buildEnvironmentContext(zaloApi, task.targetUserId);
+
+    let finalPayload = JSON.parse(task.payload);
+
+    // Gọi Groq để quyết định (nếu enabled)
+    if (GROQ_ENABLED && process.env.GROQ_API_KEY) {
+      const decision = await getGroqDecision(task, context);
+
+      if (decision.action === 'skip') {
+        debugLog('AGENT', `Task #${task.id} skipped: ${decision.reason}`);
+        await markTaskCompleted(task.id, { skipped: true, reason: decision.reason });
+        return;
+      }
+
+      if (decision.action === 'delay') {
+        debugLog('AGENT', `Task #${task.id} delayed: ${decision.reason}`);
+        // Reset về pending để retry sau
+        await markTaskFailed(task.id, `Delayed: ${decision.reason}`, 0, task.maxRetries + 1);
+        return;
+      }
+
+      // Merge adjusted payload nếu có
+      if (decision.adjustedPayload) {
+        finalPayload = { ...finalPayload, ...decision.adjustedPayload };
+      }
+    }
+
+    // Execute task
+    const result = await executeTask(zaloApi, { ...task, payload: JSON.stringify(finalPayload) });
+
+    if (result.success) {
+      await markTaskCompleted(task.id, result.data);
+      debugLog('AGENT', `Task #${task.id} completed`);
+    } else {
+      await markTaskFailed(
+        task.id,
+        result.error || 'Unknown error',
+        task.retryCount,
+        task.maxRetries,
+      );
+      debugLog('AGENT', `Task #${task.id} failed: ${result.error}`);
+    }
+  } catch (error: any) {
+    await markTaskFailed(task.id, error.message, task.retryCount, task.maxRetries);
+    debugLog('AGENT', `Task #${task.id} error: ${error.message}`);
+  }
+}
+
+/**
+ * Parse decision từ Groq response sử dụng tag parser
+ */
+function parseDecisionFromResponse(
+  response: string,
+): { action: 'execute' | 'skip' | 'delay'; reason: string; adjustedPayload?: any } {
+  // Sử dụng tool parser có sẵn
+  const toolCalls = parseToolCalls(response);
+
+  // Tìm tool "decide"
+  const decideCall = toolCalls.find((call) => call.toolName === 'decide');
+
+  if (decideCall) {
+    const { action, reason } = decideCall.params;
+    return {
+      action: action || 'execute',
+      reason: reason || 'No reason provided',
+      adjustedPayload: decideCall.params.message ? { message: decideCall.params.message } : undefined,
+    };
+  }
+
+  // Fallback: tìm pattern cũ nếu không có tool tag
+  const actionMatch = response.match(/action[=:]\s*["']?(execute|skip|delay)["']?/i);
+  const reasonMatch = response.match(/reason[=:]\s*["']([^"']+)["']/i);
+
+  return {
+    action: (actionMatch?.[1] as 'execute' | 'skip' | 'delay') || 'execute',
+    reason: reasonMatch?.[1] || 'Default execution',
+  };
+}
+
+/**
+ * Gọi Groq để quyết định cách xử lý task
+ */
+async function getGroqDecision(
+  task: any,
+  context: any,
+): Promise<{ action: 'execute' | 'skip' | 'delay'; reason: string; adjustedPayload?: any }> {
+  const payload = JSON.parse(task.payload);
+  const contextStr = formatContextForPrompt(context);
+
+  const userPrompt = `
+## Task cần xử lý:
+- ID: ${task.id}
+- Loại: ${task.type}
+- Target User: ${task.targetUserId || 'N/A'}
+- Target Thread: ${task.targetThreadId || 'N/A'}
+- Payload: ${JSON.stringify(payload, null, 2)}
+- Context từ người tạo: ${task.context || 'Không có'}
+
+${contextStr}
+
+Hãy phân tích và sử dụng [tool:decide] để ra quyết định.`;
+
+  const messages: GroqMessage[] = [
+    { role: 'system', content: AGENT_SYSTEM_PROMPT },
+    { role: 'user', content: userPrompt },
+  ];
+
+  try {
+    const response = await generateGroqResponse(messages, { temperature: 0.3 });
+    debugLog('AGENT', `Groq response: ${response.substring(0, 200)}...`);
+
+    return parseDecisionFromResponse(response);
+  } catch (error) {
+    debugLog('AGENT', `Groq decision error: ${error}`);
+    // Fallback: execute anyway
+    return { action: 'execute', reason: 'Groq error, executing anyway' };
+  }
+}
+
+/**
+ * Check agent status
+ */
+export function isAgentRunning(): boolean {
+  return isRunning;
+}

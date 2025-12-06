@@ -83,6 +83,57 @@ export const memories = sqliteTable(
   ],
 );
 
+// ============================================
+// 5. Bảng agent_tasks - Task queue cho background agent
+// ============================================
+export const agentTasks = sqliteTable(
+  'agent_tasks',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    type: text('type', {
+      enum: ['send_message', 'accept_friend', 'send_friend_request'],
+    }).notNull(),
+    status: text('status', {
+      enum: ['pending', 'processing', 'completed', 'failed', 'cancelled'],
+    })
+      .notNull()
+      .default('pending'),
+    // Target info
+    targetUserId: text('target_user_id'),
+    targetThreadId: text('target_thread_id'),
+    // Task payload (JSON)
+    payload: text('payload').notNull(), // { message?: string, ... }
+    // Context từ Gemini khi tạo task
+    context: text('context'), // Lý do tạo task, ngữ cảnh
+    // Scheduling
+    scheduledAt: integer('scheduled_at', { mode: 'timestamp_ms' })
+      .notNull()
+      .$defaultFn(() => new Date()),
+    // Execution tracking
+    startedAt: integer('started_at', { mode: 'timestamp_ms' }),
+    completedAt: integer('completed_at', { mode: 'timestamp_ms' }),
+    // Retry logic
+    retryCount: integer('retry_count').notNull().default(0),
+    maxRetries: integer('max_retries').notNull().default(3),
+    lastError: text('last_error'),
+    // Result
+    result: text('result'), // JSON response sau khi execute
+    // Metadata
+    createdBy: text('created_by'), // userId của người yêu cầu
+    createdAt: integer('created_at', { mode: 'timestamp_ms' })
+      .notNull()
+      .$defaultFn(() => new Date()),
+    updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
+      .notNull()
+      .$defaultFn(() => new Date()),
+  },
+  (table) => [
+    index('idx_tasks_status').on(table.status),
+    index('idx_tasks_scheduled').on(table.scheduledAt),
+    index('idx_tasks_type').on(table.type),
+  ],
+);
+
 // Type exports
 export type History = typeof history.$inferSelect;
 export type NewHistory = typeof history.$inferInsert;
@@ -92,5 +143,9 @@ export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type Memory = typeof memories.$inferSelect;
 export type NewMemory = typeof memories.$inferInsert;
+export type AgentTask = typeof agentTasks.$inferSelect;
+export type NewAgentTask = typeof agentTasks.$inferInsert;
 
 export type MemoryType = 'conversation' | 'fact' | 'person' | 'preference' | 'task' | 'note';
+export type TaskType = 'send_message' | 'accept_friend' | 'send_friend_request';
+export type TaskStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';

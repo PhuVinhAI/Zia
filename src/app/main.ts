@@ -20,6 +20,7 @@ import {
   Services,
 } from '../core/index.js';
 import { addToBuffer } from '../modules/gateway/message.buffer.js';
+import { startBackgroundAgent } from '../modules/background-agent/index.js';
 import { isAllowedUser } from '../modules/gateway/user.filter.js';
 import { CONFIG } from '../shared/constants/config.js';
 import { initThreadHistory, isThreadInitialized } from '../shared/utils/history.js';
@@ -104,6 +105,13 @@ async function main() {
     // Thêm vào buffer
     addToBuffer(api, threadId, message);
   });
+
+  // 6. Start background agent
+  if (process.env.GROQ_API_KEY) {
+    startBackgroundAgent(api);
+  } else {
+    console.log('⚠️ GROQ_API_KEY not set, background agent disabled');
+  }
 
   console.log('\n👂 Bot đang lắng nghe...');
   logStep('main:listening', 'Bot is now listening for messages');
