@@ -89,17 +89,20 @@ async function runAgentCycle(): Promise<void> {
 
 /**
  * Tự động accept tất cả friend requests đang chờ (tuần tự, từng cái một)
+ * Sử dụng getSentFriendRequest() để lấy danh sách người gửi lời mời kết bạn ĐẾN MÌNH
  */
 async function autoAcceptFriendRequests(): Promise<void> {
   try {
     // Lấy danh sách friend requests đang chờ (người khác gửi cho mình)
-    const pendingRequests = await zaloApi.getReceivedFriendRequests?.();
+    // getSentFriendRequest() trả về Object với key là userId
+    const pendingRequests = await zaloApi.getSentFriendRequest();
 
     if (!pendingRequests || Object.keys(pendingRequests).length === 0) {
       debugLog('AGENT', 'No pending friend requests');
       return;
     }
 
+    // Chuyển Object thành Array để dễ xử lý
     const requests = Object.values(pendingRequests) as any[];
     debugLog('AGENT', `Found ${requests.length} pending friend requests, auto-accepting...`);
 
@@ -107,11 +110,19 @@ async function autoAcceptFriendRequests(): Promise<void> {
     let accepted = 0;
     for (const req of requests) {
       try {
-        await zaloApi.acceptFriendRequest(req.userId);
-        debugLog('AGENT', `Accepted friend request from ${req.displayName || req.userId}`);
+        const uid = req.userId;
+        const name = req.displayName || req.zaloName || uid;
+        const message = req.fReqInfo?.message || '';
+
+        debugLog('AGENT', `Processing friend request from ${name} (${uid}): "${message}"`);
+
+        // Accept friend request
+        await zaloApi.acceptFriendRequest(uid);
+        debugLog('AGENT', `Accepted friend request from ${name}`);
         accepted++;
-        // Delay 1s giữa mỗi request để tránh spam
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+
+        // Delay 2s giữa mỗi request để Zalo kịp cập nhật trạng thái bạn bè
+        await new Promise((resolve) => setTimeout(resolve, 2000));
       } catch (error: any) {
         debugLog('AGENT', `Failed to accept friend from ${req.userId}: ${error.message}`);
       }
