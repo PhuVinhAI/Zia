@@ -5,31 +5,47 @@
 import { GoogleGenAI } from '@google/genai';
 import { debugLog } from '../../core/logger/logger.js';
 
-// Parse keys từ env (hỗ trợ comma-separated)
+// Parse keys từ env
+// Hỗ trợ 2 cách:
+// 1. Comma-separated: GEMINI_API_KEY=key1,key2,key3
+// 2. Dọc (nhiều biến): GEMINI_API_KEY_1=key1, GEMINI_API_KEY_2=key2, ...
 function parseApiKeys(): string[] {
-  const keysEnv = Bun.env.GEMINI_API_KEY || Bun.env.GEMINI_API_KEYS || '';
-  const keys = keysEnv
-    .split(',')
-    .map((k) => k.trim())
-    .filter((k) => k && k !== 'your_gemini_api_key_here');
+  const keys: string[] = [];
 
-  if (keys.length === 0) {
-    console.error('❌ Vui lòng cấu hình GEMINI_API_KEY hoặc GEMINI_API_KEYS trong file .env');
+  // Cách 1: Đọc từ GEMINI_API_KEY hoặc GEMINI_API_KEYS (comma-separated)
+  const keysEnv = Bun.env.GEMINI_API_KEY || Bun.env.GEMINI_API_KEYS || '';
+  if (keysEnv) {
+    const parsed = keysEnv
+      .split(',')
+      .map((k) => k.trim())
+      .filter((k) => k && !k.startsWith('your_'));
+    keys.push(...parsed);
+  }
+
+  // Cách 2: Đọc từ GEMINI_API_KEY_1, GEMINI_API_KEY_2, ... (dọc)
+  for (let i = 1; i <= 20; i++) {
+    const key = Bun.env[`GEMINI_API_KEY_${i}`]?.trim();
+    if (key && !key.startsWith('your_')) {
+      keys.push(key);
+    }
+  }
+
+  // Loại bỏ duplicate
+  const uniqueKeys = [...new Set(keys)];
+
+  if (uniqueKeys.length === 0) {
+    console.error('❌ Vui lòng cấu hình GEMINI_API_KEY hoặc GEMINI_API_KEY_1, GEMINI_API_KEY_2... trong file .env');
     process.exit(1);
   }
 
-  return keys;
+  return uniqueKeys;
 }
 
 class GeminiKeyManager {
   private keys: string[];
   private currentIndex = 0;
   private aiInstances: Map<number, GoogleGenAI> = new Map();
-  private failedKeys: Set<number> = new Set(); // Track keys đang bị rate limit
-  private failedKeyTimestamps: Map<number, number> = new Map(); // Thời điểm key bị fail
-
-  // Thời gian chờ trước khi thử lại key đã fail (5 phút)
-  private readonly KEY_COOLDOWN_MS = 5 * 60 * 1000;
+  private rateLimitedKeys: Set<number> = new Set(); // Track keys đang bị rate limit (429)
 
   constructor() {
     this.keys = parseApiKeys();
@@ -81,30 +97,15 @@ class GeminiKeyManager {
   }
 
   /**
-   * Reset failed keys đã hết cooldown
-   */
-  private resetCooledDownKeys(): void {
-    const now = Date.now();
-    for (const [index, timestamp] of this.failedKeyTimestamps) {
-      if (now - timestamp >= this.KEY_COOLDOWN_MS) {
-        this.failedKeys.delete(index);
-        this.failedKeyTimestamps.delete(index);
-        debugLog('KEY_MANAGER', `Key #${index + 1} cooldown ended, available again`);
-      }
-    }
-  }
-
-  /**
    * Đánh dấu key hiện tại bị rate limit
    */
-  markCurrentKeyFailed(): void {
-    this.failedKeys.add(this.currentIndex);
-    this.failedKeyTimestamps.set(this.currentIndex, Date.now());
+  private markCurrentKeyRateLimited(): void {
+    this.rateLimitedKeys.add(this.currentIndex);
     debugLog('KEY_MANAGER', `Key #${this.currentIndex + 1} marked as rate limited`);
   }
 
   /**
-   * Chuyển sang key tiếp theo
+   * Chuyển sang key tiếp theo (không bị rate limit)
    * @returns true nếu chuyển thành công, false nếu không còn key khả dụng
    */
   rotateToNextKey(): boolean {
@@ -113,18 +114,15 @@ class GeminiKeyManager {
       return false;
     }
 
-    // Reset các key đã hết cooldown
-    this.resetCooledDownKeys();
-
     const startIndex = this.currentIndex;
     let attempts = 0;
 
-    // Tìm key tiếp theo chưa bị fail
+    // Tìm key tiếp theo chưa bị rate limit
     do {
       this.currentIndex = (this.currentIndex + 1) % this.keys.length;
       attempts++;
 
-      if (!this.failedKeys.has(this.currentIndex)) {
+      if (!this.rateLimitedKeys.has(this.currentIndex)) {
         console.log(
           `[KeyManager] 🔄 Chuyển sang key #${this.currentIndex + 1}/${this.keys.length}`,
         );
@@ -133,11 +131,10 @@ class GeminiKeyManager {
       }
     } while (this.currentIndex !== startIndex && attempts < this.keys.length);
 
-    // Nếu tất cả keys đều fail, reset và thử key đầu tiên
-    if (this.failedKeys.size >= this.keys.length) {
+    // Nếu tất cả keys đều bị rate limit, reset và thử key đầu tiên
+    if (this.rateLimitedKeys.size >= this.keys.length) {
       console.log('[KeyManager] ⚠️ Tất cả keys đều bị rate limit, reset và thử lại...');
-      this.failedKeys.clear();
-      this.failedKeyTimestamps.clear();
+      this.rateLimitedKeys.clear();
       this.currentIndex = 0;
       return true;
     }
@@ -147,11 +144,12 @@ class GeminiKeyManager {
   }
 
   /**
-   * Xử lý lỗi 429 - đánh dấu key fail và chuyển sang key khác
+   * Xử lý lỗi 429 (rate limit) - đánh dấu key và chuyển sang key khác
+   * Gọi ngay key mới, không cần delay
    * @returns true nếu đã chuyển key thành công
    */
   handleRateLimitError(): boolean {
-    this.markCurrentKeyFailed();
+    this.markCurrentKeyRateLimited();
     return this.rotateToNextKey();
   }
 
@@ -160,8 +158,7 @@ class GeminiKeyManager {
    */
   reset(): void {
     this.currentIndex = 0;
-    this.failedKeys.clear();
-    this.failedKeyTimestamps.clear();
+    this.rateLimitedKeys.clear();
     debugLog('KEY_MANAGER', 'Reset all key states');
   }
 
@@ -169,11 +166,10 @@ class GeminiKeyManager {
    * Lấy thông tin status của tất cả keys
    */
   getStatus(): { index: number; masked: string; available: boolean }[] {
-    this.resetCooledDownKeys();
     return this.keys.map((key, index) => ({
       index: index + 1,
       masked: `${key.substring(0, 8)}...${key.substring(key.length - 4)}`,
-      available: !this.failedKeys.has(index),
+      available: !this.rateLimitedKeys.has(index),
     }));
   }
 }

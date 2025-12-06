@@ -248,33 +248,27 @@ export async function generateContentStream(
   const parts = await buildMessageParts(prompt, media);
   const sessionId = threadId || `temp_${Date.now()}`;
 
-  // Retry loop
-  for (let attempt = 0; attempt <= CONFIG.retry.maxRetries; attempt++) {
-    if (attempt > 0) {
-      state.buffer = '';
-      state.sentReactions.clear();
-      state.sentStickers.clear();
-      state.sentMessages.clear();
-      state.sentCards.clear();
-      state.sentUndos.clear();
-      state.sentImages.clear();
-      hasPartialResponse = false;
+  let overloadRetries = 0; // Đếm số lần retry cho overload (503)
+  const MAX_OVERLOAD_RETRIES = CONFIG.retry.maxRetries;
 
-      const delayMs = CONFIG.retry.baseDelayMs * 2 ** (attempt - 1);
-      console.log(`[Gemini] 🔄 Retry ${attempt}/${CONFIG.retry.maxRetries} sau ${delayMs}ms...`);
-      debugLog('STREAM', `Retry attempt ${attempt}, delay=${delayMs}ms`);
-      await sleep(delayMs);
-
-      deleteChatSession(sessionId);
-    }
+  // Main loop - chạy cho đến khi thành công hoặc hết key/retry
+  while (true) {
+    // Reset state cho mỗi lần thử
+    state.buffer = '';
+    state.sentReactions.clear();
+    state.sentStickers.clear();
+    state.sentMessages.clear();
+    state.sentCards.clear();
+    state.sentUndos.clear();
+    state.sentImages.clear();
+    hasPartialResponse = false;
 
     try {
+      deleteChatSession(sessionId);
       const chat = getChatSession(sessionId, history);
 
-      // Log system prompt khi tạo session mới
-      if (attempt === 0) {
-        logSystemPrompt(sessionId, getSystemPrompt(CONFIG.useCharacter));
-      }
+      // Log system prompt
+      logSystemPrompt(sessionId, getSystemPrompt(CONFIG.useCharacter));
 
       if (history && history.length > 0) {
         logAIHistory(sessionId, history);
@@ -298,8 +292,8 @@ export async function generateContentStream(
         }
       }
 
-      if (attempt > 0) {
-        console.log(`[Gemini] ✅ Retry thành công sau ${attempt} lần thử`);
+      if (overloadRetries > 0) {
+        console.log(`[Gemini] ✅ Thành công sau ${overloadRetries} lần retry overload`);
       }
 
       logAIResponse(`[STREAM] ${prompt.substring(0, 50)}`, state.buffer);
@@ -307,8 +301,6 @@ export async function generateContentStream(
       // Xử lý content nằm ngoài tags (tables, code blocks, plain text)
       const plainText = getPlainText(state.buffer);
       if (plainText && callbacks.onMessage) {
-        // Nếu chưa gửi message nào qua tags, gửi toàn bộ plainText
-        // Nếu đã gửi qua tags, chỉ gửi nếu plainText chứa table/code block
         const hasTableOrCode = /(\|[^\n]+\|\n\|[-:\s|]+\|)|(```\w*\n[\s\S]*?```)/.test(plainText);
         if (state.sentMessages.size === 0 || hasTableOrCode) {
           await callbacks.onMessage(plainText);
@@ -331,27 +323,34 @@ export async function generateContentStream(
         return state.buffer;
       }
 
-      // Xử lý lỗi 429 (rate limit) - chuyển key
+      // Xử lý lỗi 429 (rate limit) - đổi key và gọi ngay, KHÔNG delay
       if (isRateLimitError(error)) {
         const rotated = keyManager.handleRateLimitError();
-        if (rotated && attempt < CONFIG.retry.maxRetries) {
+        if (rotated) {
           console.log(
-            `[Gemini] ⚠️ Lỗi 429: Rate limit, chuyển sang key #${keyManager.getCurrentKeyIndex()}/${keyManager.getTotalKeys()}`,
+            `[Gemini] ⚠️ Lỗi 429: Rate limit, đổi sang key #${keyManager.getCurrentKeyIndex()}/${keyManager.getTotalKeys()} và gọi ngay`,
           );
-          debugLog('STREAM', `Rate limit, rotated to key #${keyManager.getCurrentKeyIndex()}`);
-          // Recreate session với key mới
-          deleteChatSession(sessionId);
-          continue;
+          debugLog('STREAM', `Rate limit, rotated to key #${keyManager.getCurrentKeyIndex()}, calling immediately`);
+          continue; // Gọi ngay với key mới, không delay
         }
+        // Không còn key khả dụng
+        console.log('[Gemini] ❌ Tất cả keys đều bị rate limit');
+        break;
       }
 
-      // Xử lý các lỗi retryable khác (503, etc.)
-      if (isRetryableError(error) && attempt < CONFIG.retry.maxRetries) {
-        console.log(`[Gemini] ⚠️ Lỗi ${error.status || error.code}: Model overloaded, sẽ retry...`);
-        debugLog('STREAM', `Retryable error: ${error.status || error.code}`);
+      // Xử lý lỗi 503 (overload) - retry với delay, KHÔNG đổi key
+      if (isRetryableError(error) && overloadRetries < MAX_OVERLOAD_RETRIES) {
+        overloadRetries++;
+        const delayMs = CONFIG.retry.baseDelayMs * 2 ** (overloadRetries - 1);
+        console.log(
+          `[Gemini] ⚠️ Lỗi ${error.status || error.code}: Model overloaded, retry ${overloadRetries}/${MAX_OVERLOAD_RETRIES} sau ${delayMs}ms...`,
+        );
+        debugLog('STREAM', `Overload error, retry ${overloadRetries}, delay=${delayMs}ms`);
+        await sleep(delayMs);
         continue;
       }
 
+      // Lỗi khác hoặc hết retry
       break;
     }
   }
