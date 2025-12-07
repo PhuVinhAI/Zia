@@ -442,22 +442,26 @@ export async function sendTextMessage(
       }
     }
 
-    // 1. Parse mentions (chuyển [mention:ID:Name] thành @Name)
-    const { text: textWithMentions, mentions } = parseMentions(textWithoutStickers);
-
-    // 2. Parse markdown để extract code blocks, tables, mermaid (nếu enabled)
+    // 1. Parse markdown TRƯỚC để extract code blocks, tables, mermaid và clean markdown syntax
+    // QUAN TRỌNG: Phải parse markdown trước mentions vì markdown syntax (**bold**, *italic*)
+    // sẽ thay đổi độ dài text, làm lệch vị trí (pos) của mentions
     let parsed: Awaited<ReturnType<typeof parseMarkdownToZalo>>;
     if (parseMarkdown) {
-      parsed = await parseMarkdownToZalo(textWithMentions);
+      parsed = await parseMarkdownToZalo(textWithoutStickers);
     } else {
       parsed = {
-        text: textWithMentions,
+        text: textWithoutStickers,
         styles: [],
         images: [],
         codeBlocks: [],
         links: [],
       };
     }
+
+    // 2. Parse mentions SAU khi markdown đã được clean
+    // Lúc này text đã không còn markdown syntax, pos sẽ chính xác
+    const { text: textWithMentions, mentions } = parseMentions(parsed.text);
+    parsed.text = textWithMentions;
 
     // 3. Chunk phần text đã được clean
     const chunks = splitMessage(parsed.text);
