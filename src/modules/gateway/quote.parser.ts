@@ -22,11 +22,25 @@ export interface QuoteMedia {
 export function parseQuoteAttachment(quote: any): QuoteMedia {
   const cliMsgType = quote?.cliMsgType;
 
-  // Sticker: cliMsgType = 5 hoặc có sticker pattern trong msg
-  if (cliMsgType === 5 || (quote?.msg && /^\[\^[\d.]+\^\]$/.test(quote.msg))) {
+  // Sticker: cliMsgType = 5 (static) hoặc 36 (animated) hoặc có sticker pattern trong msg
+  if (cliMsgType === 5 || cliMsgType === 36 || (quote?.msg && /^\[\^[\d.]+\^\]$/.test(quote.msg))) {
+    // Try parse from msg pattern first
     const match = quote.msg?.match(/\[\^(\d+)\.(\d+)\^\]/);
     if (match) {
       return { type: 'sticker', stickerId: match[2] };
+    }
+
+    // Try parse from attach (khi msg rỗng nhưng attach có sticker info)
+    if (quote?.attach) {
+      try {
+        const attach = typeof quote.attach === 'string' ? JSON.parse(quote.attach) : quote.attach;
+        // Sticker có type = 7 trong Zalo
+        if (attach?.type === 7 && attach?.id) {
+          return { type: 'sticker', stickerId: String(attach.id) };
+        }
+      } catch {
+        // Ignore parse error
+      }
     }
   }
 
@@ -34,6 +48,11 @@ export function parseQuoteAttachment(quote: any): QuoteMedia {
 
   try {
     const attach = typeof quote.attach === 'string' ? JSON.parse(quote.attach) : quote.attach;
+
+    // Fallback: Check sticker từ attach.type === 7 (có thể miss ở trên nếu cliMsgType khác)
+    if (attach?.type === 7 && attach?.id) {
+      return { type: 'sticker', stickerId: String(attach.id) };
+    }
 
     const href = attach?.href || attach?.hdUrl;
     const thumb = attach?.thumb;
@@ -157,16 +176,46 @@ export function extractQuoteInfo(lastMsg: any): {
     return { quoteContent: null, quoteMedia: { type: 'none' }, quoteMsgId: null };
   }
 
-  const quoteContent = quote.msg || quote.content || null;
   const quoteMedia = parseQuoteAttachment(quote);
   const quoteMsgId = quote.globalMsgId || quote.msgId || null;
 
+  // Determine quote content based on media type
+  let quoteContent: string | null = quote.msg || quote.content || null;
+
+  // Nếu không có text content nhưng có media, tạo mô tả phù hợp
+  if (!quoteContent && quoteMedia.type !== 'none') {
+    switch (quoteMedia.type) {
+      case 'sticker':
+        quoteContent = `[Sticker ID: ${quoteMedia.stickerId}]`;
+        break;
+      case 'image':
+        quoteContent = '[Hình ảnh]';
+        break;
+      case 'video':
+        quoteContent = '[Video]';
+        break;
+      case 'audio':
+        quoteContent = '[Tin nhắn thoại]';
+        break;
+      case 'file':
+        quoteContent = `[File: ${quoteMedia.title || 'không tên'}]`;
+        break;
+      case 'gif':
+        quoteContent = '[GIF]';
+        break;
+      case 'doodle':
+        quoteContent = '[Hình vẽ]';
+        break;
+    }
+  }
+
   if (quoteMedia.type !== 'none') {
-    console.log(
-      `[Bot] 💬 User reply tin có ${quoteMedia.type}: ${quoteMedia.url?.substring(0, 50)}...`,
+    debugLog(
+      'QUOTE',
+      `User reply tin có ${quoteMedia.type}: ${quoteMedia.url?.substring(0, 50) || quoteMedia.stickerId}`,
     );
   } else if (quoteContent) {
-    console.log(`[Bot] 💬 User reply: "${quoteContent}"`);
+    debugLog('QUOTE', `User reply: "${quoteContent}"`);
   }
 
   return {
