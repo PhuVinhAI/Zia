@@ -31,6 +31,72 @@ const reactionMap: Record<string, any> = {
   like: Reactions.LIKE,
 };
 
+// ═══════════════════════════════════════════════════
+// MENTION PARSER
+// ═══════════════════════════════════════════════════
+
+interface MentionInfo {
+  pos: number;
+  uid: string;
+  len: number;
+}
+
+/**
+ * Parse cú pháp [mention:ID:Name] từ text
+ * Input: "Chào [mention:123456:Nguyễn Văn A] nhé"
+ * Output: { text: "Chào @Nguyễn Văn A nhé", mentions: [{ uid: '123456', len: 13, pos: 5 }] }
+ */
+function parseMentions(text: string): { text: string; mentions: MentionInfo[] } {
+  const mentions: MentionInfo[] = [];
+
+  // Regex tìm [mention:ID] hoặc [mention:ID:Name]
+  const regex = /\[mention:(\d+)(?::([^\]]+))?\]/g;
+
+  // Tìm tất cả matches trước
+  const replacements: { start: number; end: number; replacement: string; uid: string }[] = [];
+  let match;
+
+  while ((match = regex.exec(text)) !== null) {
+    const originalTag = match[0];
+    const uid = match[1];
+    const name = match[2] || uid; // Dùng tên nếu có, không thì dùng ID
+    const mentionText = `@${name}`;
+
+    replacements.push({
+      start: match.index,
+      end: match.index + originalTag.length,
+      replacement: mentionText,
+      uid: uid,
+    });
+  }
+
+  // Thực hiện thay thế từ cuối lên đầu để không làm hỏng index
+  let processedText = text;
+  for (let i = replacements.length - 1; i >= 0; i--) {
+    const r = replacements[i];
+    const before = processedText.substring(0, r.start);
+    const after = processedText.substring(r.end);
+    processedText = before + r.replacement + after;
+  }
+
+  // Tính lại position sau khi thay thế (từ đầu đến cuối)
+  let offset = 0;
+  for (const r of replacements) {
+    const newPos = r.start + offset;
+
+    mentions.push({
+      pos: newPos,
+      uid: r.uid,
+      len: r.replacement.length,
+    });
+
+    // Cập nhật offset cho lần thay thế tiếp theo
+    offset += r.replacement.length - (r.end - r.start);
+  }
+
+  return { text: processedText, mentions };
+}
+
 // Store để lưu ThreadType cho mỗi thread (User hoặc Group)
 const threadTypeStore = new Map<string, number>();
 
@@ -52,7 +118,7 @@ export function getThreadType(threadId: string): number {
  * Gửi tin nhắn text với auto-chunking nếu quá dài
  * Tự động chia nhỏ tin nhắn để tránh lỗi "Nội dung quá dài"
  *
- * FLOW MỚI: Parse markdown TRƯỚC → extract code/table/mermaid → chunk text còn lại
+ * FLOW MỚI: Parse mentions → Parse markdown → extract code/table/mermaid → chunk text còn lại
  * Điều này đảm bảo code blocks, tables, mermaid không bị cắt giữa chừng
  */
 async function sendTextWithChunking(
@@ -63,9 +129,11 @@ async function sendTextWithChunking(
 ): Promise<void> {
   const threadType = getThreadType(threadId);
 
-  // Parse markdown TRƯỚC để extract code blocks, tables, mermaid
-  // Điều này đảm bảo các blocks được xử lý nguyên vẹn
-  const parsed = await parseMarkdownToZalo(text);
+  // 1. Parse mentions TRƯỚC (chuyển [mention:ID:Name] thành @Name)
+  const { text: textWithMentions, mentions } = parseMentions(text);
+
+  // 2. Parse markdown để extract code blocks, tables, mermaid
+  const parsed = await parseMarkdownToZalo(textWithMentions);
 
   // Chunk phần text đã được clean (không còn code blocks, tables)
   const chunks = splitMessage(parsed.text);
@@ -85,6 +153,19 @@ async function sendTextWithChunking(
         if (chunkParsed.styles.length > 0) {
           richMsg.styles = chunkParsed.styles;
         }
+
+        // Thêm mentions vào tin nhắn (chỉ ở chunk đầu tiên nếu có mentions)
+        // Lọc mentions nằm trong chunk hiện tại
+        if (isFirstChunk && mentions.length > 0) {
+          // Lọc mentions nằm trong chunk hiện tại
+          const chunkMentions = mentions.filter((m) => m.pos < chunkParsed.text.length);
+
+          if (chunkMentions.length > 0) {
+            richMsg.mentions = chunkMentions;
+            debugLog('MENTION', `Adding ${chunkMentions.length} mentions to message`);
+          }
+        }
+
         // Chỉ quote ở chunk đầu tiên
         if (isFirstChunk && quoteData) {
           richMsg.quote = quoteData;

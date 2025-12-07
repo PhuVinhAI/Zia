@@ -2,6 +2,9 @@
  * System Tools - Export tất cả tools
  */
 
+// Board/Note tools
+export { createNoteTool, editNoteTool, getListBoardTool } from './board.js';
+
 export { clearHistoryTool } from './clearHistory.js';
 export { createAppTool } from './createApp.js';
 export { createChartTool } from './createChart.js';
@@ -11,9 +14,17 @@ export { flushLogsTool } from './flushLogs.js';
 export { freepikImageTool } from './freepikImage.js';
 export { getAllFriendsTool } from './getAllFriends.js';
 export { getFriendOnlinesTool } from './getFriendOnlines.js';
+export { getGroupMembersTool, groupMembersCache } from './getGroupMembers.js';
 export { getUserInfoTool } from './getUserInfo.js';
 export { googleSearchTool } from './googleSearch.js';
 export { recallMemoryTool, saveMemoryTool } from './memory.js';
+
+// Poll tools
+export { createPollTool, getPollDetailTool, lockPollTool, votePollTool } from './poll.js';
+
+// Reminder tools
+export { createReminderTool, getReminderTool, removeReminderTool } from './reminder.js';
+
 export { scheduleTaskTool } from './scheduleTask.js';
 export { solveMathTool } from './solveMath.js';
 export { textToSpeechTool } from './textToSpeech.js';

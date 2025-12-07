@@ -190,6 +190,9 @@ export const GetUserInfoSchema = z.object({
   userId: z.string().optional(),
 });
 
+// Get Group Members params (không có tham số, lấy từ context)
+export const GetGroupMembersSchema = z.object({});
+
 // Create Chart params
 export const CreateChartSchema = z.object({
   type: z.enum(['bar', 'line', 'pie', 'doughnut', 'radar', 'polarArea']),
@@ -395,6 +398,78 @@ export const ScheduleTaskSchema = z.object({
   context: z.string().optional().describe('Ngữ cảnh/lý do tạo task'),
 });
 
+// ============ POLL TOOLS ============
+
+// Create Poll params
+export const CreatePollSchema = z.object({
+  question: z.string().min(1, 'Thiếu câu hỏi bình chọn'),
+  options: z.array(z.string()).min(2, 'Cần ít nhất 2 lựa chọn'),
+  expiredTime: z.coerce.number().default(0),
+  allowMultiChoices: z.boolean().default(false),
+  allowAddNewOption: z.boolean().default(false),
+  hideVotePreview: z.boolean().default(false),
+  isAnonymous: z.boolean().default(false),
+});
+
+// Get Poll Detail params
+export const GetPollDetailSchema = z.object({
+  pollId: z.coerce.number().min(1, 'Thiếu pollId'),
+});
+
+// Vote Poll params
+export const VotePollSchema = z.object({
+  pollId: z.coerce.number().min(1, 'Thiếu pollId'),
+  optionIds: z.array(z.coerce.number()).min(1, 'Cần ít nhất 1 option_id để vote'),
+});
+
+// Lock Poll params
+export const LockPollSchema = z.object({
+  pollId: z.coerce.number().min(1, 'Thiếu pollId'),
+});
+
+// ============ BOARD/NOTE TOOLS ============
+
+// Create Note params
+export const CreateNoteSchema = z.object({
+  title: z.string().min(1, 'Thiếu nội dung ghi chú'),
+  pinAct: z.boolean().default(true),
+});
+
+// Get List Board params
+export const GetListBoardSchema = z.object({
+  page: z.coerce.number().min(1).default(1),
+  count: z.coerce.number().min(1).max(50).default(20),
+});
+
+// Edit Note params
+export const EditNoteSchema = z.object({
+  topicId: z.string().min(1, 'Thiếu topicId'),
+  title: z.string().min(1, 'Thiếu nội dung mới'),
+  pinAct: z.boolean().default(true),
+});
+
+// ============ REMINDER TOOLS ============
+
+// Repeat modes
+const REMINDER_REPEAT_MODES = ['none', 'daily', 'weekly', 'monthly'] as const;
+
+// Create Reminder params
+export const CreateReminderSchema = z.object({
+  title: z.string().min(1, 'Thiếu tiêu đề nhắc nhở'),
+  startTime: z.coerce.number().min(1, 'Thiếu thời gian nhắc (Unix timestamp ms)'),
+  repeat: z.enum(REMINDER_REPEAT_MODES).default('none'),
+});
+
+// Get Reminder params
+export const GetReminderSchema = z.object({
+  reminderId: z.string().min(1, 'Thiếu reminderId'),
+});
+
+// Remove Reminder params
+export const RemoveReminderSchema = z.object({
+  reminderId: z.string().min(1, 'Thiếu reminderId'),
+});
+
 // ============ HELPER FUNCTION ============
 
 /**
@@ -433,6 +508,7 @@ export const TOOL_EXAMPLES: Record<string, string> = {
   getAllFriends: `[tool:getAllFriends]{"limit":50}[/tool]`,
   getFriendOnlines: `[tool:getFriendOnlines]{"limit":10}[/tool]`,
   getUserInfo: `[tool:getUserInfo]{"userId":"123"}[/tool]`,
+  getGroupMembers: `[tool:getGroupMembers]{}[/tool]`,
 
   // Academic
   tvuLogin: `[tool:tvuLogin]{"username":"MSSV","password":"matkhau"}[/tool]`,
@@ -443,6 +519,22 @@ export const TOOL_EXAMPLES: Record<string, string> = {
   tvuNotifications: `[tool:tvuNotifications]{"limit":20}[/tool]`,
   tvuCurriculum: `[tool:tvuCurriculum]{}[/tool]`,
   tvuTuition: `[tool:tvuTuition]{}[/tool]`,
+
+  // Poll tools
+  createPoll: `[tool:createPoll]{"question":"Trưa ăn gì?","options":["Cơm","Phở","Bún"],"allowMultiChoices":true}[/tool]`,
+  getPollDetail: `[tool:getPollDetail]{"pollId":123456}[/tool]`,
+  votePoll: `[tool:votePoll]{"pollId":123456,"optionIds":[1001]}[/tool]`,
+  lockPoll: `[tool:lockPoll]{"pollId":123456}[/tool]`,
+
+  // Board/Note tools
+  createNote: `[tool:createNote]{"title":"🚨 THÔNG BÁO: Mai họp lúc 8h","pinAct":true}[/tool]`,
+  getListBoard: `[tool:getListBoard]{"page":1,"count":20}[/tool]`,
+  editNote: `[tool:editNote]{"topicId":"topic_123","title":"Nội dung mới","pinAct":true}[/tool]`,
+
+  // Reminder tools
+  createReminder: `[tool:createReminder]{"title":"Deadline nộp báo cáo","startTime":1733580000000,"repeat":"none"}[/tool]`,
+  getReminder: `[tool:getReminder]{"reminderId":"reminder_123"}[/tool]`,
+  removeReminder: `[tool:removeReminder]{"reminderId":"reminder_123"}[/tool]`,
 };
 
 /**
@@ -499,6 +591,7 @@ export type JikanRecommendationsParams = z.infer<typeof JikanRecommendationsSche
 export type GetAllFriendsParams = z.infer<typeof GetAllFriendsSchema>;
 export type GetFriendOnlinesParams = z.infer<typeof GetFriendOnlinesSchema>;
 export type GetUserInfoParams = z.infer<typeof GetUserInfoSchema>;
+export type GetGroupMembersParams = z.infer<typeof GetGroupMembersSchema>;
 export type TvuLoginParams = z.infer<typeof TvuLoginSchema>;
 export type TvuScheduleParams = z.infer<typeof TvuScheduleSchema>;
 export type TvuNotificationsParams = z.infer<typeof TvuNotificationsSchema>;
@@ -516,3 +609,19 @@ export type GoogleSearchParams = z.infer<typeof GoogleSearchSchema>;
 export type SaveMemoryParams = z.infer<typeof SaveMemorySchema>;
 export type RecallMemoryParams = z.infer<typeof RecallMemorySchema>;
 export type ScheduleTaskParams = z.infer<typeof ScheduleTaskSchema>;
+
+// Poll types
+export type CreatePollParams = z.infer<typeof CreatePollSchema>;
+export type GetPollDetailParams = z.infer<typeof GetPollDetailSchema>;
+export type VotePollParams = z.infer<typeof VotePollSchema>;
+export type LockPollParams = z.infer<typeof LockPollSchema>;
+
+// Board/Note types
+export type CreateNoteParams = z.infer<typeof CreateNoteSchema>;
+export type GetListBoardParams = z.infer<typeof GetListBoardSchema>;
+export type EditNoteParams = z.infer<typeof EditNoteSchema>;
+
+// Reminder types
+export type CreateReminderParams = z.infer<typeof CreateReminderSchema>;
+export type GetReminderParams = z.infer<typeof GetReminderSchema>;
+export type RemoveReminderParams = z.infer<typeof RemoveReminderSchema>;

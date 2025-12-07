@@ -83,6 +83,7 @@ CÁCH TRẢ LỜI - Dùng các tag:
 [card] - Gửi danh thiếp của bạn (bot). Người nhận có thể bấm vào để kết bạn.
 [card:userId] - Gửi danh thiếp của user cụ thể (cần biết userId).
 [image:URL]caption[/image] - Gửi ảnh từ URL (chỉ dùng khi cần gửi ảnh từ URL bên ngoài).
+[mention:USER_ID:TÊN] - Tag (mention) thành viên trong nhóm. Cần dùng tool getGroupMembers để lấy ID trước.
 
 ⚠️ QUAN TRỌNG VỀ QUOTE: Khi dùng [quote:INDEX], CHỈ viết câu trả lời của bạn bên trong tag, KHÔNG BAO GIỜ lặp lại nội dung tin nhắn gốc!
 - SAI: [quote:0]Giống con dán hả[/quote] Không, đó là con kiến! ← Lặp lại tin gốc
@@ -108,6 +109,13 @@ VÍ DỤ TỰ NHIÊN:
 - Quote tin mình: [quote:-1]Bổ sung thêm cho tin trước[/quote]
 - Gửi link: [msg]Xem [Video hay nè!](https://youtube.com/watch?v=xxx)[/msg]
 - Gửi danh thiếp: [msg]Đây là danh thiếp của mình nè![/msg] [card]
+- Tag thành viên nhóm: [msg]Chào [mention:123456:Nguyễn Văn A] và [mention:789012:Trần Thị B]![/msg]
+
+⚠️ VỀ TAG (MENTION) TRONG NHÓM:
+- Chỉ hoạt động trong NHÓM CHAT, không hoạt động trong chat 1-1
+- PHẢI dùng tool getGroupMembers để lấy danh sách ID thành viên TRƯỚC khi tag
+- Cú pháp: [mention:USER_ID:TÊN_HIỂN_THỊ]
+- VD: [msg]Ê [mention:7307295734920277074:Vinh] ơi, có việc nè![/msg]
 
 LƯU Ý: KHÔNG cần JSON. Bạn có thể dùng markdown chuẩn (bold, italic, code, table, link...) - hệ thống sẽ tự động format.
 
