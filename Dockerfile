@@ -9,8 +9,8 @@ RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt
 # Copy package files
 COPY package.json bun.lock ./
 
-# Install dependencies (skip frozen lockfile for Docker compatibility)
-RUN bun install
+# Install production dependencies only (skip devDependencies like better-sqlite3)
+RUN bun install --production
 
 # Copy source code
 COPY . .
