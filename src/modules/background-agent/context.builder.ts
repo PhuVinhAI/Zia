@@ -7,14 +7,6 @@ export interface EnvironmentContext {
   // Online status
   onlineUsers: Array<{ userId: string; status: string }>;
   onlineCount: number;
-  // Friend requests
-  pendingFriendRequests: Array<{
-    userId: string;
-    displayName: string;
-    avatar: string;
-    message: string;
-    time: number;
-  }>;
   // Target user info (nếu có)
   targetUserInfo?: {
     userId: string;
@@ -40,7 +32,6 @@ export async function buildEnvironmentContext(
   const context: EnvironmentContext = {
     onlineUsers: [],
     onlineCount: 0,
-    pendingFriendRequests: [],
     relevantMemories: [],
     timestamp: new Date(),
   };
@@ -55,24 +46,7 @@ export async function buildEnvironmentContext(
     debugLog('CONTEXT', `Error getting online users: ${e}`);
   }
 
-  try {
-    // 2. Lấy pending friend requests (nếu API hỗ trợ)
-    if (typeof api.getSentFriendRequest === 'function') {
-      const reqRes = await api.getSentFriendRequest();
-      context.pendingFriendRequests = Object.values(reqRes || {}).map((r: any) => ({
-        userId: r.userId,
-        displayName: r.displayName,
-        avatar: r.avatar,
-        message: r.fReqInfo?.message || '',
-        time: r.fReqInfo?.time || 0,
-      }));
-      debugLog('CONTEXT', `Pending friend requests: ${context.pendingFriendRequests.length}`);
-    }
-  } catch (e) {
-    // Bỏ qua lỗi - API có thể không hỗ trợ hoặc session không có quyền
-  }
-
-  // 3. Lấy thông tin target user nếu có
+  // 2. Lấy thông tin target user nếu có
   if (targetUserId) {
     try {
       const userRes = await api.getUserInfo(targetUserId);
@@ -109,15 +83,6 @@ export function formatContextForPrompt(context: EnvironmentContext): string {
     lines.push(`- IDs: ${context.onlineUsers.map((u) => u.userId).join(', ')}`);
   }
   lines.push('');
-
-  // Friend requests
-  if (context.pendingFriendRequests.length > 0) {
-    lines.push(`### Lời mời kết bạn đang chờ (${context.pendingFriendRequests.length}):`);
-    for (const req of context.pendingFriendRequests.slice(0, 5)) {
-      lines.push(`- ${req.displayName} (${req.userId}): "${req.message}"`);
-    }
-    lines.push('');
-  }
 
   // Target user
   if (context.targetUserInfo) {

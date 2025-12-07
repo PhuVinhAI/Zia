@@ -13,7 +13,6 @@ describe('Context Builder', () => {
       const context: EnvironmentContext = {
         onlineUsers: [],
         onlineCount: 0,
-        pendingFriendRequests: [],
         relevantMemories: [],
         timestamp: new Date('2024-03-15T10:00:00'),
       };
@@ -31,7 +30,6 @@ describe('Context Builder', () => {
           { userId: 'user2', status: 'online' },
         ],
         onlineCount: 2,
-        pendingFriendRequests: [],
         relevantMemories: [],
         timestamp: new Date(),
       };
@@ -42,34 +40,10 @@ describe('Context Builder', () => {
       expect(result).toContain('user2');
     });
 
-    it('should include friend requests', () => {
-      const context: EnvironmentContext = {
-        onlineUsers: [],
-        onlineCount: 0,
-        pendingFriendRequests: [
-          {
-            userId: 'friend1',
-            displayName: 'Friend One',
-            avatar: 'http://avatar.jpg',
-            message: 'Hi, add me!',
-            time: Date.now(),
-          },
-        ],
-        relevantMemories: [],
-        timestamp: new Date(),
-      };
-
-      const result = formatContextForPrompt(context);
-      expect(result).toContain('Lời mời kết bạn');
-      expect(result).toContain('Friend One');
-      expect(result).toContain('Hi, add me!');
-    });
-
     it('should include target user info', () => {
       const context: EnvironmentContext = {
         onlineUsers: [],
         onlineCount: 0,
-        pendingFriendRequests: [],
         relevantMemories: [],
         timestamp: new Date(),
         targetUserInfo: {
@@ -93,7 +67,6 @@ describe('Context Builder', () => {
       const context: EnvironmentContext = {
         onlineUsers: [],
         onlineCount: 0,
-        pendingFriendRequests: [],
         relevantMemories: [],
         timestamp: new Date(),
         targetUserInfo: {
@@ -113,7 +86,6 @@ describe('Context Builder', () => {
       const context: EnvironmentContext = {
         onlineUsers: [],
         onlineCount: 0,
-        pendingFriendRequests: [],
         relevantMemories: [
           'User likes coffee',
           'User birthday is March 15',
@@ -131,7 +103,6 @@ describe('Context Builder', () => {
       const context: EnvironmentContext = {
         onlineUsers: [],
         onlineCount: 0,
-        pendingFriendRequests: [],
         relevantMemories: [],
         timestamp: new Date('2024-03-15T10:30:00'),
       };

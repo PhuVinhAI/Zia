@@ -8,8 +8,8 @@ import { debugLog } from '../../core/logger/logger.js';
 
 // Danh sách models theo thứ tự ưu tiên
 export const GEMINI_MODELS = [
+   'models/gemini-robotics-er-1.5-preview',
   'models/gemini-flash-latest',
-  'models/gemini-robotics-er-1.5-preview',
   'models/gemini-flash-lite-latest',
 ] as const;
 
