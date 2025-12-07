@@ -452,6 +452,17 @@ export const EditNoteSchema = z.object({
   pinAct: z.boolean().default(true),
 });
 
+// ============ FORWARD MESSAGE TOOL ============
+
+// Forward Message params
+export const ForwardMessageSchema = z.object({
+  message: z.string().min(1, 'Thiếu nội dung tin nhắn cần forward'),
+  targetThreadIds: z.string().min(1, 'Thiếu ID người/nhóm nhận'),
+  targetType: z.enum(['user', 'group']).default('user'),
+  originalMsgId: z.string().optional(),
+  originalTimestamp: z.coerce.number().optional(),
+});
+
 // ============ REMINDER TOOLS ============
 
 // Repeat modes
@@ -539,6 +550,9 @@ export const TOOL_EXAMPLES: Record<string, string> = {
   createReminder: `[tool:createReminder]{"title":"Deadline nộp báo cáo","startTime":1733580000000,"repeat":"none"}[/tool]`,
   getReminder: `[tool:getReminder]{"reminderId":"reminder_123"}[/tool]`,
   removeReminder: `[tool:removeReminder]{"reminderId":"reminder_123"}[/tool]`,
+
+  // Forward Message tool
+  forwardMessage: `[tool:forwardMessage]{"message":"Nội dung cần forward","targetThreadIds":"123456789","targetType":"user"}[/tool]`,
 };
 
 /**
@@ -627,3 +641,6 @@ export type EditNoteParams = z.infer<typeof EditNoteSchema>;
 export type CreateReminderParams = z.infer<typeof CreateReminderSchema>;
 export type GetReminderParams = z.infer<typeof GetReminderSchema>;
 export type RemoveReminderParams = z.infer<typeof RemoveReminderSchema>;
+
+// Forward Message types
+export type ForwardMessageParams = z.infer<typeof ForwardMessageSchema>;
