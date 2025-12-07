@@ -3,9 +3,13 @@
  * Hỗ trợ: themes, tables, callouts, header/footer, page settings
  */
 
+import {
+  buildWordDocument,
+  getTheme,
+  type WordDocumentOptions,
+} from '../../../../libs/docx-builder/index.js';
 import type { CreateFileParams } from '../../../../shared/schemas/tools.schema.js';
 import type { FileHandler } from './types.js';
-import { buildWordDocument, getTheme, type WordDocumentOptions } from './word/index.js';
 
 /**
  * Parse extended options từ content

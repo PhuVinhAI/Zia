@@ -3,8 +3,8 @@
  * Sử dụng PPTX Framework
  */
 
+import { buildPresentation } from '../../../../libs/pptx-builder/index.js';
 import type { CreateFileParams } from '../../../../shared/schemas/tools.schema.js';
-import { buildPresentation, getTheme } from './pptx/index.js';
 import type { FileHandler } from './types.js';
 
 export const pptxHandler: FileHandler = async (

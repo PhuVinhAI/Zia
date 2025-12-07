@@ -11,22 +11,13 @@
 
 import {
   container,
-  debugLog,
-  Events,
-  eventBus,
   logError,
-  logMessage,
   logStep,
+  registerLogTransport,
   Services,
-  setLoggerZaloApi,
 } from '../core/index.js';
 import { startBackgroundAgent } from '../modules/background-agent/index.js';
-import { addToBuffer } from '../modules/gateway/message.buffer.js';
-import { isAllowedUser } from '../modules/gateway/user.filter.js';
-import { CONFIG } from '../shared/constants/config.js';
-import { initThreadHistory, isThreadInitialized } from '../shared/utils/history.js';
-import { abortTask } from '../shared/utils/taskManager.js';
-// App setup
+import { registerMessageListener } from '../modules/gateway/message.listener.js';
 import { initializeApp } from './app.module.js';
 import {
   initLogging,
@@ -75,8 +66,11 @@ async function main() {
   // Register Zalo API vào container
   container.register(Services.ZALO_API, api);
 
-  // Set Zalo API cho logger (production: gửi log qua Zalo)
-  setLoggerZaloApi(api);
+  // Register Zalo log transport (production: gửi log qua Zalo)
+  const { zaloLogTransport } = await import('../infrastructure/zalo/zaloLogTransport.js');
+  const { ThreadType } = await import('../infrastructure/zalo/zalo.service.js');
+  zaloLogTransport.setApi(api, ThreadType);
+  registerLogTransport(zaloLogTransport);
 
   // 3. Khởi tạo và load tất cả modules
   console.log('\n📦 Initializing modules...');
@@ -85,55 +79,11 @@ async function main() {
   // 4. Setup listeners và preload history
   await setupListeners(api);
 
-  // 5. Message handler
-  api.listener.on('message', async (message: any) => {
-    const threadId = message.threadId;
-
-    // Log RAW message
-    if (CONFIG.fileLogging) {
-      logMessage('IN', threadId, message);
-    }
-
-    // Emit message received event
-    await eventBus.emit(Events.MESSAGE_RECEIVED, { threadId, message });
-
-    // Kiểm tra Cloud Debug
-    const cloudMessage = isCloudMessage(message);
-    if (cloudMessage) {
-      processCloudMessage(message);
-    }
-
-    // Kiểm tra bỏ qua
-    const { skip, reason } = shouldSkipMessage(message);
-    if (skip && !cloudMessage) {
-      if (reason === 'group message') {
-        console.log(`[Bot] 🚫 Bỏ qua tin nhắn nhóm: ${threadId}`);
-      }
-      debugLog('MSG', `Skipping: ${reason}, thread=${threadId}`);
-      return;
-    }
-
-    // Kiểm tra user được phép
-    const senderId = message.data?.uidFrom || threadId;
-    const senderName = message.data?.dName || '';
-
-    if (!cloudMessage && !isAllowedUser(senderId, senderName)) {
-      console.log(`[Bot] ⏭️ Bỏ qua: "${senderName}" (${senderId})`);
-      return;
-    }
-
-    // Khởi tạo history
-    const msgType = message.type;
-    if (!isThreadInitialized(threadId)) {
-      debugLog('MSG', `Initializing history for thread: ${threadId}`);
-      await initThreadHistory(api, threadId, msgType);
-    }
-
-    // Hủy task đang chạy nếu có
-    abortTask(threadId);
-
-    // Thêm vào buffer
-    addToBuffer(api, threadId, message);
+  // 5. Register message listener (logic đã tách vào gateway module)
+  registerMessageListener(api, {
+    isCloudMessage,
+    processCloudMessage,
+    shouldSkipMessage,
   });
 
   // 6. Start background agent

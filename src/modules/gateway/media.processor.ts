@@ -1,5 +1,6 @@
 /**
  * Media Processor - Chuẩn bị media parts cho Gemini API
+ * Sử dụng Strategy Pattern cho các media handlers
  */
 
 import type { Content } from '@google/genai';
@@ -17,17 +18,132 @@ import {
 import type { ClassifiedMessage } from './classifier.js';
 import type { QuoteMedia } from './quote.parser.js';
 
+// ═══════════════════════════════════════════════════
+// TYPES
+// ═══════════════════════════════════════════════════
+
+type MediaHandler = (
+  api: any,
+  item: ClassifiedMessage,
+  notes: string[],
+) => Promise<MediaPart | null>;
+
+// ═══════════════════════════════════════════════════
+// MEDIA HANDLERS (Strategy Pattern)
+// ═══════════════════════════════════════════════════
+
+const mediaHandlers: Record<string, MediaHandler> = {
+  sticker: async (api, item, notes) => {
+    if (!item.stickerId) return null;
+    try {
+      const details = await api.getStickersDetail(item.stickerId);
+      const url = details?.[0]?.stickerUrl || details?.[0]?.stickerSpriteUrl;
+      if (url) return { type: 'image', url, mimeType: 'image/png' };
+    } catch {
+      debugLog('MEDIA', `Failed to get sticker ${item.stickerId}`);
+      notes.push('(Không thể load sticker từ tin cũ)');
+    }
+    return null;
+  },
+
+  image: async (_api, item) => {
+    if (!item.url) return null;
+    return { type: 'image', url: item.url, mimeType: item.mimeType || 'image/jpeg' };
+  },
+
+  doodle: async (_api, item) => {
+    if (!item.url) return null;
+    return { type: 'image', url: item.url, mimeType: item.mimeType || 'image/jpeg' };
+  },
+
+  gif: async (_api, item) => {
+    if (!item.url) return null;
+    // Gemini không hỗ trợ image/gif, dùng image/png thay thế
+    return { type: 'image', url: item.url, mimeType: 'image/png' };
+  },
+
+  video: async (_api, item, notes) => {
+    // Nếu có URL và (không có fileSize hoặc fileSize < 20MB) → gửi video
+    if (item.url && (!item.fileSize || item.fileSize < 20 * 1024 * 1024)) {
+      return { type: 'video', url: item.url, mimeType: 'video/mp4' };
+    }
+    // Nếu video quá lớn hoặc không có URL → dùng thumbnail
+    if (item.thumbUrl) {
+      console.log(`[Bot] 🖼️ Video quá lớn, dùng thumbnail`);
+      notes.push(`(Video ${item.duration || 0}s quá lớn, chỉ có thumbnail)`);
+      return { type: 'image', url: item.thumbUrl, mimeType: 'image/jpeg' };
+    }
+    return null;
+  },
+
+  voice: async (_api, item) => {
+    if (!item.url) return null;
+    return { type: 'audio', url: item.url, mimeType: item.mimeType || 'audio/aac' };
+  },
+
+  // Alias for voice (quote parser uses 'audio' type)
+  audio: async (_api, item) => {
+    if (!item.url) return null;
+    return { type: 'audio', url: item.url, mimeType: item.mimeType || 'audio/aac' };
+  },
+
+  file: async (_api, item, notes) => {
+    if (!item.url || !item.fileExt) return null;
+
+    const ext = item.fileExt;
+    const maxSizeMB = CONFIG.fetch?.maxTextConvertSizeMB ?? 20;
+    const maxSize = maxSizeMB * 1024 * 1024;
+
+    // Gemini native support
+    if (isGeminiSupported(ext)) {
+      return { type: 'file', url: item.url, mimeType: getMimeTypeFromExt(ext) };
+    }
+
+    // DOCX → PDF conversion
+    if (isDocxConvertible(ext)) {
+      if (item.fileSize && item.fileSize > maxSize) {
+        const sizeMB = (item.fileSize / 1024 / 1024).toFixed(1);
+        console.log(`[Bot] ⚠️ File quá lớn để convert: ${sizeMB}MB`);
+        notes.push(`(File "${item.fileName}" quá lớn ${sizeMB}MB, max ${maxSizeMB}MB)`);
+        return null;
+      }
+      console.log(`[Bot] 📄 Convert DOCX sang PDF: ${item.fileName}`);
+      const base64 = await fetchDocxAndConvertToPdfBase64(item.url);
+      if (base64) return { type: 'file', base64, mimeType: 'application/pdf' };
+      notes.push(`(File "${item.fileName}" không convert được)`);
+      return null;
+    }
+
+    // Text-based files → text conversion
+    if (isTextConvertible(ext)) {
+      if (item.fileSize && item.fileSize > maxSize) {
+        const sizeMB = (item.fileSize / 1024 / 1024).toFixed(1);
+        console.log(`[Bot] ⚠️ File quá lớn để convert: ${sizeMB}MB`);
+        notes.push(`(File "${item.fileName}" quá lớn ${sizeMB}MB, max ${maxSizeMB}MB)`);
+        return null;
+      }
+      console.log(`[Bot] 📝 Convert file sang text: ${ext}`);
+      const base64 = await fetchAndConvertToTextBase64(item.url);
+      if (base64) return { type: 'file', base64, mimeType: 'text/plain' };
+      notes.push(`(File "${item.fileName}" không đọc được)`);
+      return null;
+    }
+
+    notes.push(`(File "${item.fileName}" định dạng .${ext} không hỗ trợ)`);
+    return null;
+  },
+};
+
+// ═══════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════
+
 /**
  * Check xem history đã có media (inlineData) từ USER chưa
- * Chỉ check media từ role='user' vì:
- * - Media từ user: AI đã thấy binary data → có thể skip fetch
- * - Media từ model (bot gửi từ tool): AI chỉ biết "đã gửi thành công", chưa thấy binary → cần fetch
  */
 function historyHasUserMedia(history: Content[]): boolean {
   for (const content of history) {
-    // Chỉ check media từ user, không check từ model
     if (content.role !== 'user') continue;
-
     for (const part of content.parts || []) {
       if ('inlineData' in part && part.inlineData?.data) {
         return true;
@@ -41,25 +157,21 @@ function historyHasUserMedia(history: Content[]): boolean {
  * Lấy mô tả media type cho note
  */
 function getMediaTypeDescription(type: string): string {
-  switch (type) {
-    case 'image':
-      return 'hình ảnh';
-    case 'video':
-      return 'video';
-    case 'audio':
-      return 'audio/voice';
-    case 'sticker':
-      return 'sticker';
-    case 'gif':
-      return 'GIF';
-    case 'doodle':
-      return 'hình vẽ tay';
-    case 'file':
-      return 'file';
-    default:
-      return 'media';
-  }
+  const descriptions: Record<string, string> = {
+    image: 'hình ảnh',
+    video: 'video',
+    audio: 'audio/voice',
+    sticker: 'sticker',
+    gif: 'GIF',
+    doodle: 'hình vẽ tay',
+    file: 'file',
+  };
+  return descriptions[type] || 'media';
 }
+
+// ═══════════════════════════════════════════════════
+// MAIN FUNCTIONS
+// ═══════════════════════════════════════════════════
 
 /**
  * Chuẩn bị MediaPart[] từ classified messages
@@ -72,90 +184,10 @@ export async function prepareMediaParts(
   const notes: string[] = [];
 
   for (const item of classified) {
-    if (item.type === 'sticker' && item.stickerId) {
-      try {
-        const details = await api.getStickersDetail(item.stickerId);
-        const url = details?.[0]?.stickerUrl || details?.[0]?.stickerSpriteUrl;
-        if (url) media.push({ type: 'image', url, mimeType: 'image/png' });
-      } catch {
-        debugLog('MEDIA', `Failed to get sticker ${item.stickerId}`);
-      }
-    } else if (item.type === 'image' && item.url) {
-      media.push({
-        type: 'image',
-        url: item.url,
-        mimeType: item.mimeType || 'image/jpeg',
-      });
-    } else if (item.type === 'doodle' && item.url) {
-      // Doodle (vẽ hình) - xử lý như image
-      media.push({
-        type: 'image',
-        url: item.url,
-        mimeType: item.mimeType || 'image/jpeg',
-      });
-    } else if (item.type === 'gif' && item.url) {
-      // GIF - Gemini không hỗ trợ image/gif, dùng image/png thay thế
-      media.push({
-        type: 'image',
-        url: item.url,
-        mimeType: 'image/png',
-      });
-    } else if (item.type === 'video') {
-      if (item.url && item.fileSize && item.fileSize < 20 * 1024 * 1024) {
-        media.push({ type: 'video', url: item.url, mimeType: 'video/mp4' });
-      } else if (item.thumbUrl) {
-        console.log(`[Bot] 🖼️ Video quá lớn, dùng thumbnail`);
-        media.push({
-          type: 'image',
-          url: item.thumbUrl,
-          mimeType: 'image/jpeg',
-        });
-        notes.push(`(Video ${item.duration || 0}s quá lớn, chỉ có thumbnail)`);
-      }
-    } else if (item.type === 'voice' && item.url) {
-      media.push({
-        type: 'audio',
-        url: item.url,
-        mimeType: item.mimeType || 'audio/aac',
-      });
-    } else if (item.type === 'file' && item.url && item.fileExt) {
-      if (isGeminiSupported(item.fileExt)) {
-        media.push({
-          type: 'file',
-          url: item.url,
-          mimeType: getMimeTypeFromExt(item.fileExt),
-        });
-      } else if (isDocxConvertible(item.fileExt)) {
-        // Convert DOCX sang PDF
-        const maxSizeMB = CONFIG.fetch?.maxTextConvertSizeMB ?? 20;
-        const maxSize = maxSizeMB * 1024 * 1024;
-        if (item.fileSize && item.fileSize > maxSize) {
-          const sizeMB = (item.fileSize / 1024 / 1024).toFixed(1);
-          console.log(`[Bot] ⚠️ File quá lớn để convert: ${sizeMB}MB`);
-          notes.push(`(File "${item.fileName}" quá lớn ${sizeMB}MB, max ${maxSizeMB}MB)`);
-        } else {
-          console.log(`[Bot] 📄 Convert DOCX sang PDF: ${item.fileName}`);
-          const base64 = await fetchDocxAndConvertToPdfBase64(item.url);
-          if (base64) media.push({ type: 'file', base64, mimeType: 'application/pdf' });
-          else notes.push(`(File "${item.fileName}" không convert được)`);
-        }
-      } else if (isTextConvertible(item.fileExt)) {
-        // Check file size trước khi convert (từ config)
-        const maxSizeMB = CONFIG.fetch?.maxTextConvertSizeMB ?? 20;
-        const maxSize = maxSizeMB * 1024 * 1024;
-        if (item.fileSize && item.fileSize > maxSize) {
-          const sizeMB = (item.fileSize / 1024 / 1024).toFixed(1);
-          console.log(`[Bot] ⚠️ File quá lớn để convert: ${sizeMB}MB`);
-          notes.push(`(File "${item.fileName}" quá lớn ${sizeMB}MB, max ${maxSizeMB}MB)`);
-        } else {
-          console.log(`[Bot] 📝 Convert file sang text: ${item.fileExt}`);
-          const base64 = await fetchAndConvertToTextBase64(item.url);
-          if (base64) media.push({ type: 'file', base64, mimeType: 'text/plain' });
-          else notes.push(`(File "${item.fileName}" không đọc được)`);
-        }
-      } else {
-        notes.push(`(File "${item.fileName}" định dạng .${item.fileExt} không hỗ trợ)`);
-      }
+    const handler = mediaHandlers[item.type];
+    if (handler) {
+      const part = await handler(api, item, notes);
+      if (part) media.push(part);
     }
   }
 
@@ -164,7 +196,6 @@ export async function prepareMediaParts(
 
 /**
  * Thêm media từ quote vào danh sách media
- * Nếu media đã có trong history thì chỉ thêm note nhắc AI, không fetch lại
  */
 export async function addQuoteMedia(
   api: any,
@@ -174,100 +205,30 @@ export async function addQuoteMedia(
   history?: Content[],
 ): Promise<void> {
   // Check nếu history đã có media TỪ USER thì không cần fetch lại
-  // Lưu ý: Media từ bot (tool generate) không được skip vì AI chưa thấy binary data
   if (history && historyHasUserMedia(history)) {
     const mediaDesc = getMediaTypeDescription(quoteMedia.type);
-    console.log(
-      `[Bot] 📎 Quote media (${quoteMedia.type}) đã có trong history từ user, skip fetch`,
-    );
+    console.log(`[Bot] 📎 Quote media (${quoteMedia.type}) đã có trong history từ user, skip fetch`);
     notes.push(`(User đang reply tin nhắn có ${mediaDesc} ở trên, hãy tham khảo ${mediaDesc} đó)`);
     return;
   }
 
-  if (quoteMedia.type === 'image' && quoteMedia.url) {
-    console.log(`[Bot] 📎 Đang fetch ảnh từ quote...`);
-    media.push({
-      type: 'image',
-      url: quoteMedia.url,
-      mimeType: quoteMedia.mimeType || 'image/jpeg',
-    });
-  } else if (quoteMedia.type === 'gif' && quoteMedia.url) {
-    // GIF - Gemini không hỗ trợ image/gif, dùng image/png thay thế
-    console.log(`[Bot] 📎 Đang fetch GIF từ quote...`);
-    media.push({
-      type: 'image',
-      url: quoteMedia.url,
-      mimeType: 'image/png',
-    });
-  } else if (quoteMedia.type === 'doodle' && quoteMedia.url) {
-    console.log(`[Bot] 📎 Đang fetch doodle từ quote...`);
-    media.push({
-      type: 'image',
-      url: quoteMedia.url,
-      mimeType: quoteMedia.mimeType || 'image/jpeg',
-    });
-  } else if (quoteMedia.type === 'video') {
-    if (quoteMedia.url) {
-      console.log(`[Bot] 📎 Đang fetch video từ quote...`);
-      media.push({
-        type: 'video',
-        url: quoteMedia.url,
-        mimeType: 'video/mp4',
-      });
-    } else if (quoteMedia.thumbUrl) {
-      console.log(`[Bot] 📎 Đang fetch thumbnail video từ quote...`);
-      media.push({
-        type: 'image',
-        url: quoteMedia.thumbUrl,
-        mimeType: 'image/jpeg',
-      });
-      notes.push(`(Video ${quoteMedia.duration || 0}s từ tin cũ, chỉ có thumbnail)`);
-    }
-  } else if (quoteMedia.type === 'audio' && quoteMedia.url) {
-    console.log(`[Bot] 📎 Đang fetch audio từ quote...`);
-    media.push({
-      type: 'audio',
-      url: quoteMedia.url,
-      mimeType: quoteMedia.mimeType || 'audio/aac',
-    });
-  } else if (quoteMedia.type === 'sticker' && quoteMedia.stickerId) {
-    console.log(`[Bot] 📎 Đang fetch sticker từ quote: ${quoteMedia.stickerId}`);
-    try {
-      const details = await api.getStickersDetail(quoteMedia.stickerId);
-      const stickerUrl = details?.[0]?.stickerUrl || details?.[0]?.stickerSpriteUrl;
-      if (stickerUrl) {
-        media.push({ type: 'image', url: stickerUrl, mimeType: 'image/png' });
-      }
-    } catch (e) {
-      debugLog('QUOTE', `Failed to get sticker ${quoteMedia.stickerId}: ${e}`);
-      notes.push('(Không thể load sticker từ tin cũ)');
-    }
-  } else if (quoteMedia.type === 'file' && quoteMedia.url) {
-    console.log(`[Bot] 📎 Đang fetch file từ quote: ${quoteMedia.title || quoteMedia.fileExt}`);
-    const ext = quoteMedia.fileExt || '';
-    if (isGeminiSupported(ext)) {
-      media.push({
-        type: 'file',
-        url: quoteMedia.url,
-        mimeType: getMimeTypeFromExt(ext),
-      });
-    } else if (isDocxConvertible(ext)) {
-      console.log(`[Bot] 📄 Convert DOCX sang PDF từ quote: ${quoteMedia.title}`);
-      const base64 = await fetchDocxAndConvertToPdfBase64(quoteMedia.url);
-      if (base64) {
-        media.push({ type: 'file', base64, mimeType: 'application/pdf' });
-      } else {
-        notes.push(`(File "${quoteMedia.title}" từ tin cũ không convert được)`);
-      }
-    } else if (isTextConvertible(ext)) {
-      const base64 = await fetchAndConvertToTextBase64(quoteMedia.url);
-      if (base64) {
-        media.push({ type: 'file', base64, mimeType: 'text/plain' });
-      } else {
-        notes.push(`(File "${quoteMedia.title}" từ tin cũ không đọc được)`);
-      }
-    } else {
-      notes.push(`(File "${quoteMedia.title}" định dạng .${ext} không hỗ trợ)`);
-    }
+  // Convert QuoteMedia to ClassifiedMessage format for handler
+  const item: ClassifiedMessage = {
+    type: quoteMedia.type as any,
+    message: null, // Quote không có message gốc
+    url: quoteMedia.url,
+    thumbUrl: quoteMedia.thumbUrl,
+    duration: quoteMedia.duration,
+    stickerId: quoteMedia.stickerId,
+    mimeType: quoteMedia.mimeType,
+    fileExt: quoteMedia.fileExt,
+    fileName: quoteMedia.title,
+  };
+
+  const handler = mediaHandlers[quoteMedia.type];
+  if (handler) {
+    console.log(`[Bot] 📎 Đang fetch ${quoteMedia.type} từ quote...`);
+    const part = await handler(api, item, notes);
+    if (part) media.push(part);
   }
 }

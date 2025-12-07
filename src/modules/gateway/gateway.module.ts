@@ -29,6 +29,12 @@ export {
   countMessageTypes,
 } from './classifier.js';
 export { addQuoteMedia, prepareMediaParts } from './media.processor.js';
+// Message Listener
+export {
+  createMessageHandler,
+  type MessageListenerOptions,
+  registerMessageListener,
+} from './message.listener.js';
 export {
   type ClassifiedMessage,
   classifyMessageDetailed,
@@ -63,4 +69,13 @@ export {
   notifyToolCall,
   type ToolHandlerResult,
 } from './tool.handler.js';
+// Tool Output Handler
+export {
+  handleAllToolOutputs,
+  handleToolOutput,
+  sendDocument,
+  sendImage,
+  sendImages,
+  sendVoice,
+} from './tool.output.handler.js';
 export { isAllowedUser, isGroupAllowed, isUserAllowed } from './user.filter.js';

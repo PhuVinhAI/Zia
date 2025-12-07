@@ -1,6 +1,6 @@
 /**
  * Logger Module - Pino-based structured logging
- * Production: cache logs in memory, send to Zalo when reaching threshold
+ * Production: cache logs in memory, send via registered transport
  * Development: log to console + file with rotation
  */
 
@@ -9,119 +9,29 @@ import * as path from 'node:path';
 import { Writable } from 'node:stream';
 import pino from 'pino';
 import { formatFileTimestamp, now } from '../../shared/utils/datetime.js';
+import {
+  flushLogs,
+  getLogCacheSize as getCacheSize,
+  ProductionLogStream,
+  registerLogTransport,
+  type ILogTransport,
+} from './transports.js';
 
 let logger: pino.Logger;
 let sessionDir: string = '';
 let fileLoggingEnabled = false;
-
-// Production log cache
-let logCache: string[] = [];
-let zaloApi: any = null;
-const LOG_CACHE_THRESHOLD = 1000; // Gửi khi đủ 1000 dòng
 const MAX_LINES_PER_FILE = 1000;
 
-/**
- * Set Zalo API để gửi log (gọi sau khi login)
- */
-export function setLoggerZaloApi(api: any): void {
-  zaloApi = api;
-}
+// Re-export transport functions
+export { registerLogTransport, type ILogTransport };
+export { flushLogs as forceFlushLogs } from './transports.js';
+export const getLogCacheSize = getCacheSize;
 
 /**
  * Tạo timestamp cho tên thư mục
  */
 function getTimestamp(): string {
   return formatFileTimestamp();
-}
-
-/**
- * Custom writable stream cho production - cache và gửi qua Zalo
- */
-class ProductionLogStream extends Writable {
-  _write(chunk: Buffer, _encoding: string, callback: (error?: Error | null) => void): void {
-    const data = chunk.toString().trim();
-    if (data) {
-      logCache.push(data);
-
-      // Kiểm tra threshold và gửi
-      if (logCache.length >= LOG_CACHE_THRESHOLD) {
-        flushLogsToZalo().catch(console.error);
-      }
-    }
-    callback();
-  }
-
-  _final(callback: (error?: Error | null) => void): void {
-    // Flush remaining logs khi shutdown
-    if (logCache.length > 0) {
-      flushLogsToZalo().catch(console.error);
-    }
-    callback();
-  }
-}
-
-/**
- * Gửi logs qua Zalo dưới dạng file attachment
- */
-async function flushLogsToZalo(): Promise<void> {
-  const adminId = process.env.LOG_RECEIVER_ID;
-  if (!zaloApi || !adminId || logCache.length === 0) {
-    return;
-  }
-
-  try {
-    const logsToSend = [...logCache];
-    logCache = []; // Clear cache ngay để tránh duplicate
-
-    const logContent = logsToSend.join('\n');
-    const timestamp = formatFileTimestamp();
-    const fileName = `logs_${timestamp}.txt`;
-
-    // Convert log content to Buffer
-    const logBuffer = Buffer.from(logContent, 'utf-8');
-
-    // Gửi file qua Zalo dùng attachment
-    const attachment = {
-      filename: fileName,
-      data: logBuffer,
-      metadata: {
-        totalSize: logBuffer.length,
-        width: 0,
-        height: 0,
-      },
-    };
-
-    // Import ThreadType từ zca-js
-    const { ThreadType } = await import('../../infrastructure/zalo/zalo.service.js');
-
-    await zaloApi.sendMessage(
-      {
-        msg: `📋 Log file (${logsToSend.length} dòng)`,
-        attachments: [attachment],
-      },
-      adminId,
-      ThreadType.User,
-    );
-
-    console.log(`📤 Sent ${logsToSend.length} log lines to admin`);
-  } catch (error) {
-    console.error('Failed to send logs to Zalo:', error);
-    // Không push lại vào cache để tránh loop vô hạn
-  }
-}
-
-/**
- * Force flush logs (gọi khi cần gửi ngay)
- */
-export async function forceFlushLogs(): Promise<void> {
-  await flushLogsToZalo();
-}
-
-/**
- * Get current log cache size
- */
-export function getLogCacheSize(): number {
-  return logCache.length;
 }
 
 /**
@@ -200,7 +110,7 @@ class RotatingFileStream extends Writable {
 
 /**
  * Khởi tạo Pino logger
- * Production: console + cache (gửi qua Zalo khi đủ threshold)
+ * Production: console + cache (gửi qua transport khi đủ threshold)
  * Development: console + file rotation
  */
 export function initFileLogger(basePath: string): void {
@@ -221,12 +131,12 @@ export function initFileLogger(basePath: string): void {
   });
 
   if (isProduction) {
-    // Production: cache logs và gửi qua Zalo
+    // Production: cache logs và gửi qua transport
     streams.push({
       level: 'debug',
       stream: new ProductionLogStream(),
     });
-    console.log('📝 Production mode: logs will be sent to Zalo');
+    console.log('📝 Production mode: logs will be sent via registered transport');
   } else {
     // Development: ghi file như cũ
     const logsRoot = path.dirname(basePath);
@@ -286,8 +196,8 @@ export function isFileLoggingEnabled(): boolean {
  */
 export function closeFileLogger(): void {
   // Flush remaining logs in production
-  if (process.env.NODE_ENV === 'production' && logCache.length > 0) {
-    flushLogsToZalo().catch(console.error);
+  if (process.env.NODE_ENV === 'production') {
+    flushLogs().catch(console.error);
   }
 }
 

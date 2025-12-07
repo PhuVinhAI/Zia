@@ -18,6 +18,7 @@ export {
 export { EventBus, Events, eventBus } from './event-bus/event-bus.js';
 // Logger
 export * from './logger/logger.js';
+export type { ILogTransport } from './logger/transports.js';
 
 // Module Manager
 export {
