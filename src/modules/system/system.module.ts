@@ -19,8 +19,17 @@ import { getAllFriendsTool } from './tools/social/getAllFriends.js';
 import { getFriendOnlinesTool } from './tools/social/getFriendOnlines.js';
 import { getGroupMembersTool } from './tools/social/getGroupMembers.js';
 import { getUserInfoTool } from './tools/social/getUserInfo.js';
-import { createPollTool, getPollDetailTool, lockPollTool, votePollTool } from './tools/social/poll.js';
-import { createReminderTool, getReminderTool, removeReminderTool } from './tools/social/reminder.js';
+import {
+  createPollTool,
+  getPollDetailTool,
+  lockPollTool,
+  votePollTool,
+} from './tools/social/poll.js';
+import {
+  createReminderTool,
+  getReminderTool,
+  removeReminderTool,
+} from './tools/social/reminder.js';
 // Task tools
 import { createAppTool } from './tools/task/createApp.js';
 import { executeCodeTool } from './tools/task/executeCode.js';
@@ -87,6 +96,6 @@ export class SystemModule extends BaseModule {
 // Export singleton instance
 export const systemModule = new SystemModule();
 
+export * from './tools/chat/memory.js';
 // Re-export tools for backward compatibility
 export * from './tools/index.js';
-export * from './tools/chat/memory.js';

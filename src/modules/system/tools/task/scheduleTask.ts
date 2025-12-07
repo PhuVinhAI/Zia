@@ -7,7 +7,11 @@ import {
   ScheduleTaskSchema,
   validateParamsWithExample,
 } from '../../../../shared/schemas/tools.schema.js';
-import type { ToolContext, ToolDefinition, ToolResult } from '../../../../shared/types/tools.types.js';
+import type {
+  ToolContext,
+  ToolDefinition,
+  ToolResult,
+} from '../../../../shared/types/tools.types.js';
 import { createTask } from '../../../background-agent/index.js';
 
 export const scheduleTaskTool: ToolDefinition = {

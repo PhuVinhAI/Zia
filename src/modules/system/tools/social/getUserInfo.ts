@@ -7,7 +7,11 @@ import {
   GetUserInfoSchema,
   validateParamsWithExample,
 } from '../../../../shared/schemas/tools.schema.js';
-import type { ToolContext, ToolDefinition, ToolResult } from '../../../../shared/types/tools.types.js';
+import type {
+  ToolContext,
+  ToolDefinition,
+  ToolResult,
+} from '../../../../shared/types/tools.types.js';
 
 export const getUserInfoTool: ToolDefinition = {
   name: 'getUserInfo',
