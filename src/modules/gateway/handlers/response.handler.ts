@@ -13,6 +13,7 @@ import { splitMessage } from '../../../shared/utils/message/messageChunker.js';
 import {
   getThreadType,
   sendImageFromUrl,
+  sendSticker,
   sendTextMessage,
   setThreadType,
 } from '../../../shared/utils/message/messageSender.js';
@@ -69,37 +70,6 @@ async function sendCard(api: any, userId: string | undefined, threadId: string) 
   } catch (e: any) {
     logZaloAPI('sendCard', { userId, threadId }, null, e);
     logError('sendCard', e);
-  }
-}
-
-async function sendSticker(api: any, keyword: string, threadId: string) {
-  try {
-    console.log(`[Bot] 🎨 Tìm sticker: "${keyword}"`);
-    debugLog('STICKER', `Searching sticker: "${keyword}"`);
-    const threadType = getThreadType(threadId);
-
-    const stickerIds = await api.getStickers(keyword);
-    logZaloAPI('getStickers', { keyword }, stickerIds);
-
-    if (stickerIds?.length > 0) {
-      const randomId = stickerIds[Math.floor(Math.random() * stickerIds.length)];
-      const stickerDetails = await api.getStickersDetail(randomId);
-      logZaloAPI('getStickersDetail', { stickerId: randomId }, stickerDetails);
-
-      if (stickerDetails?.[0]) {
-        const result = await api.sendSticker(stickerDetails[0], threadId, threadType);
-        logZaloAPI('sendSticker', { sticker: stickerDetails[0], threadId }, result);
-        console.log(`[Bot] ✅ Đã gửi sticker!`);
-        logMessage('OUT', threadId, {
-          type: 'sticker',
-          keyword,
-          stickerId: randomId,
-        });
-      }
-    }
-  } catch (e: any) {
-    logZaloAPI('sendSticker', { keyword, threadId }, null, e);
-    logError('sendSticker', e);
   }
 }
 
