@@ -15,6 +15,7 @@
     "requirePrefix": false,
     "rateLimitMs": 0,
     "maxTokenHistory": 300000,
+    "maxInputTokens": 200000,
     "selfListen": true,
     "logging": true,
     "useStreaming": true,
