@@ -3,10 +3,27 @@
  */
 import { debugLog } from '../../core/logger/logger.js';
 
+/**
+ * Delay random trong khoảng min-max ms (giống hành vi người dùng)
+ */
+function randomDelay(minMs: number, maxMs: number): Promise<void> {
+  const delay = Math.floor(Math.random() * (maxMs - minMs + 1)) + minMs;
+  return new Promise((resolve) => setTimeout(resolve, delay));
+}
+
+export interface GroupInfo {
+  groupId: string;
+  name: string;
+  totalMember: number;
+}
+
 export interface EnvironmentContext {
   // Online status
   onlineUsers: Array<{ userId: string; status: string }>;
   onlineCount: number;
+  // Danh sách nhóm bot tham gia
+  joinedGroups: GroupInfo[];
+  totalGroups: number;
   // Target user info (nếu có)
   targetUserInfo?: {
     userId: string;
@@ -32,6 +49,8 @@ export async function buildEnvironmentContext(
   const context: EnvironmentContext = {
     onlineUsers: [],
     onlineCount: 0,
+    joinedGroups: [],
+    totalGroups: 0,
     relevantMemories: [],
     timestamp: new Date(),
   };
@@ -46,7 +65,42 @@ export async function buildEnvironmentContext(
     debugLog('CONTEXT', `Error getting online users: ${e}`);
   }
 
-  // 2. Lấy thông tin target user nếu có
+  try {
+    // 2. Lấy danh sách nhóm bot tham gia
+    const groupsRes = await api.getAllGroups();
+    const groupIds = Object.keys(groupsRes.gridVerMap || {});
+    context.totalGroups = groupIds.length;
+
+    // Lấy thông tin chi tiết TẤT CẢ nhóm theo batch với delay random
+    if (groupIds.length > 0) {
+      const BATCH_SIZE = 10;
+      for (let i = 0; i < groupIds.length; i += BATCH_SIZE) {
+        const batch = groupIds.slice(i, i + BATCH_SIZE);
+        const infoRes = await api.getGroupInfo(batch);
+
+        for (const gid of batch) {
+          const info = infoRes.gridInfoMap?.[gid];
+          if (info) {
+            context.joinedGroups.push({
+              groupId: gid,
+              name: info.name,
+              totalMember: info.totalMember,
+            });
+          }
+        }
+
+        // Delay random 500-1500ms giữa các batch (giống người dùng)
+        if (i + BATCH_SIZE < groupIds.length) {
+          await randomDelay(500, 1500);
+        }
+      }
+    }
+    debugLog('CONTEXT', `Joined groups: ${context.totalGroups}`);
+  } catch (e) {
+    debugLog('CONTEXT', `Error getting groups: ${e}`);
+  }
+
+  // 3. Lấy thông tin target user nếu có
   if (targetUserId) {
     try {
       const userRes = await api.getUserInfo(targetUserId);
@@ -81,6 +135,15 @@ export function formatContextForPrompt(context: EnvironmentContext): string {
   lines.push(`- Số người đang online: ${context.onlineCount}`);
   if (context.onlineUsers.length > 0 && context.onlineUsers.length <= 10) {
     lines.push(`- IDs: ${context.onlineUsers.map((u) => u.userId).join(', ')}`);
+  }
+  lines.push('');
+
+  // Joined groups
+  lines.push(`### Nhóm bot tham gia (${context.totalGroups} nhóm):`);
+  if (context.joinedGroups.length > 0) {
+    for (const g of context.joinedGroups) {
+      lines.push(`- ${g.name} (ID: ${g.groupId}) - ${g.totalMember} thành viên`);
+    }
   }
   lines.push('');
 
