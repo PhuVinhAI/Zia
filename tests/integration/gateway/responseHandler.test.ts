@@ -6,7 +6,7 @@
 import { describe, test, expect } from 'bun:test';
 import {
   createStreamCallbacks,
-} from '../../../src/modules/gateway/response.handler.js';
+} from '../../../src/modules/gateway/handlers/response.handler.js';
 
 describe('Response Handler', () => {
   describe('createStreamCallbacks', () => {

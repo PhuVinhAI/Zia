@@ -23,24 +23,48 @@ export class GatewayModule extends BaseModule {
 // Export singleton instance
 export const gatewayModule = new GatewayModule();
 
+// Classifier
 export {
   classifyMessage,
   classifyMessages,
   countMessageTypes,
 } from './classifier.js';
-export { addQuoteMedia, prepareMediaParts } from './media.processor.js';
+// Handlers
+export {
+  createStreamCallbacks,
+  sendResponse,
+  setupSelfMessageListener,
+} from './handlers/response.handler.js';
+export {
+  formatToolResultForAI,
+  handleToolCalls,
+  isToolOnlyResponse,
+  notifyToolCall,
+  type ToolHandlerResult,
+} from './handlers/tool.handler.js';
+export {
+  handleAllToolOutputs,
+  handleToolOutput,
+  sendDocument,
+  sendImage,
+  sendImages,
+  sendVoice,
+} from './handlers/tool.output.handler.js';
 // Message Listener
 export {
   createMessageHandler,
   type MessageListenerOptions,
   registerMessageListener,
 } from './message.listener.js';
+// Processors
+export { addQuoteMedia, prepareMediaParts } from './processors/media.processor.js';
 export {
   type ClassifiedMessage,
   classifyMessageDetailed,
   handleMixedContent,
   type MessageType,
-} from './message.processor.js';
+} from './processors/message.processor.js';
+// Prompt & Quote
 export {
   buildPrompt,
   extractTextFromMessages,
@@ -51,31 +75,12 @@ export {
   parseQuoteAttachment,
   type QuoteMedia,
 } from './quote.parser.js';
+// Rate Limit
 export {
   checkRateLimit,
   getRateLimitStatus,
   markApiCall,
 } from './rate-limit.guard.js';
-// Re-export handlers
-export {
-  createStreamCallbacks,
-  sendResponse,
-  setupSelfMessageListener,
-} from './response.handler.js';
-export {
-  formatToolResultForAI,
-  handleToolCalls,
-  isToolOnlyResponse,
-  notifyToolCall,
-  type ToolHandlerResult,
-} from './tool.handler.js';
-// Tool Output Handler
-export {
-  handleAllToolOutputs,
-  handleToolOutput,
-  sendDocument,
-  sendImage,
-  sendImages,
-  sendVoice,
-} from './tool.output.handler.js';
+
+// User Filter
 export { isAllowedUser, isGroupAllowed, isUserAllowed } from './user.filter.js';

@@ -267,7 +267,8 @@ function parseBatchDecisions(
     // Build adjusted payload từ các fields có thể có
     const adjustedPayload: Record<string, any> = {};
     if (call.params.message) adjustedPayload.message = call.params.message;
-    if (call.params.resolvedThreadId) adjustedPayload.resolvedThreadId = call.params.resolvedThreadId;
+    if (call.params.resolvedThreadId)
+      adjustedPayload.resolvedThreadId = call.params.resolvedThreadId;
     if (call.params.resolvedUserId) adjustedPayload.resolvedUserId = call.params.resolvedUserId;
 
     decisions.set(taskId, {

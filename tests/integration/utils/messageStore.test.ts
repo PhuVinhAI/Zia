@@ -9,7 +9,7 @@ import {
   getLastSentMessage,
   removeSentMessage,
   cleanupOldMessages,
-} from '../../../src/shared/utils/messageStore.js';
+} from '../../../src/shared/utils/message/messageStore.js';
 
 // Initialize database before tests
 beforeAll(async () => {

@@ -50,7 +50,11 @@ export const jikanRecommendationsTool: ToolDefinition = {
   ],
   execute: async (params): Promise<ToolResult> => {
     // Validate với Zod
-    const validation = validateParamsWithExample(JikanRecommendationsSchema, params, 'jikanRecommendations');
+    const validation = validateParamsWithExample(
+      JikanRecommendationsSchema,
+      params,
+      'jikanRecommendations',
+    );
     if (!validation.success) {
       return { success: false, error: validation.error };
     }

@@ -4,8 +4,8 @@
  */
 
 import { describe, test, expect } from 'bun:test';
-import { parseMarkdown, parseInline, blocksToPlainText } from '../../../src/shared/utils/markdownParser.js';
-import { parseMarkdownToZalo, getFileExtension } from '../../../src/shared/utils/markdownToZalo.js';
+import { parseMarkdown, parseInline, blocksToPlainText } from '../../../src/shared/utils/markdown/markdownParser.js';
+import { parseMarkdownToZalo, getFileExtension } from '../../../src/shared/utils/markdown/markdownToZalo.js';
 import { TEST_CONFIG } from '../setup.js';
 
 describe('Markdown Utilities Integration', () => {

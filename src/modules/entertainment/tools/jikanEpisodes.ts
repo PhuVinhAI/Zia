@@ -2,7 +2,10 @@
  * Tool: jikanEpisodes - Lấy danh sách tập phim
  */
 
-import { JikanEpisodesSchema, validateParamsWithExample } from '../../../shared/schemas/tools.schema.js';
+import {
+  JikanEpisodesSchema,
+  validateParamsWithExample,
+} from '../../../shared/schemas/tools.schema.js';
 import type { ToolDefinition, ToolResult } from '../../../shared/types/tools.types.js';
 import { type JikanPagination, jikanFetch } from '../services/jikanClient.js';
 

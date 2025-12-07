@@ -14,7 +14,7 @@ import {
   VerticalAlign,
   WidthType,
 } from 'docx';
-import { hasStyle, parseInline } from '../../shared/utils/markdownParser.js';
+import { hasStyle, parseInline } from '../../shared/utils/markdown/markdownParser.js';
 import { getTheme } from './themes.js';
 import type { DocumentTheme, TableData, TableStyle } from './types.js';
 

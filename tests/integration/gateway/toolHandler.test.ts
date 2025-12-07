@@ -6,7 +6,7 @@ import {
   formatToolResultForAI,
   formatAllToolResults,
   isToolOnlyResponse,
-} from '../../../src/modules/gateway/tool.handler.js';
+} from '../../../src/modules/gateway/handlers/tool.handler.js';
 import type { ToolCall, ToolResult } from '../../../src/core/types.js';
 
 describe('Tool Handler', () => {

@@ -2,7 +2,10 @@
  * Tool: jikanDetails - Lấy thông tin chi tiết Anime/Manga
  */
 
-import { JikanDetailsSchema, validateParamsWithExample } from '../../../shared/schemas/tools.schema.js';
+import {
+  JikanDetailsSchema,
+  validateParamsWithExample,
+} from '../../../shared/schemas/tools.schema.js';
 import type { ToolDefinition, ToolResult } from '../../../shared/types/tools.types.js';
 import {
   type JikanAnime,

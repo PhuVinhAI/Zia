@@ -17,7 +17,6 @@ export const TextStyle = {
 
 export type TextStyleType = (typeof TextStyle)[keyof typeof TextStyle];
 
-
 // ═══════════════════════════════════════════════════
 // ZALO MESSAGE TYPES
 // ═══════════════════════════════════════════════════

@@ -12,6 +12,7 @@
     "db:migrate": "bun drizzle-kit migrate",
     "format": "bunx biome format --write ./src",
     "lint": "bunx biome check ./src",
+    "tsc": "npx tsc --noEmit",
     "lint:fix": "bunx biome check --write ./src",
     "test": "bun test",
     "test:integration": "bun test tests/integration --timeout 60000",

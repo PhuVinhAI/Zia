@@ -2,8 +2,8 @@
  * Libs - Internal libraries for document generation
  */
 
-// DOCX Builder
-export * from './docx-builder/index.js';
+// DOCX Builder - export with namespace to avoid conflicts
+export * as docx from './docx-builder/index.js';
 
-// PPTX Builder
-export * from './pptx-builder/index.js';
+// PPTX Builder - export with namespace to avoid conflicts
+export * as pptx from './pptx-builder/index.js';

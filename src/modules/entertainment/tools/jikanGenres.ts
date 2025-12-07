@@ -2,7 +2,10 @@
  * Tool: jikanGenres - Lấy danh sách thể loại
  */
 
-import { JikanGenresSchema, validateParamsWithExample } from '../../../shared/schemas/tools.schema.js';
+import {
+  JikanGenresSchema,
+  validateParamsWithExample,
+} from '../../../shared/schemas/tools.schema.js';
 import type { ToolDefinition, ToolResult } from '../../../shared/types/tools.types.js';
 import { jikanFetch } from '../services/jikanClient.js';
 

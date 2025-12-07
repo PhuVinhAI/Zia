@@ -2,7 +2,10 @@
  * Tool: jikanCharacters - Lấy danh sách nhân vật của Anime/Manga
  */
 
-import { JikanCharactersSchema, validateParamsWithExample } from '../../../shared/schemas/tools.schema.js';
+import {
+  JikanCharactersSchema,
+  validateParamsWithExample,
+} from '../../../shared/schemas/tools.schema.js';
 import type { ToolDefinition, ToolResult } from '../../../shared/types/tools.types.js';
 import { jikanFetch } from '../services/jikanClient.js';
 

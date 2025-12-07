@@ -12,7 +12,7 @@ import {
 import { loginWithQR, ThreadType } from '../infrastructure/zalo/zalo.service.js';
 import { setupSelfMessageListener } from '../modules/gateway/gateway.module.js';
 import { CONFIG } from '../shared/constants/config.js';
-import { preloadAllHistory } from '../shared/utils/history.js';
+import { preloadAllHistory } from '../shared/utils/history/history.js';
 
 /**
  * Khởi tạo file logging

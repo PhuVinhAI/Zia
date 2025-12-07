@@ -3,7 +3,7 @@
  * Test các utility functions của history loader
  */
 import { describe, expect, it } from 'bun:test';
-import { getPaginationConfig } from '../../../src/shared/utils/historyLoader.js';
+import { getPaginationConfig } from '../../../src/shared/utils/history/historyLoader.js';
 
 describe('History Loader', () => {
   describe('getPaginationConfig()', () => {

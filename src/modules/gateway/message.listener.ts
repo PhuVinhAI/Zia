@@ -5,7 +5,7 @@
 
 import { debugLog, Events, eventBus, logMessage } from '../../core/index.js';
 import { CONFIG } from '../../shared/constants/config.js';
-import { initThreadHistory, isThreadInitialized } from '../../shared/utils/history.js';
+import { initThreadHistory, isThreadInitialized } from '../../shared/utils/history/history.js';
 import { abortTask } from '../../shared/utils/taskManager.js';
 import { addToBuffer } from './message.buffer.js';
 import { isAllowedUser } from './user.filter.js';
@@ -141,7 +141,10 @@ function registerFriendEventListener(api: any): void {
       if (error.code === 225 || error.message?.includes('225')) {
         debugLog('FRIEND_EVENT', `ℹ️ Đã là bạn bè với ${displayName}`);
       } else {
-        debugLog('FRIEND_EVENT', `❌ Lỗi accept ${fromUid}: ${error.message} (code: ${error.code})`);
+        debugLog(
+          'FRIEND_EVENT',
+          `❌ Lỗi accept ${fromUid}: ${error.message} (code: ${error.code})`,
+        );
       }
     }
   });
