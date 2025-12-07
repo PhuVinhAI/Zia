@@ -11,6 +11,7 @@ export { flushLogsTool } from './flushLogs.js';
 export { freepikImageTool } from './freepikImage.js';
 export { getAllFriendsTool } from './getAllFriends.js';
 export { getFriendOnlinesTool } from './getFriendOnlines.js';
+export { getGroupMembersTool, groupMembersCache } from './getGroupMembers.js';
 export { getUserInfoTool } from './getUserInfo.js';
 export { googleSearchTool } from './googleSearch.js';
 export { recallMemoryTool, saveMemoryTool } from './memory.js';

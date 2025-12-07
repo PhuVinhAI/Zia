@@ -11,6 +11,7 @@ import { flushLogsTool } from './tools/flushLogs.js';
 import { freepikImageTool } from './tools/freepikImage.js';
 import { getAllFriendsTool } from './tools/getAllFriends.js';
 import { getFriendOnlinesTool } from './tools/getFriendOnlines.js';
+import { getGroupMembersTool } from './tools/getGroupMembers.js';
 import { getUserInfoTool } from './tools/getUserInfo.js';
 import { googleSearchTool } from './tools/googleSearch.js';
 import { recallMemoryTool, saveMemoryTool } from './tools/memory.js';
@@ -31,6 +32,7 @@ export class SystemModule extends BaseModule {
     getUserInfoTool,
     getAllFriendsTool,
     getFriendOnlinesTool,
+    getGroupMembersTool,
     textToSpeechTool,
     freepikImageTool,
     createAppTool,

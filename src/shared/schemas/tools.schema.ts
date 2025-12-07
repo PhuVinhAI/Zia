@@ -190,6 +190,9 @@ export const GetUserInfoSchema = z.object({
   userId: z.string().optional(),
 });
 
+// Get Group Members params (không có tham số, lấy từ context)
+export const GetGroupMembersSchema = z.object({});
+
 // Create Chart params
 export const CreateChartSchema = z.object({
   type: z.enum(['bar', 'line', 'pie', 'doughnut', 'radar', 'polarArea']),
@@ -433,6 +436,7 @@ export const TOOL_EXAMPLES: Record<string, string> = {
   getAllFriends: `[tool:getAllFriends]{"limit":50}[/tool]`,
   getFriendOnlines: `[tool:getFriendOnlines]{"limit":10}[/tool]`,
   getUserInfo: `[tool:getUserInfo]{"userId":"123"}[/tool]`,
+  getGroupMembers: `[tool:getGroupMembers]{}[/tool]`,
 
   // Academic
   tvuLogin: `[tool:tvuLogin]{"username":"MSSV","password":"matkhau"}[/tool]`,
@@ -499,6 +503,7 @@ export type JikanRecommendationsParams = z.infer<typeof JikanRecommendationsSche
 export type GetAllFriendsParams = z.infer<typeof GetAllFriendsSchema>;
 export type GetFriendOnlinesParams = z.infer<typeof GetFriendOnlinesSchema>;
 export type GetUserInfoParams = z.infer<typeof GetUserInfoSchema>;
+export type GetGroupMembersParams = z.infer<typeof GetGroupMembersSchema>;
 export type TvuLoginParams = z.infer<typeof TvuLoginSchema>;
 export type TvuScheduleParams = z.infer<typeof TvuScheduleSchema>;
 export type TvuNotificationsParams = z.infer<typeof TvuNotificationsSchema>;
