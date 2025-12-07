@@ -172,6 +172,47 @@ describe('Message Classifier Integration', () => {
 
       expect(result.type).toBe('link');
       expect(result.url).toBe('https://example.com/article');
+      expect(result.text).toBe('https://example.com/article');
+    });
+
+    test('classify link message with title (text kèm link)', () => {
+      const msg = {
+        data: {
+          content: {
+            title: 'xem video này đi https://youtube.com/watch?v=abc123',
+            href: 'https://youtube.com/watch?v=abc123',
+            description: 'YouTube video description',
+          },
+          msgType: 'chat.recommended',
+        },
+      };
+
+      const result = classifyMessage(msg);
+
+      expect(result.type).toBe('link');
+      expect(result.url).toBe('https://youtube.com/watch?v=abc123');
+      expect(result.text).toBe('xem video này đi https://youtube.com/watch?v=abc123');
+    });
+
+    test('classify link message with title containing user request', () => {
+      const msg = {
+        data: {
+          content: {
+            title: 'sai link rồi link này nè gửi lại kèm xin lỗi https://neobrowser.ai/',
+            href: 'https://neobrowser.ai/',
+            description: 'The first safe AI-native browser.',
+          },
+          msgType: 'chat.recommended',
+        },
+      };
+
+      const result = classifyMessage(msg);
+
+      expect(result.type).toBe('link');
+      expect(result.url).toBe('https://neobrowser.ai/');
+      expect(result.text).toBe('sai link rồi link này nè gửi lại kèm xin lỗi https://neobrowser.ai/');
+      expect(result.text).toContain('sai link');
+      expect(result.text).toContain('xin lỗi');
     });
 
     test('classify doodle message', () => {

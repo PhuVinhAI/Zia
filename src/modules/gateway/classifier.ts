@@ -153,7 +153,12 @@ export function classifyMessage(msg: any): ClassifiedMessage {
         url = JSON.parse(content.params)?.href;
       } catch {}
     }
-    if (url) return { type: 'link', message: msg, url, text: url };
+    if (url) {
+      // Lấy title (text kèm link) nếu có, nếu không thì chỉ dùng URL
+      const title = content?.title || '';
+      const text = title || url;
+      return { type: 'link', message: msg, url, text };
+    }
   }
 
   // Doodle (vẽ hình)
