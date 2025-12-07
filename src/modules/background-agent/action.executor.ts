@@ -3,8 +3,8 @@
  */
 import { debugLog } from '../../core/logger/logger.js';
 import type { AgentTask } from '../../infrastructure/database/schema.js';
-import { ThreadType } from '../../infrastructure/zalo/zalo.service.js';
 import { saveResponseToHistory, saveSentMessage } from '../../shared/utils/history.js';
+import { getThreadType } from '../../modules/gateway/response.handler.js';
 
 export interface ExecutionResult {
   success: boolean;
@@ -49,7 +49,8 @@ async function executeSendMessage(
   try {
     debugLog('EXECUTOR', `Sending message to ${threadId}: ${payload.message.substring(0, 50)}...`);
 
-    const result = await api.sendMessage(payload.message, threadId, ThreadType.User);
+    const threadType = getThreadType(threadId);
+    const result = await api.sendMessage(payload.message, threadId, threadType);
 
     // Lưu vào history để AI nhớ đã gửi tin nhắn này
     await saveResponseToHistory(threadId, payload.message);

@@ -19,8 +19,9 @@ export class BotContext implements IBotContext {
   }
 
   async send(text: string): Promise<void> {
-    const { ThreadType } = await import('../../infrastructure/zalo/zalo.service.js');
-    await this.api.sendMessage(text, this.threadId, ThreadType.User);
+    const { getThreadType } = await import('../../modules/gateway/response.handler.js');
+    const threadType = getThreadType(this.threadId);
+    await this.api.sendMessage(text, this.threadId, threadType);
   }
 
   async reply(text: string): Promise<void> {

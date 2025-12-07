@@ -106,7 +106,7 @@ export async function handleMixedContent(
     );
 
     if (!shouldContinue) {
-      await api.sendMessage(PROMPTS.prefixHint(CONFIG.prefix), threadId, ThreadType.User);
+      await api.sendMessage(PROMPTS.prefixHint(CONFIG.prefix), threadId, threadType);
       return;
     }
 
@@ -144,7 +144,7 @@ export async function handleMixedContent(
     if (waitTime > 0) {
       const waitSec = Math.ceil(waitTime / 1000);
       console.log(`[Bot] ⏳ Rate limit: chờ ${waitSec}s`);
-      await api.sendMessage(PROMPTS.rateLimit(waitSec), threadId, ThreadType.User);
+      await api.sendMessage(PROMPTS.rateLimit(waitSec), threadId, threadType);
       await new Promise((r) => setTimeout(r, waitTime));
       if (signal?.aborted) return;
     }

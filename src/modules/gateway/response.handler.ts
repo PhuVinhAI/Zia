@@ -721,7 +721,8 @@ export function createStreamCallbacks(
         const chunks = splitMessage(cleanText);
         for (const chunk of chunks) {
           try {
-            await api.sendMessage(chunk, threadId, ThreadType.User);
+            const threadType = getThreadType(threadId);
+            await api.sendMessage(chunk, threadId, threadType);
             await new Promise((r) => setTimeout(r, 300));
           } catch {}
         }
