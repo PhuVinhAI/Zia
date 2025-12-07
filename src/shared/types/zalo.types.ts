@@ -4,15 +4,21 @@
  */
 
 // TextStyle enum cho rich text formatting
+// Phải match với zca-js TextStyle enum (string values)
 export const TextStyle = {
-  Bold: 1,
-  Italic: 2,
-  Underline: 4,
-  StrikeThrough: 8,
-  Red: 16,
-  Blue: 32,
-  Big: 64,
-  Small: 128,
+  Bold: 'b',
+  Italic: 'i',
+  Underline: 'u',
+  StrikeThrough: 's',
+  Red: 'c_db342e',
+  Orange: 'c_f27806',
+  Yellow: 'c_f7b503',
+  Green: 'c_15a85f',
+  Blue: 'c_0068ff', // Zalo blue color
+  Small: 'f_13',
+  Big: 'f_18',
+  UnorderedList: 'lst_1',
+  OrderedList: 'lst_2',
 } as const;
 
 export type TextStyleType = (typeof TextStyle)[keyof typeof TextStyle];
