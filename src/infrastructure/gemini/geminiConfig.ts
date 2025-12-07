@@ -26,6 +26,15 @@ export { GEMINI_MODELS, type GeminiModel, keyManager } from './keyManager.js';
 // Model động - lấy từ keyManager (hỗ trợ fallback)
 export const getGeminiModel = () => keyManager.getCurrentModel();
 
+// Safety settings - tắt tất cả bộ lọc để tránh response rỗng
+const SAFETY_SETTINGS = [
+  { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'OFF' },
+  { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'OFF' },
+  { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'OFF' },
+  { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'OFF' },
+  { category: 'HARM_CATEGORY_CIVIC_INTEGRITY', threshold: 'OFF' },
+];
+
 export const GEMINI_CONFIG = {
   temperature: 1,
   topP: 0.95,
@@ -34,6 +43,7 @@ export const GEMINI_CONFIG = {
     thinkingBudget: 8192,
   },
   tools: [{ googleSearch: {} }, { urlContext: {} }],
+  safetySettings: SAFETY_SETTINGS,
 };
 
 // Regex để detect YouTube URL
