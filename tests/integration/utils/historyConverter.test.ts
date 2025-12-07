@@ -3,6 +3,7 @@
  * Test các utility functions chuyển đổi Zalo message sang Gemini format
  */
 import { describe, expect, it } from 'bun:test';
+import { ThreadType } from '../../../src/infrastructure/zalo/zalo.service.js';
 import {
   getMediaUrl,
   getMimeType,
@@ -204,6 +205,166 @@ Line 3`,
     it('should detect voice message type', () => {
       const mimeType = getMimeType('chat.voice', {});
       expect(mimeType).toBe('audio/aac');
+    });
+  });
+
+  describe('Group message media filtering', () => {
+    it('should skip large file (>1MB) in group message and return placeholder', async () => {
+      const msg = {
+        isSelf: false,
+        type: ThreadType.Group,
+        data: {
+          content: {
+            href: 'https://example.com/large-file.pdf',
+            title: 'document.pdf',
+            params: JSON.stringify({ fileSize: 5 * 1024 * 1024 }), // 5MB
+          },
+          msgType: 'share.file',
+          dName: 'TestUser',
+        },
+      };
+
+      const result = await toGeminiContent(msg);
+
+      expect(result.role).toBe('user');
+      expect(result.parts).toHaveLength(1);
+      // Should only have text placeholder, no inlineData
+      expect(result.parts[0]).toHaveProperty('text');
+      expect(result.parts[0]).not.toHaveProperty('inlineData');
+      expect((result.parts[0] as { text: string }).text).toContain('[File: document.pdf]');
+    });
+
+    it('should skip large video (>1MB) in group message and return placeholder', async () => {
+      const msg = {
+        isSelf: false,
+        type: ThreadType.Group,
+        data: {
+          content: {
+            href: 'https://example.com/large-video.mp4',
+            params: JSON.stringify({ duration: 30000, fileSize: 10 * 1024 * 1024 }), // 10MB
+          },
+          msgType: 'chat.video',
+          dName: 'TestUser',
+        },
+      };
+
+      const result = await toGeminiContent(msg);
+
+      expect(result.role).toBe('user');
+      expect(result.parts).toHaveLength(1);
+      expect(result.parts[0]).toHaveProperty('text');
+      expect(result.parts[0]).not.toHaveProperty('inlineData');
+      expect((result.parts[0] as { text: string }).text).toContain('[Video 30s]');
+    });
+
+    it('should NOT skip small file (<1MB) in group message', async () => {
+      const msg = {
+        isSelf: false,
+        type: ThreadType.Group,
+        data: {
+          content: {
+            href: 'https://example.com/small-file.txt',
+            title: 'small.txt',
+            params: JSON.stringify({ fileSize: 500 * 1024, fileExt: 'txt' }), // 500KB
+          },
+          msgType: 'share.file',
+          dName: 'TestUser',
+        },
+      };
+
+      const result = await toGeminiContent(msg);
+
+      // Should attempt to load media (will fail due to invalid URL, but logic is correct)
+      expect(result.role).toBe('user');
+      expect(result.parts.length).toBeGreaterThan(0);
+    });
+
+    it('should NOT skip photo in group message (photos are always allowed)', async () => {
+      const msg = {
+        isSelf: false,
+        type: ThreadType.Group,
+        data: {
+          content: {
+            href: 'https://example.com/photo.jpg',
+            params: JSON.stringify({ fileSize: 2 * 1024 * 1024 }), // 2MB photo
+          },
+          msgType: 'chat.photo',
+          dName: 'TestUser',
+        },
+      };
+
+      const result = await toGeminiContent(msg);
+
+      // Photo should not be skipped even if large
+      expect(result.role).toBe('user');
+      expect(result.parts.length).toBeGreaterThan(0);
+      // Should have description text
+      expect((result.parts[0] as { text: string }).text).toContain('[Hình ảnh]');
+    });
+
+    it('should NOT skip file/video in user (non-group) message regardless of size', async () => {
+      const msg = {
+        isSelf: false,
+        type: ThreadType.User, // User chat, not group
+        data: {
+          content: {
+            href: 'https://example.com/large-file.pdf',
+            title: 'document.pdf',
+            params: JSON.stringify({ fileSize: 10 * 1024 * 1024 }), // 10MB
+          },
+          msgType: 'share.file',
+        },
+      };
+
+      const result = await toGeminiContent(msg);
+
+      // Should attempt to load media in user chat
+      expect(result.role).toBe('user');
+      expect(result.parts.length).toBeGreaterThan(0);
+    });
+
+    it('should handle file without fileSize in params', async () => {
+      const msg = {
+        isSelf: false,
+        type: ThreadType.Group,
+        data: {
+          content: {
+            href: 'https://example.com/file.pdf',
+            title: 'file.pdf',
+            params: JSON.stringify({}), // No fileSize
+          },
+          msgType: 'share.file',
+          dName: 'TestUser',
+        },
+      };
+
+      const result = await toGeminiContent(msg);
+
+      // Should not skip if fileSize is unknown (0)
+      expect(result.role).toBe('user');
+      expect(result.parts.length).toBeGreaterThan(0);
+    });
+
+    it('should wrap sender name in group message placeholder', async () => {
+      const msg = {
+        isSelf: false,
+        type: ThreadType.Group,
+        data: {
+          content: {
+            href: 'https://example.com/large-video.mp4',
+            params: JSON.stringify({ duration: 60000, fileSize: 20 * 1024 * 1024 }), // 20MB
+          },
+          msgType: 'chat.video',
+          dName: 'NguyenVanA',
+        },
+      };
+
+      const result = await toGeminiContent(msg);
+
+      expect(result.parts).toHaveLength(1);
+      const text = (result.parts[0] as { text: string }).text;
+      expect(text).toContain('[NguyenVanA]');
+      expect(text).toContain('[Video 60s]');
     });
   });
 });
