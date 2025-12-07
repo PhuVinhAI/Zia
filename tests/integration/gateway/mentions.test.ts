@@ -1,63 +1,10 @@
 /**
  * Integration Test: Mention Parser
- * Test chức năng parse cú pháp [mention:ID:Name] trong response handler
+ * Test chức năng parse cú pháp [mention:ID:Name] trong shared message sender
  */
 
 import { describe, test, expect } from 'bun:test';
-
-// Import parseMentions function - cần export từ response.handler.ts
-// Tạm thời test trực tiếp logic
-
-interface MentionInfo {
-  pos: number;
-  uid: string;
-  len: number;
-}
-
-/**
- * Parse cú pháp [mention:ID:Name] từ text
- */
-function parseMentions(text: string): { text: string; mentions: MentionInfo[] } {
-  const mentions: MentionInfo[] = [];
-  const regex = /\[mention:(\d+)(?::([^\]]+))?\]/g;
-  const replacements: { start: number; end: number; replacement: string; uid: string }[] = [];
-  let match;
-
-  while ((match = regex.exec(text)) !== null) {
-    const originalTag = match[0];
-    const uid = match[1];
-    const name = match[2] || uid;
-    const mentionText = `@${name}`;
-
-    replacements.push({
-      start: match.index,
-      end: match.index + originalTag.length,
-      replacement: mentionText,
-      uid: uid,
-    });
-  }
-
-  let processedText = text;
-  for (let i = replacements.length - 1; i >= 0; i--) {
-    const r = replacements[i];
-    const before = processedText.substring(0, r.start);
-    const after = processedText.substring(r.end);
-    processedText = before + r.replacement + after;
-  }
-
-  let offset = 0;
-  for (const r of replacements) {
-    const newPos = r.start + offset;
-    mentions.push({
-      pos: newPos,
-      uid: r.uid,
-      len: r.replacement.length,
-    });
-    offset += r.replacement.length - (r.end - r.start);
-  }
-
-  return { text: processedText, mentions };
-}
+import { parseMentions } from '../../../src/shared/utils/message/messageSender.js';
 
 describe('Mention Parser Integration', () => {
   test('parseMentions - parse single mention với tên', () => {
