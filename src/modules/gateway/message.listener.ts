@@ -141,7 +141,10 @@ function registerFriendEventListener(api: any): void {
       if (error.code === 225 || error.message?.includes('225')) {
         debugLog('FRIEND_EVENT', `ℹ️ Đã là bạn bè với ${displayName}`);
       } else {
-        debugLog('FRIEND_EVENT', `❌ Lỗi accept ${fromUid}: ${error.message} (code: ${error.code})`);
+        debugLog(
+          'FRIEND_EVENT',
+          `❌ Lỗi accept ${fromUid}: ${error.message} (code: ${error.code})`,
+        );
       }
     }
   });

@@ -21,14 +21,23 @@ import {
 import { markPendingToolExecution } from '../../../shared/utils/taskManager.js';
 import type { ClassifiedMessage, MessageType } from '../classifier.js';
 // Import từ các module mới
-import { classifyMessage, classifyMessages, countMessageTypes, isBotMentioned } from '../classifier.js';
-import { addQuoteMedia, prepareMediaParts } from './media.processor.js';
+import {
+  classifyMessage,
+  classifyMessages,
+  countMessageTypes,
+  isBotMentioned,
+} from '../classifier.js';
+import {
+  createStreamCallbacks,
+  sendResponse,
+  setThreadType,
+} from '../handlers/response.handler.js';
+import { handleToolCalls, isToolOnlyResponse } from '../handlers/tool.handler.js';
 import { startTypingWithRefresh } from '../message.buffer.js';
 import { buildPrompt, extractTextFromMessages, processPrefix } from '../prompt.builder.js';
 import { extractQuoteInfo } from '../quote.parser.js';
 import { checkRateLimit, markApiCall } from '../rate-limit.guard.js';
-import { createStreamCallbacks, sendResponse, setThreadType } from '../handlers/response.handler.js';
-import { handleToolCalls, isToolOnlyResponse } from '../handlers/tool.handler.js';
+import { addQuoteMedia, prepareMediaParts } from './media.processor.js';
 
 // Re-export types cho backward compatibility
 export type { ClassifiedMessage, MessageType };

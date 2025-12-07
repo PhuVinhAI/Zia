@@ -1,5 +1,11 @@
 import sharp from 'sharp';
-import { debugLog, logError, logMessage, logStep, logZaloAPI } from '../../../core/logger/logger.js';
+import {
+  debugLog,
+  logError,
+  logMessage,
+  logStep,
+  logZaloAPI,
+} from '../../../core/logger/logger.js';
 import type { StreamCallbacks } from '../../../infrastructure/gemini/gemini.provider.js';
 import { Reactions, ThreadType } from '../../../infrastructure/zalo/zalo.service.js';
 import type { AIResponse } from '../../../shared/types/config.schema.js';

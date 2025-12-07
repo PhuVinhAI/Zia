@@ -12,9 +12,9 @@ import { formatFileTimestamp, now } from '../../shared/utils/datetime.js';
 import {
   flushLogs,
   getLogCacheSize as getCacheSize,
+  type ILogTransport,
   ProductionLogStream,
   registerLogTransport,
-  type ILogTransport,
 } from './transports.js';
 
 let logger: pino.Logger;

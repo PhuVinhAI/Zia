@@ -77,8 +77,15 @@ Ví dụ:
       return { success: false, error: validation.error };
     }
 
-    const { type, targetUserId, targetThreadId, targetDescription, message, delayMinutes, context } =
-      validation.data;
+    const {
+      type,
+      targetUserId,
+      targetThreadId,
+      targetDescription,
+      message,
+      delayMinutes,
+      context,
+    } = validation.data;
 
     try {
       // Validate business logic

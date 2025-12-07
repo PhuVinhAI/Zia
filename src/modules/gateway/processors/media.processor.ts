@@ -207,7 +207,9 @@ export async function addQuoteMedia(
   // Check nếu history đã có media TỪ USER thì không cần fetch lại
   if (history && historyHasUserMedia(history)) {
     const mediaDesc = getMediaTypeDescription(quoteMedia.type);
-    console.log(`[Bot] 📎 Quote media (${quoteMedia.type}) đã có trong history từ user, skip fetch`);
+    console.log(
+      `[Bot] 📎 Quote media (${quoteMedia.type}) đã có trong history từ user, skip fetch`,
+    );
     notes.push(`(User đang reply tin nhắn có ${mediaDesc} ở trên, hãy tham khảo ${mediaDesc} đó)`);
     return;
   }

@@ -7,7 +7,6 @@ import { Subject, type Subscription } from 'rxjs';
 import { bufferWhen, debounceTime, filter, groupBy, mergeMap, tap } from 'rxjs/operators';
 import { debugLog, logError, logStep } from '../../core/logger/logger.js';
 import { CONFIG } from '../../shared/constants/config.js';
-import { getThreadType } from './handlers/response.handler.js';
 import { clearHistory } from '../../shared/utils/history/history.js';
 import {
   clearPendingToolExecution,
@@ -18,6 +17,7 @@ import {
   startTask,
 } from '../../shared/utils/taskManager.js';
 import { handleMixedContent } from './gateway.module.js';
+import { getThreadType } from './handlers/response.handler.js';
 
 // Buffer config từ settings.json
 const getBufferDelayMs = () => CONFIG.buffer?.delayMs ?? 2500;

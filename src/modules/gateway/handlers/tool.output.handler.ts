@@ -14,11 +14,7 @@ import { getThreadType } from './response.handler.js';
 /**
  * Gửi voice message từ TTS tool result
  */
-export async function sendVoice(
-  api: any,
-  threadId: string,
-  audioBuffer: Buffer,
-): Promise<void> {
+export async function sendVoice(api: any, threadId: string, audioBuffer: Buffer): Promise<void> {
   const threadType = getThreadType(threadId);
   console.log(`[Tool] 🎤 Đang upload voice (${audioBuffer.length} bytes)...`);
   debugLog('TOOL:TTS', `Uploading voice, size: ${audioBuffer.length}, threadType: ${threadType}`);
@@ -54,7 +50,10 @@ export async function sendImage(
 ): Promise<void> {
   const threadType = getThreadType(threadId);
   console.log(`[Tool] 📊 Đang gửi ảnh ${filename} (${buffer.length} bytes)...`);
-  debugLog('TOOL:IMG', `Sending image: ${filename}, size: ${buffer.length}, threadType: ${threadType}`);
+  debugLog(
+    'TOOL:IMG',
+    `Sending image: ${filename}, size: ${buffer.length}, threadType: ${threadType}`,
+  );
 
   const attachment = {
     filename,
@@ -82,7 +81,10 @@ export async function sendDocument(
 ): Promise<void> {
   const threadType = getThreadType(threadId);
   console.log(`[Tool] 📄 Đang gửi file ${filename} (${buffer.length} bytes)...`);
-  debugLog('TOOL:DOC', `Sending document: ${filename}, size: ${buffer.length}, threadType: ${threadType}`);
+  debugLog(
+    'TOOL:DOC',
+    `Sending document: ${filename}, size: ${buffer.length}, threadType: ${threadType}`,
+  );
 
   const attachment = {
     filename,

@@ -9,13 +9,7 @@
  * Runtime: Bun (https://bun.sh)
  */
 
-import {
-  container,
-  logError,
-  logStep,
-  registerLogTransport,
-  Services,
-} from '../core/index.js';
+import { container, logError, logStep, registerLogTransport, Services } from '../core/index.js';
 import { startBackgroundAgent } from '../modules/background-agent/index.js';
 import { registerMessageListener } from '../modules/gateway/message.listener.js';
 import { initializeApp } from './app.module.js';

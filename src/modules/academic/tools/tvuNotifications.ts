@@ -3,7 +3,10 @@
  */
 
 import { debugLog } from '../../../core/logger/logger.js';
-import { TvuNotificationsSchema, validateParamsWithExample } from '../../../shared/schemas/tools.schema.js';
+import {
+  TvuNotificationsSchema,
+  validateParamsWithExample,
+} from '../../../shared/schemas/tools.schema.js';
 import type { ToolDefinition, ToolResult } from '../../../shared/types/tools.types.js';
 import { tvuRequest } from '../services/tvuClient.js';
 
@@ -35,7 +38,11 @@ export const tvuNotificationsTool: ToolDefinition = {
   ],
   execute: async (params: Record<string, any>): Promise<ToolResult> => {
     // Validate với Zod
-    const validation = validateParamsWithExample(TvuNotificationsSchema, params, 'tvuNotifications');
+    const validation = validateParamsWithExample(
+      TvuNotificationsSchema,
+      params,
+      'tvuNotifications',
+    );
     if (!validation.success) {
       return { success: false, error: validation.error };
     }

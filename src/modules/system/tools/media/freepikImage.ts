@@ -4,7 +4,10 @@
  */
 
 import { debugLog } from '../../../core/logger/logger.js';
-import { FreepikImageSchema, validateParamsWithExample } from '../../../shared/schemas/tools.schema.js';
+import {
+  FreepikImageSchema,
+  validateParamsWithExample,
+} from '../../../shared/schemas/tools.schema.js';
 import type { ToolDefinition, ToolResult } from '../../../shared/types/tools.types.js';
 import { fetchImageAsBuffer } from '../../../shared/utils/httpClient.js';
 import { generateSeedreamImage, pollTaskUntilComplete } from '../services/freepikClient.js';

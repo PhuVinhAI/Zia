@@ -8,7 +8,7 @@ import { debugLog } from '../../core/logger/logger.js';
 
 // Danh sách models theo thứ tự ưu tiên
 export const GEMINI_MODELS = [
-   'models/gemini-robotics-er-1.5-preview',
+  'models/gemini-robotics-er-1.5-preview',
   'models/gemini-flash-latest',
   'models/gemini-flash-lite-latest',
 ] as const;
@@ -396,5 +396,3 @@ export function isRateLimitError(error: any): boolean {
   const status = error?.status || error?.code;
   return status === 429;
 }
-
-

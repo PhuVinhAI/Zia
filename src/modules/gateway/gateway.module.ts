@@ -29,42 +29,6 @@ export {
   classifyMessages,
   countMessageTypes,
 } from './classifier.js';
-
-// Processors
-export { addQuoteMedia, prepareMediaParts } from './processors/media.processor.js';
-export {
-  type ClassifiedMessage,
-  classifyMessageDetailed,
-  handleMixedContent,
-  type MessageType,
-} from './processors/message.processor.js';
-
-// Message Listener
-export {
-  createMessageHandler,
-  type MessageListenerOptions,
-  registerMessageListener,
-} from './message.listener.js';
-
-// Prompt & Quote
-export {
-  buildPrompt,
-  extractTextFromMessages,
-  processPrefix,
-} from './prompt.builder.js';
-export {
-  extractQuoteInfo,
-  parseQuoteAttachment,
-  type QuoteMedia,
-} from './quote.parser.js';
-
-// Rate Limit
-export {
-  checkRateLimit,
-  getRateLimitStatus,
-  markApiCall,
-} from './rate-limit.guard.js';
-
 // Handlers
 export {
   createStreamCallbacks,
@@ -86,6 +50,37 @@ export {
   sendImages,
   sendVoice,
 } from './handlers/tool.output.handler.js';
+// Message Listener
+export {
+  createMessageHandler,
+  type MessageListenerOptions,
+  registerMessageListener,
+} from './message.listener.js';
+// Processors
+export { addQuoteMedia, prepareMediaParts } from './processors/media.processor.js';
+export {
+  type ClassifiedMessage,
+  classifyMessageDetailed,
+  handleMixedContent,
+  type MessageType,
+} from './processors/message.processor.js';
+// Prompt & Quote
+export {
+  buildPrompt,
+  extractTextFromMessages,
+  processPrefix,
+} from './prompt.builder.js';
+export {
+  extractQuoteInfo,
+  parseQuoteAttachment,
+  type QuoteMedia,
+} from './quote.parser.js';
+// Rate Limit
+export {
+  checkRateLimit,
+  getRateLimitStatus,
+  markApiCall,
+} from './rate-limit.guard.js';
 
 // User Filter
 export { isAllowedUser, isGroupAllowed, isUserAllowed } from './user.filter.js';

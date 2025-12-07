@@ -572,9 +572,7 @@ export function validateParamsWithExample<T>(
   if (!result.success) {
     const errorMsg = result.error.issues[0]?.message || 'Tham số không hợp lệ';
     const example = TOOL_EXAMPLES[toolName];
-    const errorWithExample = example
-      ? `${errorMsg}\n\n📝 Cấu trúc đúng:\n${example}`
-      : errorMsg;
+    const errorWithExample = example ? `${errorMsg}\n\n📝 Cấu trúc đúng:\n${example}` : errorMsg;
     return {
       success: false,
       error: errorWithExample,

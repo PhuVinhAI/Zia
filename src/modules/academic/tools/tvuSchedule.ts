@@ -3,7 +3,10 @@
  */
 
 import { debugLog } from '../../../core/logger/logger.js';
-import { TvuScheduleSchema, validateParamsWithExample } from '../../../shared/schemas/tools.schema.js';
+import {
+  TvuScheduleSchema,
+  validateParamsWithExample,
+} from '../../../shared/schemas/tools.schema.js';
 import type { ToolDefinition, ToolResult } from '../../../shared/types/tools.types.js';
 import { tvuRequest } from '../services/tvuClient.js';
 

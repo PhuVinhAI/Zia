@@ -97,7 +97,7 @@ export const getGroupMembersTool: ToolDefinition = {
       const adminIds = info.adminIds || [];
       const creatorId = info.creatorId;
 
-      let rawMembers: any[] = info.currentMems || info.members || [];
+      const rawMembers: any[] = info.currentMems || info.members || [];
       let members: Array<{ name: string; id: string; role: string }> = [];
 
       // Nếu currentMems có data đầy đủ

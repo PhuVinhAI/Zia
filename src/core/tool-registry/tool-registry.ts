@@ -256,16 +256,16 @@ export async function executeAllTools(
 function getCurrentTimeInfo(): string {
   const now = new Date();
   const vnTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' }));
-  
+
   const dayNames = ['Chủ nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
   const dayOfWeek = dayNames[vnTime.getDay()];
-  
+
   const hours = vnTime.getHours().toString().padStart(2, '0');
   const minutes = vnTime.getMinutes().toString().padStart(2, '0');
   const day = vnTime.getDate().toString().padStart(2, '0');
   const month = (vnTime.getMonth() + 1).toString().padStart(2, '0');
   const year = vnTime.getFullYear();
-  
+
   return `⏰ THỜI GIAN HIỆN TẠI (Múi giờ Việt Nam - UTC+7):
 - Ngày: ${dayOfWeek}, ${day}/${month}/${year}
 - Giờ: ${hours}:${minutes}

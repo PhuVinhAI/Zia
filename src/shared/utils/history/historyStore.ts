@@ -7,9 +7,9 @@ import { debugLog } from '../../../core/logger/logger.js';
 import { historyRepository } from '../../../infrastructure/database/index.js';
 import { deleteChatSession } from '../../../infrastructure/gemini/geminiChat.js';
 import { CONFIG } from '../../constants/config.js';
+import { countTokens } from '../tokenCounter.js';
 import { toGeminiContent } from './historyConverter.js';
 import { fetchFullHistory, getPaginationConfig, loadOldMessages } from './historyLoader.js';
-import { countTokens } from '../tokenCounter.js';
 
 // In-memory cache (primary storage for fast access)
 const messageHistory = new Map<string, Content[]>();

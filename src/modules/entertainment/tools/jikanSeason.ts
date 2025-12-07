@@ -2,7 +2,10 @@
  * Tool: jikanSeason - Anime theo mùa và lịch phát sóng
  */
 
-import { JikanSeasonSchema, validateParamsWithExample } from '../../../shared/schemas/tools.schema.js';
+import {
+  JikanSeasonSchema,
+  validateParamsWithExample,
+} from '../../../shared/schemas/tools.schema.js';
 import type { ToolDefinition, ToolResult } from '../../../shared/types/tools.types.js';
 import { type JikanAnime, type JikanListResponse, jikanFetch } from '../services/jikanClient.js';
 
