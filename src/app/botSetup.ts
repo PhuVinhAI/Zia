@@ -145,7 +145,6 @@ export function shouldSkipMessage(message: any): {
   skip: boolean;
   reason?: string;
 } {
-  const _threadId = message.threadId;
   const isSelf = message.isSelf;
 
   // Tin nhắn tự gửi không có prefix Cloud
@@ -153,10 +152,8 @@ export function shouldSkipMessage(message: any): {
     return { skip: true, reason: 'self message without cloud prefix' };
   }
 
-  // Tin nhắn từ nhóm
-  if (message.type === ThreadType.Group) {
-    return { skip: true, reason: 'group message' };
-  }
+  // [QUAN TRỌNG] Cho phép tin nhắn nhóm đi qua
+  // Logic quyết định trả lời hay không sẽ nằm ở Message Processor
 
   return { skip: false };
 }

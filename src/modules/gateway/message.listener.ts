@@ -59,9 +59,6 @@ export function createMessageHandler(api: any, options: MessageListenerOptions) 
     // Kiểm tra bỏ qua
     const { skip, reason } = shouldSkipMessage(message);
     if (skip && !cloudMessage) {
-      if (reason === 'group message') {
-        console.log(`[Bot] 🚫 Bỏ qua tin nhắn nhóm: ${threadId}`);
-      }
       debugLog('MSG', `Skipping: ${reason}, thread=${threadId}`);
       return;
     }
@@ -131,22 +128,14 @@ function registerFriendEventListener(api: any): void {
     debugLog('FRIEND_EVENT', `💌 Nhận lời mời kết bạn từ: ${displayName} (${fromUid})`);
 
     try {
+      // Delay ngẫu nhiên 2-5s cho giống người
+      const delay = Math.floor(Math.random() * 3000) + 2000;
+      await new Promise((resolve) => setTimeout(resolve, delay));
+
       // Auto accept
       await api.acceptFriendRequest(fromUid);
       debugLog('FRIEND_EVENT', `✅ Đã chấp nhận kết bạn: ${displayName}`);
       console.log(`[Bot] ✅ Đã chấp nhận kết bạn: ${displayName} (${fromUid})`);
-
-      // Gửi tin nhắn chào mừng
-      try {
-        await api.sendMessage(
-          { msg: `Chào ${displayName}! Mình là Zia (AI Bot), rất vui được kết bạn với bạn! ❤️` },
-          fromUid,
-          0, // ThreadType.User = 0
-        );
-        debugLog('FRIEND_EVENT', `📤 Đã gửi tin nhắn chào mừng đến ${displayName}`);
-      } catch (msgErr: any) {
-        debugLog('FRIEND_EVENT', `⚠️ Không gửi được tin nhắn chào: ${msgErr.message}`);
-      }
     } catch (error: any) {
       // Mã lỗi 225 = Đã là bạn bè rồi
       if (error.code === 225 || error.message?.includes('225')) {

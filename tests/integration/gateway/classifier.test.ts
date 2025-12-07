@@ -8,6 +8,7 @@ import {
   classifyMessage,
   classifyMessages,
   countMessageTypes,
+  isBotMentioned,
 } from '../../../src/modules/gateway/classifier.js';
 
 describe('Message Classifier Integration', () => {
@@ -261,6 +262,113 @@ describe('Message Classifier Integration', () => {
     test('handle empty array', () => {
       const counts = countMessageTypes([]);
       expect(counts).toEqual({});
+    });
+  });
+
+  describe('isBotMentioned', () => {
+    const botId = 'bot-123';
+    const botName = 'Zia';
+
+    test('detect mention via Zalo mentions array', () => {
+      const msg = {
+        data: {
+          content: '@Zia hello',
+          mentions: [{ uid: 'bot-123', pos: 0, len: 4 }],
+        },
+      };
+
+      expect(isBotMentioned(msg, botId, botName)).toBe(true);
+    });
+
+    test('detect mention via @BotName text', () => {
+      const msg = {
+        data: {
+          content: '@Zia xin chào',
+        },
+      };
+
+      expect(isBotMentioned(msg, botId, botName)).toBe(true);
+    });
+
+    test('detect mention via BotName text (without @)', () => {
+      const msg = {
+        data: {
+          content: 'Zia ơi, giúp mình với',
+        },
+      };
+
+      expect(isBotMentioned(msg, botId, botName)).toBe(true);
+    });
+
+    test('detect mention via "bot" keyword', () => {
+      const msg = {
+        data: {
+          content: 'bot ơi, trả lời đi',
+        },
+      };
+
+      expect(isBotMentioned(msg, botId, botName)).toBe(true);
+    });
+
+    test('detect mention via "admin" keyword', () => {
+      const msg = {
+        data: {
+          content: 'admin giúp em với',
+        },
+      };
+
+      expect(isBotMentioned(msg, botId, botName)).toBe(true);
+    });
+
+    test('return false when no mention', () => {
+      const msg = {
+        data: {
+          content: 'Hôm nay trời đẹp quá',
+        },
+      };
+
+      expect(isBotMentioned(msg, botId, botName)).toBe(false);
+    });
+
+    test('return false for empty content', () => {
+      const msg = {
+        data: {
+          content: '',
+        },
+      };
+
+      expect(isBotMentioned(msg, botId, botName)).toBe(false);
+    });
+
+    test('return false when mentions array has different uid', () => {
+      const msg = {
+        data: {
+          content: '@Someone hello',
+          mentions: [{ uid: 'other-user', pos: 0, len: 8 }],
+        },
+      };
+
+      expect(isBotMentioned(msg, botId, botName)).toBe(false);
+    });
+
+    test('case insensitive matching', () => {
+      const msg = {
+        data: {
+          content: 'ZIA ơi, giúp mình',
+        },
+      };
+
+      expect(isBotMentioned(msg, botId, botName)).toBe(true);
+    });
+
+    test('handle non-string content', () => {
+      const msg = {
+        data: {
+          content: { id: 'sticker-123' },
+        },
+      };
+
+      expect(isBotMentioned(msg, botId, botName)).toBe(false);
     });
   });
 });

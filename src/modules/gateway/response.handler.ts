@@ -31,6 +31,23 @@ const reactionMap: Record<string, any> = {
   like: Reactions.LIKE,
 };
 
+// Store để lưu ThreadType cho mỗi thread (User hoặc Group)
+const threadTypeStore = new Map<string, number>();
+
+/**
+ * Lưu ThreadType cho thread
+ */
+export function setThreadType(threadId: string, threadType: number): void {
+  threadTypeStore.set(threadId, threadType);
+}
+
+/**
+ * Lấy ThreadType cho thread (mặc định là User)
+ */
+export function getThreadType(threadId: string): number {
+  return threadTypeStore.get(threadId) ?? ThreadType.User;
+}
+
 /**
  * Gửi tin nhắn text với auto-chunking nếu quá dài
  * Tự động chia nhỏ tin nhắn để tránh lỗi "Nội dung quá dài"
@@ -44,6 +61,8 @@ async function sendTextWithChunking(
   threadId: string,
   quoteData?: any,
 ): Promise<void> {
+  const threadType = getThreadType(threadId);
+
   // Parse markdown TRƯỚC để extract code blocks, tables, mermaid
   // Điều này đảm bảo các blocks được xử lý nguyên vẹn
   const parsed = await parseMarkdownToZalo(text);
@@ -71,7 +90,7 @@ async function sendTextWithChunking(
           richMsg.quote = quoteData;
         }
 
-        const result = await api.sendMessage(richMsg, threadId, ThreadType.User);
+        const result = await api.sendMessage(richMsg, threadId, threadType);
         logZaloAPI(
           'sendMessage',
           { message: richMsg, threadId, chunk: i + 1, total: chunks.length },
@@ -112,7 +131,7 @@ async function sendTextWithChunking(
       logError('sendTextWithChunking', e);
       // Fallback: gửi text thuần
       try {
-        await api.sendMessage(chunk, threadId, ThreadType.User);
+        await api.sendMessage(chunk, threadId, threadType);
       } catch (fallbackErr: any) {
         logError('sendTextWithChunking:fallback', fallbackErr);
       }
@@ -127,11 +146,12 @@ async function sendTextWithChunking(
 async function sendLink(api: any, link: string, message: string | undefined, threadId: string) {
   try {
     debugLog('LINK', `Sending link: ${link}, message: ${message || '(none)'}`);
+    const threadType = getThreadType(threadId);
 
     const linkData: any = { link };
     if (message) linkData.msg = message;
 
-    const result = await api.sendLink(linkData, threadId, ThreadType.User);
+    const result = await api.sendLink(linkData, threadId, threadType);
     logZaloAPI('sendLink', { linkData, threadId }, result);
     console.log(`[Bot] 🔗 Đã gửi link với preview!`);
     logMessage('OUT', threadId, { type: 'link', link, message });
@@ -146,9 +166,10 @@ async function sendCard(api: any, userId: string | undefined, threadId: string) 
     // Nếu không có userId, gửi card của bot
     const targetUserId = userId || String(api.getContext().uid);
     debugLog('CARD', `Sending card for userId=${targetUserId}`);
+    const threadType = getThreadType(threadId);
 
     const cardData = { userId: targetUserId };
-    const result = await api.sendCard(cardData, threadId, ThreadType.User);
+    const result = await api.sendCard(cardData, threadId, threadType);
     logZaloAPI('sendCard', { cardData, threadId }, result);
     console.log(`[Bot] 📇 Đã gửi danh thiếp!`);
     logMessage('OUT', threadId, { type: 'card', userId: targetUserId });
@@ -168,6 +189,7 @@ async function sendImageFromUrl(
   caption: string | undefined,
   threadId: string,
 ) {
+  const threadType = getThreadType(threadId);
   try {
     debugLog('IMAGE', `Sending image from URL: ${url}`);
     console.log(`[Bot] 🖼️ Đang tải ảnh từ URL...`);
@@ -211,7 +233,7 @@ async function sendImageFromUrl(
         attachments: [attachment],
       },
       threadId,
-      ThreadType.User,
+      threadType,
     );
 
     logZaloAPI('sendMessage:image', { url, caption, threadId }, result);
@@ -231,12 +253,12 @@ async function sendImageFromUrl(
         await api.sendMessage(
           `⚠️ Nguồn ảnh bị chặn truy cập. Link gốc: ${url}`,
           threadId,
-          ThreadType.User,
+          threadType,
         );
       } else if (isNotFound) {
-        await api.sendMessage(`⚠️ Ảnh không còn tồn tại hoặc đã bị xóa.`, threadId, ThreadType.User);
+        await api.sendMessage(`⚠️ Ảnh không còn tồn tại hoặc đã bị xóa.`, threadId, threadType);
       } else {
-        await api.sendMessage(`⚠️ Không tải được ảnh: ${url}`, threadId, ThreadType.User);
+        await api.sendMessage(`⚠️ Không tải được ảnh: ${url}`, threadId, threadType);
       }
     } catch {}
   }
@@ -246,6 +268,7 @@ async function sendSticker(api: any, keyword: string, threadId: string) {
   try {
     console.log(`[Bot] 🎨 Tìm sticker: "${keyword}"`);
     debugLog('STICKER', `Searching sticker: "${keyword}"`);
+    const threadType = getThreadType(threadId);
 
     const stickerIds = await api.getStickers(keyword);
     logZaloAPI('getStickers', { keyword }, stickerIds);
@@ -256,7 +279,7 @@ async function sendSticker(api: any, keyword: string, threadId: string) {
       logZaloAPI('getStickersDetail', { stickerId: randomId }, stickerDetails);
 
       if (stickerDetails?.[0]) {
-        const result = await api.sendSticker(stickerDetails[0], threadId, ThreadType.User);
+        const result = await api.sendSticker(stickerDetails[0], threadId, threadType);
         logZaloAPI('sendSticker', { sticker: stickerDetails[0], threadId }, result);
         console.log(`[Bot] ✅ Đã gửi sticker!`);
         logMessage('OUT', threadId, {
@@ -280,6 +303,7 @@ async function sendMediaImage(api: any, image: MediaImage, threadId: string) {
     const typeLabel = image.type === 'table' ? 'bảng' : 'sơ đồ';
     debugLog('MEDIA_IMG', `Sending ${image.type} image: ${image.filename}`);
     console.log(`[Bot] 📊 Đang gửi ${typeLabel} dạng ảnh...`);
+    const threadType = getThreadType(threadId);
 
     const metadata = await sharp(image.buffer).metadata();
 
@@ -296,7 +320,7 @@ async function sendMediaImage(api: any, image: MediaImage, threadId: string) {
     const result = await api.sendMessage(
       { msg: '', attachments: [attachment] },
       threadId,
-      ThreadType.User,
+      threadType,
     );
 
     logZaloAPI(
@@ -327,6 +351,7 @@ async function sendCodeFile(api: any, codeBlock: CodeBlock, threadId: string) {
 
     debugLog('CODE_FILE', `Sending code file: ${filename}`);
     console.log(`[Bot] 📄 Đang gửi file code (${codeBlock.language})...`);
+    const threadType = getThreadType(threadId);
 
     const attachment = {
       filename,
@@ -339,7 +364,7 @@ async function sendCodeFile(api: any, codeBlock: CodeBlock, threadId: string) {
     const result = await api.sendMessage(
       { msg: '', attachments: [attachment] },
       threadId,
-      ThreadType.User,
+      threadType,
     );
 
     logZaloAPI(
@@ -498,10 +523,11 @@ export async function sendResponse(
       } catch (e: any) {
         logError('sendResponse:text', e);
         // Fallback cuối cùng: thử gửi text thuần với chunking thủ công
+        const threadType = getThreadType(threadId);
         const chunks = splitMessage(msg.text);
         for (const chunk of chunks) {
           try {
-            await api.sendMessage(chunk, threadId, ThreadType.User);
+            await api.sendMessage(chunk, threadId, threadType);
             await new Promise((r) => setTimeout(r, 300));
           } catch {}
         }
@@ -629,8 +655,9 @@ export function createStreamCallbacks(
         return;
       }
       try {
+        const threadType = getThreadType(threadId);
         const undoData = { msgId: msg.msgId, cliMsgId: msg.cliMsgId };
-        const result = await api.undo(undoData, threadId, ThreadType.User);
+        const result = await api.undo(undoData, threadId, threadType);
         logZaloAPI('undo', { undoData, threadId }, result);
         removeSentMessage(threadId, msg.msgId);
         console.log(`[Bot] 🗑️ Đã thu hồi tin nhắn`);
