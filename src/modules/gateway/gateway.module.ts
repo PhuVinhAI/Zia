@@ -29,6 +29,12 @@ export {
   countMessageTypes,
 } from './classifier.js';
 export { addQuoteMedia, prepareMediaParts } from './media.processor.js';
+// Message Listener
+export {
+  createMessageHandler,
+  type MessageListenerOptions,
+  registerMessageListener,
+} from './message.listener.js';
 export {
   type ClassifiedMessage,
   classifyMessageDetailed,
