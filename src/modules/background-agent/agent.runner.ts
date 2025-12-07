@@ -67,10 +67,7 @@ async function runAgentCycle(): Promise<void> {
   if (!isRunning || !zaloApi) return;
 
   try {
-    // 1. Auto-accept friend requests đang chờ
-    await autoAcceptFriendRequests();
-
-    // 2. Lấy pending tasks
+    // Lấy pending tasks
     const tasks = await getPendingTasks(10);
 
     if (tasks.length === 0) {
@@ -84,113 +81,6 @@ async function runAgentCycle(): Promise<void> {
     await processTasksInParallel(tasks);
   } catch (error) {
     debugLog('AGENT', `Cycle error: ${error}`);
-  }
-}
-
-/**
- * Tự động accept kết bạn (Phiên bản Fix Lỗi & Debug)
- * - Tách try-catch riêng cho getSentFriendRequest để xác định lỗi
- * - Check ID trước khi gọi acceptFriendRequest
- * - Delay ngẫu nhiên 3-7s để tránh rate limit
- * - Bắt lỗi 225 (đã là bạn bè)
- */
-async function autoAcceptFriendRequests(): Promise<void> {
-  try {
-    // 1. Gọi API lấy danh sách (Bọc try-catch riêng để xác định lỗi do lấy list hay do accept)
-    let pendingRequests;
-    try {
-      // Check if method exists
-      if (typeof zaloApi.getSentFriendRequest !== 'function') {
-        debugLog('AGENT', '⚠️ API getSentFriendRequest không khả dụng, bỏ qua auto-accept');
-        return;
-      }
-      pendingRequests = await zaloApi.getSentFriendRequest();
-    } catch (e: any) {
-      // Error code 112 = Không có lời mời kết bạn nào (Zalo API behavior)
-      // Đây là trường hợp bình thường, không cần log warning
-      const errorCode = e?.code;
-      if (errorCode === 112) {
-        return; // Không có friend request, thoát êm
-      }
-      // Log chi tiết để debug
-      debugLog(
-        'AGENT',
-        `⚠️ Lỗi khi lấy danh sách kết bạn: ${JSON.stringify({
-          message: e?.message,
-          code: errorCode,
-          name: e?.name,
-          stack: e?.stack?.split('\n')[0],
-        })}`,
-      );
-      return;
-    }
-
-    if (!pendingRequests || typeof pendingRequests !== 'object') {
-      return;
-    }
-
-    // Chuyển Object thành Array
-    const requests = Object.values(pendingRequests) as any[];
-
-    if (requests.length === 0) {
-      return; // Không có ai thì thoát êm
-    }
-
-    debugLog('AGENT', `💌 Tìm thấy ${requests.length} lời mời kết bạn đang chờ...`);
-
-    let acceptedCount = 0;
-
-    // 2. Duyệt từng người
-    for (const req of requests) {
-      // --- FIX LỖI QUAN TRỌNG: CHECK ID ---
-      // Đảm bảo ID tồn tại trước khi gọi hàm
-      const uid = req.userId || req.uid || req.id;
-      const name = req.displayName || req.zaloName || 'Người lạ';
-
-      if (!uid) {
-        debugLog('AGENT', `⚠️ Bỏ qua 1 lời mời do không tìm thấy ID (Data: ${JSON.stringify(req)})`);
-        continue;
-      }
-
-      try {
-        debugLog('AGENT', `👉 Đang đồng ý kết bạn với: ${name} (${uid})...`);
-
-        // Gọi Accept
-        await zaloApi.acceptFriendRequest(uid);
-        debugLog('AGENT', `✅ Đã chấp nhận: ${name}`);
-        acceptedCount++;
-
-        // --- GỬI TIN NHẮN CHÀO MỪNG (Optional) ---
-        // Giúp tăng tương tác ngay lập tức
-        try {
-          await zaloApi.sendMessage(
-            `Chào ${name}! Mình là Zia (AI Bot), rất vui được kết bạn với bạn! ❤️`,
-            uid,
-          );
-        } catch (msgErr) {
-          /* Bỏ qua lỗi gửi tin */
-        }
-
-        // --- FIX LỖI SPAM: DELAY NGẪU NHIÊN ---
-        // Nghỉ từ 3s đến 7s giữa mỗi người để Zalo không chặn
-        const delay = Math.floor(Math.random() * 4000) + 3000;
-        await new Promise((resolve) => setTimeout(resolve, delay));
-      } catch (error: any) {
-        // Mã lỗi 225 = Đã là bạn bè rồi (API Zalo đôi khi vẫn trả về trong list pending dù đã accept)
-        if (error.code === 225 || (error.message && error.message.includes('225'))) {
-          debugLog('AGENT', `ℹ️ Đã là bạn bè với ${name}, bỏ qua.`);
-        } else {
-          debugLog('AGENT', `❌ Lỗi khi accept ${uid}: ${error.message}`);
-        }
-      }
-    }
-
-    if (acceptedCount > 0) {
-      debugLog('AGENT', `🎉 Hoàn tất chu kỳ: Đã kết bạn với ${acceptedCount} người.`);
-    }
-  } catch (error: any) {
-    // Lỗi tổng (Outer catch)
-    debugLog('AGENT', `🔥 Critical Error trong auto-accept: ${error.message}`);
   }
 }
 
