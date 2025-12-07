@@ -88,49 +88,90 @@ async function runAgentCycle(): Promise<void> {
 }
 
 /**
- * Tự động accept tất cả friend requests đang chờ (tuần tự, từng cái một)
- * Sử dụng getSentFriendRequest() để lấy danh sách người gửi lời mời kết bạn ĐẾN MÌNH
+ * Tự động accept kết bạn (Phiên bản Fix Lỗi & Debug)
+ * - Tách try-catch riêng cho getSentFriendRequest để xác định lỗi
+ * - Check ID trước khi gọi acceptFriendRequest
+ * - Delay ngẫu nhiên 3-7s để tránh rate limit
+ * - Bắt lỗi 225 (đã là bạn bè)
  */
 async function autoAcceptFriendRequests(): Promise<void> {
   try {
-    // Lấy danh sách friend requests đang chờ (người khác gửi cho mình)
-    // getSentFriendRequest() trả về Object với key là userId
-    const pendingRequests = await zaloApi.getSentFriendRequest();
-
-    if (!pendingRequests || Object.keys(pendingRequests).length === 0) {
-      debugLog('AGENT', 'No pending friend requests');
+    // 1. Gọi API lấy danh sách (Bọc try-catch riêng để xác định lỗi do lấy list hay do accept)
+    let pendingRequests;
+    try {
+      pendingRequests = await zaloApi.getSentFriendRequest();
+    } catch (e: any) {
+      // Nếu lỗi ngay bước này -> Thường do Cookie hoặc Network
+      debugLog('AGENT', `⚠️ Lỗi khi lấy danh sách kết bạn: ${e.message}`);
       return;
     }
 
-    // Chuyển Object thành Array để dễ xử lý
+    if (!pendingRequests || typeof pendingRequests !== 'object') {
+      return;
+    }
+
+    // Chuyển Object thành Array
     const requests = Object.values(pendingRequests) as any[];
-    debugLog('AGENT', `Found ${requests.length} pending friend requests, auto-accepting...`);
 
-    // Accept tuần tự từng cái một (tránh rate limit)
-    let accepted = 0;
+    if (requests.length === 0) {
+      return; // Không có ai thì thoát êm
+    }
+
+    debugLog('AGENT', `💌 Tìm thấy ${requests.length} lời mời kết bạn đang chờ...`);
+
+    let acceptedCount = 0;
+
+    // 2. Duyệt từng người
     for (const req of requests) {
+      // --- FIX LỖI QUAN TRỌNG: CHECK ID ---
+      // Đảm bảo ID tồn tại trước khi gọi hàm
+      const uid = req.userId || req.uid || req.id;
+      const name = req.displayName || req.zaloName || 'Người lạ';
+
+      if (!uid) {
+        debugLog('AGENT', `⚠️ Bỏ qua 1 lời mời do không tìm thấy ID (Data: ${JSON.stringify(req)})`);
+        continue;
+      }
+
       try {
-        const uid = req.userId;
-        const name = req.displayName || req.zaloName || uid;
-        const message = req.fReqInfo?.message || '';
+        debugLog('AGENT', `👉 Đang đồng ý kết bạn với: ${name} (${uid})...`);
 
-        debugLog('AGENT', `Processing friend request from ${name} (${uid}): "${message}"`);
-
-        // Accept friend request
+        // Gọi Accept
         await zaloApi.acceptFriendRequest(uid);
-        debugLog('AGENT', `Accepted friend request from ${name}`);
-        accepted++;
+        debugLog('AGENT', `✅ Đã chấp nhận: ${name}`);
+        acceptedCount++;
 
-        // Delay 2s giữa mỗi request để Zalo kịp cập nhật trạng thái bạn bè
-        await new Promise((resolve) => setTimeout(resolve, 2000));
+        // --- GỬI TIN NHẮN CHÀO MỪNG (Optional) ---
+        // Giúp tăng tương tác ngay lập tức
+        try {
+          await zaloApi.sendMessage(
+            `Chào ${name}! Mình là Zia (AI Bot), rất vui được kết bạn với bạn! ❤️`,
+            uid,
+          );
+        } catch (msgErr) {
+          /* Bỏ qua lỗi gửi tin */
+        }
+
+        // --- FIX LỖI SPAM: DELAY NGẪU NHIÊN ---
+        // Nghỉ từ 3s đến 7s giữa mỗi người để Zalo không chặn
+        const delay = Math.floor(Math.random() * 4000) + 3000;
+        await new Promise((resolve) => setTimeout(resolve, delay));
       } catch (error: any) {
-        debugLog('AGENT', `Failed to accept friend from ${req.userId}: ${error.message}`);
+        // Mã lỗi 225 = Đã là bạn bè rồi (API Zalo đôi khi vẫn trả về trong list pending dù đã accept)
+        if (error.code === 225 || (error.message && error.message.includes('225'))) {
+          debugLog('AGENT', `ℹ️ Đã là bạn bè với ${name}, bỏ qua.`);
+        } else {
+          debugLog('AGENT', `❌ Lỗi khi accept ${uid}: ${error.message}`);
+        }
       }
     }
 
-    debugLog('AGENT', `Auto-accepted ${accepted}/${requests.length} friend requests`);
-  } catch (error) {
-    debugLog('AGENT', `Error auto-accepting friends: ${error}`);
+    if (acceptedCount > 0) {
+      debugLog('AGENT', `🎉 Hoàn tất chu kỳ: Đã kết bạn với ${acceptedCount} người.`);
+    }
+  } catch (error: any) {
+    // Lỗi tổng (Outer catch)
+    debugLog('AGENT', `🔥 Critical Error trong auto-accept: ${error.message}`);
   }
 }
 
