@@ -59,9 +59,6 @@ export function createMessageHandler(api: any, options: MessageListenerOptions) 
     // Kiểm tra bỏ qua
     const { skip, reason } = shouldSkipMessage(message);
     if (skip && !cloudMessage) {
-      if (reason === 'group message') {
-        console.log(`[Bot] 🚫 Bỏ qua tin nhắn nhóm: ${threadId}`);
-      }
       debugLog('MSG', `Skipping: ${reason}, thread=${threadId}`);
       return;
     }

@@ -228,3 +228,27 @@ export function countMessageTypes(classified: ClassifiedMessage[]): Record<strin
     {} as Record<string, number>,
   );
 }
+
+/**
+ * Kiểm tra xem Bot có được nhắc đến trong tin nhắn nhóm không
+ * @param message Tin nhắn raw từ Zalo
+ * @param botId ID của Bot (lấy từ api.getContext().uid)
+ * @param botName Tên của Bot (cấu hình trong settings)
+ */
+export function isBotMentioned(message: any, botId: string, botName = 'Zia'): boolean {
+  const content = message.data?.content || '';
+
+  // 1. Kiểm tra cấu trúc Mention của Zalo (msg.data.mentions)
+  // Zalo thường gửi kèm mảng mentions chứa uid, len, pos
+  const mentions = message.data?.mentions || [];
+  if (Array.isArray(mentions)) {
+    const isTagged = mentions.some((m: any) => m.uid === botId);
+    if (isTagged) return true;
+  }
+
+  // 2. Kiểm tra Text thuần (Regex) phòng trường hợp Zalo không gửi mention data
+  // Ví dụ: "@Zia", "Zia ơi", "bot ơi"
+  const escapedName = botName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const mentionRegex = new RegExp(`@?(${escapedName}|bot|ad|admin)\\b`, 'i');
+  return mentionRegex.test(typeof content === 'string' ? content : '');
+}

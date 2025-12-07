@@ -2,6 +2,7 @@
  * History Converter - Convert Zalo messages sang Gemini Content format
  */
 import type { Content, Part } from '@google/genai';
+import { ThreadType } from '../../infrastructure/zalo/zalo.service.js';
 import { CONFIG } from '../constants/config.js';
 import { fetchAsBase64 } from './httpClient.js';
 import { isSupportedMime } from './tokenCounter.js';
@@ -13,6 +14,17 @@ export function getMediaUrl(content: any, msgType?: string): string | null {
     return `https://zalo-api.zadn.vn/api/emoticon/sticker/webpc?eid=${content.id}&size=130`;
   }
   return content?.href || content?.hdUrl || content?.thumbUrl || content?.thumb || null;
+}
+
+/**
+ * Wrap text với tên người gửi nếu là tin nhắn nhóm
+ */
+function wrapTextWithSender(text: string, msg: any): string {
+  const isGroup = msg.type === ThreadType.Group;
+  if (!isGroup || msg.isSelf) return text;
+
+  const senderName = msg.data?.dName || msg.data?.uidFrom || 'User';
+  return `[${senderName}]: ${text}`;
 }
 
 /** Lấy MIME type từ msgType */
@@ -41,7 +53,7 @@ export async function toGeminiContent(msg: any): Promise<Content> {
 
   // Text message
   if (typeof content === 'string') {
-    parts.push({ text: content });
+    parts.push({ text: wrapTextWithSender(content, msg) });
     return { role, parts };
   }
 
@@ -75,7 +87,8 @@ export async function toGeminiContent(msg: any): Promise<Content> {
       }
 
       if (description) {
-        parts.push({ text: description });
+        // Wrap với tên người gửi nếu là nhóm
+        parts.push({ text: wrapTextWithSender(description, msg) });
       }
 
       // Fetch và thêm media data

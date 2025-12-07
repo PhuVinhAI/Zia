@@ -21,12 +21,12 @@ import {
 import { markPendingToolExecution } from '../../shared/utils/taskManager.js';
 import type { ClassifiedMessage, MessageType } from './classifier.js';
 // Import từ các module mới
-import { classifyMessage, classifyMessages, countMessageTypes } from './classifier.js';
+import { classifyMessage, classifyMessages, countMessageTypes, isBotMentioned } from './classifier.js';
 import { addQuoteMedia, prepareMediaParts } from './media.processor.js';
 import { buildPrompt, extractTextFromMessages, processPrefix } from './prompt.builder.js';
 import { extractQuoteInfo } from './quote.parser.js';
 import { checkRateLimit, markApiCall } from './rate-limit.guard.js';
-import { createStreamCallbacks, sendResponse } from './response.handler.js';
+import { createStreamCallbacks, sendResponse, setThreadType } from './response.handler.js';
 import { handleToolCalls, isToolOnlyResponse } from './tool.handler.js';
 
 // Re-export types cho backward compatibility
@@ -56,18 +56,41 @@ export async function handleMixedContent(
   logStep('handleMixedContent', { threadId, counts, total: messages.length });
 
   try {
-    // 2. Lưu vào history
+    // 2. Lưu vào history (luôn lưu để Bot nhớ mọi thứ kể cả khi im lặng)
     for (const msg of messages) {
       await saveToHistory(threadId, msg);
     }
 
+    // 3. Xác định loại Thread (User hay Group)
+    const lastMsg = messages[messages.length - 1];
+    const isGroup = lastMsg.type === ThreadType.Group;
+
+    // 4. Logic chặn trả lời trong nhóm nếu không được mention
+    if (isGroup) {
+      const botId = api.getContext().uid;
+      const botName = CONFIG.name || 'Zia';
+
+      // Kiểm tra xem có tin nhắn nào trong batch nhắc tới Bot không
+      const mentioned = messages.some((msg) => isBotMentioned(msg, botId, botName));
+
+      if (!mentioned) {
+        debugLog('GATEWAY', `Group message saved to history but ignored (no mention): ${threadId}`);
+        return; // Dừng xử lý - không typing, không gọi AI
+      }
+
+      console.log(`[Bot] 🔔 Được tag trong nhóm ${threadId}, đang trả lời...`);
+    }
+
     if (signal?.aborted) return debugLog('MIXED', 'Aborted before processing');
 
-    await api.sendTypingEvent(threadId, ThreadType.User);
+    // Gửi typing event với đúng ThreadType
+    const threadType = isGroup ? ThreadType.Group : ThreadType.User;
+    // Lưu ThreadType để các hàm response sử dụng
+    setThreadType(threadId, threadType);
+    await api.sendTypingEvent(threadId, threadType);
 
-    // 3. Lấy history và context
+    // 5. Lấy history và context
     const history = getHistory(threadId);
-    const lastMsg = messages[messages.length - 1];
 
     // 4. Parse quote
     const { quoteContent, quoteMedia } = extractQuoteInfo(lastMsg);
