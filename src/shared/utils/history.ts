@@ -42,9 +42,11 @@ export {
 } from './messageStore.js';
 // Token counter
 export {
+  checkInputTokens,
   countTokens,
   filterUnsupportedMedia,
   isSupportedMime,
+  type TokenCheckResult,
 } from './tokenCounter.js';
 // User store (database-backed)
 export {

@@ -11,8 +11,8 @@ describe('Gemini Key Manager', () => {
     });
 
     it('should include expected models', () => {
-      expect(GEMINI_MODELS).toContain('models/gemini-2.5-pro');
       expect(GEMINI_MODELS).toContain('models/gemini-flash-latest');
+      expect(GEMINI_MODELS).toContain('models/gemini-robotics-er-1.5-preview');
     });
   });
 

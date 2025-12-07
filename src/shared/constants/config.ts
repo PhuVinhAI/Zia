@@ -59,6 +59,7 @@ function buildConfig(settings: Settings) {
     requirePrefix: settings.bot.requirePrefix,
     rateLimitMs: settings.bot.rateLimitMs,
     maxTokenHistory: settings.bot.maxTokenHistory,
+    maxInputTokens: settings.bot.maxInputTokens,
     selfListen: settings.bot.selfListen,
     logging: settings.bot.logging,
     useStreaming: settings.bot.useStreaming,

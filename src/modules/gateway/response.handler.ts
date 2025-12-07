@@ -786,9 +786,34 @@ export function createStreamCallbacks(
       });
     },
 
-    onError: (error: Error) => {
+    onError: async (error: Error) => {
       console.error('[Bot] ❌ Streaming error:', error);
       logError('streamError', error);
+
+      // Gửi tin nhắn thông báo lỗi cho người dùng nếu chưa có response nào
+      if (messageCount === 0 && reactionCount === 0) {
+        try {
+          const threadType = getThreadType(threadId);
+          const errorMessage = error.message || '';
+
+          // Kiểm tra nếu là lỗi rate limit (hết quota)
+          const isQuotaError =
+            errorMessage.includes('quota') ||
+            errorMessage.includes('rate limit') ||
+            errorMessage.includes('429') ||
+            errorMessage.includes('All models are blocked');
+
+          const userFriendlyMessage = isQuotaError
+            ? '⚠️ Hệ thống đang quá tải, vui lòng thử lại sau 1-2 phút nhé!'
+            : '⚠️ Có lỗi xảy ra khi xử lý yêu cầu của bạn. Vui lòng thử lại sau!';
+
+          await api.sendMessage(userFriendlyMessage, threadId, threadType);
+          console.log(`[Bot] 📤 Đã gửi thông báo lỗi cho người dùng`);
+          logMessage('OUT', threadId, { type: 'error', error: errorMessage });
+        } catch (sendError: any) {
+          logError('onError:sendMessage', sendError);
+        }
+      }
     },
   };
 }

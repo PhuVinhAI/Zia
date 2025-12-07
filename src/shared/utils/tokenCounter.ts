@@ -50,3 +50,54 @@ export async function countTokens(contents: Content[]): Promise<number> {
     return estimated;
   }
 }
+
+/** Kết quả kiểm tra token đầu vào */
+export interface TokenCheckResult {
+  allowed: boolean;
+  totalTokens: number;
+  maxTokens: number;
+  message?: string;
+}
+
+/**
+ * Kiểm tra tổng token đầu vào (prompt + media) có vượt giới hạn không
+ * KHÔNG bao gồm history - chỉ đếm input hiện tại
+ * @param contents - Content array chứa prompt và media
+ * @param maxTokens - Giới hạn token (mặc định 200000)
+ * @returns TokenCheckResult với thông tin chi tiết
+ */
+export async function checkInputTokens(
+  contents: Content[],
+  maxTokens: number = 200000,
+): Promise<TokenCheckResult> {
+  try {
+    const totalTokens = await countTokens(contents);
+
+    debugLog('TOKEN', `Input tokens: ${totalTokens}/${maxTokens}`);
+
+    if (totalTokens > maxTokens) {
+      const overBy = totalTokens - maxTokens;
+      return {
+        allowed: false,
+        totalTokens,
+        maxTokens,
+        message: `⚠️ Tin nhắn quá dài! Đã vượt giới hạn ${overBy.toLocaleString()} tokens (${totalTokens.toLocaleString()}/${maxTokens.toLocaleString()}). Hãy gửi tin nhắn/file ngắn hơn.`,
+      };
+    }
+
+    return {
+      allowed: true,
+      totalTokens,
+      maxTokens,
+    };
+  } catch (error: any) {
+    logError('checkInputTokens', error);
+    // Nếu lỗi khi đếm token, cho phép tiếp tục (fail-open)
+    return {
+      allowed: true,
+      totalTokens: 0,
+      maxTokens,
+      message: 'Token check failed, proceeding anyway',
+    };
+  }
+}

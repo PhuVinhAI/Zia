@@ -10,6 +10,7 @@ import {
   logSystemPrompt,
 } from '../../core/logger/logger.js';
 import { CONFIG } from '../../shared/constants/config.js';
+import { checkInputTokens } from '../../shared/utils/tokenCounter.js';
 import {
   buildMessageParts,
   deleteChatSession,
@@ -29,7 +30,7 @@ export interface StreamCallbacks {
   onUndo?: (index: number) => Promise<void>;
   onImage?: (url: string, caption?: string) => Promise<void>;
   onComplete?: () => void | Promise<void>;
-  onError?: (error: Error) => void;
+  onError?: (error: Error) => void | Promise<void>;
   signal?: AbortSignal;
 }
 
@@ -242,10 +243,30 @@ export async function generateContentStream(
     }, thread=${threadId || 'none'}`,
   );
 
+  // Build parts trước để đếm token chính xác (bao gồm cả media)
+  const parts = await buildMessageParts(prompt, media);
+
+  // Kiểm tra token đầu vào (prompt + media) trước khi gọi AI
+  const inputContent: Content = { role: 'user', parts };
+  const tokenCheck = await checkInputTokens([inputContent], CONFIG.maxInputTokens);
+
+  if (!tokenCheck.allowed) {
+    console.log(
+      `[Gemini] ⚠️ Token limit exceeded: ${tokenCheck.totalTokens}/${tokenCheck.maxTokens}`,
+    );
+    debugLog('STREAM', `Token limit exceeded: ${tokenCheck.totalTokens}/${tokenCheck.maxTokens}`);
+
+    // Gửi thông báo lỗi cho user
+    if (callbacks.onMessage) {
+      await callbacks.onMessage(tokenCheck.message || 'Token limit exceeded');
+    }
+    await callbacks.onComplete?.();
+    return tokenCheck.message || 'Token limit exceeded';
+  }
+
   let hasPartialResponse = false;
   let lastError: any = null;
 
-  const parts = await buildMessageParts(prompt, media);
   const sessionId = threadId || `temp_${Date.now()}`;
 
   let overloadRetries = 0; // Đếm số lần retry cho overload (503)
@@ -359,7 +380,7 @@ export async function generateContentStream(
   }
 
   logError('generateContentStream', lastError);
-  callbacks.onError?.(lastError);
+  await callbacks.onError?.(lastError);
 
   if (threadId) deleteChatSession(threadId);
 

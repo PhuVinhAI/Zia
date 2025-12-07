@@ -20,6 +20,7 @@ import {
   DEFAULT_RESPONSE,
   parseAIResponse,
 } from '../../shared/types/config.schema.js';
+import { checkInputTokens } from '../../shared/utils/tokenCounter.js';
 import {
   buildMessageParts,
   deleteChatSession,
@@ -64,7 +65,33 @@ export async function generateContent(
     hasThread: !!threadId,
   });
 
+  // Build parts trước để đếm token chính xác (bao gồm cả media)
   const parts = await buildMessageParts(prompt, media);
+
+  // Kiểm tra token đầu vào (prompt + media) trước khi gọi AI
+  const inputContent: Content = { role: 'user', parts };
+  const tokenCheck = await checkInputTokens([inputContent], CONFIG.maxInputTokens);
+
+  if (!tokenCheck.allowed) {
+    console.log(
+      `[Gemini] ⚠️ Token limit exceeded: ${tokenCheck.totalTokens}/${tokenCheck.maxTokens}`,
+    );
+    debugLog('GEMINI', `Token limit exceeded: ${tokenCheck.totalTokens}/${tokenCheck.maxTokens}`);
+
+    // Trả về response với thông báo lỗi
+    return {
+      reactions: [],
+      messages: [
+        {
+          text: tokenCheck.message || 'Token limit exceeded',
+          sticker: '',
+          quoteIndex: -1,
+        },
+      ],
+      undoIndexes: [],
+    };
+  }
+
   const sessionId = threadId || `temp_${Date.now()}`;
 
   if (media?.length) {

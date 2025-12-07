@@ -7,6 +7,9 @@ import { CONFIG } from '../constants/config.js';
 import { fetchAsBase64 } from './httpClient.js';
 import { isSupportedMime } from './tokenCounter.js';
 
+// Size limit cho media trong tin nhắn nhóm (1MB)
+const GROUP_MEDIA_SIZE_LIMIT = 1 * 1024 * 1024;
+
 /** Lấy URL media từ message content */
 export function getMediaUrl(content: any, msgType?: string): string | null {
   // Sticker có format đặc biệt - lấy URL từ sticker ID
@@ -40,6 +43,34 @@ export function getMimeType(msgType: string, content: any): string | null {
     return mimeType && isSupportedMime(mimeType) ? mimeType : null;
   }
   return null;
+}
+
+/**
+ * Lấy file size từ message params
+ */
+function getFileSize(content: any): number {
+  if (!content?.params) return 0;
+  try {
+    const params = typeof content.params === 'string' ? JSON.parse(content.params) : content.params;
+    return params?.fileSize ? Number.parseInt(params.fileSize, 10) : 0;
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Kiểm tra xem có nên skip media cho tin nhắn nhóm không
+ * Skip nếu là file hoặc video > 1MB
+ */
+function shouldSkipMediaForGroup(msg: any, msgType: string, content: any): boolean {
+  const isGroup = msg.type === ThreadType.Group;
+  if (!isGroup) return false;
+
+  const isFileOrVideo = msgType.includes('file') || msgType.includes('video');
+  if (!isFileOrVideo) return false;
+
+  const fileSize = getFileSize(content);
+  return fileSize > GROUP_MEDIA_SIZE_LIMIT;
 }
 
 /**
@@ -84,6 +115,15 @@ export async function toGeminiContent(msg: any): Promise<Content> {
       } else if (msgType.includes('file')) {
         const fileName = content?.title || 'file';
         description = `[File: ${fileName}]`;
+      }
+
+      // Kiểm tra xem có nên skip media cho tin nhắn nhóm không
+      if (shouldSkipMediaForGroup(msg, msgType, content)) {
+        const fileSize = getFileSize(content);
+        const sizeMB = (fileSize / 1024 / 1024).toFixed(1);
+        console.log(`[History] ⏭️ Skipped large media in group: ${description} (${sizeMB}MB)`);
+        parts.push({ text: wrapTextWithSender(description, msg) });
+        return { role, parts };
       }
 
       if (description) {
