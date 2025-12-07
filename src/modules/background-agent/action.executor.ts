@@ -31,15 +31,35 @@ export async function executeTask(api: any, task: AgentTask): Promise<ExecutionR
 
 /**
  * Gửi tin nhắn
+ * Hỗ trợ targetDescription - agent sẽ resolve từ danh sách nhóm/bạn bè
  */
 async function executeSendMessage(
   api: any,
   task: AgentTask,
-  payload: { message: string },
+  payload: {
+    message: string;
+    targetDescription?: string;
+    resolvedThreadId?: string;
+    resolvedUserId?: string;
+  },
 ): Promise<ExecutionResult> {
-  const threadId = task.targetThreadId || task.targetUserId;
+  // Ưu tiên resolved IDs (đã được Groq resolve) > task IDs
+  // resolvedThreadId cho nhóm, resolvedUserId cho bạn bè
+  let threadId =
+    payload.resolvedThreadId || payload.resolvedUserId || task.targetThreadId || task.targetUserId;
+
+  // Nếu có targetDescription nhưng chưa có threadId, cần resolve
+  if (!threadId && payload.targetDescription) {
+    debugLog('EXECUTOR', `Need to resolve targetDescription: ${payload.targetDescription}`);
+    return {
+      success: false,
+      error: `Cần Groq resolve targetDescription "${payload.targetDescription}" thành ID`,
+      data: { needsResolution: true, targetDescription: payload.targetDescription },
+    };
+  }
+
   if (!threadId) {
-    return { success: false, error: 'Missing threadId or targetUserId' };
+    return { success: false, error: 'Missing threadId, targetUserId or targetDescription' };
   }
 
   if (!payload.message) {

@@ -17,10 +17,13 @@ export const scheduleTaskTool: ToolDefinition = {
 - Cần gửi lời mời kết bạn
 - Muốn thực hiện hành động không cần response ngay
 
-Lưu ý: accept_friend được xử lý tự động, không cần tạo task.
+Lưu ý: 
+- accept_friend được xử lý tự động, không cần tạo task
+- Có thể dùng targetDescription thay vì ID, agent nền sẽ tự tìm nhóm phù hợp
 
 Ví dụ:
 - "5 phút nữa nhắn A hỏi thăm" → scheduleTask với delayMinutes=5
+- "Gửi tin vào nhóm lớp" → scheduleTask với targetDescription="nhóm lớp"
 - "Kết bạn với số 0123456789" → scheduleTask type=send_friend_request`,
   parameters: [
     {
@@ -39,6 +42,12 @@ Ví dụ:
       name: 'targetThreadId',
       type: 'string',
       description: 'ID thread/nhóm đích (cho send_message)',
+      required: false,
+    },
+    {
+      name: 'targetDescription',
+      type: 'string',
+      description: 'Mô tả nhóm/người nhận (VD: "nhóm lớp 12A") - agent nền sẽ tự tìm từ context',
       required: false,
     },
     {
@@ -68,7 +77,8 @@ Ví dụ:
       return { success: false, error: validation.error };
     }
 
-    const { type, targetUserId, targetThreadId, message, delayMinutes, context } = validation.data;
+    const { type, targetUserId, targetThreadId, targetDescription, message, delayMinutes, context } =
+      validation.data;
 
     try {
       // Validate business logic
@@ -79,10 +89,11 @@ Ví dụ:
         };
       }
 
-      if (!targetUserId && !targetThreadId) {
+      // Cho phép dùng targetDescription thay vì ID - agent nền sẽ resolve
+      if (!targetUserId && !targetThreadId && !targetDescription) {
         return {
           success: false,
-          error: 'Cần có targetUserId hoặc targetThreadId',
+          error: 'Cần có targetUserId, targetThreadId hoặc targetDescription',
         };
       }
 
@@ -95,8 +106,12 @@ Ví dụ:
       // Build payload
       const payload: Record<string, any> = {};
       if (message) payload.message = message;
+      if (targetDescription) payload.targetDescription = targetDescription;
 
-      debugLog('TOOL:scheduleTask', `Creating task: ${type} for ${targetUserId || targetThreadId}`);
+      debugLog(
+        'TOOL:scheduleTask',
+        `Creating task: ${type} for ${targetUserId || targetThreadId || targetDescription}`,
+      );
 
       // Create task
       const task = await createTask({

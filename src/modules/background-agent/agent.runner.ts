@@ -202,14 +202,21 @@ async function getBatchGroqDecisions(
 Với MỖI task, sử dụng tool tag với task_id:
 [tool:decide task_id="<ID>" action="execute|skip|delay" reason="Lý do"]
 
-Nếu cần điều chỉnh message:
-[tool:decide task_id="<ID>" action="execute" reason="Lý do"]{"message": "Nội dung mới"}[/tool]
+Nếu cần điều chỉnh message hoặc resolve targetDescription:
+[tool:decide task_id="<ID>" action="execute" reason="Lý do"]{"message": "Nội dung", "resolvedThreadId": "ID nhóm"}[/tool]
 
 ## QUY TẮC:
 - LUÔN execute task ngay, không delay vì online/offline
 - Hệ thống TỰ ĐỘNG accept friend requests
 - Điều chỉnh tone dựa trên giới tính
-- Trả lời cho TẤT CẢ tasks trong 1 response`;
+- Trả lời cho TẤT CẢ tasks trong 1 response
+
+## RESOLVE targetDescription:
+Nếu task có targetDescription (mô tả nhóm/người) thay vì ID:
+1. Tìm nhóm phù hợp nhất trong "Nhóm bot tham gia" HOẶC bạn bè trong "Danh sách bạn bè"
+2. Trả về resolvedThreadId (cho nhóm) hoặc resolvedUserId (cho bạn bè) trong JSON payload
+3. Ví dụ nhóm: targetDescription="nhóm lớp" → tìm nhóm có tên chứa "lớp" → resolvedThreadId="123456"
+4. Ví dụ bạn bè: targetDescription="anh Minh" → tìm bạn có tên chứa "Minh" → resolvedUserId="789012"`;
 
   const userPrompt = `
 ## Danh sách ${tasks.length} tasks cần xử lý:
@@ -257,10 +264,16 @@ function parseBatchDecisions(
     const taskId = Number.parseInt(call.params.task_id, 10);
     if (Number.isNaN(taskId)) continue;
 
+    // Build adjusted payload từ các fields có thể có
+    const adjustedPayload: Record<string, any> = {};
+    if (call.params.message) adjustedPayload.message = call.params.message;
+    if (call.params.resolvedThreadId) adjustedPayload.resolvedThreadId = call.params.resolvedThreadId;
+    if (call.params.resolvedUserId) adjustedPayload.resolvedUserId = call.params.resolvedUserId;
+
     decisions.set(taskId, {
       action: call.params.action || 'execute',
       reason: call.params.reason || 'No reason',
-      adjustedPayload: call.params.message ? { message: call.params.message } : undefined,
+      adjustedPayload: Object.keys(adjustedPayload).length > 0 ? adjustedPayload : undefined,
     });
   }
 

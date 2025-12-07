@@ -3,18 +3,36 @@
  */
 import { debugLog } from '../../core/logger/logger.js';
 
+/**
+ * Delay random trong khoảng min-max ms (giống hành vi người dùng)
+ */
+function randomDelay(minMs: number, maxMs: number): Promise<void> {
+  const delay = Math.floor(Math.random() * (maxMs - minMs + 1)) + minMs;
+  return new Promise((resolve) => setTimeout(resolve, delay));
+}
+
+export interface GroupInfo {
+  groupId: string;
+  name: string;
+  totalMember: number;
+}
+
+export interface FriendInfo {
+  userId: string;
+  displayName: string;
+  gender: string;
+}
+
 export interface EnvironmentContext {
   // Online status
   onlineUsers: Array<{ userId: string; status: string }>;
   onlineCount: number;
-  // Friend requests
-  pendingFriendRequests: Array<{
-    userId: string;
-    displayName: string;
-    avatar: string;
-    message: string;
-    time: number;
-  }>;
+  // Danh sách nhóm bot tham gia
+  joinedGroups: GroupInfo[];
+  totalGroups: number;
+  // Danh sách bạn bè
+  friends: FriendInfo[];
+  totalFriends: number;
   // Target user info (nếu có)
   targetUserInfo?: {
     userId: string;
@@ -40,7 +58,10 @@ export async function buildEnvironmentContext(
   const context: EnvironmentContext = {
     onlineUsers: [],
     onlineCount: 0,
-    pendingFriendRequests: [],
+    joinedGroups: [],
+    totalGroups: 0,
+    friends: [],
+    totalFriends: 0,
     relevantMemories: [],
     timestamp: new Date(),
   };
@@ -56,23 +77,57 @@ export async function buildEnvironmentContext(
   }
 
   try {
-    // 2. Lấy pending friend requests (nếu API hỗ trợ)
-    if (typeof api.getSentFriendRequest === 'function') {
-      const reqRes = await api.getSentFriendRequest();
-      context.pendingFriendRequests = Object.values(reqRes || {}).map((r: any) => ({
-        userId: r.userId,
-        displayName: r.displayName,
-        avatar: r.avatar,
-        message: r.fReqInfo?.message || '',
-        time: r.fReqInfo?.time || 0,
-      }));
-      debugLog('CONTEXT', `Pending friend requests: ${context.pendingFriendRequests.length}`);
+    // 2. Lấy danh sách nhóm bot tham gia
+    const groupsRes = await api.getAllGroups();
+    const groupIds = Object.keys(groupsRes.gridVerMap || {});
+    context.totalGroups = groupIds.length;
+
+    // Lấy thông tin chi tiết TẤT CẢ nhóm theo batch với delay random
+    if (groupIds.length > 0) {
+      const BATCH_SIZE = 10;
+      for (let i = 0; i < groupIds.length; i += BATCH_SIZE) {
+        const batch = groupIds.slice(i, i + BATCH_SIZE);
+        const infoRes = await api.getGroupInfo(batch);
+
+        for (const gid of batch) {
+          const info = infoRes.gridInfoMap?.[gid];
+          if (info) {
+            context.joinedGroups.push({
+              groupId: gid,
+              name: info.name,
+              totalMember: info.totalMember,
+            });
+          }
+        }
+
+        // Delay random 500-1500ms giữa các batch (giống người dùng)
+        if (i + BATCH_SIZE < groupIds.length) {
+          await randomDelay(500, 1500);
+        }
+      }
     }
+    debugLog('CONTEXT', `Joined groups: ${context.totalGroups}`);
   } catch (e) {
-    // Bỏ qua lỗi - API có thể không hỗ trợ hoặc session không có quyền
+    debugLog('CONTEXT', `Error getting groups: ${e}`);
   }
 
-  // 3. Lấy thông tin target user nếu có
+  try {
+    // 3. Lấy danh sách bạn bè
+    const friends = await api.getAllFriends();
+    if (Array.isArray(friends)) {
+      context.totalFriends = friends.length;
+      context.friends = friends.map((f: any) => ({
+        userId: f.userId,
+        displayName: f.displayName || f.zaloName || 'Không tên',
+        gender: f.gender === 0 ? 'Nam' : f.gender === 1 ? 'Nữ' : 'Không xác định',
+      }));
+      debugLog('CONTEXT', `Friends: ${context.totalFriends}`);
+    }
+  } catch (e) {
+    debugLog('CONTEXT', `Error getting friends: ${e}`);
+  }
+
+  // 4. Lấy thông tin target user nếu có
   if (targetUserId) {
     try {
       const userRes = await api.getUserInfo(targetUserId);
@@ -110,14 +165,23 @@ export function formatContextForPrompt(context: EnvironmentContext): string {
   }
   lines.push('');
 
-  // Friend requests
-  if (context.pendingFriendRequests.length > 0) {
-    lines.push(`### Lời mời kết bạn đang chờ (${context.pendingFriendRequests.length}):`);
-    for (const req of context.pendingFriendRequests.slice(0, 5)) {
-      lines.push(`- ${req.displayName} (${req.userId}): "${req.message}"`);
+  // Joined groups
+  lines.push(`### Nhóm bot tham gia (${context.totalGroups} nhóm):`);
+  if (context.joinedGroups.length > 0) {
+    for (const g of context.joinedGroups) {
+      lines.push(`- ${g.name} (ID: ${g.groupId}) - ${g.totalMember} thành viên`);
     }
-    lines.push('');
   }
+  lines.push('');
+
+  // Friends list
+  lines.push(`### Danh sách bạn bè (${context.totalFriends} người):`);
+  if (context.friends.length > 0) {
+    for (const f of context.friends) {
+      lines.push(`- ${f.displayName} (ID: ${f.userId}) - ${f.gender}`);
+    }
+  }
+  lines.push('');
 
   // Target user
   if (context.targetUserInfo) {
