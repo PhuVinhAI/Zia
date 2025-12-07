@@ -4,9 +4,13 @@
 import { debugLog } from '../../core/logger/logger.js';
 import type { AgentTask } from '../../infrastructure/database/schema.js';
 import { ThreadType } from '../../infrastructure/zalo/zalo.service.js';
-import { getThreadType, setThreadType } from '../../modules/gateway/handlers/response.handler.js';
-import { saveResponseToHistory, saveSentMessage } from '../../shared/utils/history/history.js';
-import { splitMessage } from '../../shared/utils/message/messageChunker.js';
+import { saveResponseToHistory } from '../../shared/utils/history/history.js';
+import {
+  getThreadType,
+  sendTextMessage,
+  setThreadType,
+} from '../../shared/utils/message/messageSender.js';
+import { saveSentMessage } from '../../shared/utils/message/messageStore.js';
 
 export interface ExecutionResult {
   success: boolean;
@@ -34,6 +38,7 @@ export async function executeTask(api: any, task: AgentTask): Promise<ExecutionR
 /**
  * Gửi tin nhắn
  * Hỗ trợ targetDescription - agent sẽ resolve từ danh sách nhóm/bạn bè
+ * Sử dụng shared sendTextMessage để hỗ trợ mention/tag và markdown
  */
 async function executeSendMessage(
   api: any,
@@ -96,42 +101,46 @@ async function executeSendMessage(
 
     debugLog('EXECUTOR', `ThreadType for ${threadId}: ${threadType}`);
 
-    // Chia nhỏ tin nhắn nếu quá dài
-    const chunks = splitMessage(payload.message);
-    debugLog('EXECUTOR', `Message split into ${chunks.length} chunks`);
+    // Sử dụng shared sendTextMessage để gửi tin nhắn
+    // Hỗ trợ đầy đủ: mention [mention:ID:Name], markdown, auto-chunking
+    const result = await sendTextMessage(api, payload.message, threadId, {
+      source: 'background-agent',
+      parseMarkdown: true,
+      sendMediaImages: true,
+      sendCodeFiles: true,
+      sendLinks: true,
+    });
 
-    let lastResult: any = null;
-    let msgIndex = -1;
-
-    for (let i = 0; i < chunks.length; i++) {
-      const chunk = chunks[i];
-      debugLog('EXECUTOR', `Sending chunk ${i + 1}/${chunks.length} (${chunk.length} chars)`);
-
-      lastResult = await api.sendMessage(chunk, threadId, threadType);
-
-      // Lưu vào sent messages để AI có thể quote và undo
-      msgIndex = saveSentMessage(threadId, lastResult.msgId, lastResult.cliMsgId || '', chunk);
-
-      // Delay nhỏ giữa các chunk để tránh rate limit
-      if (i < chunks.length - 1) {
-        await new Promise((resolve) => setTimeout(resolve, 500));
-      }
+    if (!result.success) {
+      debugLog('EXECUTOR', `Failed to send message: ${result.error}`);
+      return {
+        success: false,
+        error: result.error || 'Unknown error',
+      };
     }
+
+    // Lưu vào sent messages để AI có thể quote và undo
+    const msgIndex = saveSentMessage(
+      threadId,
+      result.msgId || '',
+      '',
+      payload.message.substring(0, 200),
+    );
 
     // Lưu toàn bộ message vào history để AI nhớ đã gửi tin nhắn này
     await saveResponseToHistory(threadId, payload.message);
 
     debugLog('EXECUTOR', `Message saved to history and sent_messages (index=${msgIndex})`);
-
     debugLog('EXECUTOR', `Message sent successfully`);
+
     return {
       success: true,
       data: {
-        msgId: lastResult?.msgId,
+        msgId: result.msgId,
         threadId,
         msgIndex,
         savedToHistory: true,
-        chunks: chunks.length,
+        chunks: result.chunks,
       },
     };
   } catch (error: any) {
@@ -140,7 +149,6 @@ async function executeSendMessage(
 
     // Xử lý các lỗi cụ thể từ Zalo API
     if (errorMsg.includes('Không thể nhận tin nhắn từ bạn')) {
-      // Bot không phải thành viên của nhóm hoặc bị chặn
       debugLog('EXECUTOR', `Bot cannot send to thread ${threadId} - not a member or blocked`);
       return {
         success: false,
@@ -150,7 +158,6 @@ async function executeSendMessage(
     }
 
     if (errorMsg.includes('Nội dung quá dài')) {
-      // Tin nhắn vẫn quá dài sau khi chia - không nên xảy ra
       debugLog('EXECUTOR', `Message still too long after chunking`);
       return {
         success: false,

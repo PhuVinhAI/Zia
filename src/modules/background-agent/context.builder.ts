@@ -208,6 +208,13 @@ export function formatContextForPrompt(context: EnvironmentContext): string {
     lines.push('');
   }
 
+  // Hướng dẫn cú pháp mention
+  lines.push(`### Cú pháp đặc biệt:`);
+  lines.push(`Để tag/mention người dùng trong tin nhắn, sử dụng cú pháp: [mention:USER_ID:TÊN_HIỂN_THỊ]`);
+  lines.push(`Ví dụ: "Chào [mention:123456789:Nguyễn Văn A] nhé!" sẽ hiển thị thành "Chào @Nguyễn Văn A nhé!" với tag thực sự trên Zalo.`);
+  lines.push(`Lưu ý: USER_ID phải là ID số từ danh sách bạn bè hoặc thành viên nhóm ở trên.`);
+  lines.push('');
+
   lines.push(`### Thời gian: ${context.timestamp.toLocaleString('vi-VN')}`);
 
   return lines.join('\n');
