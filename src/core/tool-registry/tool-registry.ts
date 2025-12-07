@@ -154,6 +154,9 @@ export function parseToolCalls(response: string): ToolCall[] {
     const afterTag = response.slice(tagEnd);
     const closeTagIndex = findCloseTag(afterTag);
 
+    // Luôn parse inline params trước
+    const inlineParsed = parseInlineParams(inlineParams);
+
     if (closeTagIndex !== -1) {
       // Có [/tool] -> extract JSON giữa tag mở và tag đóng
       const jsonSection = afterTag.slice(0, closeTagIndex).trim();
@@ -162,20 +165,21 @@ export function parseToolCalls(response: string): ToolCall[] {
       if (jsonSection.startsWith('{')) {
         const parsed = safeParseJson(jsonSection);
         if (parsed) {
-          params = parsed;
+          // Merge inline params với JSON body (JSON body có priority cao hơn)
+          params = { ...inlineParsed, ...parsed };
         } else {
-          // Fallback to inline params
-          params = parseInlineParams(inlineParams);
+          // Fallback to inline params only
+          params = inlineParsed;
         }
       } else {
-        params = parseInlineParams(inlineParams);
+        params = inlineParsed;
       }
 
       // Di chuyển regex index qua [/tool] để không parse lại phần đã xử lý
       TOOL_OPEN_REGEX.lastIndex = tagEnd + closeTagIndex + 7;
     } else {
       // Không có [/tool] -> chỉ dùng inline params
-      params = parseInlineParams(inlineParams);
+      params = inlineParsed;
     }
 
     calls.push({ toolName, params, rawTag });
