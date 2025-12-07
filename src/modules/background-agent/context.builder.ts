@@ -69,11 +69,16 @@ export async function buildEnvironmentContext(
   try {
     // 1. Lấy danh sách online
     const onlineRes = await api.getFriendOnlines();
-    context.onlineUsers = onlineRes.onlines || [];
+    context.onlineUsers = onlineRes?.onlines || [];
     context.onlineCount = context.onlineUsers.length;
     debugLog('CONTEXT', `Online users: ${context.onlineCount}`);
-  } catch (e) {
-    debugLog('CONTEXT', `Error getting online users: ${e}`);
+  } catch (e: any) {
+    // Bỏ qua lỗi JSON parse - API có thể trả về response không hợp lệ khi không có ai online
+    if (e?.message?.includes('JSON') || e?.message?.includes('Unexpected')) {
+      debugLog('CONTEXT', `No online users (API returned invalid response)`);
+    } else {
+      debugLog('CONTEXT', `Error getting online users: ${e?.message || e}`);
+    }
   }
 
   try {

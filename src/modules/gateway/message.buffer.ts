@@ -42,8 +42,9 @@ let subscription: Subscription | null = null;
 
 /**
  * Bắt đầu typing với auto-refresh
+ * Export để handleMixedContent có thể gọi sau khi check mention
  */
-function startTypingWithRefresh(api: any, threadId: string) {
+export function startTypingWithRefresh(api: any, threadId: string) {
   let state = typingStates.get(threadId);
   if (!state) {
     state = { isTyping: false, interval: null };
@@ -154,8 +155,7 @@ export function initMessageBuffer() {
         const threadId = group$.key;
 
         return group$.pipe(
-          // Bắt đầu typing khi có tin mới
-          tap((data) => startTypingWithRefresh(data.api, threadId)),
+          // Không typing ở đây - để handleMixedContent quyết định sau khi check mention
           // Debounce: đợi user ngừng gửi tin trong BUFFER_DELAY_MS
           bufferWhen(() => group$.pipe(debounceTime(getBufferDelayMs()))),
           // Chỉ xử lý khi có tin

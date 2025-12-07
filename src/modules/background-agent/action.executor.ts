@@ -5,6 +5,7 @@ import { debugLog } from '../../core/logger/logger.js';
 import type { AgentTask } from '../../infrastructure/database/schema.js';
 import { saveResponseToHistory, saveSentMessage } from '../../shared/utils/history.js';
 import { getThreadType } from '../../modules/gateway/response.handler.js';
+import { splitMessage } from '../../shared/utils/messageChunker.js';
 
 export interface ExecutionResult {
   success: boolean;
@@ -70,25 +71,43 @@ async function executeSendMessage(
     debugLog('EXECUTOR', `Sending message to ${threadId}: ${payload.message.substring(0, 50)}...`);
 
     const threadType = getThreadType(threadId);
-    const result = await api.sendMessage(payload.message, threadId, threadType);
+    
+    // Chia nhỏ tin nhắn nếu quá dài
+    const chunks = splitMessage(payload.message);
+    debugLog('EXECUTOR', `Message split into ${chunks.length} chunks`);
+    
+    let lastResult: any = null;
+    let msgIndex = -1;
+    
+    for (let i = 0; i < chunks.length; i++) {
+      const chunk = chunks[i];
+      debugLog('EXECUTOR', `Sending chunk ${i + 1}/${chunks.length} (${chunk.length} chars)`);
+      
+      lastResult = await api.sendMessage(chunk, threadId, threadType);
+      
+      // Lưu vào sent messages để AI có thể quote và undo
+      msgIndex = saveSentMessage(
+        threadId,
+        lastResult.msgId,
+        lastResult.cliMsgId || '',
+        chunk,
+      );
+      
+      // Delay nhỏ giữa các chunk để tránh rate limit
+      if (i < chunks.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+    }
 
-    // Lưu vào history để AI nhớ đã gửi tin nhắn này
+    // Lưu toàn bộ message vào history để AI nhớ đã gửi tin nhắn này
     await saveResponseToHistory(threadId, payload.message);
-
-    // Lưu vào sent messages để AI có thể quote và undo
-    const msgIndex = saveSentMessage(
-      threadId,
-      result.msgId,
-      result.cliMsgId || '',
-      payload.message,
-    );
 
     debugLog('EXECUTOR', `Message saved to history and sent_messages (index=${msgIndex})`);
 
     debugLog('EXECUTOR', `Message sent successfully`);
     return {
       success: true,
-      data: { msgId: result.msgId, threadId, msgIndex, savedToHistory: true },
+      data: { msgId: lastResult?.msgId, threadId, msgIndex, savedToHistory: true, chunks: chunks.length },
     };
   } catch (error: any) {
     debugLog('EXECUTOR', `Failed to send message: ${error.message}`);

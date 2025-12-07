@@ -23,6 +23,7 @@ import type { ClassifiedMessage, MessageType } from './classifier.js';
 // Import từ các module mới
 import { classifyMessage, classifyMessages, countMessageTypes, isBotMentioned } from './classifier.js';
 import { addQuoteMedia, prepareMediaParts } from './media.processor.js';
+import { startTypingWithRefresh } from './message.buffer.js';
 import { buildPrompt, extractTextFromMessages, processPrefix } from './prompt.builder.js';
 import { extractQuoteInfo } from './quote.parser.js';
 import { checkRateLimit, markApiCall } from './rate-limit.guard.js';
@@ -83,11 +84,11 @@ export async function handleMixedContent(
 
     if (signal?.aborted) return debugLog('MIXED', 'Aborted before processing');
 
-    // Gửi typing event với đúng ThreadType
+    // Gửi typing event với đúng ThreadType (có auto-refresh)
     const threadType = isGroup ? ThreadType.Group : ThreadType.User;
     // Lưu ThreadType để các hàm response sử dụng
     setThreadType(threadId, threadType);
-    await api.sendTypingEvent(threadId, threadType);
+    startTypingWithRefresh(api, threadId);
 
     // 5. Lấy history và context
     const history = getHistory(threadId);
