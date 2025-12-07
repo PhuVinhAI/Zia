@@ -12,8 +12,8 @@ import {
   type Table,
   TextRun,
 } from 'docx';
-import type { Block, InlineToken } from '../../../../../shared/utils/markdownParser.js';
-import { hasStyle, parseMarkdown } from '../../../../../shared/utils/markdownParser.js';
+import type { Block, InlineToken } from '../../shared/utils/markdownParser.js';
+import { hasStyle, parseMarkdown } from '../../shared/utils/markdownParser.js';
 import { buildBadgeParagraph, hasBadges, parseBadges, removeBadgeSyntax } from './badgeBuilder.js';
 import { buildBox, hasBoxSyntax, parseBoxSyntax } from './boxBuilder.js';
 import { CALLOUT_STYLES, HEADING_LEVELS } from './constants.js';

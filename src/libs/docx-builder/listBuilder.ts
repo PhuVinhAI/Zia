@@ -3,7 +3,7 @@
  */
 
 import { Paragraph, TextRun } from 'docx';
-import { parseInline } from '../../../../../shared/utils/markdownParser.js';
+import { parseInline } from '../../shared/utils/markdownParser.js';
 import { tokensToTextRuns } from './contentBuilder.js';
 import { getTheme } from './themes.js';
 import type { DocumentTheme } from './types.js';

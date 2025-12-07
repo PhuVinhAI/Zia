@@ -33,7 +33,7 @@ type MediaHandler = (
 // ═══════════════════════════════════════════════════
 
 const mediaHandlers: Record<string, MediaHandler> = {
-  sticker: async (api, item) => {
+  sticker: async (api, item, notes) => {
     if (!item.stickerId) return null;
     try {
       const details = await api.getStickersDetail(item.stickerId);
@@ -41,6 +41,7 @@ const mediaHandlers: Record<string, MediaHandler> = {
       if (url) return { type: 'image', url, mimeType: 'image/png' };
     } catch {
       debugLog('MEDIA', `Failed to get sticker ${item.stickerId}`);
+      notes.push('(Không thể load sticker từ tin cũ)');
     }
     return null;
   },
@@ -62,9 +63,11 @@ const mediaHandlers: Record<string, MediaHandler> = {
   },
 
   video: async (_api, item, notes) => {
-    if (item.url && item.fileSize && item.fileSize < 20 * 1024 * 1024) {
+    // Nếu có URL và (không có fileSize hoặc fileSize < 20MB) → gửi video
+    if (item.url && (!item.fileSize || item.fileSize < 20 * 1024 * 1024)) {
       return { type: 'video', url: item.url, mimeType: 'video/mp4' };
     }
+    // Nếu video quá lớn hoặc không có URL → dùng thumbnail
     if (item.thumbUrl) {
       console.log(`[Bot] 🖼️ Video quá lớn, dùng thumbnail`);
       notes.push(`(Video ${item.duration || 0}s quá lớn, chỉ có thumbnail)`);
@@ -74,6 +77,12 @@ const mediaHandlers: Record<string, MediaHandler> = {
   },
 
   voice: async (_api, item) => {
+    if (!item.url) return null;
+    return { type: 'audio', url: item.url, mimeType: item.mimeType || 'audio/aac' };
+  },
+
+  // Alias for voice (quote parser uses 'audio' type)
+  audio: async (_api, item) => {
     if (!item.url) return null;
     return { type: 'audio', url: item.url, mimeType: item.mimeType || 'audio/aac' };
   },

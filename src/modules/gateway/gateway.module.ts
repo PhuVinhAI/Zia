@@ -69,4 +69,13 @@ export {
   notifyToolCall,
   type ToolHandlerResult,
 } from './tool.handler.js';
+// Tool Output Handler
+export {
+  handleAllToolOutputs,
+  handleToolOutput,
+  sendDocument,
+  sendImage,
+  sendImages,
+  sendVoice,
+} from './tool.output.handler.js';
 export { isAllowedUser, isGroupAllowed, isUserAllowed } from './user.filter.js';
