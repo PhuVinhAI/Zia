@@ -13,8 +13,19 @@ export const groupMembersCache = new Map<
 >();
 
 /**
+ * Delay ngẫu nhiên để giả lập hành vi người dùng
+ * @param min - Thời gian tối thiểu (ms)
+ * @param max - Thời gian tối đa (ms)
+ */
+function randomDelay(min: number, max: number): Promise<void> {
+  const delay = Math.floor(Math.random() * (max - min + 1)) + min;
+  return new Promise((resolve) => setTimeout(resolve, delay));
+}
+
+/**
  * Lấy thông tin chi tiết của nhiều user từ danh sách ID
  * Gọi API getUserInfo cho từng user và trả về danh sách đầy đủ
+ * Có delay random giữa các lần gọi để giống người dùng thật
  */
 async function fetchUserDetails(
   api: any,
@@ -24,8 +35,14 @@ async function fetchUserDetails(
 ): Promise<Array<{ name: string; id: string; role: string }>> {
   const members: Array<{ name: string; id: string; role: string }> = [];
 
-  for (const id of memberIds) {
+  for (let i = 0; i < memberIds.length; i++) {
+    const id = memberIds[i];
     let name = `User ${id.slice(-4)}`; // Tên mặc định nếu không lấy được
+
+    // Delay random từ 300ms - 800ms giữa các lần gọi (trừ lần đầu)
+    if (i > 0) {
+      await randomDelay(300, 800);
+    }
 
     try {
       // Gọi API lấy thông tin user
@@ -38,6 +55,8 @@ async function fetchUserDetails(
       }
     } catch (e: any) {
       debugLog('TOOL:getGroupMembers', `Failed to get user info for ${id}: ${e.message}`);
+      // Nếu bị lỗi (có thể rate limit), delay thêm một chút
+      await randomDelay(500, 1000);
     }
 
     // Xác định role
