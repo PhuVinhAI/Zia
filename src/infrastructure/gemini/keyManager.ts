@@ -8,7 +8,6 @@ import { debugLog } from '../../core/logger/logger.js';
 
 // Danh sách models theo thứ tự ưu tiên
 export const GEMINI_MODELS = [
-  'models/gemini-2.5-pro',
   'models/gemini-flash-latest',
   'models/gemini-robotics-er-1.5-preview',
   'models/gemini-flash-lite-latest',
@@ -17,7 +16,6 @@ export const GEMINI_MODELS = [
 export type GeminiModel = (typeof GEMINI_MODELS)[number];
 
 const MODEL_NAMES: Record<GeminiModel, string> = {
-  'models/gemini-2.5-pro': '2.5 Pro',
   'models/gemini-flash-latest': 'Flash Latest',
   'models/gemini-robotics-er-1.5-preview': 'Robotics ER 1.5',
   'models/gemini-flash-lite-latest': 'Flash Lite Latest',
