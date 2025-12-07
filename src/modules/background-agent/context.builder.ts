@@ -17,6 +17,12 @@ export interface GroupInfo {
   totalMember: number;
 }
 
+export interface FriendInfo {
+  userId: string;
+  displayName: string;
+  gender: string;
+}
+
 export interface EnvironmentContext {
   // Online status
   onlineUsers: Array<{ userId: string; status: string }>;
@@ -24,6 +30,9 @@ export interface EnvironmentContext {
   // Danh sách nhóm bot tham gia
   joinedGroups: GroupInfo[];
   totalGroups: number;
+  // Danh sách bạn bè
+  friends: FriendInfo[];
+  totalFriends: number;
   // Target user info (nếu có)
   targetUserInfo?: {
     userId: string;
@@ -51,6 +60,8 @@ export async function buildEnvironmentContext(
     onlineCount: 0,
     joinedGroups: [],
     totalGroups: 0,
+    friends: [],
+    totalFriends: 0,
     relevantMemories: [],
     timestamp: new Date(),
   };
@@ -100,7 +111,23 @@ export async function buildEnvironmentContext(
     debugLog('CONTEXT', `Error getting groups: ${e}`);
   }
 
-  // 3. Lấy thông tin target user nếu có
+  try {
+    // 3. Lấy danh sách bạn bè
+    const friends = await api.getAllFriends();
+    if (Array.isArray(friends)) {
+      context.totalFriends = friends.length;
+      context.friends = friends.map((f: any) => ({
+        userId: f.userId,
+        displayName: f.displayName || f.zaloName || 'Không tên',
+        gender: f.gender === 0 ? 'Nam' : f.gender === 1 ? 'Nữ' : 'Không xác định',
+      }));
+      debugLog('CONTEXT', `Friends: ${context.totalFriends}`);
+    }
+  } catch (e) {
+    debugLog('CONTEXT', `Error getting friends: ${e}`);
+  }
+
+  // 4. Lấy thông tin target user nếu có
   if (targetUserId) {
     try {
       const userRes = await api.getUserInfo(targetUserId);
@@ -143,6 +170,15 @@ export function formatContextForPrompt(context: EnvironmentContext): string {
   if (context.joinedGroups.length > 0) {
     for (const g of context.joinedGroups) {
       lines.push(`- ${g.name} (ID: ${g.groupId}) - ${g.totalMember} thành viên`);
+    }
+  }
+  lines.push('');
+
+  // Friends list
+  lines.push(`### Danh sách bạn bè (${context.totalFriends} người):`);
+  if (context.friends.length > 0) {
+    for (const f of context.friends) {
+      lines.push(`- ${f.displayName} (ID: ${f.userId}) - ${f.gender}`);
     }
   }
   lines.push('');

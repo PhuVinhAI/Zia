@@ -15,6 +15,8 @@ describe('Context Builder', () => {
         onlineCount: 0,
         joinedGroups: [],
         totalGroups: 0,
+        friends: [],
+        totalFriends: 0,
         relevantMemories: [],
         timestamp: new Date('2024-03-15T10:00:00'),
       };
@@ -34,6 +36,8 @@ describe('Context Builder', () => {
         onlineCount: 2,
         joinedGroups: [],
         totalGroups: 0,
+        friends: [],
+        totalFriends: 0,
         relevantMemories: [],
         timestamp: new Date(),
       };
@@ -53,6 +57,8 @@ describe('Context Builder', () => {
           { groupId: 'g2', name: 'Nhóm Test 2', totalMember: 100 },
         ],
         totalGroups: 2,
+        friends: [],
+        totalFriends: 0,
         relevantMemories: [],
         timestamp: new Date(),
       };
@@ -63,12 +69,35 @@ describe('Context Builder', () => {
       expect(result).toContain('50 thành viên');
     });
 
+    it('should include friends list', () => {
+      const context: EnvironmentContext = {
+        onlineUsers: [],
+        onlineCount: 0,
+        joinedGroups: [],
+        totalGroups: 0,
+        friends: [
+          { userId: 'f1', displayName: 'Nguyễn Văn A', gender: 'Nam' },
+          { userId: 'f2', displayName: 'Trần Thị B', gender: 'Nữ' },
+        ],
+        totalFriends: 2,
+        relevantMemories: [],
+        timestamp: new Date(),
+      };
+
+      const result = formatContextForPrompt(context);
+      expect(result).toContain('Danh sách bạn bè (2 người)');
+      expect(result).toContain('Nguyễn Văn A');
+      expect(result).toContain('Nam');
+    });
+
     it('should include target user info', () => {
       const context: EnvironmentContext = {
         onlineUsers: [],
         onlineCount: 0,
         joinedGroups: [],
         totalGroups: 0,
+        friends: [],
+        totalFriends: 0,
         relevantMemories: [],
         timestamp: new Date(),
         targetUserInfo: {
@@ -94,6 +123,8 @@ describe('Context Builder', () => {
         onlineCount: 0,
         joinedGroups: [],
         totalGroups: 0,
+        friends: [],
+        totalFriends: 0,
         relevantMemories: [],
         timestamp: new Date(),
         targetUserInfo: {
@@ -115,6 +146,8 @@ describe('Context Builder', () => {
         onlineCount: 0,
         joinedGroups: [],
         totalGroups: 0,
+        friends: [],
+        totalFriends: 0,
         relevantMemories: [
           'User likes coffee',
           'User birthday is March 15',
@@ -134,6 +167,8 @@ describe('Context Builder', () => {
         onlineCount: 0,
         joinedGroups: [],
         totalGroups: 0,
+        friends: [],
+        totalFriends: 0,
         relevantMemories: [],
         timestamp: new Date('2024-03-15T10:30:00'),
       };
