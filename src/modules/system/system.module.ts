@@ -15,6 +15,7 @@ import { googleSearchTool } from './tools/search/googleSearch.js';
 import { youtubeChannelTool, youtubeSearchTool, youtubeVideoTool } from './tools/search/youtube.js';
 // Social tools
 import { createNoteTool, editNoteTool, getListBoardTool } from './tools/social/board.js';
+import { forwardMessageTool } from './tools/social/forwardMessage.js';
 import { getAllFriendsTool } from './tools/social/getAllFriends.js';
 import { getFriendOnlinesTool } from './tools/social/getFriendOnlines.js';
 import { getGroupMembersTool } from './tools/social/getGroupMembers.js';
@@ -80,6 +81,8 @@ export class SystemModule extends BaseModule {
     createReminderTool,
     getReminderTool,
     removeReminderTool,
+    // Forward message tool
+    forwardMessageTool,
     // Admin tools
     flushLogsTool,
   ];

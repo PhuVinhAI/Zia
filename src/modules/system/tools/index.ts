@@ -18,6 +18,7 @@ export { youtubeChannelTool, youtubeSearchTool, youtubeVideoTool } from './searc
 
 // Social tools
 export { createNoteTool, editNoteTool, getListBoardTool } from './social/board.js';
+export { forwardMessageTool } from './social/forwardMessage.js';
 export { getAllFriendsTool } from './social/getAllFriends.js';
 export { getFriendOnlinesTool } from './social/getFriendOnlines.js';
 export { getGroupMembersTool, groupMembersCache } from './social/getGroupMembers.js';

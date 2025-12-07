@@ -113,3 +113,82 @@ describe('Mention Parser Integration', () => {
     expect(result.text.endsWith('! How are you?')).toBe(true);
   });
 });
+
+
+// ═══════════════════════════════════════════════════
+// Test case cho bug: mention position bị lệch khi có markdown
+// Issue: Khi text có markdown (**bold**, *italic*), position của mention
+// được tính trên text có markdown, nhưng sau khi markdown bị strip,
+// position bị sai.
+// Fix: Parse markdown TRƯỚC, rồi mới parse mentions trên text đã clean.
+// ═══════════════════════════════════════════════════
+
+import { parseMarkdownToZalo } from '../../../src/shared/utils/markdown/markdownToZalo.js';
+
+describe('Mention + Markdown Integration', () => {
+  test('mention position đúng sau khi markdown được strip', async () => {
+    // Simulate flow trong sendTextMessage:
+    // 1. Parse markdown trước
+    // 2. Parse mentions sau
+
+    const input = 'Chào **[mention:123:Nguyễn Văn A]** nhé!';
+
+    // Step 1: Parse markdown (strip **bold**)
+    const markdownParsed = await parseMarkdownToZalo(input);
+    // Sau khi strip markdown: "Chào [mention:123:Nguyễn Văn A] nhé!"
+    expect(markdownParsed.text).toBe('Chào [mention:123:Nguyễn Văn A] nhé!');
+
+    // Step 2: Parse mentions trên text đã clean
+    const result = parseMentions(markdownParsed.text);
+    expect(result.text).toBe('Chào @Nguyễn Văn A nhé!');
+    expect(result.mentions).toHaveLength(1);
+    // Position phải là 5 (sau "Chào "), không phải 7 (nếu tính cả **)
+    expect(result.mentions[0].pos).toBe(5);
+    expect(result.mentions[0].len).toBe('@Nguyễn Văn A'.length);
+  });
+
+  test('multiple mentions với markdown xen kẽ', async () => {
+    const input = '**[mention:111:A]** và *[mention:222:B]* nói chuyện';
+
+    // Step 1: Parse markdown
+    const markdownParsed = await parseMarkdownToZalo(input);
+    // Sau khi strip: "[mention:111:A] và [mention:222:B] nói chuyện"
+    expect(markdownParsed.text).toBe('[mention:111:A] và [mention:222:B] nói chuyện');
+
+    // Step 2: Parse mentions
+    const result = parseMentions(markdownParsed.text);
+    expect(result.text).toBe('@A và @B nói chuyện');
+    expect(result.mentions).toHaveLength(2);
+
+    // @A ở vị trí 0
+    expect(result.mentions[0].pos).toBe(0);
+    expect(result.mentions[0].len).toBe(2);
+
+    // @B ở vị trí 6 (sau "@A và " = 2 + 4 = 6)
+    expect(result.mentions[1].pos).toBe(6);
+    expect(result.mentions[1].len).toBe(2);
+  });
+
+  test('mention trong heading markdown', async () => {
+    const input = '# Chào [mention:123:Admin]';
+
+    const markdownParsed = await parseMarkdownToZalo(input);
+    // Heading # bị strip
+    expect(markdownParsed.text).toBe('Chào [mention:123:Admin]');
+
+    const result = parseMentions(markdownParsed.text);
+    expect(result.text).toBe('Chào @Admin');
+    expect(result.mentions[0].pos).toBe(5);
+  });
+
+  test('mention với italic và bold lồng nhau', async () => {
+    const input = 'Ê ***[mention:456:Vinh]*** ơi, có việc!';
+
+    const markdownParsed = await parseMarkdownToZalo(input);
+    expect(markdownParsed.text).toBe('Ê [mention:456:Vinh] ơi, có việc!');
+
+    const result = parseMentions(markdownParsed.text);
+    expect(result.text).toBe('Ê @Vinh ơi, có việc!');
+    expect(result.mentions[0].pos).toBe(2); // Sau "Ê "
+  });
+});

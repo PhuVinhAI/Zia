@@ -1,87 +1,99 @@
 /**
  * Integration Test: Zalo Types
  * Test các type definitions cho Zalo API
+ * 
+ * TextStyle sử dụng string values theo zca-js API:
+ * - 'b' = Bold
+ * - 'i' = Italic
+ * - 'u' = Underline
+ * - 's' = StrikeThrough
+ * - 'c_xxx' = Color (hex)
+ * - 'f_xx' = Font size
  */
 
 import { describe, test, expect } from 'bun:test';
 import { TextStyle } from '../../../src/shared/types/zalo.types.js';
 
 describe('Zalo Types', () => {
-  describe('TextStyle', () => {
-    test('TextStyle.Bold = 1', () => {
-      expect(TextStyle.Bold).toBe(1);
+  describe('TextStyle String Values', () => {
+    test('TextStyle.Bold = "b"', () => {
+      expect(TextStyle.Bold).toBe('b');
     });
 
-    test('TextStyle.Italic = 2', () => {
-      expect(TextStyle.Italic).toBe(2);
+    test('TextStyle.Italic = "i"', () => {
+      expect(TextStyle.Italic).toBe('i');
     });
 
-    test('TextStyle.Underline = 4', () => {
-      expect(TextStyle.Underline).toBe(4);
+    test('TextStyle.Underline = "u"', () => {
+      expect(TextStyle.Underline).toBe('u');
     });
 
-    test('TextStyle.StrikeThrough = 8', () => {
-      expect(TextStyle.StrikeThrough).toBe(8);
+    test('TextStyle.StrikeThrough = "s"', () => {
+      expect(TextStyle.StrikeThrough).toBe('s');
     });
 
-    test('TextStyle.Red = 16', () => {
-      expect(TextStyle.Red).toBe(16);
+    test('TextStyle.Red = "c_db342e"', () => {
+      expect(TextStyle.Red).toBe('c_db342e');
     });
 
-    test('TextStyle.Blue = 32', () => {
-      expect(TextStyle.Blue).toBe(32);
+    test('TextStyle.Orange = "c_f27806"', () => {
+      expect(TextStyle.Orange).toBe('c_f27806');
     });
 
-    test('TextStyle.Big = 64', () => {
-      expect(TextStyle.Big).toBe(64);
+    test('TextStyle.Yellow = "c_f7b503"', () => {
+      expect(TextStyle.Yellow).toBe('c_f7b503');
     });
 
-    test('TextStyle.Small = 128', () => {
-      expect(TextStyle.Small).toBe(128);
+    test('TextStyle.Green = "c_15a85f"', () => {
+      expect(TextStyle.Green).toBe('c_15a85f');
+    });
+
+    test('TextStyle.Blue = "c_0068ff"', () => {
+      expect(TextStyle.Blue).toBe('c_0068ff');
+    });
+
+    test('TextStyle.Big = "f_18"', () => {
+      expect(TextStyle.Big).toBe('f_18');
+    });
+
+    test('TextStyle.Small = "f_13"', () => {
+      expect(TextStyle.Small).toBe('f_13');
     });
   });
 
-  describe('TextStyle Combinations', () => {
-    test('Bold + Italic = 3', () => {
-      expect(TextStyle.Bold | TextStyle.Italic).toBe(3);
-    });
-
-    test('Bold + Big = 65', () => {
-      expect(TextStyle.Bold | TextStyle.Big).toBe(65);
-    });
-
-    test('All styles combined', () => {
-      const allStyles = 
-        TextStyle.Bold | 
-        TextStyle.Italic | 
-        TextStyle.Underline | 
-        TextStyle.StrikeThrough |
-        TextStyle.Red |
-        TextStyle.Blue |
-        TextStyle.Big |
-        TextStyle.Small;
+  describe('TextStyle Usage', () => {
+    test('Multiple styles require separate entries', () => {
+      // Zalo API yêu cầu mỗi style là một entry riêng
+      const boldItalicStyles = [
+        { start: 0, len: 5, st: TextStyle.Bold },
+        { start: 0, len: 5, st: TextStyle.Italic },
+      ];
       
-      expect(allStyles).toBe(255);
-    });
-  });
-
-  describe('TextStyle Bitwise Operations', () => {
-    test('Check if style contains Bold', () => {
-      const style = TextStyle.Bold | TextStyle.Italic;
-      expect((style & TextStyle.Bold) !== 0).toBe(true);
-      expect((style & TextStyle.Underline) !== 0).toBe(false);
+      expect(boldItalicStyles).toHaveLength(2);
+      expect(boldItalicStyles[0].st).toBe('b');
+      expect(boldItalicStyles[1].st).toBe('i');
     });
 
-    test('Add style to existing', () => {
-      let style: number = TextStyle.Bold;
-      style = style | TextStyle.Italic;
-      expect(style).toBe(3);
+    test('Style object structure', () => {
+      const style = {
+        start: 10,
+        len: 5,
+        st: TextStyle.Bold,
+      };
+      
+      expect(style.start).toBe(10);
+      expect(style.len).toBe(5);
+      expect(style.st).toBe('b');
     });
 
-    test('Remove style from existing', () => {
-      let style: number = TextStyle.Bold | TextStyle.Italic;
-      style = style & ~TextStyle.Italic;
-      expect(style).toBe(TextStyle.Bold as number);
+    test('All available styles', () => {
+      const allStyles = Object.values(TextStyle);
+      expect(allStyles).toContain('b');
+      expect(allStyles).toContain('i');
+      expect(allStyles).toContain('u');
+      expect(allStyles).toContain('s');
+      expect(allStyles).toContain('f_18');
+      expect(allStyles).toContain('f_13');
     });
   });
 });

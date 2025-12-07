@@ -24,7 +24,7 @@ import { TextStyle } from '../../types/zalo.types.js';
 interface StyleItem {
   start: number;
   len: number;
-  st: number;
+  st: string; // Zalo TextStyle string: 'b', 'i', 'u', 's', 'c_xxx', 'f_xx'
 }
 
 export interface CodeBlock {
@@ -388,22 +388,34 @@ function extractCodeBlocksAndTables(markdown: string): ExtractResult {
 // INLINE MARKDOWN TO ZALO STYLES
 // ═══════════════════════════════════════════════════
 
+/**
+ * Zalo API yêu cầu mỗi style là một entry riêng trong array
+ * Ví dụ: Bold + Italic cần 2 entries: { st: 'b' } và { st: 'i' }
+ */
 function parseInlineStyles(text: string): { text: string; styles: StyleItem[]; links: LinkItem[] } {
   const styles: StyleItem[] = [];
   const links: LinkItem[] = [];
   let result = text;
 
-  const patterns: Array<{ regex: RegExp; style: number }> = [
-    { regex: /\*\*\*(.+?)\*\*\*/g, style: TextStyle.Bold | TextStyle.Italic },
-    { regex: /\*\*(.+?)\*\*/g, style: TextStyle.Bold },
-    { regex: /~~(.+?)~~/g, style: TextStyle.StrikeThrough },
-    { regex: /(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, style: TextStyle.Italic },
-    { regex: /(?<!_)_(?!_)(.+?)(?<!_)_(?!_)/g, style: TextStyle.Italic },
-    { regex: /^#{1,3}\s+(.+)$/gm, style: TextStyle.Bold | TextStyle.Big },
-    { regex: /^>\s*(.+)$/gm, style: TextStyle.Italic },
+  // Patterns với multiple styles (array of style strings)
+  const patterns: Array<{ regex: RegExp; styleList: string[] }> = [
+    // ***bold italic*** - cần cả Bold và Italic
+    { regex: /\*\*\*(.+?)\*\*\*/g, styleList: [TextStyle.Bold, TextStyle.Italic] },
+    // **bold**
+    { regex: /\*\*(.+?)\*\*/g, styleList: [TextStyle.Bold] },
+    // ~~strikethrough~~
+    { regex: /~~(.+?)~~/g, styleList: [TextStyle.StrikeThrough] },
+    // *italic* (không phải **)
+    { regex: /(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, styleList: [TextStyle.Italic] },
+    // _italic_ (không phải __)
+    { regex: /(?<!_)_(?!_)(.+?)(?<!_)_(?!_)/g, styleList: [TextStyle.Italic] },
+    // # Heading - Bold + Big
+    { regex: /^#{1,3}\s+(.+)$/gm, styleList: [TextStyle.Bold, TextStyle.Big] },
+    // > Blockquote - Italic
+    { regex: /^>\s*(.+)$/gm, styleList: [TextStyle.Italic] },
   ];
 
-  for (const { regex, style } of patterns) {
+  for (const { regex, styleList } of patterns) {
     let match: RegExpExecArray | null;
     regex.lastIndex = 0;
 
@@ -413,7 +425,11 @@ function parseInlineStyles(text: string): { text: string; styles: StyleItem[]; l
       const startIndex = match.index;
 
       result = result.slice(0, startIndex) + content + result.slice(startIndex + fullMatch.length);
-      styles.push({ start: startIndex, len: content.length, st: style });
+      
+      // Thêm một entry cho mỗi style trong styleList
+      for (const st of styleList) {
+        styles.push({ start: startIndex, len: content.length, st: st as any });
+      }
       regex.lastIndex = 0;
     }
   }
@@ -437,13 +453,10 @@ function parseInlineStyles(text: string): { text: string; styles: StyleItem[]; l
       links.push({ url, text: linkText });
     }
 
-    // Replace bằng text có style underline
+    // Replace bằng text có style underline + blue (2 entries riêng)
     result = result.slice(0, startIndex) + linkText + result.slice(startIndex + fullMatch.length);
-    styles.push({
-      start: startIndex,
-      len: linkText.length,
-      st: TextStyle.Blue | TextStyle.Underline,
-    });
+    styles.push({ start: startIndex, len: linkText.length, st: TextStyle.Blue as any });
+    styles.push({ start: startIndex, len: linkText.length, st: TextStyle.Underline as any });
     linkRegex.lastIndex = 0;
   }
 
@@ -462,8 +475,9 @@ function parseInlineStyles(text: string): { text: string; styles: StyleItem[]; l
       links.push({ url });
     }
 
-    // Style cho URL
-    styles.push({ start: startIndex, len: url.length, st: TextStyle.Blue | TextStyle.Underline });
+    // Style cho URL (2 entries: Blue + Underline)
+    styles.push({ start: startIndex, len: url.length, st: TextStyle.Blue as any });
+    styles.push({ start: startIndex, len: url.length, st: TextStyle.Underline as any });
     bareUrlRegex.lastIndex = bareMatch.index + url.length;
   }
 
