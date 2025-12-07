@@ -1,0 +1,20 @@
+# Codeowners - Những người chịu trách nhiệm review code
+# Xem: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Mặc định - tất cả các file
+# * @username
+
+# Core modules
+# /src/core/ @username
+
+# Infrastructure
+# /src/infrastructure/ @username
+
+# Modules
+# /src/modules/ @username
+
+# Tests
+# /tests/ @username
+
+# Documentation
+# *.md @username
