@@ -15,7 +15,7 @@
  */
 
 import { ChartJSNodeCanvas } from 'chartjs-node-canvas';
-import { TextStyle } from '../types/zalo.types.js';
+import { TextStyle } from '../../types/zalo.types.js';
 
 // ═══════════════════════════════════════════════════
 // TYPES

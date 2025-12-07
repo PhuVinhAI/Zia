@@ -4,7 +4,7 @@
  */
 
 import { describe, test, expect } from 'bun:test';
-import { splitMessage, needsChunking, getMaxMessageLength } from '../../../src/shared/utils/messageChunker.js';
+import { splitMessage, needsChunking, getMaxMessageLength } from '../../../src/shared/utils/message/messageChunker.js';
 import { TEST_CONFIG } from '../setup.js';
 
 describe('Message Processing Integration', () => {

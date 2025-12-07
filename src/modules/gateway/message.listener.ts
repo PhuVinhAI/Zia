@@ -5,7 +5,7 @@
 
 import { debugLog, Events, eventBus, logMessage } from '../../core/index.js';
 import { CONFIG } from '../../shared/constants/config.js';
-import { initThreadHistory, isThreadInitialized } from '../../shared/utils/history.js';
+import { initThreadHistory, isThreadInitialized } from '../../shared/utils/history/history.js';
 import { abortTask } from '../../shared/utils/taskManager.js';
 import { addToBuffer } from './message.buffer.js';
 import { isAllowedUser } from './user.filter.js';

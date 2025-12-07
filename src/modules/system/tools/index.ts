@@ -2,30 +2,32 @@
  * System Tools - Export tất cả tools
  */
 
-// Board/Note tools
-export { createNoteTool, editNoteTool, getListBoardTool } from './board.js';
+// Chat tools
+export { clearHistoryTool } from './chat/clearHistory.js';
+export { recallMemoryTool, saveMemoryTool } from './chat/memory.js';
 
-export { clearHistoryTool } from './clearHistory.js';
-export { createAppTool } from './createApp.js';
-export { createChartTool } from './createChart.js';
-export { createFileTool } from './createFile/index.js';
-export { executeCodeTool } from './executeCode.js';
-export { flushLogsTool } from './flushLogs.js';
-export { freepikImageTool } from './freepikImage.js';
-export { getAllFriendsTool } from './getAllFriends.js';
-export { getFriendOnlinesTool } from './getFriendOnlines.js';
-export { getGroupMembersTool, groupMembersCache } from './getGroupMembers.js';
-export { getUserInfoTool } from './getUserInfo.js';
-export { googleSearchTool } from './googleSearch.js';
-export { recallMemoryTool, saveMemoryTool } from './memory.js';
+// Media tools
+export { createChartTool } from './media/createChart.js';
+export { createFileTool } from './media/createFile/index.js';
+export { freepikImageTool } from './media/freepikImage.js';
+export { textToSpeechTool } from './media/textToSpeech.js';
 
-// Poll tools
-export { createPollTool, getPollDetailTool, lockPollTool, votePollTool } from './poll.js';
+// Search tools
+export { googleSearchTool } from './search/googleSearch.js';
+export { youtubeChannelTool, youtubeSearchTool, youtubeVideoTool } from './search/youtube.js';
 
-// Reminder tools
-export { createReminderTool, getReminderTool, removeReminderTool } from './reminder.js';
+// Social tools
+export { createNoteTool, editNoteTool, getListBoardTool } from './social/board.js';
+export { createPollTool, getPollDetailTool, lockPollTool, votePollTool } from './social/poll.js';
+export { createReminderTool, getReminderTool, removeReminderTool } from './social/reminder.js';
+export { getAllFriendsTool } from './social/getAllFriends.js';
+export { getFriendOnlinesTool } from './social/getFriendOnlines.js';
+export { getGroupMembersTool, groupMembersCache } from './social/getGroupMembers.js';
+export { getUserInfoTool } from './social/getUserInfo.js';
 
-export { scheduleTaskTool } from './scheduleTask.js';
-export { solveMathTool } from './solveMath.js';
-export { textToSpeechTool } from './textToSpeech.js';
-export { youtubeChannelTool, youtubeSearchTool, youtubeVideoTool } from './youtube.js';
+// Task tools
+export { createAppTool } from './task/createApp.js';
+export { executeCodeTool } from './task/executeCode.js';
+export { flushLogsTool } from './task/flushLogs.js';
+export { scheduleTaskTool } from './task/scheduleTask.js';
+export { solveMathTool } from './task/solveMath.js';

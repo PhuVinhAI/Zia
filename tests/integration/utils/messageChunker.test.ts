@@ -6,7 +6,7 @@ import {
   splitMessage,
   needsChunking,
   getMaxMessageLength,
-} from '../../../src/shared/utils/messageChunker.js';
+} from '../../../src/shared/utils/message/messageChunker.js';
 
 describe('Message Chunker', () => {
   describe('getMaxMessageLength()', () => {

@@ -18,7 +18,7 @@ import {
   type ToolCall,
   type ToolContext,
   type ToolResult,
-} from '../../core/index.js';
+} from '../../../core/index.js';
 import { handleAllToolOutputs } from './tool.output.handler.js';
 
 // ═══════════════════════════════════════════════════

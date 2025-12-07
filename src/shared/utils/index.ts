@@ -20,6 +20,7 @@ export {
   subtract,
   toNow,
 } from './datetime.js';
+
 // History (re-exports từ sub-modules)
 export {
   clearHistory,
@@ -32,13 +33,15 @@ export {
   saveResponseToHistory,
   saveToHistory,
   saveToolResultToHistory,
-} from './history.js';
+} from './history/history.js';
+
 // History converter
 export {
   getMediaUrl,
   getMimeType,
   toGeminiContent,
-} from './historyConverter.js';
+} from './history/historyConverter.js';
+
 // HTTP Client (Ky-based)
 export {
   createHttpClient,
@@ -49,27 +52,30 @@ export {
   isGeminiSupported,
   isTextConvertible,
 } from './httpClient.js';
-// Markdown to Zalo
+
+// Markdown
 export {
   type CodeBlock,
   getFileExtension,
   type MediaImage,
   type ParsedMarkdown,
   parseMarkdownToZalo,
-} from './markdownToZalo.js';
-// Message chunker
+} from './markdown/markdownToZalo.js';
+
+// Message
 export {
   getMaxMessageLength,
   needsChunking,
   splitMessage,
-} from './messageChunker.js';
-// Message store
+} from './message/messageChunker.js';
+
 export {
   cleanupOldMessages,
   getSentMessage,
   removeSentMessage,
   saveSentMessage,
-} from './messageStore.js';
+} from './message/messageStore.js';
+
 // Task manager
 export {
   abortTask,
@@ -78,5 +84,9 @@ export {
   saveAbortedMessages,
   startTask,
 } from './taskManager.js';
+
 // Token counter
 export { filterUnsupportedMedia, isSupportedMime } from './tokenCounter.js';
+
+// User store
+export { getUserRole, setUserRole, clearUserCache } from './userStore.js';

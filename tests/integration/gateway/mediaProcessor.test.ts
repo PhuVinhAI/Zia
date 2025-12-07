@@ -4,7 +4,7 @@
  */
 
 import { describe, test, expect, mock, beforeEach } from 'bun:test';
-import { prepareMediaParts, addQuoteMedia } from '../../../src/modules/gateway/media.processor.js';
+import { prepareMediaParts, addQuoteMedia } from '../../../src/modules/gateway/processors/media.processor.js';
 import type { ClassifiedMessage } from '../../../src/modules/gateway/classifier.js';
 import type { QuoteMedia } from '../../../src/modules/gateway/quote.parser.js';
 import type { MediaPart } from '../../../src/infrastructure/gemini/gemini.provider.js';

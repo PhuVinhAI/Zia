@@ -1,22 +1,22 @@
 import sharp from 'sharp';
-import { debugLog, logError, logMessage, logStep, logZaloAPI } from '../../core/logger/logger.js';
-import type { StreamCallbacks } from '../../infrastructure/gemini/gemini.provider.js';
-import { Reactions, ThreadType } from '../../infrastructure/zalo/zalo.service.js';
-import type { AIResponse } from '../../shared/types/config.schema.js';
-import { getRawHistory } from '../../shared/utils/history.js';
-import { http } from '../../shared/utils/httpClient.js';
+import { debugLog, logError, logMessage, logStep, logZaloAPI } from '../../../core/logger/logger.js';
+import type { StreamCallbacks } from '../../../infrastructure/gemini/gemini.provider.js';
+import { Reactions, ThreadType } from '../../../infrastructure/zalo/zalo.service.js';
+import type { AIResponse } from '../../../shared/types/config.schema.js';
+import { getRawHistory } from '../../../shared/utils/history/history.js';
+import { http } from '../../../shared/utils/httpClient.js';
 import {
   type CodeBlock,
   getFileExtension,
   type MediaImage,
   parseMarkdownToZalo,
-} from '../../shared/utils/markdownToZalo.js';
-import { splitMessage } from '../../shared/utils/messageChunker.js';
+} from '../../../shared/utils/markdown/markdownToZalo.js';
+import { splitMessage } from '../../../shared/utils/message/messageChunker.js';
 import {
   getSentMessage,
   removeSentMessage,
   saveSentMessage,
-} from '../../shared/utils/messageStore.js';
+} from '../../../shared/utils/message/messageStore.js';
 
 // ═══════════════════════════════════════════════════
 // SHARED HELPERS

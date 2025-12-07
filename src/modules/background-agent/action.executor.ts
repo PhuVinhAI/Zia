@@ -4,9 +4,9 @@
 import { debugLog } from '../../core/logger/logger.js';
 import type { AgentTask } from '../../infrastructure/database/schema.js';
 import { ThreadType } from '../../infrastructure/zalo/zalo.service.js';
-import { saveResponseToHistory, saveSentMessage } from '../../shared/utils/history.js';
-import { getThreadType, setThreadType } from '../../modules/gateway/response.handler.js';
-import { splitMessage } from '../../shared/utils/messageChunker.js';
+import { saveResponseToHistory, saveSentMessage } from '../../shared/utils/history/history.js';
+import { getThreadType, setThreadType } from '../../modules/gateway/handlers/response.handler.js';
+import { splitMessage } from '../../shared/utils/message/messageChunker.js';
 
 export interface ExecutionResult {
   success: boolean;

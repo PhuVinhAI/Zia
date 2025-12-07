@@ -2,10 +2,10 @@
  * History Converter - Convert Zalo messages sang Gemini Content format
  */
 import type { Content, Part } from '@google/genai';
-import { ThreadType } from '../../infrastructure/zalo/zalo.service.js';
-import { CONFIG } from '../constants/config.js';
-import { fetchAsBase64 } from './httpClient.js';
-import { isSupportedMime } from './tokenCounter.js';
+import { ThreadType } from '../../../infrastructure/zalo/zalo.service.js';
+import { CONFIG } from '../../constants/config.js';
+import { fetchAsBase64 } from '../httpClient.js';
+import { isSupportedMime } from '../tokenCounter.js';
 
 // Size limit cho media trong tin nhắn nhóm (1MB)
 const GROUP_MEDIA_SIZE_LIMIT = 1 * 1024 * 1024;

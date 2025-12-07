@@ -23,24 +23,30 @@ export class GatewayModule extends BaseModule {
 // Export singleton instance
 export const gatewayModule = new GatewayModule();
 
+// Classifier
 export {
   classifyMessage,
   classifyMessages,
   countMessageTypes,
 } from './classifier.js';
-export { addQuoteMedia, prepareMediaParts } from './media.processor.js';
+
+// Processors
+export { addQuoteMedia, prepareMediaParts } from './processors/media.processor.js';
+export {
+  type ClassifiedMessage,
+  classifyMessageDetailed,
+  handleMixedContent,
+  type MessageType,
+} from './processors/message.processor.js';
+
 // Message Listener
 export {
   createMessageHandler,
   type MessageListenerOptions,
   registerMessageListener,
 } from './message.listener.js';
-export {
-  type ClassifiedMessage,
-  classifyMessageDetailed,
-  handleMixedContent,
-  type MessageType,
-} from './message.processor.js';
+
+// Prompt & Quote
 export {
   buildPrompt,
   extractTextFromMessages,
@@ -51,25 +57,27 @@ export {
   parseQuoteAttachment,
   type QuoteMedia,
 } from './quote.parser.js';
+
+// Rate Limit
 export {
   checkRateLimit,
   getRateLimitStatus,
   markApiCall,
 } from './rate-limit.guard.js';
-// Re-export handlers
+
+// Handlers
 export {
   createStreamCallbacks,
   sendResponse,
   setupSelfMessageListener,
-} from './response.handler.js';
+} from './handlers/response.handler.js';
 export {
   formatToolResultForAI,
   handleToolCalls,
   isToolOnlyResponse,
   notifyToolCall,
   type ToolHandlerResult,
-} from './tool.handler.js';
-// Tool Output Handler
+} from './handlers/tool.handler.js';
 export {
   handleAllToolOutputs,
   handleToolOutput,
@@ -77,5 +85,7 @@ export {
   sendImage,
   sendImages,
   sendVoice,
-} from './tool.output.handler.js';
+} from './handlers/tool.output.handler.js';
+
+// User Filter
 export { isAllowedUser, isGroupAllowed, isUserAllowed } from './user.filter.js';

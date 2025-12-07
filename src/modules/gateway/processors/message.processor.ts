@@ -2,33 +2,33 @@
  * Mixed Content Handler - Xử lý tất cả loại tin nhắn
  */
 
-import { debugLog, logError, logStep } from '../../core/logger/logger.js';
+import { debugLog, logError, logStep } from '../../../core/logger/logger.js';
 import {
   extractYouTubeUrls,
   generateContent,
   generateContentStream,
   type MediaPart,
-} from '../../infrastructure/gemini/gemini.provider.js';
-import { PROMPTS } from '../../infrastructure/gemini/prompts.js';
-import { ThreadType } from '../../infrastructure/zalo/zalo.service.js';
-import { CONFIG } from '../../shared/constants/config.js';
+} from '../../../infrastructure/gemini/gemini.provider.js';
+import { PROMPTS } from '../../../infrastructure/gemini/prompts.js';
+import { ThreadType } from '../../../infrastructure/zalo/zalo.service.js';
+import { CONFIG } from '../../../shared/constants/config.js';
 import {
   getHistory,
   saveResponseToHistory,
   saveToHistory,
   saveToolResultToHistory,
-} from '../../shared/utils/history.js';
-import { markPendingToolExecution } from '../../shared/utils/taskManager.js';
-import type { ClassifiedMessage, MessageType } from './classifier.js';
+} from '../../../shared/utils/history/history.js';
+import { markPendingToolExecution } from '../../../shared/utils/taskManager.js';
+import type { ClassifiedMessage, MessageType } from '../classifier.js';
 // Import từ các module mới
-import { classifyMessage, classifyMessages, countMessageTypes, isBotMentioned } from './classifier.js';
+import { classifyMessage, classifyMessages, countMessageTypes, isBotMentioned } from '../classifier.js';
 import { addQuoteMedia, prepareMediaParts } from './media.processor.js';
-import { startTypingWithRefresh } from './message.buffer.js';
-import { buildPrompt, extractTextFromMessages, processPrefix } from './prompt.builder.js';
-import { extractQuoteInfo } from './quote.parser.js';
-import { checkRateLimit, markApiCall } from './rate-limit.guard.js';
-import { createStreamCallbacks, sendResponse, setThreadType } from './response.handler.js';
-import { handleToolCalls, isToolOnlyResponse } from './tool.handler.js';
+import { startTypingWithRefresh } from '../message.buffer.js';
+import { buildPrompt, extractTextFromMessages, processPrefix } from '../prompt.builder.js';
+import { extractQuoteInfo } from '../quote.parser.js';
+import { checkRateLimit, markApiCall } from '../rate-limit.guard.js';
+import { createStreamCallbacks, sendResponse, setThreadType } from '../handlers/response.handler.js';
+import { handleToolCalls, isToolOnlyResponse } from '../handlers/tool.handler.js';
 
 // Re-export types cho backward compatibility
 export type { ClassifiedMessage, MessageType };

@@ -3,8 +3,8 @@
  * Quyết định gửi file/media qua Zalo hay trả text về AI
  */
 
-import { debugLog } from '../../core/index.js';
-import type { ToolCall, ToolResult } from '../../core/types.js';
+import { debugLog } from '../../../core/index.js';
+import type { ToolCall, ToolResult } from '../../../core/types.js';
 import { getThreadType } from './response.handler.js';
 
 // ═══════════════════════════════════════════════════

@@ -8,7 +8,7 @@ import {
   getMediaUrl,
   getMimeType,
   toGeminiContent,
-} from '../../../src/shared/utils/historyConverter.js';
+} from '../../../src/shared/utils/history/historyConverter.js';
 
 describe('History Converter', () => {
   describe('getMediaUrl()', () => {

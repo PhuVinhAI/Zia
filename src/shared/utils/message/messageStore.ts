@@ -2,8 +2,8 @@
  * Lưu trữ tin nhắn đã gửi để có thể thu hồi
  * Sử dụng SQLite database thay vì in-memory Map
  */
-import { debugLog } from '../../core/logger/logger.js';
-import { sentMessagesRepository } from '../../infrastructure/database/index.js';
+import { debugLog } from '../../../core/logger/logger.js';
+import { sentMessagesRepository } from '../../../infrastructure/database/index.js';
 
 interface SentMessage {
   msgId: string;

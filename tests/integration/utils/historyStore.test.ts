@@ -11,7 +11,7 @@ import {
   clearHistory,
   saveResponseToHistory,
   saveToolResultToHistory,
-} from '../../../src/shared/utils/historyStore.js';
+} from '../../../src/shared/utils/history/historyStore.js';
 
 describe('History Store', () => {
   const testThreadId = 'test-thread-' + Date.now();

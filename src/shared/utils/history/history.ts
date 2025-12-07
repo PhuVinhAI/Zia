@@ -39,7 +39,7 @@ export {
   getSentMessage,
   removeSentMessage,
   saveSentMessage,
-} from './messageStore.js';
+} from '../message/messageStore.js';
 // Token counter
 export {
   checkInputTokens,
@@ -47,7 +47,7 @@ export {
   filterUnsupportedMedia,
   isSupportedMime,
   type TokenCheckResult,
-} from './tokenCounter.js';
+} from '../tokenCounter.js';
 // User store (database-backed)
 export {
   blockUser,
