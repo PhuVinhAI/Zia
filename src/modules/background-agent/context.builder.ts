@@ -208,11 +208,20 @@ export function formatContextForPrompt(context: EnvironmentContext): string {
     lines.push('');
   }
 
-  // Hướng dẫn cú pháp mention
-  lines.push(`### Cú pháp đặc biệt:`);
-  lines.push(`Để tag/mention người dùng trong tin nhắn, sử dụng cú pháp: [mention:USER_ID:TÊN_HIỂN_THỊ]`);
-  lines.push(`Ví dụ: "Chào [mention:123456789:Nguyễn Văn A] nhé!" sẽ hiển thị thành "Chào @Nguyễn Văn A nhé!" với tag thực sự trên Zalo.`);
-  lines.push(`Lưu ý: USER_ID phải là ID số từ danh sách bạn bè hoặc thành viên nhóm ở trên.`);
+  // Hướng dẫn cú pháp đặc biệt
+  lines.push(`### Cú pháp đặc biệt trong tin nhắn:`);
+  lines.push(`1. **Tag/Mention người dùng:** [mention:USER_ID:TÊN_HIỂN_THỊ]`);
+  lines.push(`   Ví dụ: "Chào [mention:123456789:Nguyễn Văn A] nhé!" → "Chào @Nguyễn Văn A nhé!"`);
+  lines.push(`   Lưu ý: USER_ID phải là ID số từ danh sách bạn bè hoặc thành viên nhóm.`);
+  lines.push('');
+  lines.push(`2. **Gửi sticker:** [sticker:KEYWORD]`);
+  lines.push(`   Keywords: hello, hi, love, haha, sad, cry, angry, wow, ok, thanks, sorry`);
+  lines.push(`   Ví dụ: "Chúc mừng sinh nhật! [sticker:love]" → Gửi tin nhắn + sticker`);
+  lines.push('');
+  lines.push(`3. **Gửi link với preview:** [text](url)`);
+  lines.push(`   Ví dụ: "Xem video này [YouTube](https://youtube.com/watch?v=xxx)" → Gửi link với preview`);
+  lines.push('');
+  lines.push(`4. **Markdown:** Hỗ trợ **bold**, *italic*, \`code\``);
   lines.push('');
 
   lines.push(`### Thời gian: ${context.timestamp.toLocaleString('vi-VN')}`);

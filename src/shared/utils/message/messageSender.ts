@@ -42,6 +42,8 @@ export interface SendMessageOptions {
   sendCodeFiles?: boolean;
   /** Có gửi links không (default: true) */
   sendLinks?: boolean;
+  /** Có parse và gửi sticker [sticker:keyword] không (default: true) */
+  sendStickers?: boolean;
   /** Source identifier cho logging */
   source?: 'gateway' | 'background-agent' | string;
 }
@@ -259,6 +261,59 @@ export async function sendLink(
 }
 
 /**
+ * Gửi sticker theo keyword
+ */
+export async function sendSticker(api: any, keyword: string, threadId: string): Promise<void> {
+  try {
+    console.log(`[Bot] 🎨 Tìm sticker: "${keyword}"`);
+    debugLog('STICKER', `Searching sticker: "${keyword}"`);
+    const threadType = getThreadType(threadId);
+
+    const stickerIds = await api.getStickers(keyword);
+    logZaloAPI('getStickers', { keyword }, stickerIds);
+
+    if (stickerIds?.length > 0) {
+      const randomId = stickerIds[Math.floor(Math.random() * stickerIds.length)];
+      const stickerDetails = await api.getStickersDetail(randomId);
+      logZaloAPI('getStickersDetail', { stickerId: randomId }, stickerDetails);
+
+      if (stickerDetails?.[0]) {
+        const result = await api.sendSticker(stickerDetails[0], threadId, threadType);
+        logZaloAPI('sendSticker', { sticker: stickerDetails[0], threadId }, result);
+        console.log(`[Bot] ✅ Đã gửi sticker!`);
+        logMessage('OUT', threadId, {
+          type: 'sticker',
+          keyword,
+          stickerId: randomId,
+        });
+      }
+    }
+  } catch (e: any) {
+    logZaloAPI('sendSticker', { keyword, threadId }, null, e);
+    logError('sendSticker', e);
+  }
+}
+
+/**
+ * Parse tag [sticker:keyword] từ text
+ * Trả về danh sách keywords và text đã loại bỏ sticker tags
+ */
+export function parseStickers(text: string): { text: string; stickers: string[] } {
+  const stickers: string[] = [];
+  const regex = /\[sticker:(\w+)\]/gi;
+  let match;
+
+  while ((match = regex.exec(text)) !== null) {
+    stickers.push(match[1]);
+  }
+
+  // Loại bỏ sticker tags khỏi text
+  const cleanText = text.replace(regex, '').trim();
+
+  return { text: cleanText, stickers };
+}
+
+/**
  * Gửi ảnh từ URL
  */
 export async function sendImageFromUrl(
@@ -366,6 +421,7 @@ export async function sendTextMessage(
     sendMediaImages = true,
     sendCodeFiles = true,
     sendLinks = true,
+    sendStickers = true,
     source = 'unknown',
   } = options;
 
@@ -374,8 +430,20 @@ export async function sendTextMessage(
   debugLog('MSG_SENDER', `[${source}] Sending message to ${threadId}: ${text.substring(0, 50)}...`);
 
   try {
-    // 1. Parse mentions TRƯỚC (chuyển [mention:ID:Name] thành @Name)
-    const { text: textWithMentions, mentions } = parseMentions(text);
+    // 0. Parse stickers TRƯỚC (extract [sticker:keyword] tags)
+    let stickers: string[] = [];
+    let textWithoutStickers = text;
+    if (sendStickers) {
+      const stickerResult = parseStickers(text);
+      stickers = stickerResult.stickers;
+      textWithoutStickers = stickerResult.text;
+      if (stickers.length > 0) {
+        debugLog('MSG_SENDER', `[${source}] Found ${stickers.length} sticker tags`);
+      }
+    }
+
+    // 1. Parse mentions (chuyển [mention:ID:Name] thành @Name)
+    const { text: textWithMentions, mentions } = parseMentions(textWithoutStickers);
 
     // 2. Parse markdown để extract code blocks, tables, mermaid (nếu enabled)
     let parsed: Awaited<ReturnType<typeof parseMarkdownToZalo>>;
@@ -458,6 +526,14 @@ export async function sendTextMessage(
           for (const link of parsed.links) {
             await new Promise((r) => setTimeout(r, 300));
             await sendLink(api, link.url, link.text, threadId);
+          }
+        }
+
+        // Gửi stickers ở chunk cuối
+        if (isLastChunk && sendStickers && stickers.length > 0) {
+          for (const keyword of stickers) {
+            await new Promise((r) => setTimeout(r, 300));
+            await sendSticker(api, keyword, threadId);
           }
         }
 
