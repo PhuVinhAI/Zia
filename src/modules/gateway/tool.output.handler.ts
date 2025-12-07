@@ -5,7 +5,7 @@
 
 import { debugLog } from '../../core/index.js';
 import type { ToolCall, ToolResult } from '../../core/types.js';
-import { ThreadType } from '../../infrastructure/zalo/zalo.service.js';
+import { getThreadType } from './response.handler.js';
 
 // ═══════════════════════════════════════════════════
 // MEDIA SENDERS
@@ -19,8 +19,9 @@ export async function sendVoice(
   threadId: string,
   audioBuffer: Buffer,
 ): Promise<void> {
+  const threadType = getThreadType(threadId);
   console.log(`[Tool] 🎤 Đang upload voice (${audioBuffer.length} bytes)...`);
-  debugLog('TOOL:TTS', `Uploading voice, size: ${audioBuffer.length}`);
+  debugLog('TOOL:TTS', `Uploading voice, size: ${audioBuffer.length}, threadType: ${threadType}`);
 
   const uploadResult = await api.uploadAttachment(
     {
@@ -29,7 +30,7 @@ export async function sendVoice(
       metadata: { totalSize: audioBuffer.length, width: 0, height: 0 },
     },
     threadId,
-    ThreadType.User,
+    threadType,
   );
 
   const fileUrl = uploadResult[0]?.fileUrl || uploadResult[0]?.normalUrl;
@@ -38,7 +39,7 @@ export async function sendVoice(
   }
 
   debugLog('TOOL:TTS', `Upload success, URL: ${fileUrl}`);
-  await api.sendVoice({ voiceUrl: fileUrl }, threadId, ThreadType.User);
+  await api.sendVoice({ voiceUrl: fileUrl }, threadId, threadType);
   console.log(`[Tool] ✅ Đã gửi voice message!`);
 }
 
@@ -51,8 +52,9 @@ export async function sendImage(
   buffer: Buffer,
   filename: string,
 ): Promise<void> {
+  const threadType = getThreadType(threadId);
   console.log(`[Tool] 📊 Đang gửi ảnh ${filename} (${buffer.length} bytes)...`);
-  debugLog('TOOL:IMG', `Sending image: ${filename}, size: ${buffer.length}`);
+  debugLog('TOOL:IMG', `Sending image: ${filename}, size: ${buffer.length}, threadType: ${threadType}`);
 
   const attachment = {
     filename,
@@ -64,7 +66,7 @@ export async function sendImage(
     },
   };
 
-  await api.sendMessage({ msg: '', attachments: [attachment] }, threadId, ThreadType.User);
+  await api.sendMessage({ msg: '', attachments: [attachment] }, threadId, threadType);
   console.log(`[Tool] ✅ Đã gửi ảnh ${filename}!`);
   debugLog('TOOL:IMG', `Image sent successfully: ${filename}`);
 }
@@ -78,8 +80,9 @@ export async function sendDocument(
   buffer: Buffer,
   filename: string,
 ): Promise<void> {
+  const threadType = getThreadType(threadId);
   console.log(`[Tool] 📄 Đang gửi file ${filename} (${buffer.length} bytes)...`);
-  debugLog('TOOL:DOC', `Sending document: ${filename}, size: ${buffer.length}`);
+  debugLog('TOOL:DOC', `Sending document: ${filename}, size: ${buffer.length}, threadType: ${threadType}`);
 
   const attachment = {
     filename,
@@ -91,7 +94,7 @@ export async function sendDocument(
     },
   };
 
-  await api.sendMessage({ msg: '', attachments: [attachment] }, threadId, ThreadType.User);
+  await api.sendMessage({ msg: '', attachments: [attachment] }, threadId, threadType);
   console.log(`[Tool] ✅ Đã gửi file ${filename}!`);
   debugLog('TOOL:DOC', `Document sent successfully: ${filename}`);
 }

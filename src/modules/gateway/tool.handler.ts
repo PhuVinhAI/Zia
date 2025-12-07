@@ -19,7 +19,6 @@ import {
   type ToolContext,
   type ToolResult,
 } from '../../core/index.js';
-import { ThreadType } from '../../infrastructure/zalo/zalo.service.js';
 import { handleAllToolOutputs } from './tool.output.handler.js';
 
 // ═══════════════════════════════════════════════════
@@ -102,9 +101,11 @@ export async function notifyToolCall(
   const message = `🔧 Đang gọi tool: ${toolNames}...`;
 
   try {
-    await api.sendMessage(message, threadId, ThreadType.User);
+    const { getThreadType } = await import('./response.handler.js');
+    const threadType = getThreadType(threadId);
+    await api.sendMessage(message, threadId, threadType);
     console.log(`[Tool] 🔧 Gọi tool: ${toolNames}`);
-    debugLog('TOOL', `Notified tool call: ${toolNames}`);
+    debugLog('TOOL', `Notified tool call: ${toolNames}, threadType: ${threadType}`);
   } catch (e) {
     debugLog('TOOL', `Failed to notify tool call: ${e}`);
   }

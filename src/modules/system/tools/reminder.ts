@@ -30,7 +30,7 @@ const REPEAT_MODES: Record<string, number> = {
 export const createReminderTool: ToolDefinition = {
   name: 'createReminder',
   description:
-    'Tạo lịch hẹn/nhắc nhở trong nhóm. Zalo sẽ thông báo khi đến giờ. Trả về reminder_id.',
+    'Tạo lịch hẹn/nhắc nhở trong nhóm. Zalo sẽ thông báo khi đến giờ. Trả về reminder_id. LƯU Ý: Nếu user nói giờ mơ hồ (VD: "2h", "3 giờ"), HÃY HỎI LẠI để xác nhận chính xác (sáng/chiều, hôm nay/ngày mai).',
   parameters: [
     {
       name: 'title',
@@ -41,7 +41,8 @@ export const createReminderTool: ToolDefinition = {
     {
       name: 'startTime',
       type: 'number',
-      description: 'Thời gian nhắc (Unix timestamp ms). VD: Date.now() + 3600000 (1 giờ nữa)',
+      description:
+        'Thời gian nhắc (Unix timestamp ms, múi giờ UTC). CÁCH TÍNH: Lấy timestamp hiện tại từ system prompt + số ms cần thêm. VD: "1 giờ nữa" = timestamp_hiện_tại + 3600000. "14:00 hôm nay" = tính từ 00:00 hôm nay + 14*3600000. QUAN TRỌNG: Timestamp phải > Date.now()!',
       required: true,
     },
     {

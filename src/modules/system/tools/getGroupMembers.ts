@@ -12,6 +12,64 @@ export const groupMembersCache = new Map<
   Array<{ name: string; id: string; role: string }>
 >();
 
+/**
+ * Delay ngẫu nhiên để giả lập hành vi người dùng
+ * @param min - Thời gian tối thiểu (ms)
+ * @param max - Thời gian tối đa (ms)
+ */
+function randomDelay(min: number, max: number): Promise<void> {
+  const delay = Math.floor(Math.random() * (max - min + 1)) + min;
+  return new Promise((resolve) => setTimeout(resolve, delay));
+}
+
+/**
+ * Lấy thông tin chi tiết của nhiều user từ danh sách ID
+ * Gọi API getUserInfo cho từng user và trả về danh sách đầy đủ
+ * Có delay random giữa các lần gọi để giống người dùng thật
+ */
+async function fetchUserDetails(
+  api: any,
+  memberIds: string[],
+  adminIds: string[],
+  creatorId: string,
+): Promise<Array<{ name: string; id: string; role: string }>> {
+  const members: Array<{ name: string; id: string; role: string }> = [];
+
+  for (let i = 0; i < memberIds.length; i++) {
+    const id = memberIds[i];
+    let name = `User ${id.slice(-4)}`; // Tên mặc định nếu không lấy được
+
+    // Delay random từ 300ms - 800ms giữa các lần gọi (trừ lần đầu)
+    if (i > 0) {
+      await randomDelay(300, 800);
+    }
+
+    try {
+      // Gọi API lấy thông tin user
+      const userInfo = await api.getUserInfo(id);
+      const profile = userInfo?.changed_profiles?.[id];
+
+      if (profile) {
+        name = profile.displayName || profile.zaloName || profile.dName || name;
+        debugLog('TOOL:getGroupMembers', `Got user info: ${id} -> ${name}`);
+      }
+    } catch (e: any) {
+      debugLog('TOOL:getGroupMembers', `Failed to get user info for ${id}: ${e.message}`);
+      // Nếu bị lỗi (có thể rate limit), delay thêm một chút
+      await randomDelay(500, 1000);
+    }
+
+    // Xác định role
+    let role = 'Member';
+    if (id === creatorId) role = 'Creator';
+    else if (adminIds.includes(id)) role = 'Admin';
+
+    members.push({ name, id: String(id), role });
+  }
+
+  return members;
+}
+
 export const getGroupMembersTool: ToolDefinition = {
   name: 'getGroupMembers',
   description:
@@ -39,18 +97,44 @@ export const getGroupMembersTool: ToolDefinition = {
       const adminIds = info.adminIds || [];
       const creatorId = info.creatorId;
 
-      const rawMembers: any[] = info.currentMems || info.members || [];
-      const members = rawMembers.map((m) => {
-        let role = 'Member';
-        if (m.id === creatorId) role = 'Creator';
-        else if (adminIds.includes(m.id)) role = 'Admin';
+      let rawMembers: any[] = info.currentMems || info.members || [];
+      let members: Array<{ name: string; id: string; role: string }> = [];
 
-        return {
-          name: m.dName || m.zaloName || m.displayName || 'Không tên',
-          id: String(m.id),
-          role,
-        };
-      });
+      // Nếu currentMems có data đầy đủ
+      if (rawMembers.length > 0 && rawMembers[0]?.id) {
+        members = rawMembers.map((m) => {
+          let role = 'Member';
+          if (m.id === creatorId) role = 'Creator';
+          else if (adminIds.includes(m.id)) role = 'Admin';
+
+          return {
+            name: m.dName || m.zaloName || m.displayName || 'Không tên',
+            id: String(m.id),
+            role,
+          };
+        });
+      }
+      // Fallback: lấy từ memVerList (format: "userId_version")
+      else if (info.memVerList && info.memVerList.length > 0) {
+        debugLog(
+          'TOOL:getGroupMembers',
+          `Using memVerList fallback, count: ${info.memVerList.length}`,
+        );
+        const memberIds = info.memVerList.map((mv: string) => mv.split('_')[0]);
+
+        // Gọi API lấy thông tin chi tiết từng user
+        members = await fetchUserDetails(context.api, memberIds, adminIds, creatorId);
+      }
+      // Fallback 2: lấy từ memberIds
+      else if (info.memberIds && info.memberIds.length > 0) {
+        debugLog(
+          'TOOL:getGroupMembers',
+          `Using memberIds fallback, count: ${info.memberIds.length}`,
+        );
+
+        // Gọi API lấy thông tin chi tiết từng user
+        members = await fetchUserDetails(context.api, info.memberIds, adminIds, creatorId);
+      }
 
       // Lưu vào cache
       groupMembersCache.set(context.threadId, members);

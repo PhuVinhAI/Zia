@@ -6,8 +6,8 @@
 import { Subject, type Subscription } from 'rxjs';
 import { bufferWhen, debounceTime, filter, groupBy, mergeMap, tap } from 'rxjs/operators';
 import { debugLog, logError, logStep } from '../../core/logger/logger.js';
-import { ThreadType } from '../../infrastructure/zalo/zalo.service.js';
 import { CONFIG } from '../../shared/constants/config.js';
+import { getThreadType } from './response.handler.js';
 import { clearHistory } from '../../shared/utils/history.js';
 import {
   clearPendingToolExecution,
@@ -52,17 +52,18 @@ function startTypingWithRefresh(api: any, threadId: string) {
 
   if (state.isTyping) return;
 
-  api.sendTypingEvent(threadId, ThreadType.User).catch(() => {});
+  const threadType = getThreadType(threadId);
+  api.sendTypingEvent(threadId, threadType).catch(() => {});
   state.isTyping = true;
 
   state.interval = setInterval(() => {
     if (state?.isTyping) {
-      api.sendTypingEvent(threadId, ThreadType.User).catch(() => {});
+      api.sendTypingEvent(threadId, threadType).catch(() => {});
       debugLog('TYPING', `Refreshed typing for ${threadId}`);
     }
   }, getTypingRefreshMs());
 
-  debugLog('BUFFER', `Started typing with refresh for ${threadId}`);
+  debugLog('BUFFER', `Started typing with refresh for ${threadId}, threadType: ${threadType}`);
 }
 
 /**
