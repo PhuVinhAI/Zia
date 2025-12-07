@@ -467,28 +467,52 @@ export async function sendTextMessage(
     const chunks = splitMessage(parsed.text);
     let lastResult: any = null;
 
+    // Tính offset cho mỗi chunk để adjust style positions
+    let chunkOffset = 0;
+
     for (let i = 0; i < chunks.length; i++) {
       const chunk = chunks[i];
       const isFirstChunk = i === 0;
       const isLastChunk = i === chunks.length - 1;
+      const chunkStart = chunkOffset;
+      const chunkEnd = chunkStart + chunk.length;
 
       try {
-        // Parse inline styles cho chunk
-        const chunkParsed = parseMarkdown
-          ? await parseMarkdownToZalo(chunk)
-          : { text: chunk, styles: [], images: [], codeBlocks: [], links: [] };
+        if (chunk.trim()) {
+          const richMsg: any = { msg: chunk };
 
-        if (chunkParsed.text.trim()) {
-          const richMsg: any = { msg: chunkParsed.text };
+          // Filter và adjust styles cho chunk này
+          // Style nằm trong chunk nếu: start >= chunkStart && start < chunkEnd
+          if (parseMarkdown && parsed.styles.length > 0) {
+            const chunkStyles = parsed.styles
+              .filter((s) => {
+                const styleEnd = s.start + s.len;
+                // Style overlap với chunk
+                return s.start < chunkEnd && styleEnd > chunkStart;
+              })
+              .map((s) => {
+                // Adjust position relative to chunk start
+                const adjustedStart = Math.max(0, s.start - chunkStart);
+                const styleEnd = s.start + s.len;
+                const adjustedEnd = Math.min(chunk.length, styleEnd - chunkStart);
+                const adjustedLen = adjustedEnd - adjustedStart;
 
-          // Thêm styles nếu có
-          if (chunkParsed.styles.length > 0) {
-            richMsg.styles = chunkParsed.styles;
+                return {
+                  start: adjustedStart,
+                  len: adjustedLen,
+                  st: s.st,
+                };
+              })
+              .filter((s) => s.len > 0); // Chỉ giữ styles có length > 0
+
+            if (chunkStyles.length > 0) {
+              richMsg.styles = chunkStyles;
+            }
           }
 
           // Thêm mentions vào chunk đầu tiên
           if (isFirstChunk && mentions.length > 0) {
-            const chunkMentions = mentions.filter((m) => m.pos < chunkParsed.text.length);
+            const chunkMentions = mentions.filter((m) => m.pos < chunk.length);
             if (chunkMentions.length > 0) {
               richMsg.mentions = chunkMentions;
               debugLog('MSG_SENDER', `[${source}] Adding ${chunkMentions.length} mentions`);
@@ -506,8 +530,11 @@ export async function sendTextMessage(
             { message: richMsg, threadId, chunk: i + 1, total: chunks.length, source },
             lastResult,
           );
-          logMessage('OUT', threadId, { type: 'text', text: chunkParsed.text, chunk: i + 1, source });
+          logMessage('OUT', threadId, { type: 'text', text: chunk, chunk: i + 1, source });
         }
+
+        // Update offset cho chunk tiếp theo
+        chunkOffset += chunk.length;
 
         // Gửi media images ở chunk cuối
         if (isLastChunk && sendMediaImages) {
