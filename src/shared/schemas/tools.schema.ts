@@ -454,13 +454,34 @@ export const EditNoteSchema = z.object({
 
 // ============ FORWARD MESSAGE TOOL ============
 
+// Message types for forward
+const FORWARD_MSG_TYPES = [
+  'text',
+  'chat',
+  'webchat',
+  'chat.photo',
+  'photo',
+  'image',
+  'chat.sticker',
+  'sticker',
+  'chat.voice',
+  'voice',
+  'chat.video.msg',
+  'video',
+  'share.file',
+  'file',
+  'gif',
+  'doodle',
+] as const;
+
 // Forward Message params
 export const ForwardMessageSchema = z.object({
-  message: z.string().min(1, 'Thiếu nội dung tin nhắn cần forward'),
+  message: z.string().default(''), // Có thể rỗng cho media
   targetThreadIds: z.string().min(1, 'Thiếu ID người/nhóm nhận'),
   targetType: z.enum(['user', 'group']).default('user'),
   originalMsgId: z.string().optional(),
   originalTimestamp: z.coerce.number().optional(),
+  msgType: z.enum(FORWARD_MSG_TYPES).default('text'),
 });
 
 // ============ REMINDER TOOLS ============
@@ -551,8 +572,8 @@ export const TOOL_EXAMPLES: Record<string, string> = {
   getReminder: `[tool:getReminder]{"reminderId":"reminder_123"}[/tool]`,
   removeReminder: `[tool:removeReminder]{"reminderId":"reminder_123"}[/tool]`,
 
-  // Forward Message tool
-  forwardMessage: `[tool:forwardMessage]{"message":"Nội dung cần forward","targetThreadIds":"123456789","targetType":"user"}[/tool]`,
+  // Forward Message tool (hỗ trợ text và media)
+  forwardMessage: `[tool:forwardMessage]{"message":"","targetThreadIds":"123456789","targetType":"user","originalMsgId":"msg_abc123","msgType":"chat.photo"}[/tool]`,
 };
 
 /**
