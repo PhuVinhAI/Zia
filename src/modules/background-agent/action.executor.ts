@@ -3,8 +3,9 @@
  */
 import { debugLog } from '../../core/logger/logger.js';
 import type { AgentTask } from '../../infrastructure/database/schema.js';
+import { ThreadType } from '../../infrastructure/zalo/zalo.service.js';
 import { saveResponseToHistory, saveSentMessage } from '../../shared/utils/history.js';
-import { getThreadType } from '../../modules/gateway/response.handler.js';
+import { getThreadType, setThreadType } from '../../modules/gateway/response.handler.js';
 import { splitMessage } from '../../shared/utils/messageChunker.js';
 
 export interface ExecutionResult {
@@ -70,7 +71,30 @@ async function executeSendMessage(
   try {
     debugLog('EXECUTOR', `Sending message to ${threadId}: ${payload.message.substring(0, 50)}...`);
 
-    const threadType = getThreadType(threadId);
+    // Xác định ThreadType: nếu dùng resolvedThreadId (từ nhóm) → Group, resolvedUserId (từ bạn bè) → User
+    // Fallback: check threadTypeStore hoặc dựa vào nguồn gốc của ID
+    let threadType = getThreadType(threadId);
+    
+    // Nếu ID đến từ resolvedThreadId (nhóm), force ThreadType.Group
+    if (payload.resolvedThreadId && threadId === payload.resolvedThreadId) {
+      threadType = ThreadType.Group;
+      setThreadType(threadId, threadType);
+      debugLog('EXECUTOR', `Using ThreadType.Group for resolvedThreadId: ${threadId}`);
+    }
+    // Nếu ID đến từ resolvedUserId (bạn bè), force ThreadType.User  
+    else if (payload.resolvedUserId && threadId === payload.resolvedUserId) {
+      threadType = ThreadType.User;
+      setThreadType(threadId, threadType);
+      debugLog('EXECUTOR', `Using ThreadType.User for resolvedUserId: ${threadId}`);
+    }
+    // Nếu ID đến từ task.targetThreadId (nhóm), force ThreadType.Group
+    else if (task.targetThreadId && threadId === task.targetThreadId) {
+      threadType = ThreadType.Group;
+      setThreadType(threadId, threadType);
+      debugLog('EXECUTOR', `Using ThreadType.Group for targetThreadId: ${threadId}`);
+    }
+    
+    debugLog('EXECUTOR', `ThreadType for ${threadId}: ${threadType}`);
     
     // Chia nhỏ tin nhắn nếu quá dài
     const chunks = splitMessage(payload.message);
@@ -110,8 +134,40 @@ async function executeSendMessage(
       data: { msgId: lastResult?.msgId, threadId, msgIndex, savedToHistory: true, chunks: chunks.length },
     };
   } catch (error: any) {
-    debugLog('EXECUTOR', `Failed to send message: ${error.message}`);
-    return { success: false, error: error.message };
+    const errorMsg = error.message || 'Unknown error';
+    debugLog('EXECUTOR', `Failed to send message: ${errorMsg}`);
+    
+    // Xử lý các lỗi cụ thể từ Zalo API
+    if (errorMsg.includes('Không thể nhận tin nhắn từ bạn')) {
+      // Bot không phải thành viên của nhóm hoặc bị chặn
+      debugLog('EXECUTOR', `Bot cannot send to thread ${threadId} - not a member or blocked`);
+      return { 
+        success: false, 
+        error: `Không thể gửi tin vào thread ${threadId}: Bot không phải thành viên của nhóm này hoặc đã bị chặn/kick`,
+        data: { errorType: 'not_member_or_blocked', threadId }
+      };
+    }
+    
+    if (errorMsg.includes('Nội dung quá dài')) {
+      // Tin nhắn vẫn quá dài sau khi chia - không nên xảy ra
+      debugLog('EXECUTOR', `Message still too long after chunking`);
+      return { 
+        success: false, 
+        error: 'Tin nhắn quá dài, không thể gửi',
+        data: { errorType: 'message_too_long', threadId }
+      };
+    }
+    
+    if (errorMsg.includes('rate limit') || errorMsg.includes('429')) {
+      debugLog('EXECUTOR', `Rate limited when sending to ${threadId}`);
+      return { 
+        success: false, 
+        error: 'Bị giới hạn tốc độ gửi tin, vui lòng thử lại sau',
+        data: { errorType: 'rate_limited', threadId }
+      };
+    }
+    
+    return { success: false, error: errorMsg };
   }
 }
 
