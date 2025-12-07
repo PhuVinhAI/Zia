@@ -3,18 +3,18 @@
  * Sử dụng voice Yui và model Eleven v3 Alpha
  */
 
-import type { ITool, ToolResult } from '../../../core/types.js';
+import type { ITool, ToolResult } from '../../../../core/types.js';
 import {
   type TextToSpeechParams,
   TextToSpeechSchema,
   validateParamsWithExample,
-} from '../../../shared/schemas/tools.schema.js';
+} from '../../../../shared/schemas/tools.schema.js';
 import {
   DEFAULT_MODEL_ID,
   DEFAULT_VOICE_ID,
   OUTPUT_FORMATS,
   textToSpeech,
-} from '../services/elevenlabsClient.js';
+} from '../../services/elevenlabsClient.js';
 
 export const textToSpeechTool: ITool = {
   name: 'textToSpeech',

@@ -5,8 +5,8 @@
 
 import { Sandbox } from '@e2b/code-interpreter';
 import { z } from 'zod';
-import type { ITool, ToolResult } from '../../../core/types.js';
-import { validateParamsWithExample } from '../../../shared/schemas/tools.schema.js';
+import type { ITool, ToolResult } from '../../../../core/types.js';
+import { validateParamsWithExample } from '../../../../shared/schemas/tools.schema.js';
 
 export const ExecuteCodeSchema = z.object({
   code: z.string().min(1, 'Thiếu code cần chạy').max(50000, 'Code quá dài (tối đa 50000 ký tự)'),

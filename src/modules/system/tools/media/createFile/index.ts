@@ -3,12 +3,12 @@
  * Hỗ trợ: docx (Word), pdf, pptx (PowerPoint), xlsx (Excel)
  */
 
-import type { ITool, ToolResult } from '../../../../core/types.js';
+import type { ITool, ToolResult } from '../../../../../core/types.js';
 import {
   type CreateFileParams,
   CreateFileSchema,
   validateParamsWithExample,
-} from '../../../../shared/schemas/tools.schema.js';
+} from '../../../../../shared/schemas/tools.schema.js';
 import { docxHandler } from './docxHandler.js';
 import { pdfHandler } from './pdfHandler.js';
 import { pptxHandler } from './pptxHandler.js';

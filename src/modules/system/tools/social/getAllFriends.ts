@@ -2,12 +2,12 @@
  * Tool: getAllFriends - Lấy danh sách tất cả bạn bè
  */
 
-import { debugLog, logZaloAPI } from '../../../core/logger/logger.js';
+import { debugLog, logZaloAPI } from '../../../../core/logger/logger.js';
 import {
   GetAllFriendsSchema,
   validateParamsWithExample,
-} from '../../../shared/schemas/tools.schema.js';
-import type { ToolContext, ToolDefinition, ToolResult } from '../../../shared/types/tools.types.js';
+} from '../../../../shared/schemas/tools.schema.js';
+import type { ToolContext, ToolDefinition, ToolResult } from '../../../../shared/types/tools.types.js';
 
 export const getAllFriendsTool: ToolDefinition = {
   name: 'getAllFriends',

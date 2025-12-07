@@ -2,13 +2,13 @@
  * Tool: googleSearch - Tìm kiếm web bằng Google Custom Search API
  */
 
-import { debugLog } from '../../../core/logger/logger.js';
+import { debugLog } from '../../../../core/logger/logger.js';
 import {
   GoogleSearchSchema,
   validateParamsWithExample,
-} from '../../../shared/schemas/tools.schema.js';
-import type { ToolDefinition, ToolResult } from '../../../shared/types/tools.types.js';
-import { googleSearch } from '../services/googleSearchClient.js';
+} from '../../../../shared/schemas/tools.schema.js';
+import type { ToolDefinition, ToolResult } from '../../../../shared/types/tools.types.js';
+import { googleSearch } from '../../services/googleSearchClient.js';
 
 export const googleSearchTool: ToolDefinition = {
   name: 'googleSearch',

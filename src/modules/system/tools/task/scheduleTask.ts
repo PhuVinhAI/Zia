@@ -1,14 +1,14 @@
 /**
  * Schedule Task Tool - Cho phép Gemini tạo background tasks
  */
-import { debugLog } from '../../../core/logger/logger.js';
+import { debugLog } from '../../../../core/logger/logger.js';
 import {
   type ScheduleTaskParams,
   ScheduleTaskSchema,
   validateParamsWithExample,
-} from '../../../shared/schemas/tools.schema.js';
-import type { ToolContext, ToolDefinition, ToolResult } from '../../../shared/types/tools.types.js';
-import { createTask } from '../../background-agent/index.js';
+} from '../../../../shared/schemas/tools.schema.js';
+import type { ToolContext, ToolDefinition, ToolResult } from '../../../../shared/types/tools.types.js';
+import { createTask } from '../../../background-agent/index.js';
 
 export const scheduleTaskTool: ToolDefinition = {
   name: 'scheduleTask',

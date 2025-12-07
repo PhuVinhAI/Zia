@@ -2,26 +2,31 @@
  * System Module - Core system tools và tool registry
  */
 import { BaseModule, type ITool, type ModuleMetadata } from '../../core/index.js';
-import { createNoteTool, editNoteTool, getListBoardTool } from './tools/board.js';
-import { clearHistoryTool } from './tools/clearHistory.js';
-import { createAppTool } from './tools/createApp.js';
-import { createChartTool } from './tools/createChart.js';
-import { createFileTool } from './tools/createFile/index.js';
-import { executeCodeTool } from './tools/executeCode.js';
-import { flushLogsTool } from './tools/flushLogs.js';
-import { freepikImageTool } from './tools/freepikImage.js';
-import { getAllFriendsTool } from './tools/getAllFriends.js';
-import { getFriendOnlinesTool } from './tools/getFriendOnlines.js';
-import { getGroupMembersTool } from './tools/getGroupMembers.js';
-import { getUserInfoTool } from './tools/getUserInfo.js';
-import { googleSearchTool } from './tools/googleSearch.js';
-import { recallMemoryTool, saveMemoryTool } from './tools/memory.js';
-import { createPollTool, getPollDetailTool, lockPollTool, votePollTool } from './tools/poll.js';
-import { createReminderTool, getReminderTool, removeReminderTool } from './tools/reminder.js';
-import { scheduleTaskTool } from './tools/scheduleTask.js';
-import { solveMathTool } from './tools/solveMath.js';
-import { textToSpeechTool } from './tools/textToSpeech.js';
-import { youtubeChannelTool, youtubeSearchTool, youtubeVideoTool } from './tools/youtube.js';
+// Chat tools
+import { clearHistoryTool } from './tools/chat/clearHistory.js';
+import { recallMemoryTool, saveMemoryTool } from './tools/chat/memory.js';
+// Media tools
+import { createChartTool } from './tools/media/createChart.js';
+import { createFileTool } from './tools/media/createFile/index.js';
+import { freepikImageTool } from './tools/media/freepikImage.js';
+import { textToSpeechTool } from './tools/media/textToSpeech.js';
+// Search tools
+import { googleSearchTool } from './tools/search/googleSearch.js';
+import { youtubeChannelTool, youtubeSearchTool, youtubeVideoTool } from './tools/search/youtube.js';
+// Social tools
+import { createNoteTool, editNoteTool, getListBoardTool } from './tools/social/board.js';
+import { getAllFriendsTool } from './tools/social/getAllFriends.js';
+import { getFriendOnlinesTool } from './tools/social/getFriendOnlines.js';
+import { getGroupMembersTool } from './tools/social/getGroupMembers.js';
+import { getUserInfoTool } from './tools/social/getUserInfo.js';
+import { createPollTool, getPollDetailTool, lockPollTool, votePollTool } from './tools/social/poll.js';
+import { createReminderTool, getReminderTool, removeReminderTool } from './tools/social/reminder.js';
+// Task tools
+import { createAppTool } from './tools/task/createApp.js';
+import { executeCodeTool } from './tools/task/executeCode.js';
+import { flushLogsTool } from './tools/task/flushLogs.js';
+import { scheduleTaskTool } from './tools/task/scheduleTask.js';
+import { solveMathTool } from './tools/task/solveMath.js';
 
 export class SystemModule extends BaseModule {
   readonly metadata: ModuleMetadata = {
@@ -84,4 +89,4 @@ export const systemModule = new SystemModule();
 
 // Re-export tools for backward compatibility
 export * from './tools/index.js';
-export * from './tools/memory.js';
+export * from './tools/chat/memory.js';

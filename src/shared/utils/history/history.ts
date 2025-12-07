@@ -59,4 +59,4 @@ export {
   registerUser,
   setAdmin,
   unblockUser,
-} from './userStore.js';
+} from '../userStore.js';

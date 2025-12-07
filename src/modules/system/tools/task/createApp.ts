@@ -7,8 +7,8 @@ import {
   type CreateAppParams,
   CreateAppSchema,
   validateParamsWithExample,
-} from '../../../shared/schemas/tools.schema.js';
-import type { ToolDefinition, ToolResult } from '../../../shared/types/tools.types.js';
+} from '../../../../shared/schemas/tools.schema.js';
+import type { ToolDefinition, ToolResult } from '../../../../shared/types/tools.types.js';
 
 // ═══════════════════════════════════════════════════
 // CDN LIBRARIES - Full frameworks cho mọi nhu cầu

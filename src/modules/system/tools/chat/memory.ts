@@ -2,15 +2,15 @@
  * Memory Tools - AI có thể lưu và tìm kiếm long-term memory
  */
 
-import { debugLog } from '../../../core/logger/logger.js';
-import type { MemoryType } from '../../../infrastructure/database/schema.js';
-import { memoryStore } from '../../../infrastructure/memory/index.js';
+import { debugLog } from '../../../../core/logger/logger.js';
+import type { MemoryType } from '../../../../infrastructure/database/schema.js';
+import { memoryStore } from '../../../../infrastructure/memory/index.js';
 import {
   RecallMemorySchema,
   SaveMemorySchema,
   validateParamsWithExample,
-} from '../../../shared/schemas/tools.schema.js';
-import type { ToolContext, ToolDefinition, ToolResult } from '../../../shared/types/tools.types.js';
+} from '../../../../shared/schemas/tools.schema.js';
+import type { ToolContext, ToolDefinition, ToolResult } from '../../../../shared/types/tools.types.js';
 
 // ═══════════════════════════════════════════════════
 // SAVE MEMORY TOOL

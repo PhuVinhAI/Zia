@@ -207,7 +207,7 @@ async function renderTableToPng(table: TableData): Promise<Buffer> {
 // MERMAID TO PNG (via mermaid.ink API)
 // ═══════════════════════════════════════════════════
 
-import { http } from './httpClient.js';
+import { http } from '../httpClient.js';
 
 const MERMAID_TYPES = [
   'flowchart',

@@ -5,11 +5,11 @@
 
 import type { ChartConfiguration } from 'chart.js';
 import { ChartJSNodeCanvas } from 'chartjs-node-canvas';
-import type { ITool, ToolResult } from '../../../core/types.js';
+import type { ITool, ToolResult } from '../../../../core/types.js';
 import {
   CreateChartSchema,
   validateParamsWithExample,
-} from '../../../shared/schemas/tools.schema.js';
+} from '../../../../shared/schemas/tools.schema.js';
 
 // Canvas renderer - width/height sẽ được set động
 const createChartCanvas = (width: number, height: number) =>

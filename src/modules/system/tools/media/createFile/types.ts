@@ -2,7 +2,7 @@
  * Types & Constants cho createFile tool
  */
 
-import type { CreateFileParams } from '../../../../shared/schemas/tools.schema.js';
+import type { CreateFileParams } from '../../../../../shared/schemas/tools.schema.js';
 
 export type FileHandler = (content: string, options?: CreateFileParams) => Promise<Buffer>;
 

@@ -90,7 +90,7 @@ export async function notifyToolCall(
 ): Promise<void> {
   const toolNames = toolCalls.map((c) => c.toolName).join(', ');
 
-  const { CONFIG } = await import('../../shared/constants/config.js');
+  const { CONFIG } = await import('../../../shared/constants/config.js');
 
   if (!CONFIG.showToolCalls) {
     console.log(`[Tool] 🔧 Gọi tool (silent): ${toolNames}`);

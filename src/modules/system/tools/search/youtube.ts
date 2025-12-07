@@ -3,21 +3,21 @@
  * Sử dụng YouTube Data API v3
  */
 
-import { debugLog } from '../../../core/logger/logger.js';
+import { debugLog } from '../../../../core/logger/logger.js';
 import {
   validateParamsWithExample,
   YouTubeChannelSchema,
   YouTubeSearchSchema,
   YouTubeVideoSchema,
-} from '../../../shared/schemas/tools.schema.js';
-import type { ToolDefinition, ToolResult } from '../../../shared/types/tools.types.js';
+} from '../../../../shared/schemas/tools.schema.js';
+import type { ToolDefinition, ToolResult } from '../../../../shared/types/tools.types.js';
 import {
   formatViewCount,
   getChannelDetails,
   getVideoDetails,
   parseDuration,
   searchYouTube,
-} from '../services/youtubeClient.js';
+} from '../../services/youtubeClient.js';
 
 export const youtubeSearchTool: ToolDefinition = {
   name: 'youtubeSearch',

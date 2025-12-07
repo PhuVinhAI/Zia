@@ -3,8 +3,8 @@
  * AI có thể gọi tool này để gửi log mà không cần đợi đủ 1000 dòng
  */
 
-import { forceFlushLogs, getLogCacheSize } from '../../../core/logger/logger.js';
-import type { ToolContext, ToolDefinition, ToolResult } from '../../../shared/types/tools.types.js';
+import { forceFlushLogs, getLogCacheSize } from '../../../../core/logger/logger.js';
+import type { ToolContext, ToolDefinition, ToolResult } from '../../../../shared/types/tools.types.js';
 
 export const flushLogsTool: ToolDefinition = {
   name: 'flush_logs',

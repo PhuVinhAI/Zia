@@ -3,8 +3,8 @@
  * Giữ lại tất cả features của Word framework
  */
 
-import type { CreateFileParams } from '../../../../shared/schemas/tools.schema.js';
-import { convertDocxToPdfViaApi } from '../../services/compdfService.js';
+import type { CreateFileParams } from '../../../../../shared/schemas/tools.schema.js';
+import { convertDocxToPdfViaApi } from '../../../services/compdfService.js';
 import { docxHandler } from './docxHandler.js';
 import type { FileHandler } from './types.js';
 

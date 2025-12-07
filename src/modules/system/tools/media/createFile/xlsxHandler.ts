@@ -4,7 +4,7 @@
  */
 
 import ExcelJS from 'exceljs';
-import type { CreateFileParams } from '../../../../shared/schemas/tools.schema.js';
+import type { CreateFileParams } from '../../../../../shared/schemas/tools.schema.js';
 
 /**
  * Parse markdown table thành 2D array

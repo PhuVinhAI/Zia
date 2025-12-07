@@ -3,8 +3,8 @@
  * API: createNote, getListBoard, editNote
  */
 
-import { debugLog, logZaloAPI } from '../../../core/logger/logger.js';
-import type { ToolContext, ToolDefinition, ToolResult } from '../../../shared/types/tools.types.js';
+import { debugLog, logZaloAPI } from '../../../../core/logger/logger.js';
+import type { ToolContext, ToolDefinition, ToolResult } from '../../../../shared/types/tools.types.js';
 
 // Board types
 const BOARD_TYPE = {

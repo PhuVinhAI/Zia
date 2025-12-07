@@ -2,12 +2,12 @@
  * Tool: getUserInfo - Lấy thông tin chi tiết của user đã là bạn bè
  */
 
-import { debugLog, logZaloAPI } from '../../../core/logger/logger.js';
+import { debugLog, logZaloAPI } from '../../../../core/logger/logger.js';
 import {
   GetUserInfoSchema,
   validateParamsWithExample,
-} from '../../../shared/schemas/tools.schema.js';
-import type { ToolContext, ToolDefinition, ToolResult } from '../../../shared/types/tools.types.js';
+} from '../../../../shared/schemas/tools.schema.js';
+import type { ToolContext, ToolDefinition, ToolResult } from '../../../../shared/types/tools.types.js';
 
 export const getUserInfoTool: ToolDefinition = {
   name: 'getUserInfo',

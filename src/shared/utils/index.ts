@@ -89,4 +89,4 @@ export {
 export { filterUnsupportedMedia, isSupportedMime } from './tokenCounter.js';
 
 // User store
-export { clearUserCache, getUserRole, setUserRole } from './userStore.js';
+export { clearCache, getUserRole } from './userStore.js';

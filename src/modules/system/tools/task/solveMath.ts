@@ -4,9 +4,9 @@
  */
 
 import { z } from 'zod';
-import type { ITool, ToolResult } from '../../../core/types.js';
-import { validateParamsWithExample } from '../../../shared/schemas/tools.schema.js';
-import { pdfHandler } from './createFile/pdfHandler.js';
+import type { ITool, ToolResult } from '../../../../core/types.js';
+import { validateParamsWithExample } from '../../../../shared/schemas/tools.schema.js';
+import { pdfHandler } from '../media/createFile/pdfHandler.js';
 
 export const SolveMathSchema = z.object({
   problem: z.string().min(1, 'Thiếu đề bài toán'),

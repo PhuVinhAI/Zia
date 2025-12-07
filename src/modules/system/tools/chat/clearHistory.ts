@@ -3,9 +3,9 @@
  * AI có thể tự gọi tool này để xóa lịch sử chat (cả memory và database)
  */
 
-import { debugLog } from '../../../core/logger/logger.js';
-import type { ToolContext, ToolDefinition, ToolResult } from '../../../shared/types/tools.types.js';
-import { clearHistory } from '../../../shared/utils/history/history.js';
+import { debugLog } from '../../../../core/logger/logger.js';
+import type { ToolContext, ToolDefinition, ToolResult } from '../../../../shared/types/tools.types.js';
+import { clearHistory } from '../../../../shared/utils/history/history.js';
 
 export const clearHistoryTool: ToolDefinition = {
   name: 'clearHistory',

@@ -2,12 +2,12 @@
  * Tool: getFriendOnlines - Lấy danh sách bạn bè đang online
  */
 
-import { debugLog, logZaloAPI } from '../../../core/logger/logger.js';
+import { debugLog, logZaloAPI } from '../../../../core/logger/logger.js';
 import {
   GetFriendOnlinesSchema,
   validateParamsWithExample,
-} from '../../../shared/schemas/tools.schema.js';
-import type { ToolContext, ToolDefinition, ToolResult } from '../../../shared/types/tools.types.js';
+} from '../../../../shared/schemas/tools.schema.js';
+import type { ToolContext, ToolDefinition, ToolResult } from '../../../../shared/types/tools.types.js';
 
 export const getFriendOnlinesTool: ToolDefinition = {
   name: 'getFriendOnlines',
