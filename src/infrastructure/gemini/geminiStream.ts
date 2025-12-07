@@ -29,7 +29,7 @@ export interface StreamCallbacks {
   onUndo?: (index: number) => Promise<void>;
   onImage?: (url: string, caption?: string) => Promise<void>;
   onComplete?: () => void | Promise<void>;
-  onError?: (error: Error) => void;
+  onError?: (error: Error) => void | Promise<void>;
   signal?: AbortSignal;
 }
 
@@ -359,7 +359,7 @@ export async function generateContentStream(
   }
 
   logError('generateContentStream', lastError);
-  callbacks.onError?.(lastError);
+  await callbacks.onError?.(lastError);
 
   if (threadId) deleteChatSession(threadId);
 
