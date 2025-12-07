@@ -3,7 +3,7 @@
  */
 
 import { debugLog, logZaloAPI } from '../../../core/logger/logger.js';
-import { GetFriendOnlinesSchema, validateParams } from '../../../shared/schemas/tools.schema.js';
+import { GetFriendOnlinesSchema, validateParamsWithExample } from '../../../shared/schemas/tools.schema.js';
 import type { ToolContext, ToolDefinition, ToolResult } from '../../../shared/types/tools.types.js';
 
 export const getFriendOnlinesTool: ToolDefinition = {
@@ -28,7 +28,7 @@ export const getFriendOnlinesTool: ToolDefinition = {
   ],
   execute: async (params: Record<string, any>, context: ToolContext): Promise<ToolResult> => {
     // Validate với Zod
-    const validation = validateParams(GetFriendOnlinesSchema, params);
+    const validation = validateParamsWithExample(GetFriendOnlinesSchema, params, 'getFriendOnlines');
     if (!validation.success) {
       return { success: false, error: validation.error };
     }

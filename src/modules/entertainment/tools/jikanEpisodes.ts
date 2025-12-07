@@ -2,7 +2,7 @@
  * Tool: jikanEpisodes - Lấy danh sách tập phim
  */
 
-import { JikanEpisodesSchema, validateParams } from '../../../shared/schemas/tools.schema.js';
+import { JikanEpisodesSchema, validateParamsWithExample } from '../../../shared/schemas/tools.schema.js';
 import type { ToolDefinition, ToolResult } from '../../../shared/types/tools.types.js';
 import { type JikanPagination, jikanFetch } from '../services/jikanClient.js';
 
@@ -41,7 +41,7 @@ export const jikanEpisodesTool: ToolDefinition = {
   ],
   execute: async (params): Promise<ToolResult> => {
     // Validate với Zod
-    const validation = validateParams(JikanEpisodesSchema, params);
+    const validation = validateParamsWithExample(JikanEpisodesSchema, params, 'jikanEpisodes');
     if (!validation.success) {
       return { success: false, error: validation.error };
     }

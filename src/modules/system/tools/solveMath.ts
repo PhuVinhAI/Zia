@@ -5,7 +5,7 @@
 
 import { z } from 'zod';
 import type { ITool, ToolResult } from '../../../core/types.js';
-import { validateParams } from '../../../shared/schemas/tools.schema.js';
+import { validateParamsWithExample } from '../../../shared/schemas/tools.schema.js';
 import { pdfHandler } from './createFile/pdfHandler.js';
 
 export const SolveMathSchema = z.object({
@@ -98,7 +98,7 @@ Căn: $\\sqrt$
     },
   ],
   execute: async (params: Record<string, unknown>): Promise<ToolResult> => {
-    const validation = validateParams(SolveMathSchema, params);
+    const validation = validateParamsWithExample(SolveMathSchema, params, 'solveMath');
     if (!validation.success) return { success: false, error: validation.error };
 
     try {

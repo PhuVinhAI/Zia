@@ -6,7 +6,7 @@
 import {
   type CreateAppParams,
   CreateAppSchema,
-  validateParams,
+  validateParamsWithExample,
 } from '../../../shared/schemas/tools.schema.js';
 import type { ToolDefinition, ToolResult } from '../../../shared/types/tools.types.js';
 
@@ -230,7 +230,7 @@ User tải về mở trên trình duyệt để sử dụng.
     },
   ],
   execute: async (params: Record<string, any>): Promise<ToolResult> => {
-    const validation = validateParams(CreateAppSchema, params);
+    const validation = validateParamsWithExample(CreateAppSchema, params, 'createApp');
     if (!validation.success) return { success: false, error: validation.error };
 
     try {

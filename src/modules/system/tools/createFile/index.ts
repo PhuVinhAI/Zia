@@ -7,7 +7,7 @@ import type { ITool, ToolResult } from '../../../../core/types.js';
 import {
   type CreateFileParams,
   CreateFileSchema,
-  validateParams,
+  validateParamsWithExample,
 } from '../../../../shared/schemas/tools.schema.js';
 import { docxHandler } from './docxHandler.js';
 import { pdfHandler } from './pdfHandler.js';
@@ -285,7 +285,7 @@ LƯU Ý QUAN TRỌNG
     },
   ],
   execute: async (params: Record<string, any>): Promise<ToolResult> => {
-    const validation = validateParams(CreateFileSchema, params);
+    const validation = validateParamsWithExample(CreateFileSchema, params, 'createFile');
     if (!validation.success) return { success: false, error: validation.error };
     const data = validation.data as CreateFileParams;
 

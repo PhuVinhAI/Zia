@@ -8,7 +8,7 @@ import { memoryStore } from '../../../infrastructure/memory/index.js';
 import {
   RecallMemorySchema,
   SaveMemorySchema,
-  validateParams,
+  validateParamsWithExample,
 } from '../../../shared/schemas/tools.schema.js';
 import type { ToolContext, ToolDefinition, ToolResult } from '../../../shared/types/tools.types.js';
 
@@ -45,7 +45,7 @@ export const saveMemoryTool: ToolDefinition = {
     },
   ],
   execute: async (params: Record<string, any>, context: ToolContext): Promise<ToolResult> => {
-    const validation = validateParams(SaveMemorySchema, params);
+    const validation = validateParamsWithExample(SaveMemorySchema, params, 'saveMemory');
     if (!validation.success) return { success: false, error: validation.error };
     const data = validation.data;
 
@@ -104,7 +104,7 @@ export const recallMemoryTool: ToolDefinition = {
     },
   ],
   execute: async (params: Record<string, any>, _context: ToolContext): Promise<ToolResult> => {
-    const validation = validateParams(RecallMemorySchema, params);
+    const validation = validateParamsWithExample(RecallMemorySchema, params, 'recallMemory');
     if (!validation.success) return { success: false, error: validation.error };
     const data = validation.data;
 

@@ -4,7 +4,7 @@
 
 import {
   JikanRecommendationsSchema,
-  validateParams,
+  validateParamsWithExample,
 } from '../../../shared/schemas/tools.schema.js';
 import type { ToolDefinition, ToolResult } from '../../../shared/types/tools.types.js';
 import { jikanFetch } from '../services/jikanClient.js';
@@ -50,7 +50,7 @@ export const jikanRecommendationsTool: ToolDefinition = {
   ],
   execute: async (params): Promise<ToolResult> => {
     // Validate với Zod
-    const validation = validateParams(JikanRecommendationsSchema, params);
+    const validation = validateParamsWithExample(JikanRecommendationsSchema, params, 'jikanRecommendations');
     if (!validation.success) {
       return { success: false, error: validation.error };
     }

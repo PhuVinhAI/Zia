@@ -7,7 +7,7 @@ import type { ITool, ToolResult } from '../../../core/types.js';
 import {
   type TextToSpeechParams,
   TextToSpeechSchema,
-  validateParams,
+  validateParamsWithExample,
 } from '../../../shared/schemas/tools.schema.js';
 import {
   DEFAULT_MODEL_ID,
@@ -49,7 +49,7 @@ Trả về file âm thanh MP3 có thể phát trực tiếp.`,
     },
   ],
   execute: async (params: Record<string, any>): Promise<ToolResult> => {
-    const validation = validateParams(TextToSpeechSchema, params);
+    const validation = validateParamsWithExample(TextToSpeechSchema, params, 'textToSpeech');
     if (!validation.success) {
       return { success: false, error: validation.error };
     }
