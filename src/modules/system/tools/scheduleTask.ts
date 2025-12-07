@@ -5,7 +5,7 @@ import { debugLog } from '../../../core/logger/logger.js';
 import {
   type ScheduleTaskParams,
   ScheduleTaskSchema,
-  validateParams,
+  validateParamsWithExample,
 } from '../../../shared/schemas/tools.schema.js';
 import type { ToolContext, ToolDefinition, ToolResult } from '../../../shared/types/tools.types.js';
 import { createTask } from '../../background-agent/index.js';
@@ -63,7 +63,7 @@ Ví dụ:
   ],
   execute: async (params: Record<string, any>, ctx: ToolContext): Promise<ToolResult> => {
     // Validate với Zod schema
-    const validation = validateParams(ScheduleTaskSchema, params);
+    const validation = validateParamsWithExample(ScheduleTaskSchema, params, 'scheduleTask');
     if (!validation.success) {
       return { success: false, error: validation.error };
     }

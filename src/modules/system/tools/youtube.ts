@@ -5,7 +5,7 @@
 
 import { debugLog } from '../../../core/logger/logger.js';
 import {
-  validateParams,
+  validateParamsWithExample,
   YouTubeChannelSchema,
   YouTubeSearchSchema,
   YouTubeVideoSchema,
@@ -39,7 +39,7 @@ export const youtubeSearchTool: ToolDefinition = {
     },
   ],
   execute: async (params): Promise<ToolResult> => {
-    const validation = validateParams(YouTubeSearchSchema, params);
+    const validation = validateParamsWithExample(YouTubeSearchSchema, params, 'youtubeSearch');
     if (!validation.success) return { success: false, error: validation.error };
     const data = validation.data;
 
@@ -87,7 +87,7 @@ export const youtubeVideoTool: ToolDefinition = {
     { name: 'videoId', type: 'string', description: 'ID video YouTube', required: true },
   ],
   execute: async (params): Promise<ToolResult> => {
-    const validation = validateParams(YouTubeVideoSchema, params);
+    const validation = validateParamsWithExample(YouTubeVideoSchema, params, 'youtubeVideo');
     if (!validation.success) return { success: false, error: validation.error };
     const data = validation.data;
 
@@ -133,7 +133,7 @@ export const youtubeChannelTool: ToolDefinition = {
     { name: 'channelId', type: 'string', description: 'ID channel YouTube', required: true },
   ],
   execute: async (params): Promise<ToolResult> => {
-    const validation = validateParams(YouTubeChannelSchema, params);
+    const validation = validateParamsWithExample(YouTubeChannelSchema, params, 'youtubeChannel');
     if (!validation.success) return { success: false, error: validation.error };
     const data = validation.data;
 

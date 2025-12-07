@@ -6,7 +6,7 @@
 import { Sandbox } from '@e2b/code-interpreter';
 import { z } from 'zod';
 import type { ITool, ToolResult } from '../../../core/types.js';
-import { validateParams } from '../../../shared/schemas/tools.schema.js';
+import { validateParamsWithExample } from '../../../shared/schemas/tools.schema.js';
 
 export const ExecuteCodeSchema = z.object({
   code: z.string().min(1, 'Thiếu code cần chạy').max(50000, 'Code quá dài (tối đa 50000 ký tự)'),
@@ -151,7 +151,7 @@ export const executeCodeTool: ITool = {
   ],
 
   execute: async (params: Record<string, unknown>): Promise<ToolResult> => {
-    const validation = validateParams(ExecuteCodeSchema, params);
+    const validation = validateParamsWithExample(ExecuteCodeSchema, params, 'executeCode');
     if (!validation.success) {
       return { success: false, error: validation.error };
     }

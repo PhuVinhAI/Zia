@@ -6,7 +6,7 @@
 import type { ChartConfiguration } from 'chart.js';
 import { ChartJSNodeCanvas } from 'chartjs-node-canvas';
 import type { ITool, ToolResult } from '../../../core/types.js';
-import { CreateChartSchema, validateParams } from '../../../shared/schemas/tools.schema.js';
+import { CreateChartSchema, validateParamsWithExample } from '../../../shared/schemas/tools.schema.js';
 
 // Canvas renderer - width/height sẽ được set động
 const createChartCanvas = (width: number, height: number) =>
@@ -75,7 +75,7 @@ export const createChartTool: ITool = {
       }
     }
 
-    const validation = validateParams(CreateChartSchema, params);
+    const validation = validateParamsWithExample(CreateChartSchema, params, 'createChart');
     if (!validation.success) return { success: false, error: validation.error };
     const data = validation.data;
 

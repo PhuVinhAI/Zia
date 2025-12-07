@@ -2,7 +2,7 @@
  * Tool: jikanCharacters - Lấy danh sách nhân vật của Anime/Manga
  */
 
-import { JikanCharactersSchema, validateParams } from '../../../shared/schemas/tools.schema.js';
+import { JikanCharactersSchema, validateParamsWithExample } from '../../../shared/schemas/tools.schema.js';
 import type { ToolDefinition, ToolResult } from '../../../shared/types/tools.types.js';
 import { jikanFetch } from '../services/jikanClient.js';
 
@@ -51,7 +51,7 @@ export const jikanCharactersTool: ToolDefinition = {
   ],
   execute: async (params): Promise<ToolResult> => {
     // Validate với Zod
-    const validation = validateParams(JikanCharactersSchema, params);
+    const validation = validateParamsWithExample(JikanCharactersSchema, params, 'jikanCharacters');
     if (!validation.success) {
       return { success: false, error: validation.error };
     }

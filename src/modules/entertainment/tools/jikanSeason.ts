@@ -2,7 +2,7 @@
  * Tool: jikanSeason - Anime theo mùa và lịch phát sóng
  */
 
-import { JikanSeasonSchema, validateParams } from '../../../shared/schemas/tools.schema.js';
+import { JikanSeasonSchema, validateParamsWithExample } from '../../../shared/schemas/tools.schema.js';
 import type { ToolDefinition, ToolResult } from '../../../shared/types/tools.types.js';
 import { type JikanAnime, type JikanListResponse, jikanFetch } from '../services/jikanClient.js';
 
@@ -40,7 +40,7 @@ export const jikanSeasonTool: ToolDefinition = {
   ],
   execute: async (params): Promise<ToolResult> => {
     // Validate với Zod
-    const validation = validateParams(JikanSeasonSchema, params);
+    const validation = validateParamsWithExample(JikanSeasonSchema, params, 'jikanSeason');
     if (!validation.success) {
       return { success: false, error: validation.error };
     }

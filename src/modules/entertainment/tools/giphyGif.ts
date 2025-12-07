@@ -4,7 +4,7 @@
  */
 
 import { debugLog } from '../../../core/logger/logger.js';
-import { GiphyGifSchema, validateParams } from '../../../shared/schemas/tools.schema.js';
+import { GiphyGifSchema, validateParamsWithExample } from '../../../shared/schemas/tools.schema.js';
 import type { ToolDefinition, ToolResult } from '../../../shared/types/tools.types.js';
 import { fetchImageAsBuffer } from '../../../shared/utils/httpClient.js';
 import {
@@ -47,7 +47,7 @@ export const giphyGifTool: ToolDefinition = {
     },
   ],
   execute: async (params): Promise<ToolResult> => {
-    const validation = validateParams(GiphyGifSchema, params);
+    const validation = validateParamsWithExample(GiphyGifSchema, params, 'giphyGif');
     if (!validation.success) {
       return { success: false, error: validation.error };
     }

@@ -398,6 +398,54 @@ export const ScheduleTaskSchema = z.object({
 // ============ HELPER FUNCTION ============
 
 /**
+ * Ví dụ cấu trúc đúng cho từng tool - giúp AI tránh ảo giác
+ */
+export const TOOL_EXAMPLES: Record<string, string> = {
+  // Entertainment
+  jikanSearch: `[tool:jikanSearch]{"q":"naruto","mediaType":"anime","limit":5}[/tool]`,
+  jikanDetails: `[tool:jikanDetails]{"id":20,"mediaType":"anime"}[/tool]`,
+  jikanTop: `[tool:jikanTop]{"mediaType":"anime","filter":"airing","limit":10}[/tool]`,
+  jikanSeason: `[tool:jikanSeason]{"mode":"now","limit":10}[/tool]`,
+  jikanCharacters: `[tool:jikanCharacters]{"id":20,"mediaType":"anime","limit":10}[/tool]`,
+  jikanEpisodes: `[tool:jikanEpisodes]{"id":20,"page":1}[/tool]`,
+  jikanGenres: `[tool:jikanGenres]{"mediaType":"anime"}[/tool]`,
+  jikanRecommendations: `[tool:jikanRecommendations]{"id":20,"mediaType":"anime","limit":5}[/tool]`,
+  nekosImages: `[tool:nekosImages]{"tags":"catgirl","rating":"safe","limit":1}[/tool]`,
+  giphyGif: `[tool:giphyGif]{"mode":"search","query":"happy","limit":1}[/tool]`,
+
+  // System
+  googleSearch: `[tool:googleSearch]{"q":"từ khóa tìm kiếm","num":5}[/tool]`,
+  youtubeSearch: `[tool:youtubeSearch]{"q":"music video","maxResults":5}[/tool]`,
+  youtubeVideo: `[tool:youtubeVideo]{"videoId":"dQw4w9WgXcQ"}[/tool]`,
+  youtubeChannel: `[tool:youtubeChannel]{"channelId":"UC..."}[/tool]`,
+  createChart: `[tool:createChart]{"type":"bar","title":"Biểu đồ","labels":["A","B","C"],"datasets":[{"label":"Data","data":[10,20,30]}]}[/tool]`,
+  createFile: `[tool:createFile]{"filename":"report.docx","content":"# Tiêu đề\\n\\nNội dung..."}[/tool]`,
+  createApp: `[tool:createApp]{"name":"MyApp","html":"<div>Hello</div>","js":"console.log('hi')","libraries":["tailwind"]}[/tool]`,
+  executeCode: `[tool:executeCode]{"code":"print('Hello')","language":"python"}[/tool]`,
+  freepikImage: `[tool:freepikImage]{"prompt":"a cute cat","aspectRatio":"square_1_1"}[/tool]`,
+  textToSpeech: `[tool:textToSpeech]{"text":"Xin chào"}[/tool]`,
+  solveMath: `[tool:solveMath]{"problem":"Giải $x^2 = 4$","solution":"$x = \\pm 2$"}[/tool]`,
+  saveMemory: `[tool:saveMemory]{"content":"User thích màu xanh","type":"preference","importance":7}[/tool]`,
+  recallMemory: `[tool:recallMemory]{"query":"sở thích","limit":5}[/tool]`,
+  scheduleTask: `[tool:scheduleTask]{"type":"send_message","targetUserId":"123","message":"Hello","delayMinutes":5}[/tool]`,
+  clearHistory: `[tool:clearHistory]{}[/tool]`,
+  flush_logs: `[tool:flush_logs]{}[/tool]`,
+  getAllFriends: `[tool:getAllFriends]{"limit":50}[/tool]`,
+  getFriendOnlines: `[tool:getFriendOnlines]{"limit":10}[/tool]`,
+  getUserInfo: `[tool:getUserInfo]{"userId":"123"}[/tool]`,
+
+  // Academic
+  tvuLogin: `[tool:tvuLogin]{"username":"MSSV","password":"matkhau"}[/tool]`,
+  tvuGrades: `[tool:tvuGrades]{}[/tool]`,
+  tvuSchedule: `[tool:tvuSchedule]{"hocKy":20241}[/tool]`,
+  tvuSemesters: `[tool:tvuSemesters]{}[/tool]`,
+  tvuStudentInfo: `[tool:tvuStudentInfo]{}[/tool]`,
+  tvuNotifications: `[tool:tvuNotifications]{"limit":20}[/tool]`,
+  tvuCurriculum: `[tool:tvuCurriculum]{}[/tool]`,
+  tvuTuition: `[tool:tvuTuition]{}[/tool]`,
+};
+
+/**
  * Validate params với Zod schema
  * @returns { success: true, data } hoặc { success: false, error }
  */
@@ -410,6 +458,30 @@ export function validateParams<T>(
     return {
       success: false,
       error: result.error.issues[0]?.message || 'Tham số không hợp lệ',
+    };
+  }
+  return { success: true, data: result.data };
+}
+
+/**
+ * Validate params và trả về error kèm ví dụ cấu trúc đúng
+ * Giúp AI tránh ảo giác khi gọi tool sai cấu trúc
+ */
+export function validateParamsWithExample<T>(
+  schema: z.ZodSchema<T>,
+  params: unknown,
+  toolName: string,
+): { success: true; data: T } | { success: false; error: string } {
+  const result = schema.safeParse(params);
+  if (!result.success) {
+    const errorMsg = result.error.issues[0]?.message || 'Tham số không hợp lệ';
+    const example = TOOL_EXAMPLES[toolName];
+    const errorWithExample = example
+      ? `${errorMsg}\n\n📝 Cấu trúc đúng:\n${example}`
+      : errorMsg;
+    return {
+      success: false,
+      error: errorWithExample,
     };
   }
   return { success: true, data: result.data };

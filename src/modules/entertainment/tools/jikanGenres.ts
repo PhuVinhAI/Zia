@@ -2,7 +2,7 @@
  * Tool: jikanGenres - Lấy danh sách thể loại
  */
 
-import { JikanGenresSchema, validateParams } from '../../../shared/schemas/tools.schema.js';
+import { JikanGenresSchema, validateParamsWithExample } from '../../../shared/schemas/tools.schema.js';
 import type { ToolDefinition, ToolResult } from '../../../shared/types/tools.types.js';
 import { jikanFetch } from '../services/jikanClient.js';
 
@@ -29,7 +29,7 @@ export const jikanGenresTool: ToolDefinition = {
   ],
   execute: async (params): Promise<ToolResult> => {
     // Validate với Zod
-    const validation = validateParams(JikanGenresSchema, params);
+    const validation = validateParamsWithExample(JikanGenresSchema, params, 'jikanGenres');
     if (!validation.success) {
       return { success: false, error: validation.error };
     }

@@ -2,7 +2,7 @@
  * Tool: jikanDetails - Lấy thông tin chi tiết Anime/Manga
  */
 
-import { JikanDetailsSchema, validateParams } from '../../../shared/schemas/tools.schema.js';
+import { JikanDetailsSchema, validateParamsWithExample } from '../../../shared/schemas/tools.schema.js';
 import type { ToolDefinition, ToolResult } from '../../../shared/types/tools.types.js';
 import {
   type JikanAnime,
@@ -31,7 +31,7 @@ export const jikanDetailsTool: ToolDefinition = {
   ],
   execute: async (params): Promise<ToolResult> => {
     // Validate với Zod
-    const validation = validateParams(JikanDetailsSchema, params);
+    const validation = validateParamsWithExample(JikanDetailsSchema, params, 'jikanDetails');
     if (!validation.success) {
       return { success: false, error: validation.error };
     }

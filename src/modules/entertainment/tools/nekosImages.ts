@@ -4,7 +4,7 @@
  */
 
 import { debugLog } from '../../../core/logger/logger.js';
-import { NekosImagesSchema, validateParams } from '../../../shared/schemas/tools.schema.js';
+import { NekosImagesSchema, validateParamsWithExample } from '../../../shared/schemas/tools.schema.js';
 import type { ToolDefinition, ToolResult } from '../../../shared/types/tools.types.js';
 import { fetchImageAsBuffer } from '../../../shared/utils/httpClient.js';
 import { type NekosImage, nekosFetch } from '../services/nekosClient.js';
@@ -48,7 +48,7 @@ export const nekosImagesTool: ToolDefinition = {
     },
   ],
   execute: async (params): Promise<ToolResult> => {
-    const validation = validateParams(NekosImagesSchema, params);
+    const validation = validateParamsWithExample(NekosImagesSchema, params, 'nekosImages');
     if (!validation.success) {
       return { success: false, error: validation.error };
     }

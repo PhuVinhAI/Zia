@@ -2,7 +2,7 @@
  * Tool: jikanTop - Bảng xếp hạng Anime/Manga
  */
 
-import { JikanTopSchema, validateParams } from '../../../shared/schemas/tools.schema.js';
+import { JikanTopSchema, validateParamsWithExample } from '../../../shared/schemas/tools.schema.js';
 import type { ToolDefinition, ToolResult } from '../../../shared/types/tools.types.js';
 import {
   type JikanAnime,
@@ -51,7 +51,7 @@ export const jikanTopTool: ToolDefinition = {
   ],
   execute: async (params): Promise<ToolResult> => {
     // Validate với Zod
-    const validation = validateParams(JikanTopSchema, params);
+    const validation = validateParamsWithExample(JikanTopSchema, params, 'jikanTop');
     if (!validation.success) {
       return { success: false, error: validation.error };
     }

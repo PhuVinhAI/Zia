@@ -3,7 +3,10 @@
  */
 
 import { debugLog } from '../../../core/logger/logger.js';
-import { GoogleSearchSchema, validateParams } from '../../../shared/schemas/tools.schema.js';
+import {
+  GoogleSearchSchema,
+  validateParamsWithExample,
+} from '../../../shared/schemas/tools.schema.js';
 import type { ToolDefinition, ToolResult } from '../../../shared/types/tools.types.js';
 import { googleSearch } from '../services/googleSearchClient.js';
 
@@ -18,7 +21,7 @@ export const googleSearchTool: ToolDefinition = {
     { name: 'safe', type: 'string', description: 'Safe search: off hoặc active', required: false },
   ],
   execute: async (params): Promise<ToolResult> => {
-    const validation = validateParams(GoogleSearchSchema, params);
+    const validation = validateParamsWithExample(GoogleSearchSchema, params, 'googleSearch');
     if (!validation.success) return { success: false, error: validation.error };
     const data = validation.data;
 

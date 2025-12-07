@@ -3,7 +3,7 @@
  */
 
 import { debugLog } from '../../../core/logger/logger.js';
-import { TvuScheduleSchema, validateParams } from '../../../shared/schemas/tools.schema.js';
+import { TvuScheduleSchema, validateParamsWithExample } from '../../../shared/schemas/tools.schema.js';
 import type { ToolDefinition, ToolResult } from '../../../shared/types/tools.types.js';
 import { tvuRequest } from '../services/tvuClient.js';
 
@@ -38,7 +38,7 @@ export const tvuScheduleTool: ToolDefinition = {
   ],
   execute: async (params: Record<string, any>): Promise<ToolResult> => {
     // Validate với Zod
-    const validation = validateParams(TvuScheduleSchema, params);
+    const validation = validateParamsWithExample(TvuScheduleSchema, params, 'tvuSchedule');
     if (!validation.success) {
       return { success: false, error: validation.error };
     }

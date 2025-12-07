@@ -4,7 +4,7 @@
  */
 
 import { debugLog } from '../../../core/logger/logger.js';
-import { FreepikImageSchema, validateParams } from '../../../shared/schemas/tools.schema.js';
+import { FreepikImageSchema, validateParamsWithExample } from '../../../shared/schemas/tools.schema.js';
 import type { ToolDefinition, ToolResult } from '../../../shared/types/tools.types.js';
 import { fetchImageAsBuffer } from '../../../shared/utils/httpClient.js';
 import { generateSeedreamImage, pollTaskUntilComplete } from '../services/freepikClient.js';
@@ -42,7 +42,7 @@ Trả về ảnh trực tiếp. Thời gian tạo ~10-30 giây.`,
     },
   ],
   execute: async (params): Promise<ToolResult> => {
-    const validation = validateParams(FreepikImageSchema, params);
+    const validation = validateParamsWithExample(FreepikImageSchema, params, 'freepikImage');
     if (!validation.success) {
       return { success: false, error: validation.error };
     }

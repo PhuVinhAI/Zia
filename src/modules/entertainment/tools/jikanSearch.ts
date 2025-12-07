@@ -2,7 +2,7 @@
  * Tool: jikanSearch - Tìm kiếm Anime/Manga
  */
 
-import { JikanSearchSchema, validateParams } from '../../../shared/schemas/tools.schema.js';
+import { JikanSearchSchema, validateParamsWithExample } from '../../../shared/schemas/tools.schema.js';
 import type { ToolDefinition, ToolResult } from '../../../shared/types/tools.types.js';
 import {
   type JikanAnime,
@@ -81,7 +81,7 @@ export const jikanSearchTool: ToolDefinition = {
   ],
   execute: async (params): Promise<ToolResult> => {
     // Validate với Zod
-    const validation = validateParams(JikanSearchSchema, params);
+    const validation = validateParamsWithExample(JikanSearchSchema, params, 'jikanSearch');
     if (!validation.success) {
       return { success: false, error: validation.error };
     }
