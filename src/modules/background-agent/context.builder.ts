@@ -56,18 +56,20 @@ export async function buildEnvironmentContext(
   }
 
   try {
-    // 2. Lấy pending friend requests
-    const reqRes = await api.getSentFriendRequest();
-    context.pendingFriendRequests = Object.values(reqRes || {}).map((r: any) => ({
-      userId: r.userId,
-      displayName: r.displayName,
-      avatar: r.avatar,
-      message: r.fReqInfo?.message || '',
-      time: r.fReqInfo?.time || 0,
-    }));
-    debugLog('CONTEXT', `Pending friend requests: ${context.pendingFriendRequests.length}`);
+    // 2. Lấy pending friend requests (nếu API hỗ trợ)
+    if (typeof api.getSentFriendRequest === 'function') {
+      const reqRes = await api.getSentFriendRequest();
+      context.pendingFriendRequests = Object.values(reqRes || {}).map((r: any) => ({
+        userId: r.userId,
+        displayName: r.displayName,
+        avatar: r.avatar,
+        message: r.fReqInfo?.message || '',
+        time: r.fReqInfo?.time || 0,
+      }));
+      debugLog('CONTEXT', `Pending friend requests: ${context.pendingFriendRequests.length}`);
+    }
   } catch (e) {
-    debugLog('CONTEXT', `Error getting friend requests: ${e}`);
+    // Bỏ qua lỗi - API có thể không hỗ trợ hoặc session không có quyền
   }
 
   // 3. Lấy thông tin target user nếu có

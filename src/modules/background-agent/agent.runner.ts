@@ -99,10 +99,29 @@ async function autoAcceptFriendRequests(): Promise<void> {
     // 1. Gọi API lấy danh sách (Bọc try-catch riêng để xác định lỗi do lấy list hay do accept)
     let pendingRequests;
     try {
+      // Check if method exists
+      if (typeof zaloApi.getSentFriendRequest !== 'function') {
+        debugLog('AGENT', '⚠️ API getSentFriendRequest không khả dụng, bỏ qua auto-accept');
+        return;
+      }
       pendingRequests = await zaloApi.getSentFriendRequest();
     } catch (e: any) {
-      // Nếu lỗi ngay bước này -> Thường do Cookie hoặc Network
-      debugLog('AGENT', `⚠️ Lỗi khi lấy danh sách kết bạn: ${e.message}`);
+      // Error code 112 = Không có lời mời kết bạn nào (Zalo API behavior)
+      // Đây là trường hợp bình thường, không cần log warning
+      const errorCode = e?.code;
+      if (errorCode === 112) {
+        return; // Không có friend request, thoát êm
+      }
+      // Log chi tiết để debug
+      debugLog(
+        'AGENT',
+        `⚠️ Lỗi khi lấy danh sách kết bạn: ${JSON.stringify({
+          message: e?.message,
+          code: errorCode,
+          name: e?.name,
+          stack: e?.stack?.split('\n')[0],
+        })}`,
+      );
       return;
     }
 
