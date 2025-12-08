@@ -6,6 +6,7 @@
 import {
   BorderStyle,
   ExternalHyperlink,
+  FootnoteReferenceRun,
   PageBreak,
   Paragraph,
   ShadingType,
@@ -27,7 +28,7 @@ import {
   buildOrnamentDivider,
   parseDividerSyntax,
 } from './dividerBuilder.js';
-
+import { hasFootnoteReference } from './footnoteBuilder.js';
 import { buildHighlightedParagraph, hasHighlights } from './highlightBuilder.js';
 import { buildImageParagraph, parseImageSyntax } from './imageBuilder.js';
 import { buildDefinitionList, parseDefinitionList } from './listBuilder.js';
@@ -43,18 +44,41 @@ import type { DocumentTheme } from './types.js';
 export function tokensToTextRuns(
   tokens: InlineToken[],
   theme?: DocumentTheme,
-): (TextRun | ExternalHyperlink)[] {
+): (TextRun | ExternalHyperlink | FootnoteReferenceRun)[] {
   const t = theme || getTheme();
+  const result: (TextRun | ExternalHyperlink | FootnoteReferenceRun)[] = [];
 
-  return tokens.map((token) => {
+  for (const token of tokens) {
     const isBold = hasStyle(token, 'bold') || hasStyle(token, 'boldItalic');
     const isItalic = hasStyle(token, 'italic') || hasStyle(token, 'boldItalic');
     const isStrike = hasStyle(token, 'strikethrough');
     const isCode = hasStyle(token, 'code');
     const isLink = hasStyle(token, 'link');
 
+    // Check for footnote references in text
+    if (hasFootnoteReference(token.text)) {
+      const parts = token.text.split(/(\[\^\d+\])/g);
+      for (const part of parts) {
+        const fnMatch = part.match(/\[\^(\d+)\]/);
+        if (fnMatch) {
+          result.push(new FootnoteReferenceRun(parseInt(fnMatch[1])));
+        } else if (part) {
+          result.push(new TextRun({
+            text: part,
+            bold: isBold,
+            italics: isItalic,
+            strike: isStrike,
+            font: isCode ? t.fonts.code : t.fonts.body,
+            shading: isCode ? { type: ShadingType.SOLID, color: t.colors.codeBackground } : undefined,
+            color: t.colors.text,
+          }));
+        }
+      }
+      continue;
+    }
+
     if (isLink && token.href) {
-      return new ExternalHyperlink({
+      result.push(new ExternalHyperlink({
         children: [
           new TextRun({
             text: token.text,
@@ -64,10 +88,11 @@ export function tokensToTextRuns(
           }),
         ],
         link: token.href,
-      });
+      }));
+      continue;
     }
 
-    return new TextRun({
+    result.push(new TextRun({
       text: token.text,
       bold: isBold,
       italics: isItalic,
@@ -75,8 +100,10 @@ export function tokensToTextRuns(
       font: isCode ? t.fonts.code : t.fonts.body,
       shading: isCode ? { type: ShadingType.SOLID, color: t.colors.codeBackground } : undefined,
       color: t.colors.text,
-    });
-  });
+    }));
+  }
+
+  return result;
 }
 
 // ═══════════════════════════════════════════════════
