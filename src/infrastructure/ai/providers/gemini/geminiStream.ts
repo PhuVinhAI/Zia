@@ -8,9 +8,9 @@ import {
   logAIResponse,
   logError,
   logSystemPrompt,
-} from '../../core/logger/logger.js';
-import { CONFIG } from '../../shared/constants/config.js';
-import { checkInputTokens } from '../../shared/utils/tokenCounter.js';
+} from '../../../../core/logger/logger.js';
+import { CONFIG } from '../../../../core/config/config.js';
+import { checkInputTokens } from '../../../../shared/utils/tokenCounter.js';
 import {
   buildMessageParts,
   deleteChatSession,

@@ -7,7 +7,7 @@ import { desc, eq, sql } from 'drizzle-orm';
 import { debugLog } from '../../core/logger/logger.js';
 import { EMBEDDING_DIM, getDatabase, getSqliteDb } from '../database/connection.js';
 import { type Memory, type MemoryType, memories, type NewMemory } from '../database/schema.js';
-import { isRateLimitError, keyManager } from '../gemini/keyManager.js';
+import { isRateLimitError, keyManager } from '../ai/providers/gemini/keyManager.js';
 
 // ═══════════════════════════════════════════════════
 // CONFIG

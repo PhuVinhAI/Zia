@@ -1,4 +1,4 @@
-import { generateToolsPrompt } from '../../core/index.js';
+import { generateToolsPrompt } from '../../../../core/index.js';
 import { CHARACTER, CHARACTER_PROMPT } from './character.js';
 
 // ═══════════════════════════════════════════════════
@@ -211,7 +211,7 @@ ${ZALO_INTERACTION_PROMPT()}
 // EXPORT - Chọn prompt dựa trên config
 // ═══════════════════════════════════════════════════
 
-import { CONFIG } from '../../shared/constants/config.js';
+import { CONFIG } from '../../../../core/config/config.js';
 
 // Prompt bổ sung khi bật allowNSFW - cho phép nội dung người lớn
 const NSFW_ALLOWED_PROMPT = `

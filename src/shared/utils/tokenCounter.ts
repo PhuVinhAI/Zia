@@ -3,7 +3,7 @@
  */
 import type { Content } from '@google/genai';
 import { debugLog, logError } from '../../core/logger/logger.js';
-import { getGeminiModel } from '../../infrastructure/gemini/geminiConfig.js';
+import { getGeminiModel } from '../../infrastructure/ai/providers/gemini/geminiConfig.js';
 import { getAIService } from '../types/ai.types.js';
 
 // MIME types mà Gemini API hỗ trợ cho countTokens

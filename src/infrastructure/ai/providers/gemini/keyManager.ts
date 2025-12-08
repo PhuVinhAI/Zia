@@ -4,7 +4,7 @@
  * Tự động fallback model: 2.5 pro → flash-latest → flash-lite-latest
  */
 import { GoogleGenAI } from '@google/genai';
-import { debugLog } from '../../core/logger/logger.js';
+import { debugLog } from '../../../../core/logger/logger.js';
 
 // Danh sách models theo thứ tự ưu tiên
 export const GEMINI_MODELS = [

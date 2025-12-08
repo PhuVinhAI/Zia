@@ -69,18 +69,18 @@ export {
   buildPrompt,
   extractTextFromMessages,
   processPrefix,
-} from './prompt.builder.js';
+} from './services/prompt.builder.js';
 export {
   extractQuoteInfo,
   parseQuoteAttachment,
   type QuoteMedia,
-} from './quote.parser.js';
+} from './services/quote.parser.js';
 // Rate Limit
 export {
   checkRateLimit,
   getRateLimitStatus,
   markApiCall,
-} from './rate-limit.guard.js';
+} from './guards/rate-limit.guard.js';
 
 // User Filter
-export { isAllowedUser, isGroupAllowed, isUserAllowed } from './user.filter.js';
+export { isAllowedUser, isGroupAllowed, isUserAllowed } from './guards/user.filter.js';

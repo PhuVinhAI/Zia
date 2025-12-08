@@ -6,7 +6,7 @@ import {
   getSystemPrompt,
   PROMPTS,
   SYSTEM_PROMPT,
-} from '../../../src/infrastructure/gemini/prompts.js';
+} from '../../../src/infrastructure/ai/providers/gemini/prompts.js';
 
 describe('Prompts', () => {
   describe('getSystemPrompt()', () => {

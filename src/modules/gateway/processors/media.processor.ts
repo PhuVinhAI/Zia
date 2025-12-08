@@ -5,8 +5,8 @@
 
 import type { Content } from '@google/genai';
 import { debugLog } from '../../../core/logger/logger.js';
-import type { MediaPart } from '../../../infrastructure/gemini/gemini.provider.js';
-import { CONFIG } from '../../../shared/constants/config.js';
+import type { MediaPart } from '../../../infrastructure/ai/providers/gemini/gemini.provider.js';
+import { CONFIG } from '../../../core/config/config.js';
 import {
   fetchAndConvertToTextBase64,
   fetchDocxAndConvertToPdfBase64,
@@ -16,7 +16,7 @@ import {
   isTextConvertible,
 } from '../../../shared/utils/httpClient.js';
 import type { ClassifiedMessage } from '../classifier.js';
-import type { QuoteMedia } from '../quote.parser.js';
+import type { QuoteMedia } from '../services/quote.parser.js';
 
 // ═══════════════════════════════════════════════════
 // TYPES

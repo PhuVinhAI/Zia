@@ -13,14 +13,14 @@ import {
   logAIResponse,
   logError,
   logStep,
-} from '../../core/logger/logger.js';
-import { CONFIG } from '../../shared/constants/config.js';
+} from '../../../../core/logger/logger.js';
+import { CONFIG } from '../../../../core/config/config.js';
 import {
   type AIResponse,
   DEFAULT_RESPONSE,
   parseAIResponse,
-} from '../../shared/types/config.schema.js';
-import { checkInputTokens } from '../../shared/utils/tokenCounter.js';
+} from '../../../../shared/types/config.schema.js';
+import { checkInputTokens } from '../../../../shared/utils/tokenCounter.js';
 import {
   buildMessageParts,
   deleteChatSession,
@@ -31,7 +31,7 @@ import {
 import { keyManager, type MediaPart } from './geminiConfig.js';
 import { isRateLimitError } from './keyManager.js';
 
-export { parseAIResponse } from '../../shared/types/config.schema.js';
+export { parseAIResponse } from '../../../../shared/types/config.schema.js';
 export { deleteChatSession, getChatSession } from './geminiChat.js';
 export type { MediaPart, MediaType } from './geminiConfig.js';
 // Re-exports

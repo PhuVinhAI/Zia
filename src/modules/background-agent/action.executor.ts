@@ -3,7 +3,7 @@
  */
 import { debugLog } from '../../core/logger/logger.js';
 import type { AgentTask } from '../../infrastructure/database/schema.js';
-import { ThreadType } from '../../infrastructure/zalo/zalo.service.js';
+import { ThreadType } from '../../infrastructure/messaging/zalo/zalo.service.js';
 import { saveResponseToHistory } from '../../shared/utils/history/history.js';
 import {
   getThreadType,

@@ -5,8 +5,8 @@
 import type { Content } from '@google/genai';
 import { debugLog } from '../../../core/logger/logger.js';
 import { historyRepository } from '../../../infrastructure/database/index.js';
-import { deleteChatSession } from '../../../infrastructure/gemini/geminiChat.js';
-import { CONFIG } from '../../constants/config.js';
+import { deleteChatSession } from '../../../infrastructure/ai/providers/gemini/geminiChat.js';
+import { CONFIG } from '../../../core/config/config.js';
 import { countTokens } from '../tokenCounter.js';
 import { toGeminiContent } from './historyConverter.js';
 import { fetchFullHistory, getPaginationConfig, loadOldMessages } from './historyLoader.js';

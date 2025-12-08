@@ -3,8 +3,8 @@
  * Runtime: Bun
  */
 import { HarmBlockThreshold, HarmCategory } from '@google/genai';
-import { debugLog } from '../../core/logger/logger.js';
-import { setAIService } from '../../shared/types/ai.types.js';
+import { debugLog } from '../../../../core/logger/logger.js';
+import { setAIService } from '../../../../shared/types/ai.types.js';
 import { keyManager } from './keyManager.js';
 
 debugLog('GEMINI', 'Initializing Gemini API with Key Manager...');

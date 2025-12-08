@@ -2,7 +2,7 @@
  * Groq Client - Cấu hình và khởi tạo Groq API cho background agent
  */
 import { Groq } from 'groq-sdk';
-import { debugLog } from '../../core/logger/logger.js';
+import { debugLog } from '../../../../core/logger/logger.js';
 
 debugLog('GROQ', 'Initializing Groq API...');
 

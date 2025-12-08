@@ -11,7 +11,7 @@
 
 import sharp from 'sharp';
 import { debugLog, logError, logMessage, logZaloAPI } from '../../../core/logger/logger.js';
-import { ThreadType } from '../../../infrastructure/zalo/zalo.service.js';
+import { ThreadType } from '../../../infrastructure/messaging/zalo/zalo.service.js';
 import { http } from '../httpClient.js';
 import {
   type CodeBlock,

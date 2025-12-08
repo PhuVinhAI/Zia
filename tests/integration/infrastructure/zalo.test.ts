@@ -12,7 +12,7 @@ import {
   ThreadType,
   Reactions,
   TextStyle,
-} from '../../../src/infrastructure/zalo/zalo.service.js';
+} from '../../../src/infrastructure/messaging/zalo/zalo.service.js';
 
 const SKIP = !hasApiKey('zaloCredentials');
 

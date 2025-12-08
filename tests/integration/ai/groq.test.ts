@@ -9,7 +9,7 @@ import {
   generateGroqResponse,
   streamGroqResponse,
   GROQ_MODEL,
-} from '../../../src/infrastructure/groq/groqClient.js';
+} from '../../../src/infrastructure/ai/providers/groq/groqClient.js';
 import { hasApiKey, TEST_CONFIG } from '../setup.js';
 
 const SKIP = !hasApiKey('groq');

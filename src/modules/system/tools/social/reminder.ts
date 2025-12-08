@@ -4,7 +4,7 @@
  */
 
 import { debugLog, logZaloAPI } from '../../../../core/logger/logger.js';
-import { ThreadType } from '../../../../infrastructure/zalo/zalo.service.js';
+import { ThreadType } from '../../../../infrastructure/messaging/zalo/zalo.service.js';
 import type {
   ToolContext,
   ToolDefinition,

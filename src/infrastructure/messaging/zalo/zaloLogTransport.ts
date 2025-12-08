@@ -3,8 +3,8 @@
  * Implement ILogTransport interface
  */
 
-import type { ILogTransport } from '../../core/logger/transports.js';
-import { formatFileTimestamp } from '../../shared/utils/datetime.js';
+import type { ILogTransport } from '../../../core/logger/transports.js';
+import { formatFileTimestamp } from '../../../shared/utils/datetime.js';
 
 /**
  * Transport gửi logs qua Zalo dưới dạng file attachment

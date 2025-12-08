@@ -3,7 +3,7 @@
  */
 import type { Content } from '@google/genai';
 import { debugLog } from '../../../core/logger/logger.js';
-import { CONFIG } from '../../constants/config.js';
+import { CONFIG } from '../../../core/config/config.js';
 import { toGeminiContent } from './historyConverter.js';
 
 /** Ngủ (Delay) */

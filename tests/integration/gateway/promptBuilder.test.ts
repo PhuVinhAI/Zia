@@ -6,7 +6,7 @@ import {
   buildPrompt,
   extractTextFromMessages,
   processPrefix,
-} from '../../../src/modules/gateway/prompt.builder.js';
+} from '../../../src/modules/gateway/services/prompt.builder.js';
 import type { ClassifiedMessage } from '../../../src/modules/gateway/classifier.js';
 
 // Helper to create mock message

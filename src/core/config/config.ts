@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { debugLog, logError } from '../../core/logger/logger.js';
-import { MIME_TYPES, type Settings, SettingsSchema } from '../schemas/config.schema.js';
+import { MIME_TYPES, type Settings, SettingsSchema } from './config.schema.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, '../../../');
@@ -105,5 +105,5 @@ try {
 const settings = loadSettings();
 export const CONFIG = buildConfig(settings);
 
-export type { AIMessage, AIResponse } from '../types/config.schema.js';
-export { DEFAULT_RESPONSE, parseAIResponse } from '../types/config.schema.js';
+export type { AIMessage, AIResponse } from '../../shared/types/config.schema.js';
+export { DEFAULT_RESPONSE, parseAIResponse } from '../../shared/types/config.schema.js';
