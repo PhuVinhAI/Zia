@@ -10,7 +10,7 @@ import {
   initFileLogger,
   logStep,
 } from '../core/logger/logger.js';
-import { loginWithQR, ThreadType } from '../infrastructure/messaging/zalo/zalo.service.js';
+import { loginWithQR } from '../infrastructure/messaging/zalo/zalo.service.js';
 import { setupSelfMessageListener } from '../modules/gateway/gateway.module.js';
 import { preloadAllHistory } from '../shared/utils/history/history.js';
 

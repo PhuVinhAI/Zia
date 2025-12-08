@@ -283,7 +283,7 @@ export function buildLogo(
 // BACKGROUND IMAGE
 // ═══════════════════════════════════════════════════
 
-export function setBackgroundImage(slide: any, imageData: string, opacity?: number): void {
+export function setBackgroundImage(slide: any, imageData: string, _opacity?: number): void {
   // Note: PptxGenJS doesn't support opacity directly on background images
   // This sets a full-slide background image
 

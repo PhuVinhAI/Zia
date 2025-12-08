@@ -27,7 +27,7 @@ const RATE_LIMIT_DURATIONS = {
   day: 24 * 60 * 60 * 1000, // 24 giờ cho RPD (requests per day)
 } as const;
 
-type RateLimitType = 'minute' | 'day' | 'default';
+type _RateLimitType = 'minute' | 'day' | 'default';
 
 // Parse keys từ env
 // Hỗ trợ 2 cách:
@@ -235,8 +235,6 @@ class GeminiKeyManager {
    * @returns true nếu chuyển thành công
    */
   private rotateToNextModel(): boolean {
-    const startIndex = this.currentModelIndex;
-
     for (let i = 1; i < GEMINI_MODELS.length; i++) {
       const nextIndex = (this.currentModelIndex + i) % GEMINI_MODELS.length;
 

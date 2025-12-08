@@ -15,7 +15,6 @@ import {
   sendImageFromUrl,
   sendSticker,
   sendTextMessage,
-  setThreadType,
 } from '../../../shared/utils/message/messageSender.js';
 import {
   getSentMessage,

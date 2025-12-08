@@ -100,12 +100,6 @@ export function parseHighlights(text: string): {
   segments: { text: string; highlight?: HighlightColorName }[];
 } {
   const segments: { text: string; highlight?: HighlightColorName }[] = [];
-  const remaining = text;
-
-  // Pattern for ==text== (default yellow highlight)
-  const simplePattern = /==([^=]+)==/g;
-  // Pattern for [HIGHLIGHT:color]text[/HIGHLIGHT]
-  const colorPattern = /\[HIGHLIGHT:(\w+)\]([^[]+)\[\/HIGHLIGHT\]/gi;
 
   // First, handle colored highlights
   let lastIndex = 0;

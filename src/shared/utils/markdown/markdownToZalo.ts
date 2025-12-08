@@ -700,15 +700,15 @@ function fixIncompleteCodeBlocks(markdown: string): string {
 
     if (firstBacktick === lastBacktick) {
       // Chỉ có 1 ```, kiểm tra xem là mở hay đóng
-      const beforeBacktick = text.slice(0, firstBacktick);
+      const _beforeBacktick = text.slice(0, firstBacktick);
       const afterBacktick = text.slice(firstBacktick + 3);
 
       // Nếu sau ``` có language tag hoặc code → đây là mở, cần thêm đóng
       if (afterBacktick.trim().length > 0) {
-        text = text + '\n```';
+        text = `${text}\n\`\`\``;
       } else {
         // Đây là đóng, cần thêm mở ở đầu
-        text = '```\n' + text;
+        text = `\`\`\`\n${text}`;
       }
     }
   }

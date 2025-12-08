@@ -3,7 +3,7 @@
  */
 
 import type { MasterSlideConfig, PresentationTheme } from './types.js';
-import { lightenColor, safeColor } from './utils.js';
+import { lightenColor } from './utils.js';
 
 // ═══════════════════════════════════════════════════
 // MASTER SLIDE DEFINITIONS

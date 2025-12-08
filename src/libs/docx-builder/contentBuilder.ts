@@ -61,7 +61,7 @@ export function tokensToTextRuns(
       for (const part of parts) {
         const fnMatch = part.match(/\[\^(\d+)\]/);
         if (fnMatch) {
-          result.push(new FootnoteReferenceRun(parseInt(fnMatch[1])));
+          result.push(new FootnoteReferenceRun(parseInt(fnMatch[1], 10)));
         } else if (part) {
           result.push(
             new TextRun({

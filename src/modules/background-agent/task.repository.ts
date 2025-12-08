@@ -6,7 +6,6 @@ import { getDatabase } from '../../infrastructure/database/connection.js';
 import {
   type AgentTask,
   agentTasks,
-  type NewAgentTask,
   type TaskStatus,
   type TaskType,
 } from '../../infrastructure/database/schema.js';

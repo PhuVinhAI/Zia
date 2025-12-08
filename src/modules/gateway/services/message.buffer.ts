@@ -4,10 +4,9 @@
  */
 
 import { Subject, type Subscription } from 'rxjs';
-import { bufferWhen, debounceTime, filter, groupBy, mergeMap, tap } from 'rxjs/operators';
+import { bufferWhen, debounceTime, filter, groupBy, mergeMap } from 'rxjs/operators';
 import { CONFIG } from '../../../core/config/config.js';
 import { debugLog, logError, logStep } from '../../../core/logger/logger.js';
-import { clearHistory } from '../../../shared/utils/history/history.js';
 import {
   clearPendingToolExecution,
   getAndClearAbortedMessages,
@@ -152,7 +151,7 @@ export function initMessageBuffer() {
       groupBy((data) => data.threadId),
       // Với mỗi nhóm thread
       mergeMap((group$) => {
-        const threadId = group$.key;
+        const _threadId = group$.key;
 
         return group$.pipe(
           // Không typing ở đây - để handleMixedContent quyết định sau khi check mention

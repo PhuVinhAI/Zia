@@ -3,7 +3,6 @@
  */
 import { debugLog } from '../../../core/logger/logger.js';
 import {
-  type ScheduleTaskParams,
   ScheduleTaskSchema,
   validateParamsWithExample,
 } from '../../../shared/schemas/tools.schema.js';

@@ -352,9 +352,17 @@ async function parseDocFile(docBuffer: Buffer): Promise<DocParseResult> {
     }
   }
 
-  // Clean up the extracted text
+  // Clean up the extracted text - remove control characters except newlines/tabs
+  // Using String.fromCharCode to avoid biome lint error for control characters in regex
+  const controlChars = [
+    ...Array.from({ length: 9 }, (_, i) => String.fromCharCode(i)), // \x00-\x08
+    String.fromCharCode(0x0b), // \x0B
+    String.fromCharCode(0x0c), // \x0C
+    ...Array.from({ length: 18 }, (_, i) => String.fromCharCode(0x0e + i)), // \x0E-\x1F
+  ].join('');
+  const controlCharRegex = new RegExp(`[${controlChars}]`, 'g');
   textContent = textContent
-    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '') // Remove control characters except newlines/tabs
+    .replace(controlCharRegex, '')
     .replace(/\r\n/g, '\n')
     .replace(/\r/g, '\n')
     .replace(/\n{3,}/g, '\n\n') // Normalize multiple newlines
@@ -531,7 +539,6 @@ function parseHtmlToElements(html: string): ParsedElement[] {
   let lastTableEnd = 0;
   const htmlParts: { type: 'html' | 'table'; content: string }[] = [];
 
-  // biome-ignore lint/suspicious/noAssignInExpressions: regex exec pattern
   while ((tableMatch = tableRegex.exec(html)) !== null) {
     if (tableMatch.index > lastTableEnd) {
       htmlParts.push({ type: 'html', content: html.slice(lastTableEnd, tableMatch.index) });
@@ -563,13 +570,11 @@ function parseTable(tableHtml: string): ParsedElement | null {
   const rowRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
   let rowMatch: RegExpExecArray | null;
 
-  // biome-ignore lint/suspicious/noAssignInExpressions: regex exec pattern
   while ((rowMatch = rowRegex.exec(tableHtml)) !== null) {
     const cells: string[] = [];
     const cellRegex = /<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi;
     let cellMatch: RegExpExecArray | null;
 
-    // biome-ignore lint/suspicious/noAssignInExpressions: regex exec pattern
     while ((cellMatch = cellRegex.exec(rowMatch[1])) !== null) {
       // Strip HTML tags from cell content
       const cellContent = cellMatch[1].replace(/<[^>]+>/g, '').trim();
@@ -595,10 +600,9 @@ function parseHtmlContent(html: string): ParsedElement[] {
   // Match block elements
   const blockRegex =
     /<(h[1-6]|p|li|hr|br|img)([^>]*)>([^<]*(?:<(?!\/?\1)[^<]*)*)<\/\1>|<(hr|br|img)([^>]*)\/?>/gi;
-  let lastIndex = 0;
+  let _lastIndex = 0;
   let match: RegExpExecArray | null;
 
-  // biome-ignore lint/suspicious/noAssignInExpressions: regex exec pattern
   while ((match = blockRegex.exec(html)) !== null) {
     const tag = (match[1] || match[4] || '').toLowerCase();
     const attrs = match[2] || match[5] || '';
@@ -607,22 +611,22 @@ function parseHtmlContent(html: string): ParsedElement[] {
     // Handle self-closing tags
     if (tag === 'hr') {
       elements.push({ type: 'hr' });
-      lastIndex = match.index + match[0].length;
+      _lastIndex = match.index + match[0].length;
       continue;
     }
 
     if (tag === 'br') {
       elements.push({ type: 'break' });
-      lastIndex = match.index + match[0].length;
+      _lastIndex = match.index + match[0].length;
       continue;
     }
 
     if (tag === 'img') {
       const srcMatch = attrs.match(/src=["']([^"']+)["']/);
-      if (srcMatch && srcMatch[1]) {
+      if (srcMatch?.[1]) {
         elements.push({ type: 'image', imageId: srcMatch[1] });
       }
-      lastIndex = match.index + match[0].length;
+      _lastIndex = match.index + match[0].length;
       continue;
     }
 
@@ -646,7 +650,7 @@ function parseHtmlContent(html: string): ParsedElement[] {
       }
     }
 
-    lastIndex = match.index + match[0].length;
+    _lastIndex = match.index + match[0].length;
   }
 
   return elements;
@@ -998,7 +1002,7 @@ export async function convertDocxToPdfLocal(buffer: Buffer): Promise<Buffer | nu
     // Unknown format - try as DOCX anyway (fallback)
     debugLog('DocxToPdf', `Unknown format, trying as DOCX (${sizeKB}KB)...`);
 
-    const { html, images, messages } = await parseDocxToHtml(buffer);
+    const { html, images } = await parseDocxToHtml(buffer);
     const elements = parseHtmlToElements(html);
     const pdfBuffer = await renderToPdf(elements, images);
 

@@ -150,7 +150,6 @@ class MemoryStore {
       minImportance?: number;
     },
   ): Promise<SearchResult[]> {
-    const db = getDatabase();
     const sqlite = getSqliteDb();
     const queryEmb = await embeddingService.createEmbedding(query, 'RETRIEVAL_QUERY');
     const limit = options?.limit || 5;
