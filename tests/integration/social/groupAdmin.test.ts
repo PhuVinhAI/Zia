@@ -20,6 +20,8 @@ import {
   enableGroupLinkTool,
   disableGroupLinkTool,
   getGroupLinkInfoTool,
+  createGroupTool,
+  joinGroupLinkTool,
 } from '../../../src/modules/social/tools/groupAdmin.js';
 import { mockToolContext } from '../setup.js';
 
@@ -135,6 +137,14 @@ const createMockApi = () => ({
     totalMember: 50,
     desc: 'Group from link',
   }),
+
+  // Group Creation & Join
+  createGroup: async (options: { name?: string; members: string[]; avatarSource?: string }) => ({
+    groupId: 'new-group-123',
+    sucessMembers: options.members,
+    errorMembers: [],
+  }),
+  joinGroupLink: async (link: string) => '',
 });
 
 describe('Group Admin Tools Integration', () => {
@@ -802,6 +812,209 @@ describe('Group Admin Tools Integration', () => {
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('Lỗi lấy thông tin');
+    });
+  });
+
+  // ═══════════════════════════════════════════════════
+  // CREATE GROUP
+  // ═══════════════════════════════════════════════════
+
+  describe('createGroup', () => {
+    test('tạo nhóm thành công', async () => {
+      const context = { ...mockToolContext, api: mockApi, threadId: mockGroupId };
+
+      const result = await createGroupTool.execute(
+        {
+          members: ['user-1', 'user-2'],
+          name: 'Nhóm Test',
+        },
+        context,
+      );
+
+      expect(result.success).toBe(true);
+      expect(result.data.groupId).toBe('new-group-123');
+      expect(result.data.successMembers).toEqual(['user-1', 'user-2']);
+      expect(result.data.message).toContain('tạo nhóm thành công');
+    });
+
+    test('tạo nhóm không có tên', async () => {
+      const context = { ...mockToolContext, api: mockApi, threadId: mockGroupId };
+
+      const result = await createGroupTool.execute(
+        {
+          members: ['user-1'],
+        },
+        context,
+      );
+
+      expect(result.success).toBe(true);
+      expect(result.data.groupId).toBeDefined();
+    });
+
+    test('tạo nhóm với avatar', async () => {
+      const context = { ...mockToolContext, api: mockApi, threadId: mockGroupId };
+
+      const result = await createGroupTool.execute(
+        {
+          members: ['user-1'],
+          name: 'Nhóm có avatar',
+          avatarPath: './avatar.jpg',
+        },
+        context,
+      );
+
+      expect(result.success).toBe(true);
+    });
+
+    test('lỗi khi members rỗng', async () => {
+      const context = { ...mockToolContext, api: mockApi, threadId: mockGroupId };
+
+      const result = await createGroupTool.execute({ members: [] }, context);
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('members');
+    });
+
+    test('lỗi khi thiếu members', async () => {
+      const context = { ...mockToolContext, api: mockApi, threadId: mockGroupId };
+
+      const result = await createGroupTool.execute({}, context);
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('members');
+    });
+
+    test('xử lý có errorMembers', async () => {
+      const apiWithErrors = {
+        ...mockApi,
+        createGroup: async () => ({
+          groupId: 'new-group-456',
+          sucessMembers: ['user-1'],
+          errorMembers: ['user-2'],
+        }),
+      };
+      const context = { ...mockToolContext, api: apiWithErrors, threadId: mockGroupId };
+
+      const result = await createGroupTool.execute(
+        {
+          members: ['user-1', 'user-2'],
+        },
+        context,
+      );
+
+      expect(result.success).toBe(true);
+      expect(result.data.errorMembers).toContain('user-2');
+      expect(result.data.hint).toContain('không thêm được');
+    });
+
+    test('xử lý API error', async () => {
+      const errorApi = {
+        createGroup: async () => {
+          throw new Error('Cannot create group');
+        },
+      };
+      const context = { ...mockToolContext, api: errorApi, threadId: mockGroupId };
+
+      const result = await createGroupTool.execute({ members: ['user-1'] }, context);
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('Lỗi tạo nhóm');
+    });
+  });
+
+  // ═══════════════════════════════════════════════════
+  // JOIN GROUP LINK
+  // ═══════════════════════════════════════════════════
+
+  describe('joinGroupLink', () => {
+    test('tham gia nhóm thành công', async () => {
+      const context = { ...mockToolContext, api: mockApi, threadId: mockGroupId };
+
+      const result = await joinGroupLinkTool.execute(
+        { link: 'https://zalo.me/g/abcxyz' },
+        context,
+      );
+
+      expect(result.success).toBe(true);
+      expect(result.data.message).toContain('tham gia nhóm thành công');
+    });
+
+    test('lỗi khi thiếu link', async () => {
+      const context = { ...mockToolContext, api: mockApi, threadId: mockGroupId };
+
+      const result = await joinGroupLinkTool.execute({}, context);
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('link');
+    });
+
+    test('lỗi khi link không hợp lệ', async () => {
+      const context = { ...mockToolContext, api: mockApi, threadId: mockGroupId };
+
+      const result = await joinGroupLinkTool.execute(
+        { link: 'https://facebook.com/group' },
+        context,
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('không hợp lệ');
+    });
+
+    test('xử lý đã là thành viên (code 178)', async () => {
+      const alreadyMemberApi = {
+        joinGroupLink: async () => {
+          const error: any = new Error('Already member');
+          error.code = 178;
+          throw error;
+        },
+      };
+      const context = { ...mockToolContext, api: alreadyMemberApi, threadId: mockGroupId };
+
+      const result = await joinGroupLinkTool.execute(
+        { link: 'https://zalo.me/g/abcxyz' },
+        context,
+      );
+
+      expect(result.success).toBe(true);
+      expect(result.data.alreadyMember).toBe(true);
+      expect(result.data.message).toContain('đã là thành viên');
+    });
+
+    test('xử lý chờ duyệt (code 240)', async () => {
+      const pendingApi = {
+        joinGroupLink: async () => {
+          const error: any = new Error('Pending approval');
+          error.code = 240;
+          throw error;
+        },
+      };
+      const context = { ...mockToolContext, api: pendingApi, threadId: mockGroupId };
+
+      const result = await joinGroupLinkTool.execute(
+        { link: 'https://zalo.me/g/abcxyz' },
+        context,
+      );
+
+      expect(result.success).toBe(true);
+      expect(result.data.pendingApproval).toBe(true);
+      expect(result.data.message).toContain('chờ Admin');
+    });
+
+    test('xử lý API error khác', async () => {
+      const errorApi = {
+        joinGroupLink: async () => {
+          throw new Error('Link expired');
+        },
+      };
+      const context = { ...mockToolContext, api: errorApi, threadId: mockGroupId };
+
+      const result = await joinGroupLinkTool.execute(
+        { link: 'https://zalo.me/g/expired' },
+        context,
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('Lỗi tham gia nhóm');
     });
   });
 });

@@ -32,4 +32,7 @@ export {
   enableGroupLinkTool,
   disableGroupLinkTool,
   getGroupLinkInfoTool,
+  // Group Creation & Join
+  createGroupTool,
+  joinGroupLinkTool,
 } from './groupAdmin.js';

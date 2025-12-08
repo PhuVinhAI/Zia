@@ -725,3 +725,158 @@ export const getGroupLinkInfoTool: ToolDefinition = {
     }
   },
 };
+
+
+// ═══════════════════════════════════════════════════
+// GROUP CREATION & JOIN
+// ═══════════════════════════════════════════════════
+
+/**
+ * Tạo nhóm mới
+ */
+export const createGroupTool: ToolDefinition = {
+  name: 'createGroup',
+  description:
+    'Tạo nhóm chat mới và thêm thành viên vào. Bot sẽ là Trưởng nhóm. Dùng để tạo nhóm hỗ trợ riêng hoặc nhóm làm việc.',
+  parameters: [
+    {
+      name: 'members',
+      type: 'object',
+      description: 'Mảng chứa User ID của những người muốn thêm vào nhóm (BẮT BUỘC). VD: ["uid1", "uid2"]',
+      required: true,
+    },
+    {
+      name: 'name',
+      type: 'string',
+      description: 'Tên nhóm (tùy chọn, nếu không điền sẽ tự đặt theo tên thành viên)',
+      required: false,
+    },
+    {
+      name: 'avatarPath',
+      type: 'string',
+      description: 'Đường dẫn file ảnh để làm avatar nhóm (tùy chọn)',
+      required: false,
+    },
+  ],
+  execute: async (params: Record<string, any>, context: ToolContext): Promise<ToolResult> => {
+    try {
+      const { members, name, avatarPath } = params;
+
+      if (!Array.isArray(members) || members.length === 0) {
+        return { success: false, error: 'Cần ít nhất 1 userId trong members để tạo nhóm' };
+      }
+
+      debugLog('TOOL:createGroup', `Creating group with ${members.length} members, name: ${name || 'auto'}`);
+
+      const options: { name?: string; members: string[]; avatarSource?: string } = {
+        members: members.map(String),
+      };
+
+      if (name && typeof name === 'string') {
+        options.name = name;
+      }
+
+      if (avatarPath && typeof avatarPath === 'string') {
+        options.avatarSource = avatarPath;
+      }
+
+      const result = await context.api.createGroup(options);
+      logZaloAPI('tool:createGroup', { options }, result);
+
+      const successMembers = result?.sucessMembers || result?.successMembers || [];
+      const errorMembers = result?.errorMembers || [];
+
+      return {
+        success: true,
+        data: {
+          groupId: result?.groupId,
+          name: name || 'Nhóm mới',
+          successMembers,
+          errorMembers,
+          message: `Đã tạo nhóm thành công! ID: ${result?.groupId}`,
+          hint: errorMembers.length > 0
+            ? `Có ${errorMembers.length} người không thêm được (có thể do chặn số lạ)`
+            : 'Tất cả thành viên đã được thêm vào nhóm',
+        },
+      };
+    } catch (error: any) {
+      debugLog('TOOL:createGroup', `Error: ${error.message}`);
+      return { success: false, error: `Lỗi tạo nhóm: ${error.message}` };
+    }
+  },
+};
+
+/**
+ * Tham gia nhóm qua link
+ */
+export const joinGroupLinkTool: ToolDefinition = {
+  name: 'joinGroupLink',
+  description:
+    'Bot tham gia nhóm thông qua đường link chia sẻ (zalo.me/g/...). Dùng khi admin gửi link nhóm để Bot vào hoạt động.',
+  parameters: [
+    {
+      name: 'link',
+      type: 'string',
+      description: 'Đường link đầy đủ của nhóm (VD: https://zalo.me/g/abcxyz)',
+      required: true,
+    },
+  ],
+  execute: async (params: Record<string, any>, context: ToolContext): Promise<ToolResult> => {
+    try {
+      const { link } = params;
+
+      if (!link || typeof link !== 'string') {
+        return { success: false, error: 'Thiếu link nhóm' };
+      }
+
+      // Validate link format
+      if (!link.includes('zalo.me/g/')) {
+        return { success: false, error: 'Link không hợp lệ. Link phải có dạng https://zalo.me/g/...' };
+      }
+
+      debugLog('TOOL:joinGroupLink', `Joining group via link: ${link}`);
+
+      const result = await context.api.joinGroupLink(link);
+      logZaloAPI('tool:joinGroupLink', { link }, result);
+
+      // joinGroupLink trả về chuỗi rỗng nếu thành công
+      return {
+        success: true,
+        data: {
+          link,
+          message: 'Đã tham gia nhóm thành công!',
+          hint: 'Bot đã vào nhóm và sẵn sàng hoạt động',
+        },
+      };
+    } catch (error: any) {
+      debugLog('TOOL:joinGroupLink', `Error: ${error.message}`);
+
+      // Xử lý các mã lỗi thường gặp
+      const errorCode = error?.code || error?.errorCode;
+
+      if (errorCode === 178) {
+        return {
+          success: true,
+          data: {
+            link: params.link,
+            message: 'Bot đã là thành viên của nhóm này rồi',
+            alreadyMember: true,
+          },
+        };
+      }
+
+      if (errorCode === 240) {
+        return {
+          success: true,
+          data: {
+            link: params.link,
+            message: 'Đã gửi yêu cầu tham gia, đang chờ Admin nhóm duyệt',
+            pendingApproval: true,
+          },
+        };
+      }
+
+      return { success: false, error: `Lỗi tham gia nhóm: ${error.message}` };
+    }
+  },
+};

@@ -34,6 +34,9 @@ import {
   enableGroupLinkTool,
   disableGroupLinkTool,
   getGroupLinkInfoTool,
+  // Group Creation & Join
+  createGroupTool,
+  joinGroupLinkTool,
 } from './tools/index.js';
 
 export class SocialModule extends BaseModule {
@@ -83,6 +86,9 @@ export class SocialModule extends BaseModule {
     enableGroupLinkTool,
     disableGroupLinkTool,
     getGroupLinkInfoTool,
+    // Group Creation & Join
+    createGroupTool,
+    joinGroupLinkTool,
   ];
 
   get tools(): ITool[] {

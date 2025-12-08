@@ -627,6 +627,21 @@ export const GetGroupLinkInfoSchema = z.object({
   link: z.string().min(1, 'Thiếu link nhóm'),
 });
 
+// Create Group params
+export const CreateGroupSchema = z.object({
+  members: z.array(z.string()).min(1, 'Cần ít nhất 1 userId trong members'),
+  name: z.string().max(100, 'Tên nhóm quá dài').optional(),
+  avatarPath: z.string().optional(),
+});
+
+// Join Group Link params
+export const JoinGroupLinkSchema = z.object({
+  link: z.string().min(1, 'Thiếu link nhóm').refine(
+    (val) => val.includes('zalo.me/g/'),
+    'Link phải có dạng https://zalo.me/g/...'
+  ),
+});
+
 // ============ HELPER FUNCTION ============
 
 /**
@@ -736,6 +751,10 @@ export const TOOL_EXAMPLES: Record<string, string> = {
   enableGroupLink: `[tool:enableGroupLink]{}[/tool]`,
   disableGroupLink: `[tool:disableGroupLink]{}[/tool]`,
   getGroupLinkInfo: `[tool:getGroupLinkInfo]{"link":"https://zalo.me/g/abc123"}[/tool]`,
+
+  // Group Creation & Join
+  createGroup: `[tool:createGroup]{"members":["uid1","uid2"],"name":"Nhóm hỗ trợ"}[/tool]`,
+  joinGroupLink: `[tool:joinGroupLink]{"link":"https://zalo.me/g/abcxyz"}[/tool]`,
 };
 
 /**
@@ -850,3 +869,5 @@ export type ChangeGroupAvatarParams = z.infer<typeof ChangeGroupAvatarSchema>;
 export type GroupDeputyParams = z.infer<typeof GroupDeputySchema>;
 export type ChangeGroupOwnerParams = z.infer<typeof ChangeGroupOwnerSchema>;
 export type GetGroupLinkInfoParams = z.infer<typeof GetGroupLinkInfoSchema>;
+export type CreateGroupParams = z.infer<typeof CreateGroupSchema>;
+export type JoinGroupLinkParams = z.infer<typeof JoinGroupLinkSchema>;
