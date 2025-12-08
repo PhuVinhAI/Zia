@@ -314,11 +314,14 @@ export interface ClassifiedItem {
   url?: string;
   duration?: number;
   fileName?: string;
+  stickerId?: string;
   // Contact card info
   contactName?: string;
   contactAvatar?: string;
   contactUserId?: string;
   contactPhone?: string;
+  // Message gốc để lấy metadata (msgId, msgType, ts)
+  message?: any;
 }
 
 export const PROMPTS = {
@@ -364,34 +367,40 @@ export const PROMPTS = {
     const parts: string[] = [];
 
     items.forEach((item, index) => {
+      // Trích xuất metadata từ message gốc để AI có thể forward chính xác
+      const msgData = item.message?.data;
+      const metaInfo = msgData
+        ? `\n   - MsgID: "${msgData.msgId}"\n   - MsgType: "${msgData.msgType}"\n   - Timestamp: ${msgData.ts}`
+        : '';
+
       switch (item.type) {
         case 'text':
           parts.push(`[${index}] Tin nhắn: "${item.text}"`);
           break;
         case 'sticker':
-          parts.push(`[${index}] Sticker: (xem hình sticker đính kèm)`);
+          parts.push(`[${index}] Sticker: (ID: ${item.stickerId})`);
           break;
         case 'image':
           if (item.text) {
-            parts.push(`[${index}] Ảnh kèm caption: "${item.text}" (xem hình ảnh đính kèm)`);
+            parts.push(`[${index}] Ảnh kèm caption: "${item.text}" (URL: ${item.url})${metaInfo}`);
           } else {
-            parts.push(`[${index}] Ảnh: (xem hình ảnh đính kèm)`);
+            parts.push(`[${index}] Ảnh: (URL: ${item.url})${metaInfo}`);
           }
           break;
         case 'doodle':
-          parts.push(`[${index}] Hình vẽ tay (doodle): (xem hình vẽ đính kèm)`);
+          parts.push(`[${index}] Hình vẽ tay (doodle): (URL: ${item.url})${metaInfo}`);
           break;
         case 'gif':
-          parts.push(`[${index}] GIF: (xem ảnh GIF đính kèm)`);
+          parts.push(`[${index}] GIF: (URL: ${item.url})${metaInfo}`);
           break;
         case 'video':
-          parts.push(`[${index}] Video ${item.duration || 0}s: (xem video đính kèm)`);
+          parts.push(`[${index}] Video ${item.duration || 0}s: (URL: ${item.url})${metaInfo}`);
           break;
         case 'voice':
-          parts.push(`[${index}] Tin nhắn thoại ${item.duration || 0}s: (nghe audio đính kèm)`);
+          parts.push(`[${index}] Tin nhắn thoại ${item.duration || 0}s: (URL: ${item.url})${metaInfo}`);
           break;
         case 'file':
-          parts.push(`[${index}] File "${item.fileName}": (đọc file đính kèm)`);
+          parts.push(`[${index}] File "${item.fileName}": (URL: ${item.url})${metaInfo}`);
           break;
         case 'link':
           parts.push(`[${index}] Link: ${item.url}`);
@@ -409,6 +418,10 @@ HƯỚNG DẪN:
 - Dùng [quote:INDEX]câu trả lời[/quote] để reply vào tin nhắn cụ thể (CHỈ viết câu trả lời, KHÔNG lặp lại nội dung tin gốc!)
 - Dùng [reaction:INDEX:loại] để thả reaction vào tin cụ thể
 - Nếu không cần quote/react tin cụ thể, cứ trả lời bình thường
+
+HƯỚNG DẪN XỬ LÝ MEDIA:
+- Để chuyển tiếp file/ảnh/video/voice, hãy dùng tool [forwardMessage]
+- QUAN TRỌNG: Phải truyền đúng "msgType", "originalMsgId", "originalTimestamp" lấy từ thông tin MsgID, MsgType, Timestamp ở trên.
 
 Hãy XEM/NGHE tất cả nội dung đính kèm và phản hồi phù hợp.`;
   },

@@ -31,10 +31,13 @@ export function buildPrompt(
       url: c.url,
       duration: c.duration,
       fileName: c.fileName,
+      stickerId: c.stickerId,
       contactName: c.contactName,
       contactAvatar: c.contactAvatar,
       contactUserId: c.contactUserId,
       contactPhone: c.contactPhone,
+      // QUAN TRỌNG: Truyền message gốc để prompt.ts lấy metadata (msgId, msgType, ts)
+      message: c.message,
     }));
     prompt = PROMPTS.mixedContent(items);
     prompt += PROMPTS.mediaNote(mediaNotes);
