@@ -270,11 +270,13 @@ function registerReactionListener(api: any): void {
         const reactionList = reactionNames.join(', ');
         
         // Tạo nội dung mô tả reaction để AI hiểu context
+        // Nhấn mạnh đây là reaction LÊN TIN NHẮN chứ không phải cảm xúc cá nhân
         let reactionContent: string;
+        const msgPreview = botMsg.content.substring(0, 150) + (botMsg.content.length > 150 ? '...' : '');
         if (icons.length > 1) {
-          reactionContent = `[REACTION] Người dùng vừa thả ${icons.length} cảm xúc: [${reactionList}] vào tin nhắn của bạn: "${botMsg.content.substring(0, 150)}${botMsg.content.length > 150 ? '...' : ''}"`;
+          reactionContent = `[REACTION] Người dùng vừa thả ${icons.length} reaction lên tin nhắn của bạn: [${reactionList}]. Tin nhắn được react: "${msgPreview}"`;
         } else {
-          reactionContent = `[REACTION] Người dùng vừa thả cảm xúc "${reactionNames[0]}" vào tin nhắn của bạn: "${botMsg.content.substring(0, 200)}${botMsg.content.length > 200 ? '...' : ''}"`;
+          reactionContent = `[REACTION] Người dùng vừa thả reaction "${reactionNames[0]}" lên tin nhắn của bạn: "${msgPreview}"`;
         }
 
         // Tạo fake message để đẩy vào luồng xử lý chung
