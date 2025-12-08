@@ -84,10 +84,12 @@ export function setupSelfMessageListener(api: any) {
 
     const content = message.data?.content;
     const threadId = message.threadId;
-    const msgId = message.data?.msgId;
-    const cliMsgId = message.data?.cliMsgId;
+    // Đảm bảo msgId và cliMsgId là string
+    const msgId = message.data?.msgId ? String(message.data.msgId) : null;
+    const cliMsgId = message.data?.cliMsgId ? String(message.data.cliMsgId) : '';
 
-    if (!msgId || !cliMsgId) return;
+    // Chỉ cần msgId là đủ để lưu (cliMsgId có thể rỗng)
+    if (!msgId) return;
 
     const contentStr = typeof content === 'string' ? content : JSON.stringify(content);
     saveSentMessage(threadId, msgId, cliMsgId, contentStr);

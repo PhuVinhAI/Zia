@@ -186,15 +186,18 @@ function registerReactionListener(api: any): void {
       return;
     }
 
+    // Đảm bảo targetMsgId là string
+    const targetMsgIdStr = String(targetMsgId);
+    
     debugLog(
       'REACTION',
-      `User ${reactorId} reacted ${icon} to msg ${targetMsgId} in ${threadId}`,
+      `User ${reactorId} reacted ${icon} to msg ${targetMsgIdStr} in ${threadId}`,
     );
 
     // Kiểm tra xem tin nhắn bị react có phải của bot không
-    const botMsg = await getBotMessageByMsgId(targetMsgId);
+    const botMsg = await getBotMessageByMsgId(targetMsgIdStr);
     if (!botMsg) {
-      debugLog('REACTION', 'Not a bot message, ignoring');
+      debugLog('REACTION', `Not a bot message (msgId=${targetMsgIdStr}), ignoring`);
       return;
     }
 

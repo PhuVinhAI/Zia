@@ -45,7 +45,10 @@ function parseInlineParams(paramStr: string): Record<string, any> {
     else if (!Number.isNaN(Number(value)) && value !== '') {
       const isLargeNumber = value.length > 15;
       const isIdField = /id$/i.test(key);
-      params[key] = isLargeNumber || isIdField ? value : Number(value);
+      // Giữ nguyên string cho phone number (bắt đầu bằng 0) và các field đặc biệt
+      const isPhoneField = /phone/i.test(key);
+      const startsWithZero = value.startsWith('0');
+      params[key] = isLargeNumber || isIdField || isPhoneField || startsWithZero ? value : Number(value);
     } else {
       params[key] = value;
     }
