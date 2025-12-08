@@ -264,6 +264,25 @@ export const WeatherSchema = z.object({
   hourlyHours: z.coerce.number().min(0).max(168).default(24),
 });
 
+// ============ STEAM API ============
+
+// Steam Search params
+export const SteamSearchSchema = z.object({
+  query: z.string().min(1, 'Thiếu tên game cần tìm'),
+  limit: z.coerce.number().min(1).max(20).default(10),
+});
+
+// Steam Game Details params
+export const SteamGameSchema = z.object({
+  appId: z.coerce.number().min(1, 'Thiếu Steam App ID'),
+});
+
+// Steam Top Games params
+export const SteamTopGamesSchema = z.object({
+  mode: z.enum(['top100in2weeks', 'top100forever', 'top100owned']).default('top100in2weeks'),
+  limit: z.coerce.number().min(1).max(50).default(20),
+});
+
 // ============ GOOGLE CUSTOM SEARCH API ============
 
 // Google Search params (chấp nhận cả q và query)
@@ -524,6 +543,10 @@ export const TOOL_EXAMPLES: Record<string, string> = {
   // Weather
   weather: `[tool:weather]{"location":"Hà Nội","days":7}[/tool]`,
 
+  // Steam
+  steamSearch: `[tool:steamSearch]{"query":"Counter-Strike","limit":5}[/tool]`,
+  steamGame: `[tool:steamGame]{"appId":730}[/tool]`,
+  steamTop: `[tool:steamTop]{"mode":"top100in2weeks","limit":10}[/tool]`,
   // Entertainment
   jikanSearch: `[tool:jikanSearch]{"q":"naruto","mediaType":"anime","limit":5}[/tool]`,
   jikanDetails: `[tool:jikanDetails]{"id":20,"mediaType":"anime"}[/tool]`,
@@ -656,6 +679,9 @@ export type YouTubeChannelParams = z.infer<typeof YouTubeChannelSchema>;
 export type CreateAppParams = z.infer<typeof CreateAppSchema>;
 export type GoogleSearchParams = z.infer<typeof GoogleSearchSchema>;
 export type WeatherParams = z.infer<typeof WeatherSchema>;
+export type SteamSearchParams = z.infer<typeof SteamSearchSchema>;
+export type SteamGameParams = z.infer<typeof SteamGameSchema>;
+export type SteamTopGamesParams = z.infer<typeof SteamTopGamesSchema>;
 export type SaveMemoryParams = z.infer<typeof SaveMemorySchema>;
 export type RecallMemoryParams = z.infer<typeof RecallMemorySchema>;
 export type ScheduleTaskParams = z.infer<typeof ScheduleTaskSchema>;

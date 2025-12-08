@@ -14,6 +14,7 @@ export { textToSpeechTool } from './media/textToSpeech.js';
 
 // Search tools
 export { googleSearchTool } from './search/googleSearch.js';
+export { steamSearchTool, steamGameTool, steamTopTool } from './search/steam.js';
 export { weatherTool } from './search/weather.js';
 export { youtubeChannelTool, youtubeSearchTool, youtubeVideoTool } from './search/youtube.js';
 
