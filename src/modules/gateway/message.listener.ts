@@ -6,6 +6,7 @@
 import { CONFIG } from '../../core/config/config.js';
 import { debugLog, Events, eventBus, logMessage } from '../../core/index.js';
 import { initThreadHistory, isThreadInitialized } from '../../shared/utils/history/history.js';
+import { getBotMessageByMsgId, isBotMessage } from '../../shared/utils/message/messageStore.js';
 import { abortTask } from '../../shared/utils/taskManager.js';
 import { isAllowedUser } from './guards/user.filter.js';
 import { addToBuffer } from './services/message.buffer.js';
@@ -97,6 +98,9 @@ export function registerMessageListener(api: any, options: MessageListenerOption
 
   // Đăng ký friend event listener để auto-accept realtime
   registerFriendEventListener(api);
+
+  // Đăng ký reaction listener
+  registerReactionListener(api);
 }
 
 /**
@@ -150,4 +154,78 @@ function registerFriendEventListener(api: any): void {
   });
 
   console.log('[Gateway] 👥 Friend event listener registered (auto-accept enabled)');
+}
+
+// Mapping reaction icons to readable names
+const REACTION_NAMES: Record<string, string> = {
+  '/-heart': 'tim ❤️',
+  '/-strong': 'like 👍',
+  '/-weak': 'dislike 👎',
+  ':>': 'haha 😆',
+  ':o': 'wow 😮',
+  ':-((': 'buồn 😢',
+  ':-h': 'phẫn nộ 😡',
+};
+
+/**
+ * Xử lý reaction event - tạo fake message để AI tự suy nghĩ phản hồi
+ */
+function registerReactionListener(api: any): void {
+  api.listener.on('reaction', async (reactionObj: any) => {
+    const { data, threadId, isSelf } = reactionObj;
+
+    // Bỏ qua reaction của chính bot
+    if (isSelf) return;
+
+    const reactorId = data?.uidFrom;
+    const icon = data?.content?.rIcon;
+    const targetMsgId = data?.msgId;
+
+    if (!reactorId || !icon || !targetMsgId) {
+      debugLog('REACTION', 'Missing data in reaction event');
+      return;
+    }
+
+    debugLog(
+      'REACTION',
+      `User ${reactorId} reacted ${icon} to msg ${targetMsgId} in ${threadId}`,
+    );
+
+    // Kiểm tra xem tin nhắn bị react có phải của bot không
+    const botMsg = await getBotMessageByMsgId(targetMsgId);
+    if (!botMsg) {
+      debugLog('REACTION', 'Not a bot message, ignoring');
+      return;
+    }
+
+    // Lấy tên reaction
+    const reactionName = REACTION_NAMES[icon] || icon;
+
+    // Tạo nội dung mô tả reaction để AI hiểu context
+    const reactionContent = `[REACTION] Người dùng vừa thả cảm xúc "${reactionName}" vào tin nhắn của bạn: "${botMsg.content.substring(0, 200)}${botMsg.content.length > 200 ? '...' : ''}"`;
+
+    // Tạo fake message để đẩy vào luồng xử lý chung
+    const fakeMessage = {
+      type: 'reaction',
+      threadId,
+      isSelf: false,
+      data: {
+        uidFrom: reactorId,
+        content: reactionContent,
+        msgType: 'chat',
+        // Metadata để AI biết đây là reaction event
+        _isReaction: true,
+        _reactionIcon: icon,
+        _reactionName: reactionName,
+        _originalMsgContent: botMsg.content,
+      },
+    };
+
+    debugLog('REACTION', `Created fake message for AI processing: ${reactionContent}`);
+
+    // Đẩy vào buffer để AI xử lý như tin nhắn bình thường
+    addToBuffer(api, threadId, fakeMessage);
+  });
+
+  console.log('[Gateway] 💝 Reaction listener registered');
 }

@@ -154,3 +154,44 @@ export function cleanupOldMessages(): void {
 
 // Cleanup cache mỗi 30 phút (DB cleanup được xử lý bởi database.service)
 setInterval(cleanupOldMessages, 30 * 60 * 1000);
+
+/**
+ * Kiểm tra xem msgId có phải tin nhắn của bot không
+ */
+export async function isBotMessage(msgId: string): Promise<boolean> {
+  // Check cache trước
+  for (const messages of messageCache.values()) {
+    if (messages.some((m) => m.msgId === msgId)) {
+      return true;
+    }
+  }
+
+  // Fallback to DB
+  const dbMsg = await sentMessagesRepository.getByMsgId(msgId);
+  return dbMsg !== null;
+}
+
+/**
+ * Lấy tin nhắn của bot theo msgId (để biết nội dung tin nhắn bị react)
+ */
+export async function getBotMessageByMsgId(msgId: string): Promise<SentMessage | null> {
+  // Check cache trước
+  for (const messages of messageCache.values()) {
+    const found = messages.find((m) => m.msgId === msgId);
+    if (found) return found;
+  }
+
+  // Fallback to DB
+  const dbMsg = await sentMessagesRepository.getByMsgId(msgId);
+  if (dbMsg) {
+    return {
+      msgId: dbMsg.msgId,
+      cliMsgId: dbMsg.cliMsgId || '',
+      content: dbMsg.content || '',
+      threadId: dbMsg.threadId,
+      timestamp: dbMsg.timestamp.getTime(),
+    };
+  }
+
+  return null;
+}

@@ -18,7 +18,7 @@ export function buildPrompt(
 ): string {
   const hasMedia =
     classified.some((c) =>
-      ['image', 'video', 'voice', 'file', 'sticker', 'doodle', 'gif'].includes(c.type),
+      ['image', 'video', 'voice', 'file', 'sticker', 'doodle', 'gif', 'contact'].includes(c.type),
     ) || quoteHasMedia;
 
   let prompt: string;

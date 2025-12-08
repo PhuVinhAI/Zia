@@ -408,7 +408,15 @@ export const PROMPTS = {
           parts.push(`[${index}] Link: ${item.url}`);
           break;
         case 'contact':
-          parts.push(`[${index}] Danh thiếp: ${item.text || '(thông tin liên hệ)'}`);
+          // Bao gồm contactUserId để AI có thể gọi sendFriendRequest
+          const contactInfo = [
+            item.contactName || item.text || '(không rõ tên)',
+            item.contactPhone ? `SĐT: ${item.contactPhone}` : null,
+            item.contactUserId ? `UserID: ${item.contactUserId}` : null,
+          ]
+            .filter(Boolean)
+            .join(', ');
+          parts.push(`[${index}] Danh thiếp: ${contactInfo}`);
           break;
       }
     });
