@@ -58,27 +58,27 @@ export function parseInline(text: string): InlineToken[] {
         href: m[2],
       }),
     },
-    // Bold + Italic: ***text*** or ___text___
+    // Bold + Italic: ***text*** or ___text___ (with optional spaces)
     {
-      regex: /(\*\*\*|___)(.+?)\1/g,
+      regex: /(\*\*\*|___)\s*(.+?)\s*\1/g,
       handler: (m: RegExpExecArray): InlineToken => ({
-        text: m[2],
+        text: m[2].trim(),
         styles: ['boldItalic'],
       }),
     },
-    // Bold: **text** or __text__
+    // Bold: **text** or __text__ (with optional spaces)
     {
-      regex: /(\*\*|__)(.+?)\1/g,
+      regex: /(\*\*|__)\s*(.+?)\s*\1/g,
       handler: (m: RegExpExecArray): InlineToken => ({
-        text: m[2],
+        text: m[2].trim(),
         styles: ['bold'],
       }),
     },
-    // Italic: *text* or _text_
+    // Italic: *text* or _text_ (with optional spaces)
     {
-      regex: /(\*|_)(.+?)\1/g,
+      regex: /(\*|_)\s*([^*_]+?)\s*\1/g,
       handler: (m: RegExpExecArray): InlineToken => ({
-        text: m[2],
+        text: m[2].trim(),
         styles: ['italic'],
       }),
     },
