@@ -40,7 +40,6 @@ export const TEST_SUITES = {
     executeCode: 'E2B Code Execution (requires E2B_API_KEY)',
     elevenlabs: 'ElevenLabs TTS (requires ELEVENLABS_API_KEY)',
     docxToPdf: 'Local DOCX to PDF (mammoth + pdfkit, no API key)',
-    compdf: 'ComPDF DOCX to PDF API (requires COMPDF_API_KEY)',
     createChart: 'Chart.js Chart Creation',
     createApp: 'HTML App Creation',
     clearHistory: 'Clear Chat History',
