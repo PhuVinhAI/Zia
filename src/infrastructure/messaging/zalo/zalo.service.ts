@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import sharp from 'sharp';
 import * as zcajs from 'zca-js';
 import { CONFIG } from '../../../core/config/config.js';
 import { debugLog, logError, logStep } from '../../../core/logger/logger.js';
@@ -7,9 +8,41 @@ export const { Zalo, ThreadType, Reactions, TextStyle } = zcajs as any;
 
 const CREDENTIALS_PATH = './credentials.json';
 
+/**
+ * Image Metadata Getter - Lấy thông tin ảnh (width, height, size)
+ * Cần thiết cho các API upload ảnh như changeGroupAvatar
+ */
+async function imageMetadataGetter(
+  filePath: string,
+): Promise<{ width: number; height: number; size: number } | null> {
+  try {
+    // Kiểm tra file tồn tại
+    if (!fs.existsSync(filePath)) {
+      debugLog('ZALO', `imageMetadataGetter: File not found: ${filePath}`);
+      return null;
+    }
+
+    const stats = fs.statSync(filePath);
+    const metadata = await sharp(filePath).metadata();
+
+    const result = {
+      width: metadata.width || 0,
+      height: metadata.height || 0,
+      size: stats.size,
+    };
+
+    debugLog('ZALO', `imageMetadataGetter: ${filePath} -> ${JSON.stringify(result)}`);
+    return result;
+  } catch (error: any) {
+    debugLog('ZALO', `imageMetadataGetter error: ${error.message}`);
+    return null;
+  }
+}
+
 export const zalo = new Zalo({
   selfListen: CONFIG.selfListen,
   logging: CONFIG.logging,
+  imageMetadataGetter,
 });
 
 debugLog(

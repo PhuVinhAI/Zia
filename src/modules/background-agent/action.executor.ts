@@ -120,12 +120,18 @@ async function executeSendMessage(
     }
 
     // Lưu vào sent messages để AI có thể quote và undo
-    const msgIndex = saveSentMessage(
-      threadId,
-      result.msgId || '',
-      '',
-      payload.message.substring(0, 200),
-    );
+    // CHỈ lưu khi có msgId hợp lệ
+    let msgIndex = -1;
+    if (result.msgId) {
+      msgIndex = saveSentMessage(
+        threadId,
+        result.msgId,
+        '',
+        payload.message.substring(0, 200),
+      );
+    } else {
+      debugLog('EXECUTOR', `Skipped saveSentMessage: no msgId returned from API`);
+    }
 
     // Lưu toàn bộ message vào history để AI nhớ đã gửi tin nhắn này
     await saveResponseToHistory(threadId, payload.message);

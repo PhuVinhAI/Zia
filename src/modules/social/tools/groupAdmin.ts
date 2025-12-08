@@ -4,7 +4,34 @@
  */
 
 import { debugLog, logZaloAPI } from '../../../core/logger/logger.js';
+import { getThreadType } from '../../../shared/utils/message/messageSender.js';
 import type { ToolContext, ToolDefinition, ToolResult } from '../../../shared/types/tools.types.js';
+
+// ═══════════════════════════════════════════════════
+// HELPER FUNCTIONS
+// ═══════════════════════════════════════════════════
+
+/**
+ * Kiểm tra xem context có phải là nhóm chat không
+ * ThreadType: 0 = User (1-1), 1 = Group
+ * Nếu không chắc chắn, trả về true để cho phép thử gọi API
+ */
+function isGroupContext(threadId: string): boolean {
+  const threadType = getThreadType(threadId);
+  // ThreadType.User = 0, ThreadType.Group = 1
+  return threadType === 1;
+}
+
+/**
+ * Trả về lỗi khi tool được gọi trong ngữ cảnh 1-1 (không phải nhóm)
+ */
+function notGroupError(): ToolResult {
+  return {
+    success: false,
+    error:
+      'Tool này chỉ hoạt động trong nhóm chat. Bạn đang chat 1-1 với bot. Hãy sử dụng tool này trong một nhóm cụ thể hoặc cung cấp Group ID.',
+  };
+}
 
 // ═══════════════════════════════════════════════════
 // GROUP INFO
@@ -95,6 +122,11 @@ export const kickMemberTool: ToolDefinition = {
   ],
   execute: async (params: Record<string, any>, context: ToolContext): Promise<ToolResult> => {
     try {
+      // Kiểm tra ngữ cảnh nhóm
+      if (!isGroupContext(context.threadId)) {
+        return notGroupError();
+      }
+
       const { userId } = params;
 
       if (!userId) {
@@ -137,6 +169,11 @@ export const blockMemberTool: ToolDefinition = {
   ],
   execute: async (params: Record<string, any>, context: ToolContext): Promise<ToolResult> => {
     try {
+      // Kiểm tra ngữ cảnh nhóm
+      if (!isGroupContext(context.threadId)) {
+        return notGroupError();
+      }
+
       const { userId } = params;
 
       if (!userId) {
@@ -219,9 +256,19 @@ export const getPendingMembersTool: ToolDefinition = {
       const result = await context.api.getPendingGroupMembers(context.threadId);
       logZaloAPI('tool:getPendingMembers', { threadId: context.threadId }, result);
 
-      const pendingList = result?.pendingMembers || result?.members || [];
+      // API Zalo trả về { time, users: [{ uid, dpn, avatar, user_submit }] }
+      // Cần map đúng các trường từ response
+      const rawUsers = result?.users || result?.pendingMembers || result?.members || [];
+
+      // Map sang format chuẩn để AI và reviewPendingMembers sử dụng
+      const pendingList = rawUsers.map((user: any) => ({
+        id: user.uid || user.id, // uid từ Zalo API, fallback id
+        name: user.dpn || user.dName || user.displayName || 'Không tên', // dpn = display name từ Zalo
+        avatar: user.avatar,
+      }));
+
       const summary = pendingList.length
-        ? pendingList.map((m: any) => `- ${m.dName || m.displayName || 'Không tên'} (ID: ${m.id})`).join('\n')
+        ? pendingList.map((m: any) => `- ${m.name} (ID: ${m.id})`).join('\n')
         : 'Không có ai đang chờ duyệt';
 
       return {
@@ -230,7 +277,10 @@ export const getPendingMembersTool: ToolDefinition = {
           count: pendingList.length,
           members: pendingList,
           summary,
-          hint: 'Dùng reviewPendingMembers với danh sách userId để duyệt/từ chối',
+          hint:
+            pendingList.length > 0
+              ? `Dùng reviewPendingMembers với memberIds=[${pendingList.map((m: any) => `"${m.id}"`).join(', ')}] và isApprove=true để duyệt`
+              : 'Không có thành viên nào đang chờ duyệt',
         },
       };
     } catch (error: any) {
@@ -273,7 +323,10 @@ export const reviewPendingMembersTool: ToolDefinition = {
         return { success: false, error: 'isApprove phải là true (duyệt) hoặc false (từ chối)' };
       }
 
-      debugLog('TOOL:reviewPendingMembers', `Reviewing ${memberIds.length} members, approve=${isApprove}`);
+      debugLog(
+        'TOOL:reviewPendingMembers',
+        `Reviewing ${memberIds.length} members, approve=${isApprove}`,
+      );
 
       const payload = {
         members: memberIds.map(String),
@@ -283,12 +336,36 @@ export const reviewPendingMembersTool: ToolDefinition = {
       const result = await context.api.reviewPendingMemberRequest(payload, context.threadId);
       logZaloAPI('tool:reviewPendingMembers', { payload, threadId: context.threadId }, result);
 
+      // Parse response status cho từng member
+      // Status codes: 0 = SUCCESS, 170 = NOT_IN_PENDING_LIST, 178 = ALREADY_IN_GROUP, 166 = INSUFFICIENT_PERMISSION
+      const statusMessages: Record<number, string> = {
+        0: 'Thành công',
+        170: 'Không có trong danh sách chờ',
+        178: 'Đã là thành viên nhóm',
+        166: 'Không đủ quyền',
+      };
+
+      const results: { id: string; status: string }[] = [];
+      let successCount = 0;
+
+      if (result && typeof result === 'object') {
+        for (const [memberId, status] of Object.entries(result)) {
+          const statusCode = status as number;
+          const statusText = statusMessages[statusCode] || `Lỗi không xác định (${statusCode})`;
+          results.push({ id: memberId, status: statusText });
+          if (statusCode === 0) successCount++;
+        }
+      }
+
       return {
         success: true,
         data: {
           memberIds,
           action: isApprove ? 'approved' : 'rejected',
-          message: `Đã ${isApprove ? 'duyệt' : 'từ chối'} ${memberIds.length} thành viên`,
+          successCount,
+          totalCount: memberIds.length,
+          results,
+          message: `Đã ${isApprove ? 'duyệt' : 'từ chối'} ${successCount}/${memberIds.length} thành viên`,
         },
       };
     } catch (error: any) {
@@ -460,6 +537,11 @@ export const changeGroupAvatarTool: ToolDefinition = {
   ],
   execute: async (params: Record<string, any>, context: ToolContext): Promise<ToolResult> => {
     try {
+      // Kiểm tra ngữ cảnh nhóm
+      if (!isGroupContext(context.threadId)) {
+        return notGroupError();
+      }
+
       const { filePath } = params;
 
       if (!filePath || typeof filePath !== 'string') {
@@ -507,6 +589,11 @@ export const addGroupDeputyTool: ToolDefinition = {
   ],
   execute: async (params: Record<string, any>, context: ToolContext): Promise<ToolResult> => {
     try {
+      // Kiểm tra ngữ cảnh nhóm
+      if (!isGroupContext(context.threadId)) {
+        return notGroupError();
+      }
+
       const { userId } = params;
 
       if (!userId) {
@@ -704,23 +791,59 @@ export const getGroupLinkInfoTool: ToolDefinition = {
         return { success: false, error: 'Thiếu link nhóm' };
       }
 
+      // Validate link format
+      if (!link.includes('zalo.me/g/')) {
+        return {
+          success: false,
+          error: 'Link không hợp lệ. Link phải có dạng https://zalo.me/g/...',
+        };
+      }
+
       debugLog('TOOL:getGroupLinkInfo', `Getting info for link: ${link}`);
 
-      const result = await context.api.getGroupLinkInfo(link);
+      // API yêu cầu object { link: string } thay vì chỉ string
+      const result = await context.api.getGroupLinkInfo({ link });
       logZaloAPI('tool:getGroupLinkInfo', { link }, result);
+
+      // Format response với thông tin chi tiết
+      const adminIds = result?.adminIds || [];
+      const memberCount = result?.totalMember || result?.currentMems?.length || 0;
 
       return {
         success: true,
         data: {
-          groupId: result?.groupId || result?.id,
-          groupName: result?.name || result?.groupName,
-          memberCount: result?.totalMember || result?.memberCount,
-          description: result?.desc || result?.description,
+          groupId: result?.groupId,
+          groupName: result?.name,
+          description: result?.desc || '',
+          memberCount,
+          creatorId: result?.creatorId,
+          adminIds,
+          avatar: result?.avt || result?.fullAvt,
+          type: result?.type,
+          setting: result?.setting,
+          // Danh sách thành viên (nếu có)
+          members: result?.currentMems?.map((m: any) => ({
+            id: m.id,
+            name: m.dName || m.zaloName,
+            avatar: m.avatar,
+          })),
+          hasMoreMember: result?.hasMoreMember === 1,
           raw: result,
         },
       };
     } catch (error: any) {
       debugLog('TOOL:getGroupLinkInfo', `Error: ${error.message}`);
+
+      // Xử lý các mã lỗi cụ thể
+      const errorMsg = error.message || '';
+      if (errorMsg.includes('Tham số không hợp lệ') || errorMsg.includes('Invalid')) {
+        return {
+          success: false,
+          error:
+            'Link nhóm không hợp lệ hoặc đã hết hạn. Vui lòng kiểm tra lại link (phải có dạng https://zalo.me/g/xxx)',
+        };
+      }
+
       return { success: false, error: `Lỗi lấy thông tin link: ${error.message}` };
     }
   },
@@ -736,13 +859,17 @@ export const getGroupLinkInfoTool: ToolDefinition = {
  */
 export const createGroupTool: ToolDefinition = {
   name: 'createGroup',
-  description:
-    'Tạo nhóm chat mới và thêm thành viên vào. Bot sẽ là Trưởng nhóm. Dùng để tạo nhóm hỗ trợ riêng hoặc nhóm làm việc.',
+  description: `Tạo nhóm chat mới. QUAN TRỌNG:
+- Bot (Zia) sẽ TỰ MÌNH tạo nhóm và LÀ TRƯỞNG NHÓM (đây là hành vi bình thường, không phải "tạo hộ")
+- LUÔN LUÔN thêm ID của người yêu cầu (senderId) vào danh sách members
+- Nếu user nói "tạo nhóm với A", members phải gồm CẢ user đó VÀ A
+- Sau khi tạo, có thể dùng changeGroupOwner để chuyển quyền trưởng nhóm nếu user muốn`,
   parameters: [
     {
       name: 'members',
       type: 'object',
-      description: 'Mảng chứa User ID của những người muốn thêm vào nhóm (BẮT BUỘC). VD: ["uid1", "uid2"]',
+      description:
+        'Mảng User ID của TẤT CẢ thành viên muốn thêm, BAO GỒM CẢ người yêu cầu (senderId). VD: ["senderId", "uid1", "uid2"]',
       required: true,
     },
     {
@@ -763,13 +890,30 @@ export const createGroupTool: ToolDefinition = {
       const { members, name, avatarPath } = params;
 
       if (!Array.isArray(members) || members.length === 0) {
-        return { success: false, error: 'Cần ít nhất 1 userId trong members để tạo nhóm' };
+        return {
+          success: false,
+          error:
+            'Cần ít nhất 1 userId trong members. Lưu ý: PHẢI thêm cả ID của người yêu cầu (senderId) vào danh sách!',
+        };
       }
 
-      debugLog('TOOL:createGroup', `Creating group with ${members.length} members, name: ${name || 'auto'}`);
+      // Tự động thêm senderId nếu chưa có trong danh sách
+      const memberList = members.map(String);
+      if (context.senderId && !memberList.includes(context.senderId)) {
+        memberList.push(context.senderId);
+        debugLog(
+          'TOOL:createGroup',
+          `Auto-added senderId ${context.senderId} to members list`,
+        );
+      }
+
+      debugLog(
+        'TOOL:createGroup',
+        `Creating group with ${memberList.length} members, name: ${name || 'auto'}`,
+      );
 
       const options: { name?: string; members: string[]; avatarSource?: string } = {
-        members: members.map(String),
+        members: memberList,
       };
 
       if (name && typeof name === 'string') {
@@ -793,10 +937,12 @@ export const createGroupTool: ToolDefinition = {
           name: name || 'Nhóm mới',
           successMembers,
           errorMembers,
-          message: `Đã tạo nhóm thành công! ID: ${result?.groupId}`,
-          hint: errorMembers.length > 0
-            ? `Có ${errorMembers.length} người không thêm được (có thể do chặn số lạ)`
-            : 'Tất cả thành viên đã được thêm vào nhóm',
+          botIsOwner: true,
+          message: `Đã tạo nhóm thành công! ID: ${result?.groupId}. Bot (Zia) là Trưởng nhóm.`,
+          hint:
+            errorMembers.length > 0
+              ? `Có ${errorMembers.length} người không thêm được (có thể do chặn số lạ). Dùng changeGroupOwner nếu muốn chuyển quyền trưởng nhóm.`
+              : 'Tất cả thành viên đã được thêm. Dùng changeGroupOwner nếu muốn chuyển quyền trưởng nhóm cho người khác.',
         },
       };
     } catch (error: any) {

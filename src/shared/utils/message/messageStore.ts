@@ -45,9 +45,14 @@ export function saveSentMessage(
   }
 
   // Lưu vào database (async, không block)
-  sentMessagesRepository
-    .saveMessage({ msgId, cliMsgId, threadId, content })
-    .catch((err) => debugLog('MSG_STORE', `DB save error: ${err}`));
+  // CHỈ lưu khi có msgId hợp lệ để tránh lỗi UNIQUE constraint
+  if (msgId && msgId.trim() !== '') {
+    sentMessagesRepository
+      .saveMessage({ msgId, cliMsgId, threadId, content })
+      .catch((err) => debugLog('MSG_STORE', `DB save error: ${err}`));
+  } else {
+    debugLog('MSG_STORE', `Skipped DB save: empty msgId for thread=${threadId}`);
+  }
 
   debugLog('MSG_STORE', `Saved: thread=${threadId}, msgId=${msgId}, index=${cache.length - 1}`);
 
