@@ -11,7 +11,10 @@ import { createFileTool } from './tools/media/createFile/index.js';
 import { freepikImageTool } from './tools/media/freepikImage.js';
 import { textToSpeechTool } from './tools/media/textToSpeech.js';
 // Search tools
+import { currencyConvertTool, currencyRatesTool } from './tools/search/currency.js';
 import { googleSearchTool } from './tools/search/googleSearch.js';
+import { steamGameTool, steamSearchTool, steamTopTool } from './tools/search/steam.js';
+import { weatherTool } from './tools/search/weather.js';
 import { youtubeChannelTool, youtubeSearchTool, youtubeVideoTool } from './tools/search/youtube.js';
 // Social tools
 import { createNoteTool, editNoteTool, getListBoardTool } from './tools/social/board.js';
@@ -62,6 +65,15 @@ export class SystemModule extends BaseModule {
     youtubeVideoTool,
     youtubeChannelTool,
     googleSearchTool,
+    // Weather tool
+    weatherTool,
+    // Steam tools
+    steamSearchTool,
+    steamGameTool,
+    steamTopTool,
+    // Currency tools
+    currencyConvertTool,
+    currencyRatesTool,
     clearHistoryTool,
     // Memory tools
     saveMemoryTool,
