@@ -39,7 +39,7 @@ export const TEST_SUITES = {
     freepik: 'Freepik AI Image Generation (requires FREEPIK_API_KEY)',
     executeCode: 'E2B Code Execution (requires E2B_API_KEY)',
     elevenlabs: 'ElevenLabs TTS (requires ELEVENLABS_API_KEY)',
-    docxToPdf: 'Local DOCX to PDF (mammoth + pdfkit, no API key)',
+    docxToPdf: 'Local DOC/DOCX to PDF (mammoth + word-extractor + pdfkit, no API key)',
     createChart: 'Chart.js Chart Creation',
     createApp: 'HTML App Creation',
     clearHistory: 'Clear Chat History',
