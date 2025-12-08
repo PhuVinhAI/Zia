@@ -36,3 +36,10 @@ export {
 } from './tool-registry/tool-registry.js';
 // Types
 export * from './types.js';
+
+// Errors
+export * from './errors/index.js';
+
+// Config
+export { CONFIG, reloadSettings } from './config/config.js';
+export { MIME_TYPES, SettingsSchema, type Settings } from './config/config.schema.js';

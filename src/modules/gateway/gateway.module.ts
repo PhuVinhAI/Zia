@@ -24,63 +24,17 @@ export class GatewayModule extends BaseModule {
 export const gatewayModule = new GatewayModule();
 
 // Classifier
-export {
-  classifyMessage,
-  classifyMessages,
-  countMessageTypes,
-} from './classifier.js';
-// Handlers
-export {
-  createStreamCallbacks,
-  sendResponse,
-  setupSelfMessageListener,
-} from './handlers/response.handler.js';
-export {
-  formatToolResultForAI,
-  handleToolCalls,
-  isToolOnlyResponse,
-  notifyToolCall,
-  type ToolHandlerResult,
-} from './handlers/tool.handler.js';
-export {
-  handleAllToolOutputs,
-  handleToolOutput,
-  sendDocument,
-  sendImage,
-  sendImages,
-  sendVoice,
-} from './handlers/tool.output.handler.js';
+export { classifyMessage, classifyMessages, countMessageTypes } from './classifier.js';
+
 // Message Listener
 export {
   createMessageHandler,
   type MessageListenerOptions,
   registerMessageListener,
 } from './message.listener.js';
-// Processors
-export { addQuoteMedia, prepareMediaParts } from './processors/media.processor.js';
-export {
-  type ClassifiedMessage,
-  classifyMessageDetailed,
-  handleMixedContent,
-  type MessageType,
-} from './processors/message.processor.js';
-// Prompt & Quote
-export {
-  buildPrompt,
-  extractTextFromMessages,
-  processPrefix,
-} from './services/prompt.builder.js';
-export {
-  extractQuoteInfo,
-  parseQuoteAttachment,
-  type QuoteMedia,
-} from './services/quote.parser.js';
-// Rate Limit
-export {
-  checkRateLimit,
-  getRateLimitStatus,
-  markApiCall,
-} from './guards/rate-limit.guard.js';
 
-// User Filter
-export { isAllowedUser, isGroupAllowed, isUserAllowed } from './guards/user.filter.js';
+// Re-export from sub-modules
+export * from './handlers/index.js';
+export * from './processors/index.js';
+export * from './services/index.js';
+export * from './guards/index.js';
