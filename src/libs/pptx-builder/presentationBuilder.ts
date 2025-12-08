@@ -3,52 +3,16 @@
  */
 
 import PptxGenJS from 'pptxgenjs';
-import {
-  buildAreaChart,
-  buildBarChart,
-  buildChart,
-  buildLineChart,
-  buildPieChart,
-  buildStatCard,
-} from './chartBuilder.js';
-import { buildCodeBlock, buildCodeComparison, buildStyledCodeBlock } from './codeBuilder.js';
-import { LAYOUTS } from './constants.js';
+import { buildChart } from './chartBuilder.js';
+import { buildCodeBlock } from './codeBuilder.js';
 import { parseContent, parseOptions } from './contentParser.js';
-import {
-  buildImage,
-  buildImageGallery,
-  buildImageWithText,
-  buildLogo,
-  buildPositionedImage,
-} from './imageBuilder.js';
+import { buildPositionedImage } from './imageBuilder.js';
 import { createMasterSlides, getMasterForSlideType } from './masterSlide.js';
-import {
-  buildBadge,
-  buildBox,
-  buildCallout,
-  buildDecoratedDivider,
-  buildDivider,
-  buildIconGrid,
-  buildProcessFlow,
-  buildShape,
-  buildTimeline,
-} from './shapeBuilder.js';
 import { buildSlide } from './slideBuilder.js';
-import {
-  buildComparisonTable,
-  buildFeatureTable,
-  buildStyledTable,
-  buildTable,
-} from './tableBuilder.js';
+import { buildTable } from './tableBuilder.js';
 import { getTheme } from './themes.js';
-import type {
-  ChartConfig,
-  MasterSlideConfig,
-  ParsedSlide,
-  PresentationOptions,
-  PresentationTheme,
-  SlideType,
-} from './types.js';
+import { lightenColor } from './utils.js';
+import type { ChartConfig, PresentationOptions, PresentationTheme, SlideType } from './types.js';
 
 // ═══════════════════════════════════════════════════
 // PRESENTATION BUILDER CLASS
@@ -131,7 +95,7 @@ export class PresentationBuilder {
         w: '90%',
         h: 0.5,
         fontSize: 18,
-        color: this.theme.colors.bodyText + 'AA',
+        color: lightenColor(this.theme.colors.bodyText, 30),
         fontFace: this.theme.fonts.body,
         align: 'center',
       });
@@ -162,7 +126,7 @@ export class PresentationBuilder {
         w: '90%',
         h: 0.6,
         fontSize: 24,
-        color: 'FFFFFF' + 'CC',
+        color: 'E0E0E0',
         fontFace: this.theme.fonts.subtitle,
         align: 'left',
       });
@@ -194,7 +158,7 @@ export class PresentationBuilder {
         w: '90%',
         h: 0.5,
         fontSize: 20,
-        color: this.theme.colors.bodyText + 'CC',
+        color: lightenColor(this.theme.colors.bodyText, 20),
         fontFace: this.theme.fonts.subtitle,
       });
       currentY += 0.6;
@@ -209,59 +173,6 @@ export class PresentationBuilder {
       x: 0.5,
       y: currentY,
       w: '90%',
-      h: 3.5,
-      fontSize: 18,
-      color: this.theme.colors.bodyText,
-      fontFace: this.theme.fonts.body,
-      valign: 'top',
-      paraSpaceAfter: this.theme.spacing.bulletSpacing,
-    });
-
-    return this;
-  }
-
-  addTwoColumnSlide(title: string, leftContent: string[], rightContent: string[]): this {
-    const slide = this.addSlide('twoColumn');
-
-    slide.addText(title, {
-      x: 0.5,
-      y: 0.5,
-      w: '90%',
-      h: 1.0,
-      fontSize: 32,
-      bold: true,
-      color: this.theme.colors.titleText,
-      fontFace: this.theme.fonts.title,
-    });
-
-    // Left column
-    const leftItems = leftContent.map((text) => ({
-      text,
-      options: { bullet: { type: 'bullet' } },
-    }));
-
-    slide.addText(leftItems, {
-      x: 0.5,
-      y: 1.8,
-      w: '44%',
-      h: 3.5,
-      fontSize: 18,
-      color: this.theme.colors.bodyText,
-      fontFace: this.theme.fonts.body,
-      valign: 'top',
-      paraSpaceAfter: this.theme.spacing.bulletSpacing,
-    });
-
-    // Right column
-    const rightItems = rightContent.map((text) => ({
-      text,
-      options: { bullet: { type: 'bullet' } },
-    }));
-
-    slide.addText(rightItems, {
-      x: 5.2,
-      y: 1.8,
-      w: '44%',
       h: 3.5,
       fontSize: 18,
       color: this.theme.colors.bodyText,
@@ -296,7 +207,7 @@ export class PresentationBuilder {
         w: '80%',
         h: 0.5,
         fontSize: 18,
-        color: this.theme.colors.bodyText + 'AA',
+        color: lightenColor(this.theme.colors.bodyText, 30),
         fontFace: this.theme.fonts.body,
         align: 'right',
       });
@@ -310,7 +221,7 @@ export class PresentationBuilder {
         h: 0.4,
         fontSize: 12,
         italic: true,
-        color: this.theme.colors.bodyText + '88',
+        color: lightenColor(this.theme.colors.bodyText, 50),
         fontFace: this.theme.fonts.body,
         align: 'right',
       });
@@ -342,7 +253,7 @@ export class PresentationBuilder {
         w: '90%',
         h: 1.0,
         fontSize: 18,
-        color: 'FFFFFF' + 'CC',
+        color: 'E0E0E0',
         fontFace: this.theme.fonts.body,
         align: 'center',
       });
@@ -387,45 +298,6 @@ export class PresentationBuilder {
       caption: options?.caption,
       theme: this.theme,
     });
-    return this;
-  }
-
-  addCalloutToSlide(
-    slide: any,
-    type: 'info' | 'tip' | 'note' | 'warning' | 'important' | 'success' | 'error',
-    text: string,
-    y: number = 2.0,
-  ): this {
-    buildCallout(slide, type, text, { y, theme: this.theme });
-    return this;
-  }
-
-  addBoxToSlide(
-    slide: any,
-    type: 'info' | 'success' | 'warning' | 'error' | 'note' | 'quote' | 'code',
-    title: string,
-    content: string,
-    y: number = 2.0,
-  ): this {
-    buildBox(slide, type, title, content, { y, theme: this.theme });
-    return this;
-  }
-
-  addProcessFlowToSlide(
-    slide: any,
-    steps: Array<{ title: string; description?: string }>,
-    y: number = 2.5,
-  ): this {
-    buildProcessFlow(slide, steps, this.theme, y);
-    return this;
-  }
-
-  addTimelineToSlide(
-    slide: any,
-    events: Array<{ date: string; title: string; description?: string }>,
-    y: number = 2.5,
-  ): this {
-    buildTimeline(slide, events, this.theme, y);
     return this;
   }
 

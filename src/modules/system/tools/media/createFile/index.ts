@@ -123,7 +123,6 @@ PPTX POWERPOINT FRAMEWORK
 [SLIDE:title] - Slide tiêu đề
 [SLIDE:section] - Slide section header
 [SLIDE:content] - Slide nội dung (mặc định)
-[SLIDE:twoColumn] - Slide 2 cột
 [SLIDE:quote] - Slide trích dẫn
 [SLIDE:imageOnly] - Slide chỉ hình ảnh
 [SLIDE:thankyou] - Slide cảm ơn
@@ -154,39 +153,8 @@ const x = 1;
 > Blockquote text
 [QUOTE:Nội dung quote:Tác giả]
 
-**CALLOUTS:**
-[!INFO] Thông tin
-[!TIP] Mẹo hay
-[!WARNING] Cảnh báo
-[!SUCCESS] Thành công
-[!ERROR] Lỗi
-
-**BOXES:**
-[BOX:info:Title]
-Content
-[/BOX]
-Types: info, success, warning, error, note, quote, code
-
-**BADGES:**
-[BADGE:New:primary] [BADGE:Hot:danger]
-
-**DIVIDERS:**
-[DIVIDER] [DIVIDER:dashed] [DIVIDER:decorated:Text]
-
 **IMAGES:**
 ![Alt](url) hoặc [IMAGE:base64,width=400,caption="Caption"]
-
-**BACKGROUND:**
-[BACKGROUND:#FF5500]
-[BACKGROUND:gradient:color1:color2]
-
-**TRANSITIONS:**
-[TRANSITION:fade] [TRANSITION:push] [TRANSITION:wipe]
-
-**SPEAKER NOTES:**
-[NOTES]
-Ghi chú cho presenter
-[/NOTES]
 
 **THEMES (10 có sẵn):**
 default, professional, modern, dark, minimal, corporate, creative, nature, tech, elegant
@@ -213,9 +181,6 @@ LƯU Ý QUAN TRỌNG
 ═══════════════════════════════════════════════════
 - Viết markdown bình thường, framework tự style đẹp
 - Dùng \\n cho xuống dòng trong JSON string
-- Syntax phải CHÍNH XÁC với dấu : phân cách
-  ✓ [BOX:info:Title]  ✗ [BOXinfoTitle]
-  ✓ [BADGE:NEW:primary]  ✗ [BADGENEW]
 - Không cần escape ký tự đặc biệt trong content`,
   parameters: [
     {

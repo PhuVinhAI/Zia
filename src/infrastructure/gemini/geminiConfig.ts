@@ -2,6 +2,7 @@
  * Gemini Config - Cấu hình và khởi tạo Gemini API
  * Runtime: Bun
  */
+import { HarmBlockThreshold, HarmCategory } from '@google/genai';
 import { debugLog } from '../../core/logger/logger.js';
 import { setAIService } from '../../shared/types/ai.types.js';
 import { keyManager } from './keyManager.js';
@@ -28,11 +29,11 @@ export const getGeminiModel = () => keyManager.getCurrentModel();
 
 // Safety settings - tắt tất cả bộ lọc để tránh response rỗng
 const SAFETY_SETTINGS = [
-  { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'OFF' },
-  { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'OFF' },
-  { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'OFF' },
-  { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'OFF' },
-  { category: 'HARM_CATEGORY_CIVIC_INTEGRITY', threshold: 'OFF' },
+  { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.OFF },
+  { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.OFF },
+  { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.OFF },
+  { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.OFF },
+  { category: HarmCategory.HARM_CATEGORY_CIVIC_INTEGRITY, threshold: HarmBlockThreshold.OFF },
 ];
 
 export const GEMINI_CONFIG = {

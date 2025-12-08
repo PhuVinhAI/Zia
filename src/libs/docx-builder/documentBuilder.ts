@@ -13,6 +13,7 @@ import {
 } from 'docx';
 import { getMargins, getPageSize, ORIENTATIONS } from './constants.js';
 import { parseExtendedContent } from './contentBuilder.js';
+import { buildFootnoteContent, parseFootnotes } from './footnoteBuilder.js';
 import {
   buildDefaultFooter,
   buildDefaultHeader,
@@ -52,16 +53,20 @@ export class WordDocumentBuilder {
     let processedContent = content;
     const allChildren: (Paragraph | Table)[] = [];
 
-    // 1. Check if content has cover page - skip title section if so
+    // 1. Parse footnotes from content
+    const { cleanContent, footnotes } = parseFootnotes(processedContent);
+    processedContent = cleanContent;
+
+    // 2. Check if content has cover page - skip title section if so
     const hasCover = /\[COVER:[^\]]+\]/i.test(processedContent);
 
-    // 2. Build title if provided AND no cover page in content
+    // 3. Build title if provided AND no cover page in content
     if (!hasCover) {
       const titleParagraphs = this.buildTitleSection();
       allChildren.push(...titleParagraphs);
     }
 
-    // 3. Build TOC if requested
+    // 4. Build TOC if requested
     if (this.options.includeToc) {
       const headings = extractHeadings(processedContent);
       if (headings.length > 0) {
@@ -70,17 +75,20 @@ export class WordDocumentBuilder {
       }
     }
 
-    // 4. Parse main content (includes all features: callouts, tables, etc.)
+    // 5. Parse main content (includes all features: callouts, tables, etc.)
     const paragraphs = parseExtendedContent(processedContent, this.theme);
     allChildren.push(...paragraphs);
 
-    // 5. Build section properties
+    // 6. Build section properties
     const sectionProperties = this.buildSectionProperties();
 
-    // 6. Build headers
+    // 7. Build headers
     const headerConfig = this.options.header
       ? buildHeader(this.options.header, this.theme)
       : buildDefaultHeader(this.options.title, this.theme);
+
+    // 8. Build footnotes config
+    const footnoteConfig = footnotes.length > 0 ? buildFootnoteContent(footnotes, this.theme) : undefined;
 
     const doc = new Document({
       creator: this.options.author || 'Zia AI Bot',
@@ -88,6 +96,7 @@ export class WordDocumentBuilder {
       description: 'Created by Zia AI Bot',
       styles: buildDocumentStyles(this.theme),
       numbering: buildNumberingConfig(),
+      footnotes: footnoteConfig,
       sections: [
         {
           properties: sectionProperties,
