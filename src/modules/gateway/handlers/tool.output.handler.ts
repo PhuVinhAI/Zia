@@ -177,6 +177,13 @@ const outputHandlers: Record<string, OutputHandler> = {
     }
   },
 
+  // qrCode → send QR code image
+  qrCode: async (api, threadId, result) => {
+    if (result.data?.imageBuffers) {
+      await sendImages(api, threadId, result.data.imageBuffers, 'qrcode');
+    }
+  },
+
   // createApp → send HTML file
   createApp: async (api, threadId, result) => {
     if (result.data?.fileBuffer) {

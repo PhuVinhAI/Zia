@@ -88,7 +88,8 @@ export class WordDocumentBuilder {
       : buildDefaultHeader(this.options.title, this.theme);
 
     // 8. Build footnotes config
-    const footnoteConfig = footnotes.length > 0 ? buildFootnoteContent(footnotes, this.theme) : undefined;
+    const footnoteConfig =
+      footnotes.length > 0 ? buildFootnoteContent(footnotes, this.theme) : undefined;
 
     const doc = new Document({
       creator: this.options.author || 'Zia AI Bot',

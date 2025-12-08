@@ -228,10 +228,11 @@ export function classifyMessages(messages: any[]): ClassifiedMessage[] {
  * Đếm số lượng từng loại tin nhắn
  */
 export function countMessageTypes(classified: ClassifiedMessage[]): Record<string, number> {
-  return classified.reduce(
-    (acc, c) => ({ ...acc, [c.type]: (acc[c.type] || 0) + 1 }),
-    {} as Record<string, number>,
-  );
+  const result: Record<string, number> = {};
+  for (const c of classified) {
+    result[c.type] = (result[c.type] || 0) + 1;
+  }
+  return result;
 }
 
 /**

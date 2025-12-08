@@ -4,7 +4,7 @@
  */
 
 import { debugLog, logError } from '../../../core/logger/logger.js';
-import { http, fetchImageAsBuffer } from '../../../shared/utils/httpClient.js';
+import { fetchImageAsBuffer, http } from '../../../shared/utils/httpClient.js';
 
 // ═══════════════════════════════════════════════════
 // QR CODE GENERATOR (goqr.me)
@@ -77,7 +77,9 @@ export async function shortenUrl(url: string): Promise<ShortenResult | null> {
     debugLog('URL', `Shortening: ${url.substring(0, 50)}...`);
 
     const apiUrl = `https://is.gd/create.php?format=json&url=${encodeURIComponent(url)}`;
-    const response = await http.get(apiUrl).json<{ shorturl?: string; errorcode?: number; errormessage?: string }>();
+    const response = await http
+      .get(apiUrl)
+      .json<{ shorturl?: string; errorcode?: number; errormessage?: string }>();
 
     if (response.errorcode || !response.shorturl) {
       debugLog('URL', `✗ Error: ${response.errormessage || 'Unknown error'}`);
@@ -100,12 +102,17 @@ export async function shortenUrl(url: string): Promise<ShortenResult | null> {
  * Rút gọn URL với custom alias (v.gd)
  * API: https://v.gd/apishorteningreference.php
  */
-export async function shortenUrlWithAlias(url: string, alias: string): Promise<ShortenResult | null> {
+export async function shortenUrlWithAlias(
+  url: string,
+  alias: string,
+): Promise<ShortenResult | null> {
   try {
     debugLog('URL', `Shortening with alias "${alias}": ${url.substring(0, 50)}...`);
 
     const apiUrl = `https://v.gd/create.php?format=json&url=${encodeURIComponent(url)}&shorturl=${encodeURIComponent(alias)}`;
-    const response = await http.get(apiUrl).json<{ shorturl?: string; errorcode?: number; errormessage?: string }>();
+    const response = await http
+      .get(apiUrl)
+      .json<{ shorturl?: string; errorcode?: number; errormessage?: string }>();
 
     if (response.errorcode || !response.shorturl) {
       debugLog('URL', `✗ Error: ${response.errormessage || 'Unknown error'}`);

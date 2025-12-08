@@ -4,7 +4,7 @@
  */
 
 import { describe, test, expect } from 'bun:test';
-import { parseQuoteAttachment, extractQuoteInfo } from '../../../src/modules/gateway/quote.parser.js';
+import { parseQuoteAttachment, extractQuoteInfo } from '../../../src/modules/gateway/services/quote.parser.js';
 
 describe('Quote Parser Integration', () => {
   describe('parseQuoteAttachment', () => {

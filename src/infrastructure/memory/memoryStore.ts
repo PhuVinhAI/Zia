@@ -5,9 +5,9 @@
 
 import { desc, eq, sql } from 'drizzle-orm';
 import { debugLog } from '../../core/logger/logger.js';
+import { isRateLimitError, keyManager } from '../ai/providers/gemini/keyManager.js';
 import { EMBEDDING_DIM, getDatabase, getSqliteDb } from '../database/connection.js';
 import { type Memory, type MemoryType, memories, type NewMemory } from '../database/schema.js';
-import { isRateLimitError, keyManager } from '../gemini/keyManager.js';
 
 // ═══════════════════════════════════════════════════
 // CONFIG
@@ -150,7 +150,6 @@ class MemoryStore {
       minImportance?: number;
     },
   ): Promise<SearchResult[]> {
-    const db = getDatabase();
     const sqlite = getSqliteDb();
     const queryEmb = await embeddingService.createEmbedding(query, 'RETRIEVAL_QUERY');
     const limit = options?.limit || 5;

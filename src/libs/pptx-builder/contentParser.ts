@@ -80,7 +80,7 @@ export function parseSlide(text: string, index: number): ParsedSlide {
     }
 
     if (inCodeBlock) {
-      codeBlockContent += line + '\n';
+      codeBlockContent += `${line}\n`;
       continue;
     }
 
@@ -101,8 +101,6 @@ export function parseSlide(text: string, index: number): ParsedSlide {
       slide.type = typeMatch[1].toLowerCase() as SlideType;
       continue;
     }
-
-
 
     // Quote
     const quoteMatch = trimmed.match(/^\[QUOTE:([^:]+)(?::([^\]]+))?\]$/i);
@@ -187,7 +185,7 @@ export function parseSlide(text: string, index: number): ParsedSlide {
       if (!slide.quote) {
         slide.quote = { text: quoteText };
       } else {
-        slide.quote.text += '\n' + quoteText;
+        slide.quote.text += `\n${quoteText}`;
       }
       continue;
     }
@@ -253,10 +251,10 @@ function parseExtendedImage(params: string): ParsedImage {
     const [key, value] = part.split('=').map((s) => s.trim());
     switch (key) {
       case 'width':
-        image.width = parseInt(value);
+        image.width = parseInt(value, 10);
         break;
       case 'height':
-        image.height = parseInt(value);
+        image.height = parseInt(value, 10);
         break;
       case 'caption':
         image.caption = value.replace(/^["']|["']$/g, '');

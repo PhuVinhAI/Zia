@@ -3,7 +3,7 @@
  * Test các utility functions của message buffer (không test RxJS stream vì cần Zalo API)
  */
 import { describe, expect, it } from 'bun:test';
-import { getBufferConfig } from '../../../src/modules/gateway/message.buffer.js';
+import { getBufferConfig } from '../../../src/modules/gateway/services/message.buffer.js';
 
 describe('Message Buffer', () => {
   describe('getBufferConfig()', () => {

@@ -75,7 +75,6 @@ export const giphyGifTool: ToolDefinition = {
           }
           break;
         }
-        case 'search':
         default: {
           if (!data.query) {
             return { success: false, error: 'Cần từ khóa tìm kiếm cho mode search' };

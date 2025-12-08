@@ -5,7 +5,10 @@
  */
 import { debugLog } from '../../core/logger/logger.js';
 import { parseToolCalls } from '../../core/tool-registry/tool-registry.js';
-import { type GroqMessage, generateGroqResponse } from '../../infrastructure/groq/groqClient.js';
+import {
+  type GroqMessage,
+  generateGroqResponse,
+} from '../../infrastructure/ai/providers/groq/groqClient.js';
 import { executeTask } from './action.executor.js';
 import { buildEnvironmentContext, formatContextForPrompt } from './context.builder.js';
 import {

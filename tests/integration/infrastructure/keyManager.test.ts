@@ -2,7 +2,7 @@
  * Test: Gemini Key Manager
  */
 import { describe, expect, it } from 'bun:test';
-import { isRateLimitError, GEMINI_MODELS } from '../../../src/infrastructure/gemini/keyManager.js';
+import { isRateLimitError, GEMINI_MODELS } from '../../../src/infrastructure/ai/providers/gemini/keyManager.js';
 
 describe('Gemini Key Manager', () => {
   describe('GEMINI_MODELS', () => {

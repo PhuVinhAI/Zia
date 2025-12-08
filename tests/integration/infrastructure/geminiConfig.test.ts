@@ -5,7 +5,7 @@ import { describe, expect, it } from 'bun:test';
 import {
   GEMINI_CONFIG,
   extractYouTubeUrls,
-} from '../../../src/infrastructure/gemini/geminiConfig.js';
+} from '../../../src/infrastructure/ai/providers/gemini/geminiConfig.js';
 
 describe('Gemini Config', () => {
   describe('GEMINI_CONFIG', () => {

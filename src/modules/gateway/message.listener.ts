@@ -3,12 +3,12 @@
  * Tách logic từ main.ts để clean hơn
  */
 
+import { CONFIG } from '../../core/config/config.js';
 import { debugLog, Events, eventBus, logMessage } from '../../core/index.js';
-import { CONFIG } from '../../shared/constants/config.js';
 import { initThreadHistory, isThreadInitialized } from '../../shared/utils/history/history.js';
 import { abortTask } from '../../shared/utils/taskManager.js';
-import { addToBuffer } from './message.buffer.js';
-import { isAllowedUser } from './user.filter.js';
+import { isAllowedUser } from './guards/user.filter.js';
+import { addToBuffer } from './services/message.buffer.js';
 
 // FriendEventType from zca-js
 const FriendEventType = {

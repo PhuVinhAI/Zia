@@ -5,8 +5,8 @@ import {
   logStep,
   logZaloAPI,
 } from '../../../core/logger/logger.js';
-import type { StreamCallbacks } from '../../../infrastructure/gemini/gemini.provider.js';
-import { Reactions } from '../../../infrastructure/zalo/zalo.service.js';
+import type { StreamCallbacks } from '../../../infrastructure/ai/providers/gemini/gemini.provider.js';
+import { Reactions } from '../../../infrastructure/messaging/zalo/zalo.service.js';
 import type { AIResponse } from '../../../shared/types/config.schema.js';
 import { getRawHistory } from '../../../shared/utils/history/history.js';
 import { splitMessage } from '../../../shared/utils/message/messageChunker.js';
@@ -15,7 +15,6 @@ import {
   sendImageFromUrl,
   sendSticker,
   sendTextMessage,
-  setThreadType,
 } from '../../../shared/utils/message/messageSender.js';
 import {
   getSentMessage,

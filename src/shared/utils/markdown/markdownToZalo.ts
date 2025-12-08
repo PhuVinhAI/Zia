@@ -61,26 +61,422 @@ interface TableData {
 }
 
 /**
+ * Strip LaTeX syntax từ text
+ * Convert LaTeX math expressions sang plain text
+ * Ví dụ: $30.2^\circ\text{C}$ → 30.2°C
+ */
+function stripLatexSyntax(text: string): string {
+  let result = text;
+
+  // Remove $$...$$ wrapper (display math) - process first (longer pattern)
+  result = result.replace(/\$\$([^$]+)\$\$/g, (_, content) => {
+    return convertLatexContent(content);
+  });
+
+  // Remove $...$ wrapper (inline math) - handle escaped \$ inside
+  // Match $ followed by content (not starting with space) and ending with $
+  result = result.replace(/\$([^$]+?)\$/g, (_, content) => {
+    return convertLatexContent(content);
+  });
+
+  // Handle remaining escaped LaTeX commands outside of $...$
+  // \% → %
+  result = result.replace(/\\%/g, '%');
+  // \$ → $
+  result = result.replace(/\\\$/g, '$');
+  // \& → &
+  result = result.replace(/\\&/g, '&');
+  // \# → #
+  result = result.replace(/\\#/g, '#');
+  // \_ → _
+  result = result.replace(/\\_/g, '_');
+
+  return result;
+}
+
+/**
+ * Convert LaTeX content to plain text
+ * Comprehensive LaTeX to Unicode conversion
+ */
+function convertLatexContent(latex: string): string {
+  let result = latex;
+
+  // ═══════════════════════════════════════════════════
+  // TEXT COMMANDS
+  // ═══════════════════════════════════════════════════
+
+  // \text{...}, \textbf{...}, \textit{...}, \textrm{...}, \texttt{...}
+  result = result.replace(/\\text(?:bf|it|rm|tt|sf|sc)?\{([^}]+)\}/g, '$1');
+  // \mathrm{...}, \mathbf{...}, \mathit{...}, \mathsf{...}, \mathtt{...}
+  result = result.replace(/\\math(?:rm|bf|it|sf|tt|bb|cal|frak|scr)?\{([^}]+)\}/g, '$1');
+  // \operatorname{...}
+  result = result.replace(/\\operatorname\{([^}]+)\}/g, '$1');
+  // \boldsymbol{...}
+  result = result.replace(/\\boldsymbol\{([^}]+)\}/g, '$1');
+
+  // ═══════════════════════════════════════════════════
+  // FRACTIONS
+  // ═══════════════════════════════════════════════════
+
+  // \frac{a}{b} → a/b
+  result = result.replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '($1/$2)');
+  // \dfrac{a}{b} → a/b
+  result = result.replace(/\\dfrac\{([^}]+)\}\{([^}]+)\}/g, '($1/$2)');
+  // \tfrac{a}{b} → a/b
+  result = result.replace(/\\tfrac\{([^}]+)\}\{([^}]+)\}/g, '($1/$2)');
+
+  // ═══════════════════════════════════════════════════
+  // ROOTS
+  // ═══════════════════════════════════════════════════
+
+  // \sqrt{x} → √x
+  result = result.replace(/\\sqrt\{([^}]+)\}/g, '√($1)');
+  // \sqrt[n]{x} → ⁿ√x
+  result = result.replace(/\\sqrt\[([^\]]+)\]\{([^}]+)\}/g, '$1√($2)');
+  // \cbrt{x} → ∛x
+  result = result.replace(/\\cbrt\{([^}]+)\}/g, '∛($1)');
+
+  // ═══════════════════════════════════════════════════
+  // SUPERSCRIPTS & SUBSCRIPTS
+  // ═══════════════════════════════════════════════════
+
+  // ^{\circ} or ^\circ → °
+  result = result.replace(/\^\{?\\circ\}?/g, '°');
+  // ^{2} → ²
+  result = result.replace(/\^\{2\}/g, '²');
+  result = result.replace(/\^2(?![0-9])/g, '²');
+  // ^{3} → ³
+  result = result.replace(/\^\{3\}/g, '³');
+  result = result.replace(/\^3(?![0-9])/g, '³');
+  // ^{n} → ⁿ (for other numbers, keep as ^n)
+  result = result.replace(/\^\{([^}]+)\}/g, '^$1');
+  // _{n} → _n (subscript)
+  result = result.replace(/_\{([^}]+)\}/g, '_$1');
+
+  // ═══════════════════════════════════════════════════
+  // GREEK LETTERS
+  // ═══════════════════════════════════════════════════
+
+  const greekLetters: Record<string, string> = {
+    // Lowercase
+    alpha: 'α',
+    beta: 'β',
+    gamma: 'γ',
+    delta: 'δ',
+    epsilon: 'ε',
+    varepsilon: 'ε',
+    zeta: 'ζ',
+    eta: 'η',
+    theta: 'θ',
+    vartheta: 'ϑ',
+    iota: 'ι',
+    kappa: 'κ',
+    lambda: 'λ',
+    mu: 'μ',
+    nu: 'ν',
+    xi: 'ξ',
+    omicron: 'ο',
+    pi: 'π',
+    varpi: 'ϖ',
+    rho: 'ρ',
+    varrho: 'ϱ',
+    sigma: 'σ',
+    varsigma: 'ς',
+    tau: 'τ',
+    upsilon: 'υ',
+    phi: 'φ',
+    varphi: 'ϕ',
+    chi: 'χ',
+    psi: 'ψ',
+    omega: 'ω',
+    // Uppercase
+    Alpha: 'Α',
+    Beta: 'Β',
+    Gamma: 'Γ',
+    Delta: 'Δ',
+    Epsilon: 'Ε',
+    Zeta: 'Ζ',
+    Eta: 'Η',
+    Theta: 'Θ',
+    Iota: 'Ι',
+    Kappa: 'Κ',
+    Lambda: 'Λ',
+    Mu: 'Μ',
+    Nu: 'Ν',
+    Xi: 'Ξ',
+    Omicron: 'Ο',
+    Pi: 'Π',
+    Rho: 'Ρ',
+    Sigma: 'Σ',
+    Tau: 'Τ',
+    Upsilon: 'Υ',
+    Phi: 'Φ',
+    Chi: 'Χ',
+    Psi: 'Ψ',
+    Omega: 'Ω',
+  };
+
+  for (const [name, symbol] of Object.entries(greekLetters)) {
+    result = result.replace(new RegExp(`\\\\${name}(?![a-zA-Z])`, 'g'), symbol);
+  }
+
+  // ═══════════════════════════════════════════════════
+  // MATHEMATICAL OPERATORS & RELATIONS
+  // ═══════════════════════════════════════════════════
+
+  const operators: Record<string, string> = {
+    // Basic operators
+    times: '×',
+    div: '÷',
+    cdot: '·',
+    ast: '*',
+    pm: '±',
+    mp: '∓',
+    oplus: '⊕',
+    ominus: '⊖',
+    otimes: '⊗',
+
+    // Relations
+    approx: '≈',
+    approxeq: '≊',
+    sim: '∼',
+    simeq: '≃',
+    cong: '≅',
+    equiv: '≡',
+    neq: '≠',
+    ne: '≠',
+    leq: '≤',
+    le: '≤',
+    geq: '≥',
+    ge: '≥',
+    ll: '≪',
+    gg: '≫',
+    prec: '≺',
+    succ: '≻',
+    preceq: '⪯',
+    succeq: '⪰',
+    subset: '⊂',
+    supset: '⊃',
+    subseteq: '⊆',
+    supseteq: '⊇',
+    in: '∈',
+    notin: '∉',
+    ni: '∋',
+    notni: '∌',
+    propto: '∝',
+    parallel: '∥',
+    perp: '⊥',
+
+    // Arrows
+    to: '→',
+    rightarrow: '→',
+    leftarrow: '←',
+    leftrightarrow: '↔',
+    Rightarrow: '⇒',
+    Leftarrow: '⇐',
+    Leftrightarrow: '⇔',
+    uparrow: '↑',
+    downarrow: '↓',
+    updownarrow: '↕',
+    mapsto: '↦',
+    longmapsto: '⟼',
+    implies: '⟹',
+    iff: '⟺',
+
+    // Logic
+    land: '∧',
+    lor: '∨',
+    lnot: '¬',
+    neg: '¬',
+    forall: '∀',
+    exists: '∃',
+    nexists: '∄',
+    therefore: '∴',
+    because: '∵',
+
+    // Set theory
+    emptyset: '∅',
+    varnothing: '∅',
+    cap: '∩',
+    cup: '∪',
+    setminus: '∖',
+
+    // Calculus & Analysis
+    partial: '∂',
+    nabla: '∇',
+    infty: '∞',
+    int: '∫',
+    iint: '∬',
+    iiint: '∭',
+    oint: '∮',
+    sum: '∑',
+    prod: '∏',
+    coprod: '∐',
+
+    // Misc symbols
+    degree: '°',
+    circ: '°',
+    bullet: '•',
+    cdots: '⋯',
+    ldots: '…',
+    vdots: '⋮',
+    ddots: '⋱',
+    prime: '′',
+    dprime: '″',
+    angle: '∠',
+    measuredangle: '∡',
+    triangle: '△',
+    square: '□',
+    diamond: '◇',
+    star: '⋆',
+    hbar: 'ℏ',
+    ell: 'ℓ',
+    wp: '℘',
+    Re: 'ℜ',
+    Im: 'ℑ',
+    aleph: 'ℵ',
+    beth: 'ℶ',
+
+    // Units & misc
+    percent: '%',
+  };
+
+  for (const [cmd, symbol] of Object.entries(operators)) {
+    result = result.replace(
+      new RegExp(`\\\\${cmd.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![a-zA-Z])`, 'g'),
+      symbol,
+    );
+  }
+
+  // ═══════════════════════════════════════════════════
+  // FUNCTIONS (sin, cos, log, etc.)
+  // ═══════════════════════════════════════════════════
+
+  const functions = [
+    'sin',
+    'cos',
+    'tan',
+    'cot',
+    'sec',
+    'csc',
+    'arcsin',
+    'arccos',
+    'arctan',
+    'sinh',
+    'cosh',
+    'tanh',
+    'log',
+    'ln',
+    'lg',
+    'exp',
+    'lim',
+    'max',
+    'min',
+    'sup',
+    'inf',
+    'det',
+    'dim',
+    'ker',
+    'deg',
+    'gcd',
+    'lcm',
+    'mod',
+    'arg',
+  ];
+
+  for (const fn of functions) {
+    result = result.replace(new RegExp(`\\\\${fn}(?![a-zA-Z])`, 'g'), fn);
+  }
+
+  // ═══════════════════════════════════════════════════
+  // BRACKETS & DELIMITERS
+  // ═══════════════════════════════════════════════════
+
+  // \left and \right (remove, keep delimiter)
+  result = result.replace(/\\(left|right|big|Big|bigg|Bigg)/g, '');
+  // \{ and \} → { and }
+  result = result.replace(/\\\{/g, '{');
+  result = result.replace(/\\\}/g, '}');
+  // \langle and \rangle → ⟨ and ⟩
+  result = result.replace(/\\langle/g, '⟨');
+  result = result.replace(/\\rangle/g, '⟩');
+  // \lfloor, \rfloor, \lceil, \rceil
+  result = result.replace(/\\lfloor/g, '⌊');
+  result = result.replace(/\\rfloor/g, '⌋');
+  result = result.replace(/\\lceil/g, '⌈');
+  result = result.replace(/\\rceil/g, '⌉');
+  // \| → ‖
+  result = result.replace(/\\\|/g, '‖');
+
+  // ═══════════════════════════════════════════════════
+  // SPACING & FORMATTING
+  // ═══════════════════════════════════════════════════
+
+  // Remove spacing commands: \, \; \: \! \quad \qquad \hspace \vspace
+  result = result.replace(/\\[,;:!]/g, ' ');
+  result = result.replace(/\\(quad|qquad|hspace|vspace|kern|mkern)(\{[^}]*\})?/g, ' ');
+  // \\ (line break) → newline
+  result = result.replace(/\\\\/g, '\n');
+  // \newline → newline
+  result = result.replace(/\\newline/g, '\n');
+
+  // ═══════════════════════════════════════════════════
+  // ESCAPED CHARACTERS
+  // ═══════════════════════════════════════════════════
+
+  // \% → %
+  result = result.replace(/\\%/g, '%');
+  // \$ → $
+  result = result.replace(/\\\$/g, '$');
+  // \& → &
+  result = result.replace(/\\&/g, '&');
+  // \# → #
+  result = result.replace(/\\#/g, '#');
+  // \_ → _
+  result = result.replace(/\\_/g, '_');
+
+  // ═══════════════════════════════════════════════════
+  // CLEANUP
+  // ═══════════════════════════════════════════════════
+
+  // Remove any remaining \command that wasn't matched
+  result = result.replace(/\\[a-zA-Z]+/g, '');
+  // Remove empty braces {}
+  result = result.replace(/\{\}/g, '');
+  // Clean up multiple spaces
+  result = result.replace(/\s+/g, ' ');
+  // Clean up spaces around operators
+  result = result.replace(/\s*([+\-×÷=<>])\s*/g, ' $1 ');
+
+  return result.trim();
+}
+
+/**
  * Strip markdown syntax từ text (dùng cho nội dung cell trong bảng)
- * Loại bỏ: **bold**, *italic*, ~~strikethrough~~, `code`, [link](url)
+ * Loại bỏ: **bold**, *italic*, ~~strikethrough~~, `code`, [link](url), LaTeX
  */
 function stripMarkdownSyntax(text: string): string {
-  return text
-    // ***bold italic*** → content
-    .replace(/\*\*\*(.+?)\*\*\*/g, '$1')
-    // **bold** → content
-    .replace(/\*\*(.+?)\*\*/g, '$1')
-    // ~~strikethrough~~ → content
-    .replace(/~~(.+?)~~/g, '$1')
-    // *italic* → content (không phải **)
-    .replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '$1')
-    // _italic_ → content (không phải __)
-    .replace(/(?<!_)_(?!_)(.+?)(?<!_)_(?!_)/g, '$1')
-    // `inline code` → content
-    .replace(/`([^`]+)`/g, '$1')
-    // [link text](url) → link text
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
-    .trim();
+  return (
+    text
+      // Strip LaTeX first
+      .replace(/\$([^$]+)\$/g, (_, content) => convertLatexContent(content))
+      .replace(/\$\$([^$]+)\$\$/g, (_, content) => convertLatexContent(content))
+      // ***bold italic*** → content
+      .replace(/\*\*\*(.+?)\*\*\*/g, '$1')
+      // **bold** → content
+      .replace(/\*\*(.+?)\*\*/g, '$1')
+      // ~~strikethrough~~ → content
+      .replace(/~~(.+?)~~/g, '$1')
+      // *italic* → content (không phải **)
+      .replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '$1')
+      // _italic_ → content (không phải __)
+      .replace(/(?<!_)_(?!_)(.+?)(?<!_)_(?!_)/g, '$1')
+      // `inline code` → content
+      .replace(/`([^`]+)`/g, '$1')
+      // [link text](url) → link text
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+      .trim()
+  );
 }
 
 function parseMarkdownTable(tableText: string): TableData | null {
@@ -304,15 +700,15 @@ function fixIncompleteCodeBlocks(markdown: string): string {
 
     if (firstBacktick === lastBacktick) {
       // Chỉ có 1 ```, kiểm tra xem là mở hay đóng
-      const beforeBacktick = text.slice(0, firstBacktick);
+      const _beforeBacktick = text.slice(0, firstBacktick);
       const afterBacktick = text.slice(firstBacktick + 3);
 
       // Nếu sau ``` có language tag hoặc code → đây là mở, cần thêm đóng
       if (afterBacktick.trim().length > 0) {
-        text = text + '\n```';
+        text = `${text}\n\`\`\``;
       } else {
         // Đây là đóng, cần thêm mở ở đầu
-        text = '```\n' + text;
+        text = `\`\`\`\n${text}`;
       }
     }
   }
@@ -418,7 +814,9 @@ function extractCodeBlocksAndTables(markdown: string): ExtractResult {
 function parseInlineStyles(text: string): { text: string; styles: StyleItem[]; links: LinkItem[] } {
   const styles: StyleItem[] = [];
   const links: LinkItem[] = [];
-  let result = text;
+
+  // Strip LaTeX syntax first (before processing other markdown)
+  let result = stripLatexSyntax(text);
 
   // Patterns với multiple styles (array of style strings)
   const patterns: Array<{ regex: RegExp; styleList: string[] }> = [
@@ -448,7 +846,7 @@ function parseInlineStyles(text: string): { text: string; styles: StyleItem[]; l
       const startIndex = match.index;
 
       result = result.slice(0, startIndex) + content + result.slice(startIndex + fullMatch.length);
-      
+
       // Thêm một entry cho mỗi style trong styleList
       for (const st of styleList) {
         styles.push({ start: startIndex, len: content.length, st: st as any });

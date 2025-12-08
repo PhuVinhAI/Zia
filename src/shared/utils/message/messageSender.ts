@@ -11,7 +11,7 @@
 
 import sharp from 'sharp';
 import { debugLog, logError, logMessage, logZaloAPI } from '../../../core/logger/logger.js';
-import { ThreadType } from '../../../infrastructure/zalo/zalo.service.js';
+import { ThreadType } from '../../../infrastructure/messaging/zalo/zalo.service.js';
 import { http } from '../httpClient.js';
 import {
   type CodeBlock,
@@ -54,7 +54,6 @@ export interface SendMessageResult {
   msgId?: string;
   error?: string;
 }
-
 
 // ═══════════════════════════════════════════════════
 // THREAD TYPE STORE
@@ -144,11 +143,7 @@ export function parseMentions(text: string): { text: string; mentions: MentionIn
 /**
  * Gửi media image (table/mermaid PNG) từ buffer
  */
-export async function sendMediaImage(
-  api: any,
-  image: MediaImage,
-  threadId: string,
-): Promise<void> {
+export async function sendMediaImage(api: any, image: MediaImage, threadId: string): Promise<void> {
   try {
     const typeLabel = image.type === 'table' ? 'bảng' : 'sơ đồ';
     debugLog('MEDIA_IMG', `Sending ${image.type} image: ${image.filename}`);
@@ -391,7 +386,6 @@ export async function sendImageFromUrl(
     } catch {}
   }
 }
-
 
 // ═══════════════════════════════════════════════════
 // MAIN SEND MESSAGE FUNCTION

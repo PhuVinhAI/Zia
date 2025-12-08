@@ -553,7 +553,10 @@ export const RemoveReminderSchema = z.object({
 
 // QR Code params
 export const QRCodeSchema = z.object({
-  data: z.string().min(1, 'Thiếu nội dung cần tạo QR').max(2000, 'Nội dung quá dài (tối đa 2000 ký tự)'),
+  data: z
+    .string()
+    .min(1, 'Thiếu nội dung cần tạo QR')
+    .max(2000, 'Nội dung quá dài (tối đa 2000 ký tự)'),
   size: z.coerce.number().min(100).max(1000).default(300),
 });
 

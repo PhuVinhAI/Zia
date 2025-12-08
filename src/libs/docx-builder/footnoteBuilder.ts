@@ -36,7 +36,7 @@ export function parseFootnotes(content: string): {
 
   while ((match = defRegex.exec(content)) !== null) {
     footnotes.push({
-      id: parseInt(match[1]),
+      id: parseInt(match[1], 10),
       text: match[2].trim(),
     });
     // Remove definition from content

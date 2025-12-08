@@ -75,7 +75,6 @@ export function buildSlide(
   if (showSlideNumbers) {
     addSlideNumber(slide, index + 1, theme);
   }
-
 }
 
 // ═══════════════════════════════════════════════════
@@ -214,7 +213,7 @@ function buildContentSlide(slide: any, data: ParsedSlide, theme: PresentationThe
     const bulletItems = data.bullets.map((bullet) => ({
       text: formatBulletText(bullet.text, bullet.checked),
       options: {
-        bullet: bullet.checked !== undefined ? false : true,
+        bullet: bullet.checked === undefined,
         indentLevel: bullet.level,
         bold: bullet.styles.includes('bold'),
         italic: bullet.styles.includes('italic'),

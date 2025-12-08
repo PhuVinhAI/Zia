@@ -2,7 +2,7 @@
  * Image Builder - Xử lý hình ảnh trong Word document
  */
 
-import { AlignmentType, ImageRun, Paragraph, TextRun } from 'docx';
+import { ImageRun, Paragraph, TextRun } from 'docx';
 import { ALIGNMENTS } from './constants.js';
 import { getTheme } from './themes.js';
 import type { DocumentTheme, ImageConfig } from './types.js';
@@ -111,8 +111,8 @@ export function parseImageSyntax(line: string): ImageConfig | null {
     const captionMatch = options.match(/caption="([^"]+)"/i);
     const alignMatch = options.match(/align=(left|center|right)/i);
 
-    if (widthMatch) config.width = parseInt(widthMatch[1]);
-    if (heightMatch) config.height = parseInt(heightMatch[1]);
+    if (widthMatch) config.width = parseInt(widthMatch[1], 10);
+    if (heightMatch) config.height = parseInt(heightMatch[1], 10);
     if (captionMatch) config.caption = captionMatch[1];
     if (alignMatch) config.alignment = alignMatch[1] as 'left' | 'center' | 'right';
 

@@ -8,5 +8,5 @@
  * - Error messages chi tiết
  * - Coercion tự động (string -> number)
  */
-export * from './config.schema.js';
+export * from '../../core/config/config.schema.js';
 export * from './tools.schema.js';

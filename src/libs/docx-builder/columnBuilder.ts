@@ -3,8 +3,6 @@
  */
 
 import { Paragraph, SectionType, TextRun } from 'docx';
-import { getTheme } from './themes.js';
-import type { DocumentTheme } from './types.js';
 
 // ═══════════════════════════════════════════════════
 // COLUMN TYPES
@@ -85,7 +83,7 @@ export function parseColumnSections(content: string): {
       }
     }
 
-    const columnCount = parseInt(match[1]) as 2 | 3;
+    const columnCount = parseInt(match[1], 10) as 2 | 3;
     if (columnCount === 2 || columnCount === 3) {
       result.columnSections.push({
         content: match[2].trim(),

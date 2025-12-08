@@ -61,8 +61,8 @@ async function main() {
   container.register(Services.ZALO_API, api);
 
   // Register Zalo log transport (production: gửi log qua Zalo)
-  const { zaloLogTransport } = await import('../infrastructure/zalo/zaloLogTransport.js');
-  const { ThreadType } = await import('../infrastructure/zalo/zalo.service.js');
+  const { zaloLogTransport } = await import('../infrastructure/messaging/zalo/zaloLogTransport.js');
+  const { ThreadType } = await import('../infrastructure/messaging/zalo/zalo.service.js');
   zaloLogTransport.setApi(api, ThreadType);
   registerLogTransport(zaloLogTransport);
 

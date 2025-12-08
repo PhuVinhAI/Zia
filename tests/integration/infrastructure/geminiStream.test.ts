@@ -5,7 +5,7 @@
 
 import { describe, test, expect, beforeAll } from 'bun:test';
 import { hasApiKey, TEST_CONFIG } from '../setup.js';
-import { generateContentStream, type StreamCallbacks } from '../../../src/infrastructure/gemini/geminiStream.js';
+import { generateContentStream, type StreamCallbacks } from '../../../src/infrastructure/ai/providers/gemini/geminiStream.js';
 
 const SKIP = !hasApiKey('gemini');
 

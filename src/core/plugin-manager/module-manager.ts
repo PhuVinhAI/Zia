@@ -2,7 +2,7 @@
  * Module Manager - Quản lý load/unload modules
  */
 
-import { CONFIG } from '../../shared/constants/config.js';
+import { CONFIG } from '../config/config.js';
 import { Events, eventBus } from '../event-bus/event-bus.js';
 import { debugLog, logStep } from '../logger/logger.js';
 import type { IModule, ITool, ModuleMetadata } from '../types.js';

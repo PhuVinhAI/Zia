@@ -3,7 +3,7 @@
  * Test các utility functions chuyển đổi Zalo message sang Gemini format
  */
 import { describe, expect, it } from 'bun:test';
-import { ThreadType } from '../../../src/infrastructure/zalo/zalo.service.js';
+import { ThreadType } from '../../../src/infrastructure/messaging/zalo/zalo.service.js';
 import {
   getMediaUrl,
   getMimeType,

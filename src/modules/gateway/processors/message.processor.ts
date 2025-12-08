@@ -2,16 +2,16 @@
  * Mixed Content Handler - Xử lý tất cả loại tin nhắn
  */
 
+import { CONFIG } from '../../../core/config/config.js';
 import { debugLog, logError, logStep } from '../../../core/logger/logger.js';
 import {
   extractYouTubeUrls,
   generateContent,
   generateContentStream,
   type MediaPart,
-} from '../../../infrastructure/gemini/gemini.provider.js';
-import { PROMPTS } from '../../../infrastructure/gemini/prompts.js';
-import { ThreadType } from '../../../infrastructure/zalo/zalo.service.js';
-import { CONFIG } from '../../../shared/constants/config.js';
+} from '../../../infrastructure/ai/providers/gemini/gemini.provider.js';
+import { PROMPTS } from '../../../infrastructure/ai/providers/gemini/prompts.js';
+import { ThreadType } from '../../../infrastructure/messaging/zalo/zalo.service.js';
 import {
   getHistory,
   saveResponseToHistory,
@@ -27,16 +27,16 @@ import {
   countMessageTypes,
   isBotMentioned,
 } from '../classifier.js';
+import { checkRateLimit, markApiCall } from '../guards/rate-limit.guard.js';
 import {
   createStreamCallbacks,
   sendResponse,
   setThreadType,
 } from '../handlers/response.handler.js';
 import { handleToolCalls, isToolOnlyResponse } from '../handlers/tool.handler.js';
-import { startTypingWithRefresh } from '../message.buffer.js';
-import { buildPrompt, extractTextFromMessages, processPrefix } from '../prompt.builder.js';
-import { extractQuoteInfo } from '../quote.parser.js';
-import { checkRateLimit, markApiCall } from '../rate-limit.guard.js';
+import { startTypingWithRefresh } from '../services/message.buffer.js';
+import { buildPrompt, extractTextFromMessages, processPrefix } from '../services/prompt.builder.js';
+import { extractQuoteInfo } from '../services/quote.parser.js';
 import { addQuoteMedia, prepareMediaParts } from './media.processor.js';
 
 // Re-export types cho backward compatibility

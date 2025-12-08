@@ -2,8 +2,8 @@
  * History Converter - Convert Zalo messages sang Gemini Content format
  */
 import type { Content, Part } from '@google/genai';
-import { ThreadType } from '../../../infrastructure/zalo/zalo.service.js';
-import { CONFIG } from '../../constants/config.js';
+import { CONFIG } from '../../../core/config/config.js';
+import { ThreadType } from '../../../infrastructure/messaging/zalo/zalo.service.js';
 import { fetchAsBase64 } from '../httpClient.js';
 import { isSupportedMime } from '../tokenCounter.js';
 

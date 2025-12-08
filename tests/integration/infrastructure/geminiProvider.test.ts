@@ -12,7 +12,7 @@ import {
   getGeminiModel,
   keyManager,
   GEMINI_CONFIG,
-} from '../../../src/infrastructure/gemini/gemini.provider.js';
+} from '../../../src/infrastructure/ai/providers/gemini/gemini.provider.js';
 
 const SKIP = !hasApiKey('gemini');
 

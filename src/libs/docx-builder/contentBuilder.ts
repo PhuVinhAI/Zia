@@ -61,46 +61,54 @@ export function tokensToTextRuns(
       for (const part of parts) {
         const fnMatch = part.match(/\[\^(\d+)\]/);
         if (fnMatch) {
-          result.push(new FootnoteReferenceRun(parseInt(fnMatch[1])));
+          result.push(new FootnoteReferenceRun(parseInt(fnMatch[1], 10)));
         } else if (part) {
-          result.push(new TextRun({
-            text: part,
-            bold: isBold,
-            italics: isItalic,
-            strike: isStrike,
-            font: isCode ? t.fonts.code : t.fonts.body,
-            shading: isCode ? { type: ShadingType.SOLID, color: t.colors.codeBackground } : undefined,
-            color: t.colors.text,
-          }));
+          result.push(
+            new TextRun({
+              text: part,
+              bold: isBold,
+              italics: isItalic,
+              strike: isStrike,
+              font: isCode ? t.fonts.code : t.fonts.body,
+              shading: isCode
+                ? { type: ShadingType.SOLID, color: t.colors.codeBackground }
+                : undefined,
+              color: t.colors.text,
+            }),
+          );
         }
       }
       continue;
     }
 
     if (isLink && token.href) {
-      result.push(new ExternalHyperlink({
-        children: [
-          new TextRun({
-            text: token.text,
-            style: 'Hyperlink',
-            color: t.colors.link,
-            underline: { type: 'single' },
-          }),
-        ],
-        link: token.href,
-      }));
+      result.push(
+        new ExternalHyperlink({
+          children: [
+            new TextRun({
+              text: token.text,
+              style: 'Hyperlink',
+              color: t.colors.link,
+              underline: { type: 'single' },
+            }),
+          ],
+          link: token.href,
+        }),
+      );
       continue;
     }
 
-    result.push(new TextRun({
-      text: token.text,
-      bold: isBold,
-      italics: isItalic,
-      strike: isStrike,
-      font: isCode ? t.fonts.code : t.fonts.body,
-      shading: isCode ? { type: ShadingType.SOLID, color: t.colors.codeBackground } : undefined,
-      color: t.colors.text,
-    }));
+    result.push(
+      new TextRun({
+        text: token.text,
+        bold: isBold,
+        italics: isItalic,
+        strike: isStrike,
+        font: isCode ? t.fonts.code : t.fonts.body,
+        shading: isCode ? { type: ShadingType.SOLID, color: t.colors.codeBackground } : undefined,
+        color: t.colors.text,
+      }),
+    );
   }
 
   return result;

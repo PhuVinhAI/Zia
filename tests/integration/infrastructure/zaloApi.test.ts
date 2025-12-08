@@ -31,7 +31,7 @@ describe.skipIf(SKIP)('Zalo API Real Connection', () => {
 
     try {
       // Tạo Zalo instance mới với selfListen: true để nhận tin nhắn của chính mình
-      const { Zalo } = await import('../../../src/infrastructure/zalo/zalo.service.js');
+      const { Zalo } = await import('../../../src/infrastructure/messaging/zalo/zalo.service.js');
       const zaloInstance = new Zalo({
         selfListen: true,
         logging: false,
@@ -153,7 +153,7 @@ Line 3: 🌟`;
         return;
       }
 
-      const { Reactions } = await import('../../../src/infrastructure/zalo/zalo.service.js');
+      const { Reactions } = await import('../../../src/infrastructure/messaging/zalo/zalo.service.js');
 
       try {
         await api.addReaction(Reactions.HEART, {
@@ -224,7 +224,7 @@ Line 3: 🌟`;
     test('Gửi tin nhắn với style Bold', async () => {
       if (!api) return;
 
-      const { TextStyle } = await import('../../../src/infrastructure/zalo/zalo.service.js');
+      const { TextStyle } = await import('../../../src/infrastructure/messaging/zalo/zalo.service.js');
 
       const message = {
         msg: 'Test Bold Text',
@@ -245,7 +245,7 @@ Line 3: 🌟`;
     test('Gửi tin nhắn với nhiều styles', async () => {
       if (!api) return;
 
-      const { TextStyle } = await import('../../../src/infrastructure/zalo/zalo.service.js');
+      const { TextStyle } = await import('../../../src/infrastructure/messaging/zalo/zalo.service.js');
 
       const message = {
         msg: 'Bold Italic Underline Strike',
@@ -265,7 +265,7 @@ Line 3: 🌟`;
     test('Gửi tin nhắn với combined styles (Bold + Italic)', async () => {
       if (!api) return;
 
-      const { TextStyle } = await import('../../../src/infrastructure/zalo/zalo.service.js');
+      const { TextStyle } = await import('../../../src/infrastructure/messaging/zalo/zalo.service.js');
 
       const message = {
         msg: 'Combined Bold+Italic text',
@@ -388,7 +388,7 @@ Line 3: 🌟`;
     test('Gửi tin nhắn tổng kết', async () => {
       if (!api) return;
 
-      const { TextStyle } = await import('../../../src/infrastructure/zalo/zalo.service.js');
+      const { TextStyle } = await import('../../../src/infrastructure/messaging/zalo/zalo.service.js');
 
       const summary = `✅ Zalo API Test Complete!
 

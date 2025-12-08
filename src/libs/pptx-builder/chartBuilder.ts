@@ -71,7 +71,7 @@ function prepareChartData(
     COLORS.pink,
   ];
 
-  const chartData = data.map((series, index) => ({
+  const chartData = data.map((series) => ({
     name: series.name,
     labels: series.labels,
     values: series.values,
@@ -243,9 +243,9 @@ export function buildAreaChart(
   },
 ): void {
   const defaultColors = [
-    theme.colors.primary + '80',
-    theme.colors.secondary + '80',
-    theme.colors.accent + '80',
+    `${theme.colors.primary}80`,
+    `${theme.colors.secondary}80`,
+    `${theme.colors.accent}80`,
   ];
 
   slide.addChart('area', series, {

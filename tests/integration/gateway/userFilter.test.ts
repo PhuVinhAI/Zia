@@ -6,7 +6,7 @@ import {
   isUserAllowed,
   isGroupAllowed,
   isAllowedUser,
-} from '../../../src/modules/gateway/user.filter.js';
+} from '../../../src/modules/gateway/guards/user.filter.js';
 
 describe('User Filter', () => {
   describe('isUserAllowed()', () => {

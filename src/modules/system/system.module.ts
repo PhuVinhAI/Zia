@@ -1,122 +1,26 @@
 /**
- * System Module - Core system tools và tool registry
+ * System Module - Core utility tools
  */
 import { BaseModule, type ITool, type ModuleMetadata } from '../../core/index.js';
-// Chat tools
-import { clearHistoryTool } from './tools/chat/clearHistory.js';
-import { recallMemoryTool, saveMemoryTool } from './tools/chat/memory.js';
-// Media tools
-import { createChartTool } from './tools/media/createChart.js';
-import { createFileTool } from './tools/media/createFile/index.js';
-import { freepikImageTool } from './tools/media/freepikImage.js';
-import { textToSpeechTool } from './tools/media/textToSpeech.js';
-// Search tools
-import { currencyConvertTool, currencyRatesTool } from './tools/search/currency.js';
-import { googleSearchTool } from './tools/search/googleSearch.js';
-import { steamGameTool, steamSearchTool, steamTopTool } from './tools/search/steam.js';
-import { weatherTool } from './tools/search/weather.js';
-import { youtubeChannelTool, youtubeSearchTool, youtubeVideoTool } from './tools/search/youtube.js';
-// Social tools
-import { createNoteTool, editNoteTool, getListBoardTool } from './tools/social/board.js';
-import { forwardMessageTool } from './tools/social/forwardMessage.js';
-import { getAllFriendsTool } from './tools/social/getAllFriends.js';
-import { getFriendOnlinesTool } from './tools/social/getFriendOnlines.js';
-import { getGroupMembersTool } from './tools/social/getGroupMembers.js';
-import { getUserInfoTool } from './tools/social/getUserInfo.js';
-import {
-  createPollTool,
-  getPollDetailTool,
-  lockPollTool,
-  votePollTool,
-} from './tools/social/poll.js';
-import {
-  createReminderTool,
-  getReminderTool,
-  removeReminderTool,
-} from './tools/social/reminder.js';
-// Task tools
-import { createAppTool } from './tools/task/createApp.js';
-import { executeCodeTool } from './tools/task/executeCode.js';
-import { flushLogsTool } from './tools/task/flushLogs.js';
-import { scheduleTaskTool } from './tools/task/scheduleTask.js';
-import { solveMathTool } from './tools/task/solveMath.js';
-// Utility tools
-import { qrCodeTool } from './tools/utility/qrCode.js';
-import { urlShortenerTool } from './tools/utility/urlShortener.js';
+import { qrCodeTool, urlShortenerTool } from './tools/utility/index.js';
 
 export class SystemModule extends BaseModule {
   readonly metadata: ModuleMetadata = {
     name: 'system',
-    description:
-      'Core system tools (user info, friends, messaging, TTS, Word document, Charts, Code execution, YouTube, Google Search)',
+    description: 'Core utility tools (QR code, URL shortener)',
     version: '1.0.0',
   };
 
-  private _tools: ITool[] = [
-    getUserInfoTool,
-    getAllFriendsTool,
-    getFriendOnlinesTool,
-    getGroupMembersTool,
-    textToSpeechTool,
-    freepikImageTool,
-    createAppTool,
-    createFileTool,
-    createChartTool,
-    solveMathTool,
-    executeCodeTool,
-    youtubeSearchTool,
-    youtubeVideoTool,
-    youtubeChannelTool,
-    googleSearchTool,
-    // Weather tool
-    weatherTool,
-    // Steam tools
-    steamSearchTool,
-    steamGameTool,
-    steamTopTool,
-    // Currency tools
-    currencyConvertTool,
-    currencyRatesTool,
-    clearHistoryTool,
-    // Memory tools
-    saveMemoryTool,
-    recallMemoryTool,
-    // Background agent
-    scheduleTaskTool,
-    // Poll tools
-    createPollTool,
-    getPollDetailTool,
-    votePollTool,
-    lockPollTool,
-    // Board/Note tools
-    createNoteTool,
-    getListBoardTool,
-    editNoteTool,
-    // Reminder tools
-    createReminderTool,
-    getReminderTool,
-    removeReminderTool,
-    // Forward message tool
-    forwardMessageTool,
-    // Utility tools
-    qrCodeTool,
-    urlShortenerTool,
-    // Admin tools
-    flushLogsTool,
-  ];
+  private _tools: ITool[] = [qrCodeTool, urlShortenerTool];
 
   get tools(): ITool[] {
     return this._tools;
   }
 
   async onLoad(): Promise<void> {
-    console.log(`[System] 🔧 Loading ${this._tools.length} system tools`);
+    console.log(`[System] 🔧 Loading ${this._tools.length} utility tools`);
   }
 }
 
-// Export singleton instance
 export const systemModule = new SystemModule();
-
-export * from './tools/chat/memory.js';
-// Re-export tools for backward compatibility
-export * from './tools/index.js';
+export * from './tools/utility/index.js';

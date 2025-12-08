@@ -65,6 +65,11 @@
   },
   "modules": {
     "system": true,
+    "chat": true,
+    "media": true,
+    "search": true,
+    "social": true,
+    "task": true,
     "academic": true,
     "entertainment": true
   }

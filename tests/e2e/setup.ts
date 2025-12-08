@@ -47,7 +47,7 @@ export async function getZaloApi(): Promise<{ api: any; myId: string }> {
     throw new Error('ZALO_CREDENTIALS_BASE64 not configured');
   }
 
-  const { Zalo } = await import('../../src/infrastructure/zalo/zalo.service.js');
+  const { Zalo } = await import('../../src/infrastructure/messaging/zalo/zalo.service.js');
   const zaloInstance = new Zalo({
     selfListen: true,
     logging: false,

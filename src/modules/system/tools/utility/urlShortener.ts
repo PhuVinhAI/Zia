@@ -4,7 +4,10 @@
  */
 
 import { debugLog } from '../../../../core/logger/logger.js';
-import { UrlShortenerSchema, validateParamsWithExample } from '../../../../shared/schemas/tools.schema.js';
+import {
+  UrlShortenerSchema,
+  validateParamsWithExample,
+} from '../../../../shared/schemas/tools.schema.js';
 import type { ToolDefinition, ToolResult } from '../../../../shared/types/tools.types.js';
 import { shortenUrl, shortenUrlWithAlias } from '../../services/utilityClient.js';
 
@@ -12,8 +15,18 @@ export const urlShortenerTool: ToolDefinition = {
   name: 'urlShortener',
   description: 'Rút gọn URL dài thành link ngắn gọn. Có thể tùy chỉnh tên link.',
   parameters: [
-    { name: 'url', type: 'string', description: 'URL cần rút gọn (phải là URL hợp lệ)', required: true },
-    { name: 'alias', type: 'string', description: 'Tên tùy chỉnh cho link (3-30 ký tự, tùy chọn)', required: false },
+    {
+      name: 'url',
+      type: 'string',
+      description: 'URL cần rút gọn (phải là URL hợp lệ)',
+      required: true,
+    },
+    {
+      name: 'alias',
+      type: 'string',
+      description: 'Tên tùy chỉnh cho link (3-30 ký tự, tùy chọn)',
+      required: false,
+    },
   ],
   execute: async (params): Promise<ToolResult> => {
     const validation = validateParamsWithExample(UrlShortenerSchema, params, 'urlShortener');

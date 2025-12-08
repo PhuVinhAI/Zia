@@ -6,7 +6,7 @@ import {
   CHARACTER,
   buildCharacterPrompt,
   CHARACTER_PROMPT,
-} from '../../../src/infrastructure/gemini/character.js';
+} from '../../../src/infrastructure/ai/providers/gemini/character.js';
 
 describe('Character Config', () => {
   describe('CHARACTER object', () => {

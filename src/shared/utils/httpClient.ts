@@ -3,9 +3,9 @@
  */
 
 import ky, { type KyInstance, type Options } from 'ky';
+import { CONFIG } from '../../core/config/config.js';
+import { MIME_TYPES } from '../../core/config/config.schema.js';
 import { debugLog, logError } from '../../core/logger/logger.js';
-import { CONFIG } from '../constants/config.js';
-import { MIME_TYPES } from '../schemas/config.schema.js';
 
 // ═══════════════════════════════════════════════════
 // CONFIG
@@ -191,7 +191,7 @@ export async function fetchAndConvertToTextBase64(url: string): Promise<string |
 }
 
 // Import local DOCX to PDF conversion service (no API key needed)
-import { convertDocxToPdfLocal } from '../../modules/system/services/docxToPdfService.js';
+import { convertDocxToPdfLocal } from '../../modules/media/services/docxToPdfService.js';
 
 /**
  * Fetch DOC/DOCX file, convert sang PDF locally, trả về base64

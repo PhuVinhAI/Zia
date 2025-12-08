@@ -8,7 +8,7 @@ import {
   checkRateLimit,
   markApiCall,
   getRateLimitStatus,
-} from '../../../src/modules/gateway/rate-limit.guard.js';
+} from '../../../src/modules/gateway/guards/rate-limit.guard.js';
 
 describe('Rate Limit Guard Integration', () => {
   describe('checkRateLimit', () => {
