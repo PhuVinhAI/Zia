@@ -72,6 +72,7 @@ export const Events = {
   MESSAGE_RECEIVED: 'message:received',
   MESSAGE_PROCESSED: 'message:processed',
   MESSAGE_SENT: 'message:sent',
+  REACTION_RECEIVED: 'reaction:received',
 
   // Tool events
   TOOL_CALLED: 'tool:called',
