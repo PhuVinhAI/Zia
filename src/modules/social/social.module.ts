@@ -1,5 +1,5 @@
 /**
- * Social Module - User info, friends, groups, polls, reminders
+ * Social Module - User info, friends, groups, polls, reminders, group admin
  */
 import { BaseModule, type ITool, type ModuleMetadata } from '../../core/index.js';
 import {
@@ -18,31 +18,68 @@ import {
   lockPollTool,
   removeReminderTool,
   votePollTool,
+  // Group Admin Tools
+  kickMemberTool,
+  blockMemberTool,
+  addMemberTool,
+  getPendingMembersTool,
+  reviewPendingMembersTool,
+  updateGroupSettingsTool,
+  changeGroupNameTool,
+  changeGroupAvatarTool,
+  addGroupDeputyTool,
+  removeGroupDeputyTool,
+  changeGroupOwnerTool,
+  enableGroupLinkTool,
+  disableGroupLinkTool,
+  getGroupLinkInfoTool,
 } from './tools/index.js';
 
 export class SocialModule extends BaseModule {
   readonly metadata: ModuleMetadata = {
     name: 'social',
-    description: 'Social tools for user info, friends, groups, polls, and reminders',
+    description: 'Social tools for user info, friends, groups, polls, reminders, and group admin',
     version: '1.0.0',
   };
 
   private _tools: ITool[] = [
+    // User & Friends
     getUserInfoTool,
     getAllFriendsTool,
     getFriendOnlinesTool,
     getGroupMembersTool,
     forwardMessageTool,
+    // Poll
     createPollTool,
     getPollDetailTool,
     votePollTool,
     lockPollTool,
+    // Board/Note
     createNoteTool,
     getListBoardTool,
     editNoteTool,
+    // Reminder
     createReminderTool,
     getReminderTool,
     removeReminderTool,
+    // Group Admin - Member Management
+    kickMemberTool,
+    blockMemberTool,
+    addMemberTool,
+    getPendingMembersTool,
+    reviewPendingMembersTool,
+    // Group Admin - Settings
+    updateGroupSettingsTool,
+    changeGroupNameTool,
+    changeGroupAvatarTool,
+    // Group Admin - Roles
+    addGroupDeputyTool,
+    removeGroupDeputyTool,
+    changeGroupOwnerTool,
+    // Group Admin - Link
+    enableGroupLinkTool,
+    disableGroupLinkTool,
+    getGroupLinkInfoTool,
   ];
 
   get tools(): ITool[] {

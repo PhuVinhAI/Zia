@@ -566,6 +566,64 @@ export const UrlShortenerSchema = z.object({
   alias: z.string().min(3).max(30).optional(),
 });
 
+// ============ GROUP ADMIN TOOLS ============
+
+// Kick Member params
+export const KickMemberSchema = z.object({
+  userId: z.string().min(1, 'Thiếu userId của thành viên cần kick'),
+});
+
+// Block Member params
+export const BlockMemberSchema = z.object({
+  userId: z.string().min(1, 'Thiếu userId của thành viên cần chặn'),
+});
+
+// Add Member params
+export const AddMemberSchema = z.object({
+  userId: z.string().min(1, 'Thiếu userId của người cần thêm'),
+});
+
+// Review Pending Members params
+export const ReviewPendingMembersSchema = z.object({
+  memberIds: z.array(z.string()).min(1, 'Cần ít nhất 1 userId'),
+  isApprove: z.boolean().describe('true = Duyệt, false = Từ chối'),
+});
+
+// Update Group Settings params
+export const UpdateGroupSettingsSchema = z.object({
+  blockName: z.boolean().optional().describe('Chặn đổi tên/ảnh nhóm'),
+  signAdminMsg: z.boolean().optional().describe('Đánh dấu tin admin'),
+  joinAppr: z.boolean().optional().describe('Phê duyệt thành viên mới'),
+  lockSendMsg: z.boolean().optional().describe('Chỉ admin được chat'),
+  lockCreatePost: z.boolean().optional().describe('Chặn tạo ghi chú'),
+  lockCreatePoll: z.boolean().optional().describe('Chặn tạo bình chọn'),
+});
+
+// Change Group Name params
+export const ChangeGroupNameSchema = z.object({
+  newName: z.string().min(1, 'Thiếu tên mới').max(100, 'Tên quá dài'),
+});
+
+// Change Group Avatar params
+export const ChangeGroupAvatarSchema = z.object({
+  filePath: z.string().min(1, 'Thiếu đường dẫn file ảnh'),
+});
+
+// Add/Remove Group Deputy params
+export const GroupDeputySchema = z.object({
+  userId: z.string().min(1, 'Thiếu userId'),
+});
+
+// Change Group Owner params
+export const ChangeGroupOwnerSchema = z.object({
+  userId: z.string().min(1, 'Thiếu userId của người nhận quyền'),
+});
+
+// Get Group Link Info params
+export const GetGroupLinkInfoSchema = z.object({
+  link: z.string().min(1, 'Thiếu link nhóm'),
+});
+
 // ============ HELPER FUNCTION ============
 
 /**
@@ -650,6 +708,28 @@ export const TOOL_EXAMPLES: Record<string, string> = {
   // Utility tools
   qrCode: `[tool:qrCode]{"data":"https://example.com","size":300}[/tool]`,
   urlShortener: `[tool:urlShortener]{"url":"https://example.com/very-long-url"}[/tool]`,
+
+  // Group Admin tools - Member Management
+  kickMember: `[tool:kickMember]{"userId":"123456789"}[/tool]`,
+  blockMember: `[tool:blockMember]{"userId":"123456789"}[/tool]`,
+  addMember: `[tool:addMember]{"userId":"123456789"}[/tool]`,
+  getPendingMembers: `[tool:getPendingMembers]{}[/tool]`,
+  reviewPendingMembers: `[tool:reviewPendingMembers]{"memberIds":["uid1","uid2"],"isApprove":true}[/tool]`,
+
+  // Group Admin tools - Settings
+  updateGroupSettings: `[tool:updateGroupSettings]{"lockSendMsg":true,"joinAppr":true}[/tool]`,
+  changeGroupName: `[tool:changeGroupName]{"newName":"Nhóm AI Vô Địch"}[/tool]`,
+  changeGroupAvatar: `[tool:changeGroupAvatar]{"filePath":"./avatar.jpg"}[/tool]`,
+
+  // Group Admin tools - Roles
+  addGroupDeputy: `[tool:addGroupDeputy]{"userId":"123456789"}[/tool]`,
+  removeGroupDeputy: `[tool:removeGroupDeputy]{"userId":"123456789"}[/tool]`,
+  changeGroupOwner: `[tool:changeGroupOwner]{"userId":"123456789"}[/tool]`,
+
+  // Group Admin tools - Link
+  enableGroupLink: `[tool:enableGroupLink]{}[/tool]`,
+  disableGroupLink: `[tool:disableGroupLink]{}[/tool]`,
+  getGroupLinkInfo: `[tool:getGroupLinkInfo]{"link":"https://zalo.me/g/abc123"}[/tool]`,
 };
 
 /**
@@ -751,3 +831,15 @@ export type ForwardMessageParams = z.infer<typeof ForwardMessageSchema>;
 // Utility types
 export type QRCodeParams = z.infer<typeof QRCodeSchema>;
 export type UrlShortenerParams = z.infer<typeof UrlShortenerSchema>;
+
+// Group Admin types
+export type KickMemberParams = z.infer<typeof KickMemberSchema>;
+export type BlockMemberParams = z.infer<typeof BlockMemberSchema>;
+export type AddMemberParams = z.infer<typeof AddMemberSchema>;
+export type ReviewPendingMembersParams = z.infer<typeof ReviewPendingMembersSchema>;
+export type UpdateGroupSettingsParams = z.infer<typeof UpdateGroupSettingsSchema>;
+export type ChangeGroupNameParams = z.infer<typeof ChangeGroupNameSchema>;
+export type ChangeGroupAvatarParams = z.infer<typeof ChangeGroupAvatarSchema>;
+export type GroupDeputyParams = z.infer<typeof GroupDeputySchema>;
+export type ChangeGroupOwnerParams = z.infer<typeof ChangeGroupOwnerSchema>;
+export type GetGroupLinkInfoParams = z.infer<typeof GetGroupLinkInfoSchema>;
