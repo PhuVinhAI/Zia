@@ -4,28 +4,6 @@
  */
 
 // ═══════════════════════════════════════════════════
-// BADGES
-// ═══════════════════════════════════════════════════
-export {
-  type BadgeConfig,
-  buildBadgeParagraph,
-  buildBadgeRun,
-  hasBadges,
-  parseBadges,
-  removeBadgeSyntax,
-} from './badgeBuilder.js';
-// ═══════════════════════════════════════════════════
-// BOXES
-// ═══════════════════════════════════════════════════
-export {
-  type BoxConfig,
-  type BoxType,
-  buildBox,
-  buildSimpleBox,
-  hasBoxSyntax,
-  parseBoxSyntax,
-} from './boxBuilder.js';
-// ═══════════════════════════════════════════════════
 // COLUMNS
 // ═══════════════════════════════════════════════════
 export {
@@ -42,7 +20,6 @@ export {
 // ═══════════════════════════════════════════════════
 export {
   ALIGNMENTS,
-  CALLOUT_STYLES,
   DEFAULT_MARGINS,
   FONT_SIZES,
   getMargins,
@@ -58,7 +35,6 @@ export {
 export {
   blockToParagraph,
   buildAlignedParagraph,
-  buildCallout,
   buildCodeBlock,
   buildPageBreak,
   parseExtendedContent,
@@ -96,17 +72,6 @@ export {
   buildWordDocument,
   WordDocumentBuilder,
 } from './documentBuilder.js';
-// ═══════════════════════════════════════════════════
-// EMOJIS
-// ═══════════════════════════════════════════════════
-export {
-  buildEmojiRun,
-  buildIconParagraph,
-  getEmojiShortcuts,
-  hasEmojiShortcuts,
-  parseIconSyntax,
-  replaceEmojiShortcuts,
-} from './emojiBuilder.js';
 // ═══════════════════════════════════════════════════
 // FOOTNOTES
 // ═══════════════════════════════════════════════════
@@ -147,17 +112,11 @@ export {
   parseImageSyntax,
 } from './imageBuilder.js';
 // ═══════════════════════════════════════════════════
-// LISTS (Advanced)
+// LISTS (Definition List)
 // ═══════════════════════════════════════════════════
 export {
-  buildChecklist,
-  buildChecklistItem,
   buildDefinitionList,
-  type ChecklistItem,
-  calculateIndentLevel,
   type DefinitionItem,
-  isListItem,
-  parseChecklist,
   parseDefinitionList,
 } from './listBuilder.js';
 
@@ -171,18 +130,6 @@ export {
   parseMathExpressions,
   renderMathExpression,
 } from './mathBuilder.js';
-// ═══════════════════════════════════════════════════
-// SIGNATURES
-// ═══════════════════════════════════════════════════
-export {
-  buildApprovalBlock,
-  buildSignatureBlock,
-  isSignatureSyntax,
-  type MultiSignatureConfig,
-  parseApprovalSyntax,
-  parseSignatureSyntax,
-  type SignatureConfig,
-} from './signatureBuilder.js';
 // ═══════════════════════════════════════════════════
 // STYLE BUILDER
 // ═══════════════════════════════════════════════════
@@ -207,16 +154,4 @@ export {
 // TYPES
 // ═══════════════════════════════════════════════════
 export * from './types.js';
-// ═══════════════════════════════════════════════════
-// WATERMARKS
-// ═══════════════════════════════════════════════════
-export {
-  buildConfidentialWatermark,
-  buildDraftWatermark,
-  buildSampleWatermark,
-  buildWatermarkHeader,
-  getPredefinedWatermark,
-  PREDEFINED_WATERMARKS,
-  parseWatermarkSyntax,
-  removeWatermarkSyntax,
-} from './watermarkBuilder.js';
+

@@ -190,16 +190,17 @@ export async function fetchAndConvertToTextBase64(url: string): Promise<string |
   }
 }
 
-// Import ComPDF service for DOCX to PDF conversion
-import { convertDocxToPdfViaApi } from '../../modules/system/services/compdfService.js';
+// Import local DOCX to PDF conversion service (no API key needed)
+import { convertDocxToPdfLocal } from '../../modules/system/services/docxToPdfService.js';
 
 /**
- * Fetch DOCX file, convert sang PDF via ComPDF API, trả về base64
+ * Fetch DOCX file, convert sang PDF locally (mammoth + pdfkit), trả về base64
+ * Giữ được text + hình ảnh, không cần API key
  */
 export async function fetchDocxAndConvertToPdfBase64(url: string): Promise<string | null> {
   try {
     const cfg = getHttpConfig();
-    debugLog('HTTP', `Converting DOCX to PDF via API: ${url.substring(0, 80)}...`);
+    debugLog('HTTP', `Converting DOCX to PDF locally: ${url.substring(0, 80)}...`);
 
     const response = await http.get(url);
     const arrayBuffer = await response.arrayBuffer();
@@ -211,10 +212,10 @@ export async function fetchDocxAndConvertToPdfBase64(url: string): Promise<strin
       return null;
     }
 
-    // Convert to PDF via ComPDF API
-    const pdfBuffer = await convertDocxToPdfViaApi(docxBuffer);
+    // Convert to PDF locally using mammoth + pdfkit
+    const pdfBuffer = await convertDocxToPdfLocal(docxBuffer);
     if (!pdfBuffer) {
-      debugLog('HTTP', '✗ ComPDF API conversion failed');
+      debugLog('HTTP', '✗ Local DOCX→PDF conversion failed');
       return null;
     }
 

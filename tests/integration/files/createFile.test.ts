@@ -4,9 +4,9 @@
  */
 
 import { describe, test, expect } from 'bun:test';
-import { docxHandler } from '../../../src/modules/system/tools/createFile/docxHandler.js';
-import { xlsxHandler } from '../../../src/modules/system/tools/createFile/xlsxHandler.js';
-import { pptxHandler } from '../../../src/modules/system/tools/createFile/pptxHandler.js';
+import { docxHandler } from '../../../src/modules/system/tools/media/createFile/docxHandler.js';
+import { xlsxHandler } from '../../../src/modules/system/tools/media/createFile/xlsxHandler.js';
+import { pptxHandler } from '../../../src/modules/system/tools/media/createFile/pptxHandler.js';
 import { TEST_CONFIG } from '../setup.js';
 
 describe('File Creation Integration', () => {

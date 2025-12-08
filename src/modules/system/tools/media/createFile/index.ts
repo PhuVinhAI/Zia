@@ -49,22 +49,6 @@ code block
 |----------|----------|----------|
 | Cell 1   | **Bold** | *Italic* |
 
-**CALLOUTS:** (một dòng, có icon tự động)
-[!INFO] Thông tin
-[!TIP] Mẹo hay
-[!NOTE] Ghi chú
-[!WARNING] Cảnh báo
-[!IMPORTANT] Quan trọng
-[!SUCCESS] Thành công
-[!ERROR] Lỗi
-
-**BOXES:** (nhiều dòng, có viền màu)
-[BOX:info:Tiêu đề]
-Nội dung box
-Nhiều dòng được
-[/BOX]
-Types: info, success, warning, error, note, quote, code
-
 **DIVIDERS:**
 [DIVIDER] - đường kẻ đơn
 [DIVIDER:double] - đường kẻ đôi
@@ -73,10 +57,6 @@ Types: info, success, warning, error, note, quote, code
 [DIVIDER:decorated:Tiêu đề] - có text giữa
 [DIVIDER:star] - hoa văn sao
 [DIVIDER:floral] - hoa văn hoa
-
-**BADGES:**
-[BADGE:NEW:primary] [BADGE:HOT:danger] [BADGE:SALE:success]
-Types: default, primary, success, warning, danger, info
 
 **HIGHLIGHTS:**
 ==text vàng== hoặc [HIGHLIGHT:green]text xanh[/HIGHLIGHT]
@@ -87,32 +67,13 @@ $E=mc^2$ inline
 $$\\sum_{i=1}^{n} x_i$$ block
 Hỗ trợ: \\alpha \\beta \\pi \\sum \\int \\infty ^2 _n \\frac{1}{2}
 
-**CHECKLIST:**
-- [ ] Chưa xong
-- [x] Đã xong
-
 **ALIGNMENT:**
 ->Text căn giữa<-
 ->Text căn phải
 
-**EMOJIS:**
-:check: ✅  :x: ❌  :warning: ⚠️  :info: ℹ️
-:star: ⭐  :fire: 🔥  :rocket: 🚀  :bulb: 💡
-:heart: ♥  :thumbsup: 👍  :question: ❓
-
 **COVER PAGE:**
 [COVER:Tiêu đề:Phụ đề:Tác giả:Tổ chức:Ngày:Version:Style]
 Styles: simple, professional, academic, modern
-
-**SIGNATURE:**
-[SIGNATURE:Họ tên:Chức vụ:Công ty:Ngày]
-
-**APPROVAL:** (2 người ký)
-[APPROVAL:Người duyệt:Chức vụ|Người lập:Chức vụ]
-
-**WATERMARK:**
-[WATERMARK:BẢN NHÁP] hoặc [WATERMARK:text:color]
-Predefined: draft, confidential, sample, urgent, approved, pending
 
 **PAGE BREAK:**
 [PAGE_BREAK] hoặc ---PAGE---
@@ -141,8 +102,7 @@ OPTIONS (đặt ở ĐẦU content)
   "header": {"text": "Header", "alignment": "center", "includePageNumber": true},
   "footer": {"text": "Footer", "alignment": "center"},
   "includeToc": true,
-  "tocTitle": "Mục Lục",
-  "watermark": {"text": "DRAFT", "color": "CCCCCC"}
+  "tocTitle": "Mục Lục"
 } -->
 
 **Chi tiết OPTIONS:**
@@ -154,10 +114,9 @@ OPTIONS (đặt ở ĐẦU content)
 - margins: {top, bottom, left, right} (twips, 1440 = 1 inch)
 - header/footer: {text, alignment (left/center/right), includePageNumber}
 - includeToc: true/false - tự động tạo mục lục từ headings
-- watermark: {text, color (hex không #)}
 
 ═══════════════════════════════════════════════════
-PPTX POWERPOINT FRAMEWORK - FULL FEATURES
+PPTX POWERPOINT FRAMEWORK
 ═══════════════════════════════════════════════════
 
 **SLIDE TYPES:**
