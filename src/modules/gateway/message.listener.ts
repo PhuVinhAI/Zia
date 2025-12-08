@@ -6,7 +6,7 @@
 import { CONFIG } from '../../core/config/config.js';
 import { debugLog, Events, eventBus, logMessage } from '../../core/index.js';
 import { initThreadHistory, isThreadInitialized } from '../../shared/utils/history/history.js';
-import { getBotMessageByMsgId, isBotMessage } from '../../shared/utils/message/messageStore.js';
+import { getBotMessageByMsgId, getLastBotMessageInThread } from '../../shared/utils/message/messageStore.js';
 import { abortTask } from '../../shared/utils/taskManager.js';
 import { isAllowedUser } from './guards/user.filter.js';
 import { addToBuffer } from './services/message.buffer.js';
@@ -172,32 +172,63 @@ const REACTION_NAMES: Record<string, string> = {
  */
 function registerReactionListener(api: any): void {
   api.listener.on('reaction', async (reactionObj: any) => {
+    // Log toàn bộ reaction object để debug
+    debugLog('REACTION', `RAW event: ${JSON.stringify(reactionObj)}`);
+    
     const { data, threadId, isSelf } = reactionObj;
 
     // Bỏ qua reaction của chính bot
-    if (isSelf) return;
-
-    const reactorId = data?.uidFrom;
-    const icon = data?.content?.rIcon;
-    const targetMsgId = data?.msgId;
-
-    if (!reactorId || !icon || !targetMsgId) {
-      debugLog('REACTION', 'Missing data in reaction event');
+    if (isSelf) {
+      debugLog('REACTION', 'Ignoring self reaction (isSelf=true)');
       return;
     }
 
-    // Đảm bảo targetMsgId là string
-    const targetMsgIdStr = String(targetMsgId);
-    
+    const reactorId = data?.uidFrom;
+    const icon = data?.content?.rIcon;
+    // Zalo có thể dùng nhiều loại msgId khác nhau
+    const targetMsgId = data?.msgId;
+    const oriMsgId = data?.content?.oriMsgId; // Original message ID
+    const cliMsgId = data?.content?.cliMsgId; // Client message ID
+    const globalMsgId = data?.content?.globalMsgId; // Global message ID
+
+    if (!reactorId || !icon) {
+      debugLog('REACTION', 'Missing reactorId or icon in reaction event');
+      return;
+    }
+
+    // Log tất cả các loại msgId để debug
     debugLog(
       'REACTION',
-      `User ${reactorId} reacted ${icon} to msg ${targetMsgIdStr} in ${threadId}`,
+      `User ${reactorId} reacted ${icon} - msgId=${targetMsgId}, oriMsgId=${oriMsgId}, cliMsgId=${cliMsgId}, globalMsgId=${globalMsgId} in ${threadId}`,
     );
 
-    // Kiểm tra xem tin nhắn bị react có phải của bot không
-    const botMsg = await getBotMessageByMsgId(targetMsgIdStr);
+    // Thử tìm tin nhắn bot với tất cả các loại ID có thể
+    const possibleIds = [targetMsgId, oriMsgId, cliMsgId, globalMsgId]
+      .filter((id) => id != null)
+      .map((id) => String(id));
+
+    let botMsg = null;
+    let matchedId = null;
+    
+    for (const id of possibleIds) {
+      botMsg = await getBotMessageByMsgId(id);
+      if (botMsg) {
+        matchedId = id;
+        debugLog('REACTION', `Found bot message with ID: ${id}`);
+        break;
+      }
+    }
+    
+    // Nếu không tìm thấy theo ID, thử tìm tin nhắn gần nhất của bot trong thread
     if (!botMsg) {
-      debugLog('REACTION', `Not a bot message (msgId=${targetMsgIdStr}), ignoring`);
+      botMsg = await getLastBotMessageInThread(threadId);
+      if (botMsg) {
+        debugLog('REACTION', `Found recent bot message in thread: ${botMsg.msgId}`);
+      }
+    }
+    
+    if (!botMsg) {
+      debugLog('REACTION', `Not a bot message (tried IDs: ${possibleIds.join(', ')}), ignoring`);
       return;
     }
 
