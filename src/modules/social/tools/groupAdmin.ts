@@ -859,13 +859,17 @@ export const getGroupLinkInfoTool: ToolDefinition = {
  */
 export const createGroupTool: ToolDefinition = {
   name: 'createGroup',
-  description:
-    'Tạo nhóm chat mới và thêm thành viên vào. Bot sẽ là Trưởng nhóm. Dùng để tạo nhóm hỗ trợ riêng hoặc nhóm làm việc.',
+  description: `Tạo nhóm chat mới. QUAN TRỌNG:
+- Bot (Zia) sẽ TỰ MÌNH tạo nhóm và LÀ TRƯỞNG NHÓM (đây là hành vi bình thường, không phải "tạo hộ")
+- LUÔN LUÔN thêm ID của người yêu cầu (senderId) vào danh sách members
+- Nếu user nói "tạo nhóm với A", members phải gồm CẢ user đó VÀ A
+- Sau khi tạo, có thể dùng changeGroupOwner để chuyển quyền trưởng nhóm nếu user muốn`,
   parameters: [
     {
       name: 'members',
       type: 'object',
-      description: 'Mảng chứa User ID của những người muốn thêm vào nhóm (BẮT BUỘC). VD: ["uid1", "uid2"]',
+      description:
+        'Mảng User ID của TẤT CẢ thành viên muốn thêm, BAO GỒM CẢ người yêu cầu (senderId). VD: ["senderId", "uid1", "uid2"]',
       required: true,
     },
     {
@@ -886,13 +890,30 @@ export const createGroupTool: ToolDefinition = {
       const { members, name, avatarPath } = params;
 
       if (!Array.isArray(members) || members.length === 0) {
-        return { success: false, error: 'Cần ít nhất 1 userId trong members để tạo nhóm' };
+        return {
+          success: false,
+          error:
+            'Cần ít nhất 1 userId trong members. Lưu ý: PHẢI thêm cả ID của người yêu cầu (senderId) vào danh sách!',
+        };
       }
 
-      debugLog('TOOL:createGroup', `Creating group with ${members.length} members, name: ${name || 'auto'}`);
+      // Tự động thêm senderId nếu chưa có trong danh sách
+      const memberList = members.map(String);
+      if (context.senderId && !memberList.includes(context.senderId)) {
+        memberList.push(context.senderId);
+        debugLog(
+          'TOOL:createGroup',
+          `Auto-added senderId ${context.senderId} to members list`,
+        );
+      }
+
+      debugLog(
+        'TOOL:createGroup',
+        `Creating group with ${memberList.length} members, name: ${name || 'auto'}`,
+      );
 
       const options: { name?: string; members: string[]; avatarSource?: string } = {
-        members: members.map(String),
+        members: memberList,
       };
 
       if (name && typeof name === 'string') {
@@ -916,10 +937,12 @@ export const createGroupTool: ToolDefinition = {
           name: name || 'Nhóm mới',
           successMembers,
           errorMembers,
-          message: `Đã tạo nhóm thành công! ID: ${result?.groupId}`,
-          hint: errorMembers.length > 0
-            ? `Có ${errorMembers.length} người không thêm được (có thể do chặn số lạ)`
-            : 'Tất cả thành viên đã được thêm vào nhóm',
+          botIsOwner: true,
+          message: `Đã tạo nhóm thành công! ID: ${result?.groupId}. Bot (Zia) là Trưởng nhóm.`,
+          hint:
+            errorMembers.length > 0
+              ? `Có ${errorMembers.length} người không thêm được (có thể do chặn số lạ). Dùng changeGroupOwner nếu muốn chuyển quyền trưởng nhóm.`
+              : 'Tất cả thành viên đã được thêm. Dùng changeGroupOwner nếu muốn chuyển quyền trưởng nhóm cho người khác.',
         },
       };
     } catch (error: any) {
