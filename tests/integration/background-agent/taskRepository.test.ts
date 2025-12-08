@@ -70,7 +70,7 @@ describe('Task Repository Integration', () => {
 
     test('createTask - các loại task khác nhau', async () => {
       // accept_friend được xử lý tự động, không cần task
-      const types = ['send_message', 'send_friend_request'] as const;
+      const types = ['send_message'] as const;
 
       for (const type of types) {
         const task = await createTask({

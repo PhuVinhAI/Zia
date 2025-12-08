@@ -29,6 +29,7 @@ export {
   removeGroupDeputyTool,
   changeGroupOwnerTool,
   // Group Link
+  getGroupLinkDetailTool,
   enableGroupLinkTool,
   disableGroupLinkTool,
   getGroupLinkInfoTool,
@@ -39,3 +40,6 @@ export {
   leaveGroupTool,
   disperseGroupTool,
 } from './groupAdmin.js';
+
+// Friend Request Tools
+export { findUserByPhoneTool, sendFriendRequestTool } from './friendRequest.js';

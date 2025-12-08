@@ -13,7 +13,6 @@ export const scheduleTaskTool: ToolDefinition = {
   name: 'scheduleTask',
   description: `Lên lịch một task để hệ thống nền thực hiện. Dùng khi:
 - Người dùng yêu cầu gửi tin nhắn sau một khoảng thời gian
-- Cần gửi lời mời kết bạn
 - Muốn thực hiện hành động không cần response ngay
 
 Lưu ý: 
@@ -22,13 +21,12 @@ Lưu ý:
 
 Ví dụ:
 - "5 phút nữa nhắn A hỏi thăm" → scheduleTask với delayMinutes=5
-- "Gửi tin vào nhóm lớp" → scheduleTask với targetDescription="nhóm lớp"
-- "Kết bạn với số 0123456789" → scheduleTask type=send_friend_request`,
+- "Gửi tin vào nhóm lớp" → scheduleTask với targetDescription="nhóm lớp"`,
   parameters: [
     {
       name: 'type',
       type: 'string',
-      description: 'Loại task: send_message, send_friend_request',
+      description: 'Loại task: send_message',
       required: true,
     },
     {
@@ -52,7 +50,7 @@ Ví dụ:
     {
       name: 'message',
       type: 'string',
-      description: 'Nội dung tin nhắn (cho send_message, send_friend_request)',
+      description: 'Nội dung tin nhắn (cho send_message)',
       required: false,
     },
     {
@@ -133,7 +131,6 @@ Ví dụ:
       // Format response
       const typeLabels: Record<string, string> = {
         send_message: 'Gửi tin nhắn',
-        send_friend_request: 'Gửi lời mời kết bạn',
       };
 
       const delayText = delayMinutes > 0 ? `sau ${delayMinutes} phút` : 'ngay khi có thể';

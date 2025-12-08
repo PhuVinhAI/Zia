@@ -429,11 +429,11 @@ export const CreateAppSchema = z.object({
 // ============ BACKGROUND AGENT TOOLS ============
 
 // Task types (accept_friend được xử lý tự động, không cần task)
-const TASK_TYPES = ['send_message', 'send_friend_request'] as const;
+const TASK_TYPES = ['send_message'] as const;
 
 // Schedule Task params
 export const ScheduleTaskSchema = z.object({
-  type: z.enum(TASK_TYPES).describe('Loại task: send_message, send_friend_request'),
+  type: z.enum(TASK_TYPES).describe('Loại task: send_message'),
   targetUserId: z.string().optional().describe('ID người dùng đích'),
   targetThreadId: z.string().optional().describe('ID thread/nhóm đích (cho send_message)'),
   targetDescription: z
@@ -654,6 +654,24 @@ export const DisperseGroupSchema = z.object({
   confirm: z.boolean().describe('Phải truyền true để xác nhận giải tán'),
 });
 
+// Get Group Link Detail params (lấy link nhóm)
+export const GetGroupLinkDetailSchema = z.object({
+  groupId: z.string().optional().describe('ID nhóm cần lấy link (mặc định: threadId hiện tại)'),
+});
+
+// ============ FRIEND REQUEST TOOLS ============
+
+// Find User by Phone params
+export const FindUserByPhoneSchema = z.object({
+  phoneNumber: z.string().min(9, 'Số điện thoại không hợp lệ').max(15, 'Số điện thoại quá dài'),
+});
+
+// Send Friend Request params
+export const SendFriendRequestSchema = z.object({
+  userId: z.string().min(1, 'Thiếu userId của người cần kết bạn'),
+  message: z.string().max(150, 'Lời nhắn tối đa 150 ký tự').optional(),
+});
+
 // ============ HELPER FUNCTION ============
 
 /**
@@ -771,6 +789,13 @@ export const TOOL_EXAMPLES: Record<string, string> = {
   // Group Leave & Disperse (Destructive)
   leaveGroup: `[tool:leaveGroup]{"silent":false}[/tool]`,
   disperseGroup: `[tool:disperseGroup]{"confirm":true}[/tool]`,
+
+  // Group Link Detail
+  getGroupLinkDetail: `[tool:getGroupLinkDetail]{}[/tool]`,
+
+  // Friend Request tools
+  findUserByPhone: `[tool:findUserByPhone]{"phoneNumber":"0912345678"}[/tool]`,
+  sendFriendRequest: `[tool:sendFriendRequest]{"userId":"123456789","message":"Xin chào!"}[/tool]`,
 };
 
 /**
@@ -889,3 +914,8 @@ export type CreateGroupParams = z.infer<typeof CreateGroupSchema>;
 export type JoinGroupLinkParams = z.infer<typeof JoinGroupLinkSchema>;
 export type LeaveGroupParams = z.infer<typeof LeaveGroupSchema>;
 export type DisperseGroupParams = z.infer<typeof DisperseGroupSchema>;
+export type GetGroupLinkDetailParams = z.infer<typeof GetGroupLinkDetailSchema>;
+
+// Friend Request types
+export type FindUserByPhoneParams = z.infer<typeof FindUserByPhoneSchema>;
+export type SendFriendRequestParams = z.infer<typeof SendFriendRequestSchema>;

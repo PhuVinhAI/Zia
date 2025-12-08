@@ -4,7 +4,7 @@
  */
 
 import { describe, test, expect, afterAll } from 'bun:test';
-import { scheduleTaskTool } from '../../../src/modules/system/tools/scheduleTask.js';
+import { scheduleTaskTool } from '../../../src/modules/task/tools/scheduleTask.js';
 import { getDatabase } from '../../../src/infrastructure/database/connection.js';
 import { agentTasks } from '../../../src/infrastructure/database/schema.js';
 import { eq } from 'drizzle-orm';
@@ -61,22 +61,6 @@ describe('scheduleTask Tool Integration', () => {
     const scheduledAt = new Date(result.data.scheduledAt);
     const now = new Date();
     expect(scheduledAt.getTime()).toBeGreaterThan(now.getTime());
-
-    createdTaskIds.push(result.data.taskId);
-  }, TEST_CONFIG.timeout);
-
-  test('scheduleTask - send_friend_request', async () => {
-    const result = await scheduleTaskTool.execute(
-      {
-        type: 'send_friend_request',
-        targetUserId: 'test-user-789',
-        message: 'Hi, let us be friends!',
-      },
-      mockToolContext,
-    );
-
-    expect(result.success).toBe(true);
-    expect(result.data.type).toBe('send_friend_request');
 
     createdTaskIds.push(result.data.taskId);
   }, TEST_CONFIG.timeout);

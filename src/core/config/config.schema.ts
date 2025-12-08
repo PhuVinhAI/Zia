@@ -9,6 +9,14 @@ const CloudDebugSchema = z.object({
   prefix: z.string().default('#bot'),
 });
 
+// Sleep Mode schema - Tự động offline theo giờ
+export const SleepModeSchema = z.object({
+  enabled: z.boolean().default(false),
+  sleepHour: z.coerce.number().min(0).max(23).default(23), // Giờ bắt đầu ngủ (0-23)
+  wakeHour: z.coerce.number().min(0).max(23).default(6), // Giờ thức dậy (0-23)
+  checkIntervalMs: z.coerce.number().min(60000).default(1800000), // Interval check (default 30 phút)
+});
+
 // Bot config schema
 export const BotConfigSchema = z.object({
   name: z.string().default('Trợ lý AI Zalo'),
@@ -30,6 +38,12 @@ export const BotConfigSchema = z.object({
   cloudDebug: CloudDebugSchema.optional().default({
     enabled: false,
     prefix: '#bot',
+  }),
+  sleepMode: SleepModeSchema.optional().default({
+    enabled: false,
+    sleepHour: 23,
+    wakeHour: 6,
+    checkIntervalMs: 1800000,
   }),
 });
 
@@ -103,6 +117,7 @@ export const SettingsSchema = z.object({
     showToolCalls: true,
     allowNSFW: false,
     cloudDebug: { enabled: false, prefix: '#bot' },
+    sleepMode: { enabled: false, sleepHour: 23, wakeHour: 6, checkIntervalMs: 1800000 },
   }),
   retry: RetryConfigSchema.optional().default({
     maxRetries: 3,

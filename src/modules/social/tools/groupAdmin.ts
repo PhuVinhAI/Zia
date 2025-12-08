@@ -753,6 +753,74 @@ export const changeGroupOwnerTool: ToolDefinition = {
 // ═══════════════════════════════════════════════════
 
 /**
+ * Lấy link tham gia nhóm (Invite Link)
+ */
+export const getGroupLinkDetailTool: ToolDefinition = {
+  name: 'getGroupLinkDetail',
+  description:
+    'Lấy đường dẫn chia sẻ (Invite Link) của nhóm. Link có dạng https://zalo.me/g/... Bot phải là thành viên nhóm.',
+  parameters: [
+    {
+      name: 'groupId',
+      type: 'string',
+      description: 'ID của nhóm cần lấy link. Nếu không truyền, sẽ dùng threadId hiện tại.',
+      required: false,
+    },
+  ],
+  execute: async (params: Record<string, any>, context: ToolContext): Promise<ToolResult> => {
+    try {
+      const groupId = params.groupId || context.threadId;
+
+      // Kiểm tra ngữ cảnh nhóm
+      if (!isGroupContext(groupId)) {
+        return notGroupError();
+      }
+
+      debugLog('TOOL:getGroupLinkDetail', `Getting group link for ${groupId}`);
+
+      const result = await context.api.getGroupLinkDetail(groupId);
+      logZaloAPI('tool:getGroupLinkDetail', { groupId }, result);
+
+      // Kiểm tra link có được bật không
+      if (!result?.link || result?.enabled === 0) {
+        return {
+          success: true,
+          data: {
+            groupId,
+            enabled: false,
+            link: null,
+            message: 'Nhóm chưa bật tính năng tham gia bằng link. Dùng enableGroupLink để bật.',
+            hint: 'Gọi enableGroupLink trước để tạo link mới',
+          },
+        };
+      }
+
+      // Format expiration date
+      let expirationInfo = 'Vĩnh viễn';
+      if (result.expiration_date && result.expiration_date > 0) {
+        const expDate = new Date(result.expiration_date * 1000);
+        expirationInfo = expDate.toLocaleString('vi-VN');
+      }
+
+      return {
+        success: true,
+        data: {
+          groupId,
+          link: result.link,
+          enabled: result.enabled === 1,
+          expirationDate: result.expiration_date,
+          expirationInfo,
+          message: `Link nhóm: ${result.link}`,
+        },
+      };
+    } catch (error: any) {
+      debugLog('TOOL:getGroupLinkDetail', `Error: ${error.message}`);
+      return { success: false, error: `Lỗi lấy link nhóm: ${error.message}` };
+    }
+  },
+};
+
+/**
  * Bật link tham gia nhóm
  */
 export const enableGroupLinkTool: ToolDefinition = {
