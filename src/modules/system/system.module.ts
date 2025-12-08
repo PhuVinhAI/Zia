@@ -40,6 +40,9 @@ import { executeCodeTool } from './tools/task/executeCode.js';
 import { flushLogsTool } from './tools/task/flushLogs.js';
 import { scheduleTaskTool } from './tools/task/scheduleTask.js';
 import { solveMathTool } from './tools/task/solveMath.js';
+// Utility tools
+import { qrCodeTool } from './tools/utility/qrCode.js';
+import { urlShortenerTool } from './tools/utility/urlShortener.js';
 
 export class SystemModule extends BaseModule {
   readonly metadata: ModuleMetadata = {
@@ -95,6 +98,9 @@ export class SystemModule extends BaseModule {
     removeReminderTool,
     // Forward message tool
     forwardMessageTool,
+    // Utility tools
+    qrCodeTool,
+    urlShortenerTool,
     // Admin tools
     flushLogsTool,
   ];

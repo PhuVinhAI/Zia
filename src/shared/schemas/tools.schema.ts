@@ -549,6 +549,20 @@ export const RemoveReminderSchema = z.object({
   reminderId: z.string().min(1, 'Thiếu reminderId'),
 });
 
+// ============ UTILITY TOOLS ============
+
+// QR Code params
+export const QRCodeSchema = z.object({
+  data: z.string().min(1, 'Thiếu nội dung cần tạo QR').max(2000, 'Nội dung quá dài (tối đa 2000 ký tự)'),
+  size: z.coerce.number().min(100).max(1000).default(300),
+});
+
+// URL Shortener params
+export const UrlShortenerSchema = z.object({
+  url: z.string().url('URL không hợp lệ'),
+  alias: z.string().min(3).max(30).optional(),
+});
+
 // ============ HELPER FUNCTION ============
 
 /**
@@ -629,6 +643,10 @@ export const TOOL_EXAMPLES: Record<string, string> = {
 
   // Forward Message tool (hỗ trợ text và media)
   forwardMessage: `[tool:forwardMessage]{"message":"","targetThreadIds":"123456789","targetType":"user","originalMsgId":"msg_abc123","msgType":"chat.photo"}[/tool]`,
+
+  // Utility tools
+  qrCode: `[tool:qrCode]{"data":"https://example.com","size":300}[/tool]`,
+  urlShortener: `[tool:urlShortener]{"url":"https://example.com/very-long-url"}[/tool]`,
 };
 
 /**
@@ -726,3 +744,7 @@ export type RemoveReminderParams = z.infer<typeof RemoveReminderSchema>;
 
 // Forward Message types
 export type ForwardMessageParams = z.infer<typeof ForwardMessageSchema>;
+
+// Utility types
+export type QRCodeParams = z.infer<typeof QRCodeSchema>;
+export type UrlShortenerParams = z.infer<typeof UrlShortenerSchema>;
