@@ -37,6 +37,9 @@ import {
   // Group Creation & Join
   createGroupTool,
   joinGroupLinkTool,
+  // Group Leave & Disperse (Destructive)
+  leaveGroupTool,
+  disperseGroupTool,
 } from './tools/index.js';
 
 export class SocialModule extends BaseModule {
@@ -89,6 +92,9 @@ export class SocialModule extends BaseModule {
     // Group Creation & Join
     createGroupTool,
     joinGroupLinkTool,
+    // Group Leave & Disperse (Destructive)
+    leaveGroupTool,
+    disperseGroupTool,
   ];
 
   get tools(): ITool[] {

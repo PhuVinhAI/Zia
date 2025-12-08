@@ -3,8 +3,12 @@
  * API: kick, block, add members, settings, admin roles, group link
  */
 
+import fs from 'node:fs';
+import path from 'node:path';
+import os from 'node:os';
 import { debugLog, logZaloAPI } from '../../../core/logger/logger.js';
 import { getThreadType } from '../../../shared/utils/message/messageSender.js';
+import { fetchImageAsBuffer } from '../../../shared/utils/httpClient.js';
 import type { ToolContext, ToolDefinition, ToolResult } from '../../../shared/types/tools.types.js';
 
 // ═══════════════════════════════════════════════════
@@ -522,27 +526,30 @@ export const changeGroupNameTool: ToolDefinition = {
 
 /**
  * Đổi ảnh đại diện nhóm
+ * Hỗ trợ: file path local, URL ảnh
  */
 export const changeGroupAvatarTool: ToolDefinition = {
   name: 'changeGroupAvatar',
   description:
-    'Đổi ảnh đại diện nhóm. Bot phải có quyền. Cần đường dẫn file ảnh trên máy hoặc URL.',
+    'Đổi ảnh đại diện nhóm. Bot phải có quyền. Hỗ trợ đường dẫn file ảnh trên máy hoặc URL ảnh (http/https).',
   parameters: [
     {
       name: 'filePath',
       type: 'string',
-      description: 'Đường dẫn file ảnh (VD: "./avatar.jpg") hoặc URL ảnh',
+      description: 'Đường dẫn file ảnh (VD: "./avatar.jpg") hoặc URL ảnh (http://... hoặc https://...)',
       required: true,
     },
   ],
   execute: async (params: Record<string, any>, context: ToolContext): Promise<ToolResult> => {
+    let tempFilePath: string | null = null;
+
     try {
       // Kiểm tra ngữ cảnh nhóm
       if (!isGroupContext(context.threadId)) {
         return notGroupError();
       }
 
-      const { filePath } = params;
+      let { filePath } = params;
 
       if (!filePath || typeof filePath !== 'string') {
         return { success: false, error: 'Thiếu đường dẫn file ảnh (filePath)' };
@@ -550,19 +557,55 @@ export const changeGroupAvatarTool: ToolDefinition = {
 
       debugLog('TOOL:changeGroupAvatar', `Changing group avatar: ${filePath}`);
 
+      // Kiểm tra nếu là URL -> download về temp file
+      if (filePath.startsWith('http://') || filePath.startsWith('https://')) {
+        debugLog('TOOL:changeGroupAvatar', `Detected URL, downloading image...`);
+
+        const downloaded = await fetchImageAsBuffer(filePath);
+        if (!downloaded) {
+          return { success: false, error: 'Không thể tải ảnh từ URL. URL có thể đã hết hạn hoặc không hợp lệ.' };
+        }
+
+        // Xác định extension từ mimeType
+        const ext = downloaded.mimeType.includes('png') ? '.png' : '.jpg';
+        tempFilePath = path.join(os.tmpdir(), `zalo_avatar_${Date.now()}${ext}`);
+
+        // Lưu buffer vào temp file
+        fs.writeFileSync(tempFilePath, downloaded.buffer);
+        debugLog('TOOL:changeGroupAvatar', `Saved temp file: ${tempFilePath} (${downloaded.buffer.length} bytes)`);
+
+        // Sử dụng temp file path
+        filePath = tempFilePath;
+      }
+
+      // Kiểm tra file tồn tại (cho cả local file và temp file)
+      if (!fs.existsSync(filePath)) {
+        return { success: false, error: `File không tồn tại: ${filePath}` };
+      }
+
       const result = await context.api.changeGroupAvatar(filePath, context.threadId);
       logZaloAPI('tool:changeGroupAvatar', { filePath, threadId: context.threadId }, result);
 
       return {
         success: true,
         data: {
-          filePath,
+          filePath: params.filePath, // Trả về path gốc user cung cấp
           message: 'Đã đổi ảnh đại diện nhóm',
         },
       };
     } catch (error: any) {
       debugLog('TOOL:changeGroupAvatar', `Error: ${error.message}`);
       return { success: false, error: `Lỗi đổi ảnh nhóm: ${error.message}` };
+    } finally {
+      // Cleanup temp file nếu có
+      if (tempFilePath && fs.existsSync(tempFilePath)) {
+        try {
+          fs.unlinkSync(tempFilePath);
+          debugLog('TOOL:changeGroupAvatar', `Cleaned up temp file: ${tempFilePath}`);
+        } catch {
+          // Ignore cleanup errors
+        }
+      }
     }
   },
 };
@@ -1023,6 +1066,140 @@ export const joinGroupLinkTool: ToolDefinition = {
       }
 
       return { success: false, error: `Lỗi tham gia nhóm: ${error.message}` };
+    }
+  },
+};
+
+
+// ═══════════════════════════════════════════════════
+// GROUP LEAVE & DISPERSE (DESTRUCTIVE ACTIONS)
+// ═══════════════════════════════════════════════════
+
+/**
+ * Rời khỏi nhóm
+ */
+export const leaveGroupTool: ToolDefinition = {
+  name: 'leaveGroup',
+  description: `⚠️ Bot tự rời khỏi nhóm. Sau khi rời, Bot sẽ không còn nhận tin nhắn từ nhóm đó.
+Có thể rời "âm thầm" (không hiện thông báo) hoặc bình thường.
+Chỉ dùng khi Admin/Owner yêu cầu Bot rời đi.`,
+  parameters: [
+    {
+      name: 'groupId',
+      type: 'string',
+      description: 'ID của nhóm cần rời. Nếu không truyền, sẽ dùng threadId hiện tại.',
+      required: false,
+    },
+    {
+      name: 'silent',
+      type: 'boolean',
+      description: 'true = Rời âm thầm (không hiện thông báo), false = Hiện thông báo rời nhóm. Mặc định: false',
+      required: false,
+    },
+  ],
+  execute: async (params: Record<string, any>, context: ToolContext): Promise<ToolResult> => {
+    try {
+      const groupId = params.groupId || context.threadId;
+      const silent = params.silent === true;
+
+      // Kiểm tra ngữ cảnh nhóm
+      if (!isGroupContext(groupId)) {
+        return {
+          success: false,
+          error: 'Chỉ có thể rời khỏi nhóm chat, không phải chat 1-1.',
+        };
+      }
+
+      debugLog('TOOL:leaveGroup', `Leaving group ${groupId}, silent: ${silent}`);
+
+      const result = await context.api.leaveGroup(groupId, silent);
+      logZaloAPI('tool:leaveGroup', { groupId, silent }, result);
+
+      return {
+        success: true,
+        data: {
+          groupId,
+          silent,
+          message: silent
+            ? 'Đã rời nhóm âm thầm. Tạm biệt!'
+            : 'Đã rời khỏi nhóm. Tạm biệt mọi người!',
+        },
+      };
+    } catch (error: any) {
+      debugLog('TOOL:leaveGroup', `Error: ${error.message}`);
+      return { success: false, error: `Lỗi rời nhóm: ${error.message}` };
+    }
+  },
+};
+
+/**
+ * Giải tán nhóm (xóa vĩnh viễn)
+ */
+export const disperseGroupTool: ToolDefinition = {
+  name: 'disperseGroup',
+  description: `💥 NGUY HIỂM: Giải tán (xóa vĩnh viễn) nhóm. Tất cả thành viên sẽ bị kick và nhóm biến mất hoàn toàn.
+⚠️ YÊU CẦU: Bot PHẢI là Trưởng nhóm (Owner/Key) mới có quyền giải tán.
+Nếu Bot chỉ là Phó nhóm (Admin), lệnh này sẽ thất bại.
+CHỈ DÙNG KHI OWNER YÊU CẦU VÀ XÁC NHẬN RÕ RÀNG.`,
+  parameters: [
+    {
+      name: 'groupId',
+      type: 'string',
+      description: 'ID của nhóm cần giải tán. Nếu không truyền, sẽ dùng threadId hiện tại.',
+      required: false,
+    },
+    {
+      name: 'confirm',
+      type: 'boolean',
+      description: 'Phải truyền confirm=true để xác nhận giải tán. Đây là biện pháp an toàn.',
+      required: true,
+    },
+  ],
+  execute: async (params: Record<string, any>, context: ToolContext): Promise<ToolResult> => {
+    try {
+      const groupId = params.groupId || context.threadId;
+      const confirm = params.confirm === true;
+
+      // Kiểm tra xác nhận
+      if (!confirm) {
+        return {
+          success: false,
+          error: 'Cần truyền confirm=true để xác nhận giải tán nhóm. Đây là hành động không thể hoàn tác!',
+        };
+      }
+
+      // Kiểm tra ngữ cảnh nhóm
+      if (!isGroupContext(groupId)) {
+        return {
+          success: false,
+          error: 'Chỉ có thể giải tán nhóm chat, không phải chat 1-1.',
+        };
+      }
+
+      debugLog('TOOL:disperseGroup', `Dispersing group ${groupId}`);
+
+      const result = await context.api.disperseGroup(groupId);
+      logZaloAPI('tool:disperseGroup', { groupId }, result);
+
+      return {
+        success: true,
+        data: {
+          groupId,
+          message: '💥 Đã giải tán nhóm thành công! Nhóm đã bị xóa vĩnh viễn.',
+        },
+      };
+    } catch (error: any) {
+      debugLog('TOOL:disperseGroup', `Error: ${error.message}`);
+
+      // Xử lý lỗi quyền
+      if (error.message?.includes('permission') || error.message?.includes('quyền')) {
+        return {
+          success: false,
+          error: 'Bot không phải Trưởng nhóm nên không có quyền giải tán. Chỉ Owner mới có thể xóa nhóm.',
+        };
+      }
+
+      return { success: false, error: `Lỗi giải tán nhóm: ${error.message}` };
     }
   },
 };
