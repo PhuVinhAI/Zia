@@ -10,6 +10,8 @@ import { createChartTool } from './tools/media/createChart.js';
 import { createFileTool } from './tools/media/createFile/index.js';
 import { freepikImageTool } from './tools/media/freepikImage.js';
 import { textToSpeechTool } from './tools/media/textToSpeech.js';
+// Meta tools
+import { describeToolsTool } from './tools/meta/describeTools.js';
 // Search tools
 import { googleSearchTool } from './tools/search/googleSearch.js';
 import { youtubeChannelTool, youtubeSearchTool, youtubeVideoTool } from './tools/search/youtube.js';
@@ -47,43 +49,43 @@ export class SystemModule extends BaseModule {
   };
 
   private _tools: ITool[] = [
+    // Meta tools (MUST be first - for lazy loading)
+    describeToolsTool,
+    // Core tools (always in system prompt)
     getUserInfoTool,
-    getAllFriendsTool,
-    getFriendOnlinesTool,
     getGroupMembersTool,
-    textToSpeechTool,
-    freepikImageTool,
-    createAppTool,
-    createFileTool,
-    createChartTool,
-    solveMathTool,
-    executeCodeTool,
-    youtubeSearchTool,
-    youtubeVideoTool,
-    youtubeChannelTool,
     googleSearchTool,
-    clearHistoryTool,
-    // Memory tools
     saveMemoryTool,
     recallMemoryTool,
-    // Background agent
     scheduleTaskTool,
-    // Poll tools
+    // Social tools (extended - need describeTools)
+    getAllFriendsTool,
+    getFriendOnlinesTool,
+    forwardMessageTool,
     createPollTool,
     getPollDetailTool,
     votePollTool,
     lockPollTool,
-    // Board/Note tools
     createNoteTool,
     getListBoardTool,
     editNoteTool,
-    // Reminder tools
     createReminderTool,
     getReminderTool,
     removeReminderTool,
-    // Forward message tool
-    forwardMessageTool,
-    // Admin tools
+    // Media tools (extended)
+    textToSpeechTool,
+    freepikImageTool,
+    createFileTool,
+    createChartTool,
+    // Search tools (extended)
+    youtubeSearchTool,
+    youtubeVideoTool,
+    youtubeChannelTool,
+    // Task tools (extended)
+    createAppTool,
+    solveMathTool,
+    executeCodeTool,
+    clearHistoryTool,
     flushLogsTool,
   ];
 

@@ -149,7 +149,7 @@ const outputHandlers: Record<string, OutputHandler> = {
     }
   },
 
-  // solveMath → send PDF
+  // solveMath → send DOCX
   solveMath: async (api, threadId, result) => {
     if (result.data?.fileBuffer) {
       await sendDocument(api, threadId, result.data.fileBuffer, result.data.filename);

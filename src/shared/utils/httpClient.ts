@@ -194,13 +194,15 @@ export async function fetchAndConvertToTextBase64(url: string): Promise<string |
 import { convertDocxToPdfLocal } from '../../modules/system/services/docxToPdfService.js';
 
 /**
- * Fetch DOCX file, convert sang PDF locally (mammoth + pdfkit), trả về base64
+ * Fetch DOC/DOCX file, convert sang PDF locally, trả về base64
+ * - DOCX: mammoth + pdfkit + sharp (full support)
+ * - DOC: word-extractor + cfb + pdfkit (text + images as appendix)
  * Giữ được text + hình ảnh, không cần API key
  */
 export async function fetchDocxAndConvertToPdfBase64(url: string): Promise<string | null> {
   try {
     const cfg = getHttpConfig();
-    debugLog('HTTP', `Converting DOCX to PDF locally: ${url.substring(0, 80)}...`);
+    debugLog('HTTP', `Converting DOC/DOCX to PDF locally: ${url.substring(0, 80)}...`);
 
     const response = await http.get(url);
     const arrayBuffer = await response.arrayBuffer();
@@ -308,8 +310,8 @@ const TEXT_CONVERTIBLE_FORMATS = new Set([
   'dockerfile',
 ]);
 
-// DOCX sẽ convert sang PDF riêng
-const DOCX_CONVERTIBLE_FORMATS = new Set(['docx']);
+// DOC/DOCX sẽ convert sang PDF riêng
+const DOCX_CONVERTIBLE_FORMATS = new Set(['doc', 'docx']);
 
 export const isGeminiSupported = (ext: string) => GEMINI_SUPPORTED_FORMATS.has(ext.toLowerCase());
 export const isTextConvertible = (ext: string) => TEXT_CONVERTIBLE_FORMATS.has(ext.toLowerCase());

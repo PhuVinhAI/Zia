@@ -38,7 +38,6 @@ export const API_KEYS = {
   freepik: process.env.FREEPIK_API_KEY,
   e2b: process.env.E2B_API_KEY,
   elevenlabs: process.env.ELEVENLABS_API_KEY,
-  compdf: process.env.COMPDF_API_KEY,
   groq: process.env.GROQ_API_KEY,
   zaloCredentials: process.env.ZALO_CREDENTIALS_BASE64,
 };

@@ -99,7 +99,7 @@ const mediaHandlers: Record<string, MediaHandler> = {
       return { type: 'file', url: item.url, mimeType: getMimeTypeFromExt(ext) };
     }
 
-    // DOCX → PDF conversion
+    // DOC/DOCX → PDF conversion
     if (isDocxConvertible(ext)) {
       if (item.fileSize && item.fileSize > maxSize) {
         const sizeMB = (item.fileSize / 1024 / 1024).toFixed(1);
@@ -107,7 +107,7 @@ const mediaHandlers: Record<string, MediaHandler> = {
         notes.push(`(File "${item.fileName}" quá lớn ${sizeMB}MB, max ${maxSizeMB}MB)`);
         return null;
       }
-      console.log(`[Bot] 📄 Convert DOCX sang PDF: ${item.fileName}`);
+      console.log(`[Bot] 📄 Convert ${ext.toUpperCase()} sang PDF: ${item.fileName}`);
       const base64 = await fetchDocxAndConvertToPdfBase64(item.url);
       if (base64) return { type: 'file', base64, mimeType: 'application/pdf' };
       notes.push(`(File "${item.fileName}" không convert được)`);

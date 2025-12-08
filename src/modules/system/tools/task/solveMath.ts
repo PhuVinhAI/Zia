@@ -1,12 +1,11 @@
 /**
- * Tool: solveMath - Giải toán và xuất PDF với công thức đẹp
- * Sử dụng pdfHandler (DOCX -> PDF via ComPDF API)
+ * Tool: solveMath - Giải toán và xuất file DOCX với công thức đẹp
  */
 
 import { z } from 'zod';
 import type { ITool, ToolResult } from '../../../../core/types.js';
 import { validateParamsWithExample } from '../../../../shared/schemas/tools.schema.js';
-import { pdfHandler } from '../media/createFile/pdfHandler.js';
+import { docxHandler } from '../media/createFile/docxHandler.js';
 
 export const SolveMathSchema = z.object({
   problem: z.string().min(1, 'Thiếu đề bài toán'),
@@ -44,7 +43,7 @@ function buildMathContent(params: SolveMathParams): string {
 
 export const solveMathTool: ITool = {
   name: 'solveMath',
-  description: `Giải bài toán và xuất PDF với công thức đẹp.
+  description: `Giải bài toán và xuất file DOCX với công thức đẹp.
 
 **CÁCH VIẾT CÔNG THỨC - BẮT BUỘC DÙNG $...$:**
 - Inline math: $x^2 + y^2 = z^2$
@@ -93,7 +92,7 @@ Căn: $\\sqrt$
     {
       name: 'title',
       type: 'string',
-      description: 'Tiêu đề PDF (mặc định: "Lời giải bài toán")',
+      description: 'Tiêu đề file (mặc định: "Lời giải bài toán")',
       required: false,
     },
   ],
@@ -105,9 +104,9 @@ Căn: $\\sqrt$
       // Tạo nội dung markdown
       const content = buildMathContent(validation.data);
 
-      // Dùng pdfHandler (DOCX -> PDF)
-      const pdfBuffer = await pdfHandler(content, {
-        filename: 'giai-toan.pdf',
+      // Tạo file DOCX trực tiếp
+      const docxBuffer = await docxHandler(content, {
+        filename: 'giai-toan.docx',
         content,
         title: validation.data.title,
         author: 'Zia AI Bot',
@@ -116,17 +115,17 @@ Căn: $\\sqrt$
       return {
         success: true,
         data: {
-          fileBuffer: pdfBuffer,
-          filename: 'giai-toan.pdf',
-          mimeType: 'application/pdf',
-          fileSize: pdfBuffer.length,
-          fileType: 'pdf',
+          fileBuffer: docxBuffer,
+          filename: 'giai-toan.docx',
+          mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          fileSize: docxBuffer.length,
+          fileType: 'docx',
           title: validation.data.title,
         },
       };
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : 'Unknown error';
-      return { success: false, error: `Lỗi tạo PDF: ${msg}` };
+      return { success: false, error: `Lỗi tạo DOCX: ${msg}` };
     }
   },
 };

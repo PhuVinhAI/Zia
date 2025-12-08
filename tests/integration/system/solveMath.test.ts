@@ -1,20 +1,13 @@
 /**
  * Integration Test: solveMath Tool
- * Test chức năng giải toán và xuất PDF
+ * Test chức năng giải toán và xuất DOCX
  */
 
-import { describe, test, expect, beforeAll } from 'bun:test';
-import { solveMathTool } from '../../../src/modules/system/tools/solveMath.js';
-import { hasApiKey, TEST_CONFIG, mockToolContext } from '../setup.js';
+import { describe, test, expect } from 'bun:test';
+import { solveMathTool } from '../../../src/modules/system/tools/task/solveMath.js';
+import { mockToolContext } from '../setup.js';
 
-// solveMath cần ComPDF API để convert DOCX -> PDF
-const SKIP = !hasApiKey('compdf');
-
-describe.skipIf(SKIP)('solveMath Tool Integration', () => {
-  beforeAll(() => {
-    if (SKIP) console.log('⏭️  Skipping solveMath tests: COMPDF_API_KEY not configured');
-  });
-
+describe('solveMath Tool Integration', () => {
   test('solveMath - bài toán đơn giản', async () => {
     const result = await solveMathTool.execute({
       problem: 'Tính $2 + 3 = ?$',
@@ -25,9 +18,9 @@ describe.skipIf(SKIP)('solveMath Tool Integration', () => {
     expect(result.success).toBe(true);
     expect(result.data).toBeDefined();
     expect(result.data.fileBuffer).toBeInstanceOf(Buffer);
-    expect(result.data.mimeType).toBe('application/pdf');
-    expect(result.data.filename).toBe('giai-toan.pdf');
-  }, 120000);
+    expect(result.data.mimeType).toBe('application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    expect(result.data.filename).toBe('giai-toan.docx');
+  }, 60000);
 
   test('solveMath - với công thức phức tạp', async () => {
     const result = await solveMathTool.execute({
@@ -44,28 +37,11 @@ Với $\\Delta = b^2 - 4ac$:
 
     expect(result.success).toBe(true);
     expect(result.data.fileBuffer.length).toBeGreaterThan(1000);
-  }, 120000);
-
-  test('solveMath - validation error (thiếu problem)', async () => {
-    const result = await solveMathTool.execute({
-      solution: 'Lời giải',
-    }, mockToolContext);
-
-    expect(result.success).toBe(false);
-    expect(result.error).toBeDefined();
-  });
-
-  test('solveMath - validation error (thiếu solution)', async () => {
-    const result = await solveMathTool.execute({
-      problem: 'Đề bài',
-    }, mockToolContext);
-
-    expect(result.success).toBe(false);
-    expect(result.error).toBeDefined();
-  });
+    expect(result.data.fileType).toBe('docx');
+  }, 60000);
 });
 
-// Validation tests that don't need API
+// Validation tests
 describe('solveMath Validation', () => {
   test('validation - thiếu problem', async () => {
     const result = await solveMathTool.execute({

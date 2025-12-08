@@ -531,6 +531,49 @@ async function testTables() {
 }
 
 // ═══════════════════════════════════════════════════
+// TEST 7: Footnotes
+// ═══════════════════════════════════════════════════
+async function testFootnotes() {
+  console.log('📝 Test 7: Footnotes...');
+
+  const content = `# Footnotes Demo
+
+## Introduction
+
+This document demonstrates the footnote feature[^1]. Footnotes are useful for adding references and additional information[^2].
+
+## Academic Writing
+
+In academic writing, footnotes are commonly used for citations[^3]. They help maintain the flow of the main text while providing necessary references[^4].
+
+## Technical Documentation
+
+Technical documents often use footnotes to explain terminology[^5] or provide links to external resources.
+
+## Conclusion
+
+Footnotes enhance document readability by separating supplementary information from the main content[^6].
+
+[^1]: This is the first footnote explaining the basic concept.
+[^2]: Footnotes appear at the bottom of the page in Word documents.
+[^3]: See "Academic Writing Guidelines" by Smith, 2023.
+[^4]: References should follow a consistent citation style.
+[^5]: Terminology explanations help readers understand technical terms.
+[^6]: Proper use of footnotes improves document organization.
+`;
+
+  const buffer = await buildWordDocument(content, {
+    title: 'Footnotes Demo',
+    theme: { name: 'academic' } as any,
+    header: { text: 'Footnotes Example', alignment: 'center' },
+    footer: { text: 'Page', alignment: 'center', includePageNumber: true },
+  });
+
+  writeFileSync(`${OUTPUT_DIR}/07-docx-footnotes.docx`, buffer);
+  console.log(`✅ Saved: ${OUTPUT_DIR}/07-docx-footnotes.docx`);
+}
+
+// ═══════════════════════════════════════════════════
 // MAIN
 // ═══════════════════════════════════════════════════
 async function main() {
@@ -544,6 +587,7 @@ async function main() {
     await testDividers();
     await testMathExpressions();
     await testTables();
+    await testFootnotes();
 
     console.log('\n' + '═'.repeat(50));
     console.log('✅ All tests completed!');
@@ -555,6 +599,7 @@ async function main() {
     console.log('  - 04-docx-dividers.docx (Divider styles)');
     console.log('  - 05-docx-math.docx (Math expressions)');
     console.log('  - 06-docx-tables.docx (Table styles)');
+    console.log('  - 07-docx-footnotes.docx (Footnotes demo)');
   } catch (error) {
     console.error('❌ Error:', error);
     process.exit(1);

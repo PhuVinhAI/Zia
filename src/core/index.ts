@@ -34,5 +34,14 @@ export {
   hasToolCalls,
   parseToolCalls,
 } from './tool-registry/tool-registry.js';
+
+// Tool Categories (for lazy loading)
+export {
+  CATEGORY_DESCRIPTIONS,
+  CATEGORY_TOOLS,
+  CORE_TOOLS,
+  getToolCategory,
+  isCoreToolName,
+} from './tool-registry/tool-categories.js';
 // Types
 export * from './types.js';

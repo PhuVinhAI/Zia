@@ -1,6 +1,6 @@
 /**
  * Tool: createFile - Tạo và gửi file Office qua Zalo
- * Hỗ trợ: docx (Word), pdf, pptx (PowerPoint), xlsx (Excel)
+ * Hỗ trợ: docx (Word), pptx (PowerPoint), xlsx (Excel)
  */
 
 import type { ITool, ToolResult } from '../../../../../core/types.js';
@@ -10,14 +10,12 @@ import {
   validateParamsWithExample,
 } from '../../../../../shared/schemas/tools.schema.js';
 import { docxHandler } from './docxHandler.js';
-import { pdfHandler } from './pdfHandler.js';
 import { pptxHandler } from './pptxHandler.js';
 import { type FileHandler, MIME_TYPES } from './types.js';
 import { xlsxHandler } from './xlsxHandler.js';
 
 const FILE_HANDLERS: Record<string, FileHandler> = {
   docx: docxHandler,
-  pdf: pdfHandler,
   pptx: pptxHandler,
   xlsx: xlsxHandler,
 };
@@ -26,7 +24,7 @@ const SUPPORTED_EXTENSIONS = Object.keys(FILE_HANDLERS);
 
 export const createFileTool: ITool = {
   name: 'createFile',
-  description: `Tạo file Office chuyên nghiệp. Hỗ trợ: docx, pdf, pptx, xlsx
+  description: `Tạo file Office chuyên nghiệp. Hỗ trợ: docx, pptx, xlsx
 
 ═══════════════════════════════════════════════════
 DOCX WORD FRAMEWORK - FULL FEATURES
@@ -186,7 +184,7 @@ LƯU Ý QUAN TRỌNG
     {
       name: 'filename',
       type: 'string',
-      description: 'Tên file KÈM ĐUÔI (.docx, .pdf, .pptx, .xlsx)',
+      description: 'Tên file KÈM ĐUÔI (.docx, .pptx, .xlsx)',
       required: true,
     },
     {
