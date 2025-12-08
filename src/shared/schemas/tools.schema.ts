@@ -512,6 +512,9 @@ export const RemoveReminderSchema = z.object({
  * Ví dụ cấu trúc đúng cho từng tool - giúp AI tránh ảo giác
  */
 export const TOOL_EXAMPLES: Record<string, string> = {
+  // Meta tools (for lazy loading)
+  describeTools: `[tool:describeTools category="media"] hoặc [tool:describeTools category="all"]`,
+
   // Entertainment
   jikanSearch: `[tool:jikanSearch]{"q":"naruto","mediaType":"anime","limit":5}[/tool]`,
   jikanDetails: `[tool:jikanDetails]{"id":20,"mediaType":"anime"}[/tool]`,

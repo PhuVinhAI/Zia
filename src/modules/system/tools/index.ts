@@ -2,6 +2,9 @@
  * System Tools - Export tất cả tools
  */
 
+// Meta tools (for lazy loading)
+export { describeToolsTool } from './meta/describeTools.js';
+
 // Chat tools
 export { clearHistoryTool } from './chat/clearHistory.js';
 export { recallMemoryTool, saveMemoryTool } from './chat/memory.js';

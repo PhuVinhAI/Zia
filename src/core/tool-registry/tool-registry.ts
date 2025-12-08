@@ -250,6 +250,13 @@ export async function executeAllTools(
 // PROMPT GENERATOR
 // ═══════════════════════════════════════════════════
 
+import {
+  CATEGORY_DESCRIPTIONS,
+  CATEGORY_TOOLS,
+  CORE_TOOLS,
+  type ToolCategory,
+} from './tool-categories.js';
+
 /**
  * Lấy thông tin thời gian hiện tại cho AI
  */
@@ -273,12 +280,21 @@ function getCurrentTimeInfo(): string {
 }
 
 /**
- * Generate prompt mô tả tất cả tools có sẵn
+ * Generate prompt cho CORE tools (full description)
  */
-export function generateToolsPrompt(): string {
-  const tools = moduleManager.getAllTools();
+function generateCoreToolsPrompt(): string {
+  const coreToolNames = CORE_TOOLS as readonly string[];
+  const tools = coreToolNames
+    .map((name) => moduleManager.getTool(name))
+    .filter((t): t is ITool => t !== undefined);
 
-  const toolDescriptions = tools
+  // Thêm describeTools vào core
+  const describeToolsMeta = moduleManager.getTool('describeTools');
+  if (describeToolsMeta) {
+    tools.unshift(describeToolsMeta);
+  }
+
+  return tools
     .map((tool) => {
       const paramsDesc = tool.parameters
         .map(
@@ -293,6 +309,32 @@ Tham số:
 ${paramsDesc || '  (Không có tham số)'}`;
     })
     .join('\n\n');
+}
+
+/**
+ * Generate summary cho extended categories
+ */
+function generateCategorySummary(): string {
+  const extendedCategories: ToolCategory[] = ['media', 'social', 'entertainment', 'academic', 'task'];
+
+  return extendedCategories
+    .map((cat) => {
+      const desc = CATEGORY_DESCRIPTIONS[cat];
+      const tools = CATEGORY_TOOLS[cat];
+      return `📂 ${cat.toUpperCase()}: ${desc}
+   Tools: ${tools.join(', ')}`;
+    })
+    .join('\n\n');
+}
+
+/**
+ * Generate prompt mô tả tools có sẵn (two-tier system)
+ * - Core tools: full description
+ * - Extended tools: chỉ summary, cần gọi describeTools để xem chi tiết
+ */
+export function generateToolsPrompt(): string {
+  const coreToolsPrompt = generateCoreToolsPrompt();
+  const categorySummary = generateCategorySummary();
 
   return `
 ═══════════════════════════════════════════════════
@@ -301,9 +343,19 @@ CUSTOM TOOLS - Công cụ tùy chỉnh
 
 ${getCurrentTimeInfo()}
 
-Bạn có thể sử dụng các tool sau:
+🔧 CORE TOOLS (luôn sẵn sàng):
 
-${toolDescriptions}
+${coreToolsPrompt}
+
+═══════════════════════════════════════════════════
+📦 EXTENDED TOOLS (gọi describeTools để xem chi tiết)
+═══════════════════════════════════════════════════
+
+${categorySummary}
+
+💡 Khi cần dùng tool trong category nào, gọi:
+[tool:describeTools category="<tên_category>"]
+Ví dụ: [tool:describeTools category="media"] để xem cách tạo file, ảnh, chart...
 
 CÁCH GỌI TOOL:
 - Cú pháp ngắn (không có body): [tool:tên_tool param1="giá_trị1" param2="giá_trị2"]
@@ -315,11 +367,11 @@ CÁCH GỌI TOOL:
 
 VÍ DỤ:
 - Không có tham số: [tool:getUserInfo]
-- Tham số inline: [tool:getAllFriends limit=10]
+- Tham số inline: [tool:describeTools category="entertainment"]
 - Tham số JSON: [tool:createFile]{"filename":"report.docx","content":"Nội dung..."}[/tool]
 
 QUY TẮC:
-1. Khi gọi tool, có thể kèm text thông báo ngắn
+1. Với tools NGOÀI core, hãy gọi describeTools TRƯỚC để biết cách dùng
 2. Sau khi tool trả kết quả, tiếp tục trả lời user
 3. KHÔNG tự bịa thông tin, hãy dùng tool để lấy thông tin chính xác
 `;

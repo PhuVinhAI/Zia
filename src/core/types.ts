@@ -47,11 +47,15 @@ export interface ToolContext {
   senderName?: string;
 }
 
+// Tool category for lazy loading
+export type ToolCategory = 'core' | 'media' | 'social' | 'entertainment' | 'academic' | 'task';
+
 // Tool interface
 export interface ITool {
   readonly name: string;
   readonly description: string;
   readonly parameters: ToolParameter[];
+  readonly category?: ToolCategory; // Optional, defaults to 'core'
   execute(params: Record<string, any>, context: ToolContext): Promise<ToolResult>;
 }
 
