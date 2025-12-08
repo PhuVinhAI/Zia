@@ -312,7 +312,7 @@ ${paramsDesc || '  (Không có tham số)'}`;
 }
 
 /**
- * Generate summary cho extended categories
+ * Generate summary cho extended categories (chỉ tools đã load)
  */
 function generateCategorySummary(): string {
   const extendedCategories: ToolCategory[] = ['media', 'social', 'entertainment', 'academic', 'task'];
@@ -320,9 +320,13 @@ function generateCategorySummary(): string {
   return extendedCategories
     .map((cat) => {
       const desc = CATEGORY_DESCRIPTIONS[cat];
-      const tools = CATEGORY_TOOLS[cat];
-      return `📂 ${cat.toUpperCase()}: ${desc}
-   Tools: ${tools.join(', ')}`;
+      const toolNames = CATEGORY_TOOLS[cat];
+      // Chỉ lấy tools đã được load
+      const loadedTools = toolNames.filter((name) => moduleManager.getTool(name) !== undefined);
+      if (loadedTools.length === 0) {
+        return `📂 ${cat.toUpperCase()}: ${desc}\n   ⚠️ (Module chưa được bật)`;
+      }
+      return `📂 ${cat.toUpperCase()}: ${desc}\n   Tools: ${loadedTools.join(', ')}`;
     })
     .join('\n\n');
 }

@@ -75,12 +75,17 @@ export const describeToolsTool: ITool = {
       };
     }
 
-    // Nếu hỏi "all" - trả về summary tất cả categories
+    // Nếu hỏi "all" - trả về summary tất cả categories (chỉ tools đã load)
     if (category === 'all') {
       const summary = Object.entries(CATEGORY_DESCRIPTIONS)
         .map(([cat, desc]) => {
-          const tools = CATEGORY_TOOLS[cat as ToolCategory] || [];
-          return `📂 ${cat.toUpperCase()}: ${desc}\n   Tools: ${tools.join(', ')}`;
+          const toolNames = CATEGORY_TOOLS[cat as ToolCategory] || [];
+          // Chỉ lấy tools đã được load
+          const loadedTools = toolNames.filter((name) => moduleManager.getTool(name) !== undefined);
+          if (loadedTools.length === 0) {
+            return `📂 ${cat.toUpperCase()}: ${desc}\n   ⚠️ (Module chưa được bật)`;
+          }
+          return `📂 ${cat.toUpperCase()}: ${desc}\n   Tools: ${loadedTools.join(', ')}`;
         })
         .join('\n\n');
 
