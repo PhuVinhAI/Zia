@@ -19,6 +19,7 @@ import {
   removeReminderTool,
   votePollTool,
   // Group Admin Tools
+  getGroupInfoTool,
   kickMemberTool,
   blockMemberTool,
   addMemberTool,
@@ -62,6 +63,8 @@ export class SocialModule extends BaseModule {
     createReminderTool,
     getReminderTool,
     removeReminderTool,
+    // Group Admin - Info
+    getGroupInfoTool,
     // Group Admin - Member Management
     kickMemberTool,
     blockMemberTool,

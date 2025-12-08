@@ -7,6 +7,74 @@ import { debugLog, logZaloAPI } from '../../../core/logger/logger.js';
 import type { ToolContext, ToolDefinition, ToolResult } from '../../../shared/types/tools.types.js';
 
 // ═══════════════════════════════════════════════════
+// GROUP INFO
+// ═══════════════════════════════════════════════════
+
+/**
+ * Lấy thông tin chi tiết nhóm
+ */
+export const getGroupInfoTool: ToolDefinition = {
+  name: 'getGroupInfo',
+  description:
+    'Lấy toàn bộ thông tin chi tiết về nhóm: tên, người tạo (creatorId), danh sách admin (adminIds), cài đặt nhóm (setting), số thành viên. Dùng trước khi thực hiện các tác vụ quản trị.',
+  parameters: [],
+  execute: async (_params: Record<string, any>, context: ToolContext): Promise<ToolResult> => {
+    try {
+      debugLog('TOOL:getGroupInfo', `Getting group info for ${context.threadId}`);
+
+      const groupInfo = await context.api.getGroupInfo(context.threadId);
+      logZaloAPI('tool:getGroupInfo', { threadId: context.threadId }, groupInfo);
+
+      const info = groupInfo?.gridInfoMap?.[context.threadId];
+
+      if (!info) {
+        return {
+          success: false,
+          error: 'Không tìm thấy thông tin nhóm. Có thể đây không phải là nhóm chat.',
+        };
+      }
+
+      // Format admin list
+      const adminIds = info.adminIds || [];
+      const creatorId = info.creatorId;
+      const memberCount = info.memberIds?.length || info.currentMems?.length || 0;
+
+      // Format settings
+      const settings = info.setting || {};
+      const settingsSummary = [
+        `- Chặn đổi tên/ảnh: ${settings.blockName ? 'Bật' : 'Tắt'}`,
+        `- Đánh dấu tin admin: ${settings.signAdminMsg ? 'Bật' : 'Tắt'}`,
+        `- Phê duyệt thành viên: ${settings.joinAppr ? 'Bật' : 'Tắt'}`,
+        `- Khóa chat (chỉ admin): ${settings.lockSendMsg ? 'Bật' : 'Tắt'}`,
+        `- Chặn tạo ghi chú: ${settings.lockCreatePost ? 'Bật' : 'Tắt'}`,
+        `- Chặn tạo bình chọn: ${settings.lockCreatePoll ? 'Bật' : 'Tắt'}`,
+      ].join('\n');
+
+      return {
+        success: true,
+        data: {
+          groupId: context.threadId,
+          name: info.name || 'Không tên',
+          creatorId,
+          adminIds,
+          memberCount,
+          settings,
+          settingsSummary,
+          description: info.desc || '',
+          avatar: info.avt || info.avatar,
+          link: info.link,
+          raw: info,
+          hint: 'Dùng creatorId và adminIds để biết ai có quyền quản trị. Dùng getGroupMembers để lấy danh sách thành viên chi tiết.',
+        },
+      };
+    } catch (error: any) {
+      debugLog('TOOL:getGroupInfo', `Error: ${error.message}`);
+      return { success: false, error: `Lỗi lấy thông tin nhóm: ${error.message}` };
+    }
+  },
+};
+
+// ═══════════════════════════════════════════════════
 // MEMBER MANAGEMENT
 // ═══════════════════════════════════════════════════
 

@@ -568,6 +568,9 @@ export const UrlShortenerSchema = z.object({
 
 // ============ GROUP ADMIN TOOLS ============
 
+// Get Group Info params (không có tham số)
+export const GetGroupInfoSchema = z.object({});
+
 // Kick Member params
 export const KickMemberSchema = z.object({
   userId: z.string().min(1, 'Thiếu userId của thành viên cần kick'),
@@ -709,6 +712,9 @@ export const TOOL_EXAMPLES: Record<string, string> = {
   qrCode: `[tool:qrCode]{"data":"https://example.com","size":300}[/tool]`,
   urlShortener: `[tool:urlShortener]{"url":"https://example.com/very-long-url"}[/tool]`,
 
+  // Group Admin tools - Info
+  getGroupInfo: `[tool:getGroupInfo]{}[/tool]`,
+
   // Group Admin tools - Member Management
   kickMember: `[tool:kickMember]{"userId":"123456789"}[/tool]`,
   blockMember: `[tool:blockMember]{"userId":"123456789"}[/tool]`,
@@ -833,6 +839,7 @@ export type QRCodeParams = z.infer<typeof QRCodeSchema>;
 export type UrlShortenerParams = z.infer<typeof UrlShortenerSchema>;
 
 // Group Admin types
+export type GetGroupInfoParams = z.infer<typeof GetGroupInfoSchema>;
 export type KickMemberParams = z.infer<typeof KickMemberSchema>;
 export type BlockMemberParams = z.infer<typeof BlockMemberSchema>;
 export type AddMemberParams = z.infer<typeof AddMemberSchema>;

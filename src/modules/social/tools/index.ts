@@ -12,6 +12,8 @@ export { createReminderTool, getReminderTool, removeReminderTool } from './remin
 
 // Group Admin Tools
 export {
+  // Group Info
+  getGroupInfoTool,
   // Member Management
   kickMemberTool,
   blockMemberTool,
