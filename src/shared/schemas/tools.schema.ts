@@ -255,6 +255,49 @@ export const YouTubeChannelSchema = z.object({
   channelId: z.string().min(1, 'Thiếu ID channel YouTube'),
 });
 
+// ============ WEATHER API ============
+
+// Weather params (Open-Meteo API)
+export const WeatherSchema = z.object({
+  location: z.string().min(1, 'Thiếu tên địa điểm'),
+  days: z.coerce.number().min(1).max(16).default(7),
+  hourlyHours: z.coerce.number().min(0).max(168).default(24),
+});
+
+// ============ STEAM API ============
+
+// Steam Search params
+export const SteamSearchSchema = z.object({
+  query: z.string().min(1, 'Thiếu tên game cần tìm'),
+  limit: z.coerce.number().min(1).max(20).default(10),
+});
+
+// Steam Game Details params
+export const SteamGameSchema = z.object({
+  appId: z.coerce.number().min(1, 'Thiếu Steam App ID'),
+});
+
+// Steam Top Games params
+export const SteamTopGamesSchema = z.object({
+  mode: z.enum(['top100in2weeks', 'top100forever', 'top100owned']).default('top100in2weeks'),
+  limit: z.coerce.number().min(1).max(50).default(20),
+});
+
+// ============ CURRENCY API ============
+
+// Currency Convert params
+export const CurrencyConvertSchema = z.object({
+  amount: z.coerce.number().min(0.01, 'Số tiền phải lớn hơn 0'),
+  from: z.string().min(3, 'Mã tiền tệ nguồn không hợp lệ').max(3),
+  to: z.string().min(3, 'Mã tiền tệ đích không hợp lệ').max(3),
+});
+
+// Currency Rates params
+export const CurrencyRatesSchema = z.object({
+  base: z.string().min(3).max(3).default('VND'),
+  currencies: z.string().optional(),
+});
+
 // ============ GOOGLE CUSTOM SEARCH API ============
 
 // Google Search params (chấp nhận cả q và query)
@@ -512,6 +555,18 @@ export const RemoveReminderSchema = z.object({
  * Ví dụ cấu trúc đúng cho từng tool - giúp AI tránh ảo giác
  */
 export const TOOL_EXAMPLES: Record<string, string> = {
+  // Weather
+  weather: `[tool:weather]{"location":"Hà Nội","days":7}[/tool]`,
+
+  // Steam
+  steamSearch: `[tool:steamSearch]{"query":"Counter-Strike","limit":5}[/tool]`,
+  steamGame: `[tool:steamGame]{"appId":730}[/tool]`,
+  steamTop: `[tool:steamTop]{"mode":"top100in2weeks","limit":10}[/tool]`,
+
+  // Currency
+  currencyConvert: `[tool:currencyConvert]{"amount":100,"from":"USD","to":"VND"}[/tool]`,
+  currencyRates: `[tool:currencyRates]{"base":"VND","currencies":"USD,EUR,JPY"}[/tool]`,
+
   // Entertainment
   jikanSearch: `[tool:jikanSearch]{"q":"naruto","mediaType":"anime","limit":5}[/tool]`,
   jikanDetails: `[tool:jikanDetails]{"id":20,"mediaType":"anime"}[/tool]`,
@@ -643,6 +698,12 @@ export type YouTubeVideoParams = z.infer<typeof YouTubeVideoSchema>;
 export type YouTubeChannelParams = z.infer<typeof YouTubeChannelSchema>;
 export type CreateAppParams = z.infer<typeof CreateAppSchema>;
 export type GoogleSearchParams = z.infer<typeof GoogleSearchSchema>;
+export type WeatherParams = z.infer<typeof WeatherSchema>;
+export type SteamSearchParams = z.infer<typeof SteamSearchSchema>;
+export type SteamGameParams = z.infer<typeof SteamGameSchema>;
+export type SteamTopGamesParams = z.infer<typeof SteamTopGamesSchema>;
+export type CurrencyConvertParams = z.infer<typeof CurrencyConvertSchema>;
+export type CurrencyRatesParams = z.infer<typeof CurrencyRatesSchema>;
 export type SaveMemoryParams = z.infer<typeof SaveMemorySchema>;
 export type RecallMemoryParams = z.infer<typeof RecallMemorySchema>;
 export type ScheduleTaskParams = z.infer<typeof ScheduleTaskSchema>;

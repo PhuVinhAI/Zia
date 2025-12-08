@@ -43,7 +43,7 @@ export const GEMINI_CONFIG = {
   thinkingConfig: {
     thinkingBudget: 8192,
   },
-  tools: [{ googleSearch: {} }, { urlContext: {} }],
+  tools: [{ urlContext: {} }],
   safetySettings: SAFETY_SETTINGS,
 };
 
