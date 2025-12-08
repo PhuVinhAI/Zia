@@ -37,5 +37,6 @@ export {
   GROQ_MODEL,
   type GroqMessage,
   generateGroqResponse,
+  getGroqModelInfo,
   streamGroqResponse,
 } from './providers/groq/groqClient.js';
