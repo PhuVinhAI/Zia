@@ -175,15 +175,21 @@ export async function isBotMessage(msgId: string): Promise<boolean> {
  * Lấy tin nhắn của bot theo msgId (để biết nội dung tin nhắn bị react)
  */
 export async function getBotMessageByMsgId(msgId: string): Promise<SentMessage | null> {
+  const msgIdStr = String(msgId);
+  
   // Check cache trước
   for (const messages of messageCache.values()) {
-    const found = messages.find((m) => m.msgId === msgId);
-    if (found) return found;
+    const found = messages.find((m) => String(m.msgId) === msgIdStr);
+    if (found) {
+      debugLog('MSG_STORE', `getBotMessageByMsgId: found in cache msgId=${msgIdStr}`);
+      return found;
+    }
   }
 
   // Fallback to DB
-  const dbMsg = await sentMessagesRepository.getByMsgId(msgId);
+  const dbMsg = await sentMessagesRepository.getByMsgId(msgIdStr);
   if (dbMsg) {
+    debugLog('MSG_STORE', `getBotMessageByMsgId: found in DB msgId=${msgIdStr}`);
     return {
       msgId: dbMsg.msgId,
       cliMsgId: dbMsg.cliMsgId || '',
@@ -193,5 +199,6 @@ export async function getBotMessageByMsgId(msgId: string): Promise<SentMessage |
     };
   }
 
+  debugLog('MSG_STORE', `getBotMessageByMsgId: NOT found msgId=${msgIdStr}`);
   return null;
 }
