@@ -47,11 +47,6 @@ export function buildSlide(
   const masterName = getMasterForSlideType(slideData.type);
   const slide = pptx.addSlide({ masterName });
 
-  // Apply custom background if specified
-  if (slideData.background) {
-    applyBackground(slide, slideData.background);
-  }
-
   // Build slide based on type
   switch (slideData.type) {
     case 'title':
@@ -59,10 +54,6 @@ export function buildSlide(
       break;
     case 'section':
       buildSectionSlide(slide, slideData, theme);
-      break;
-    case 'twoColumn':
-    case 'comparison':
-      buildTwoColumnSlide(slide, slideData, theme);
       break;
     case 'imageOnly':
       buildImageSlide(slide, slideData, theme);
@@ -85,10 +76,6 @@ export function buildSlide(
     addSlideNumber(slide, index + 1, theme);
   }
 
-  // Add speaker notes
-  if (slideData.notes) {
-    slide.addNotes(slideData.notes);
-  }
 }
 
 // ═══════════════════════════════════════════════════
@@ -139,7 +126,7 @@ function buildTitleSlide(slide: any, data: ParsedSlide, theme: PresentationTheme
       w: '90%',
       h: 0.5,
       fontSize: FONT_SIZES.body,
-      color: theme.colors.bodyText + 'AA',
+      color: lightenColor(theme.colors.bodyText, 30),
       fontFace: theme.fonts.body,
       align: 'center',
     });
@@ -169,7 +156,7 @@ function buildSectionSlide(slide: any, data: ParsedSlide, theme: PresentationThe
     });
   }
 
-  // Section subtitle
+  // Section subtitle (white text, slightly lighter)
   if (data.subtitle) {
     slide.addText(data.subtitle, {
       x: 0.5,
@@ -177,7 +164,7 @@ function buildSectionSlide(slide: any, data: ParsedSlide, theme: PresentationThe
       w: '90%',
       h: 0.6,
       fontSize: FONT_SIZES.subtitle,
-      color: 'FFFFFFCC',
+      color: 'E0E0E0',
       fontFace: theme.fonts.subtitle,
       align: 'left',
     });
@@ -227,10 +214,11 @@ function buildContentSlide(slide: any, data: ParsedSlide, theme: PresentationThe
     const bulletItems = data.bullets.map((bullet) => ({
       text: formatBulletText(bullet.text, bullet.checked),
       options: {
-        bullet: bullet.checked !== undefined ? false : { type: 'bullet' },
+        bullet: bullet.checked !== undefined ? false : true,
         indentLevel: bullet.level,
         bold: bullet.styles.includes('bold'),
         italic: bullet.styles.includes('italic'),
+        breakLine: true,
       },
     }));
 
@@ -252,7 +240,10 @@ function buildContentSlide(slide: any, data: ParsedSlide, theme: PresentationThe
   if (data.numberedItems.length > 0) {
     const numberedItems = data.numberedItems.map((text, i) => ({
       text: `${i + 1}. ${text}`,
-      options: { indentLevel: 0 },
+      options: {
+        indentLevel: 0,
+        breakLine: true,
+      },
     }));
 
     slide.addText(numberedItems, {
@@ -287,77 +278,6 @@ function buildContentSlide(slide: any, data: ParsedSlide, theme: PresentationThe
     for (const image of data.images) {
       buildImage(slide, image, theme);
     }
-  }
-}
-
-// ═══════════════════════════════════════════════════
-// TWO COLUMN SLIDE
-// ═══════════════════════════════════════════════════
-
-function buildTwoColumnSlide(slide: any, data: ParsedSlide, theme: PresentationTheme): void {
-  // Title
-  if (data.title) {
-    slide.addText(data.title, {
-      x: 0.5,
-      y: 0.5,
-      w: '90%',
-      h: 1.0,
-      fontSize: FONT_SIZES.title,
-      bold: true,
-      color: theme.colors.titleText,
-      fontFace: theme.fonts.title,
-    });
-  }
-
-  // Split bullets into two columns
-  const midPoint = Math.ceil(data.bullets.length / 2);
-  const leftBullets = data.bullets.slice(0, midPoint);
-  const rightBullets = data.bullets.slice(midPoint);
-
-  // Left column
-  if (leftBullets.length > 0) {
-    const leftItems = leftBullets.map((bullet) => ({
-      text: formatBulletText(bullet.text, bullet.checked),
-      options: {
-        bullet: { type: 'bullet' },
-        indentLevel: bullet.level,
-      },
-    }));
-
-    slide.addText(leftItems, {
-      x: 0.5,
-      y: 1.8,
-      w: '44%',
-      h: 3.5,
-      fontSize: FONT_SIZES.bullet,
-      color: theme.colors.bodyText,
-      fontFace: theme.fonts.body,
-      valign: 'top',
-      paraSpaceAfter: theme.spacing.bulletSpacing,
-    });
-  }
-
-  // Right column
-  if (rightBullets.length > 0) {
-    const rightItems = rightBullets.map((bullet) => ({
-      text: formatBulletText(bullet.text, bullet.checked),
-      options: {
-        bullet: { type: 'bullet' },
-        indentLevel: bullet.level,
-      },
-    }));
-
-    slide.addText(rightItems, {
-      x: 5.2,
-      y: 1.8,
-      w: '44%',
-      h: 3.5,
-      fontSize: FONT_SIZES.bullet,
-      color: theme.colors.bodyText,
-      fontFace: theme.fonts.body,
-      valign: 'top',
-      paraSpaceAfter: theme.spacing.bulletSpacing,
-    });
   }
 }
 
@@ -414,7 +334,7 @@ function buildQuoteSlide(slide: any, data: ParsedSlide, theme: PresentationTheme
         w: '80%',
         h: 0.5,
         fontSize: FONT_SIZES.body,
-        color: theme.colors.bodyText + 'AA',
+        color: lightenColor(theme.colors.bodyText, 30),
         fontFace: theme.fonts.body,
         align: 'right',
       });
@@ -429,7 +349,7 @@ function buildQuoteSlide(slide: any, data: ParsedSlide, theme: PresentationTheme
         h: 0.4,
         fontSize: FONT_SIZES.caption,
         italic: true,
-        color: theme.colors.bodyText + '88',
+        color: lightenColor(theme.colors.bodyText, 50),
         fontFace: theme.fonts.body,
         align: 'right',
       });
@@ -466,7 +386,7 @@ function buildThankYouSlide(slide: any, data: ParsedSlide, theme: PresentationTh
       w: '90%',
       h: 1.0,
       fontSize: FONT_SIZES.body,
-      color: 'FFFFFF' + 'CC',
+      color: 'E0E0E0',
       fontFace: theme.fonts.body,
       align: 'center',
     });
@@ -476,14 +396,6 @@ function buildThankYouSlide(slide: any, data: ParsedSlide, theme: PresentationTh
 // ═══════════════════════════════════════════════════
 // HELPERS
 // ═══════════════════════════════════════════════════
-
-function applyBackground(slide: any, background: any): void {
-  if (background.type === 'solid' && background.color) {
-    slide.background = { color: background.color };
-  } else if (background.type === 'image' && background.imageData) {
-    slide.background = { data: background.imageData };
-  }
-}
 
 function formatBulletText(text: string, checked?: boolean): string {
   if (checked === undefined) return text;

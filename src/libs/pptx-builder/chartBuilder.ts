@@ -4,6 +4,7 @@
 
 import { CHART_TYPES, COLORS } from './constants.js';
 import type { ChartConfig, ChartData, PresentationTheme } from './types.js';
+import { lightenColor } from './utils.js';
 
 // ═══════════════════════════════════════════════════
 // MAIN CHART BUILDER
@@ -343,7 +344,7 @@ export function buildStatCard(
     w: typeof width === 'number' ? width - 0.3 : width,
     h: 0.3,
     fontSize: 10,
-    color: theme.colors.bodyText + 'AA',
+    color: lightenColor(theme.colors.bodyText, 30),
     fontFace: theme.fonts.body,
   });
 

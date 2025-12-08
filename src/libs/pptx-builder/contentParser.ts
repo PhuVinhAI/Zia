@@ -4,16 +4,12 @@
 
 import { SLIDE_SEPARATORS } from './constants.js';
 import type {
-  BackgroundConfig,
   ParsedBullet,
-  ParsedCodeBlock,
   ParsedImage,
   ParsedSlide,
   ParsedTable,
   PresentationOptions,
-  QuoteConfig,
   SlideType,
-  TransitionType,
 } from './types.js';
 
 // ═══════════════════════════════════════════════════
@@ -106,39 +102,7 @@ export function parseSlide(text: string, index: number): ParsedSlide {
       continue;
     }
 
-    // Background directive
-    const bgMatch = trimmed.match(/^\[BACKGROUND:([^\]]+)\]$/i);
-    if (bgMatch) {
-      slide.background = parseBackground(bgMatch[1]);
-      continue;
-    }
 
-    // Transition directive
-    const transMatch = trimmed.match(/^\[TRANSITION:(\w+)\]$/i);
-    if (transMatch) {
-      slide.transition = transMatch[1].toLowerCase() as TransitionType;
-      continue;
-    }
-
-    // Speaker notes
-    const notesMatch = trimmed.match(/^\[NOTES\](.*)\[\/NOTES\]$/is);
-    if (notesMatch) {
-      slide.notes = notesMatch[1].trim();
-      continue;
-    }
-    if (trimmed.startsWith('[NOTES]')) {
-      let notesContent = trimmed.slice(7);
-      for (let j = i + 1; j < lines.length; j++) {
-        if (lines[j].includes('[/NOTES]')) {
-          notesContent += '\n' + lines[j].replace('[/NOTES]', '');
-          i = j;
-          break;
-        }
-        notesContent += '\n' + lines[j];
-      }
-      slide.notes = notesContent.trim();
-      continue;
-    }
 
     // Quote
     const quoteMatch = trimmed.match(/^\[QUOTE:([^:]+)(?::([^\]]+))?\]$/i);
@@ -256,30 +220,6 @@ export function parseSlide(text: string, index: number): ParsedSlide {
 // ═══════════════════════════════════════════════════
 // HELPER PARSERS
 // ═══════════════════════════════════════════════════
-
-function parseBackground(value: string): BackgroundConfig {
-  const parts = value.split(':').map((p) => p.trim());
-
-  if (parts[0] === 'gradient') {
-    return {
-      type: 'gradient',
-      gradientColors: parts.slice(1),
-      gradientDirection: 'vertical',
-    };
-  }
-
-  if (parts[0] === 'image') {
-    return {
-      type: 'image',
-      imageData: parts[1],
-    };
-  }
-
-  return {
-    type: 'solid',
-    color: parts[0].replace('#', ''),
-  };
-}
 
 function parseTable(lines: string[]): ParsedTable {
   const rows = lines

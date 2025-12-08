@@ -32,9 +32,6 @@ export function createMasterSlides(
   // Content slide master
   createContentMaster(pptx, theme, config);
 
-  // Two column master
-  createTwoColumnMaster(pptx, theme);
-
   // Image slide master
   createImageMaster(pptx, theme);
 
@@ -159,14 +156,14 @@ function createSectionMaster(pptx: any, theme: PresentationTheme): void {
     },
   });
 
-  // Accent stripe
+  // Small accent line at bottom
   objects.push({
     rect: {
       x: 0,
-      y: '45%',
-      w: '30%',
-      h: '10%',
-      fill: { color: theme.colors.accent },
+      y: '92%',
+      w: '100%',
+      h: '8%',
+      fill: { color: theme.colors.secondary },
     },
   });
 
@@ -210,39 +207,6 @@ function createContentMaster(
 
   pptx.defineSlideMaster({
     title: 'MASTER_CONTENT',
-    background: { color: theme.colors.background },
-    objects,
-  });
-}
-
-function createTwoColumnMaster(pptx: any, theme: PresentationTheme): void {
-  const objects: any[] = [];
-
-  // No header line - let title have full space
-  // Column divider only
-  objects.push({
-    rect: {
-      x: '49.5%',
-      y: 1.8,
-      w: 0.02,
-      h: 3.5,
-      fill: { color: safeColor(theme.colors.secondary) },
-    },
-  });
-
-  // Footer bar
-  objects.push({
-    rect: {
-      x: 0,
-      y: '95%',
-      w: '100%',
-      h: '5%',
-      fill: { color: theme.colors.footerBackground },
-    },
-  });
-
-  pptx.defineSlideMaster({
-    title: 'MASTER_TWO_COLUMN',
     background: { color: theme.colors.background },
     objects,
   });
@@ -343,35 +307,25 @@ function createThankYouMaster(
 ): void {
   const objects: any[] = [];
 
-  // Full background gradient effect (simulated with rectangles)
+  // Full background with primary color
   objects.push({
     rect: {
       x: 0,
       y: 0,
       w: '100%',
-      h: '50%',
+      h: '100%',
       fill: { color: theme.colors.primary },
     },
   });
 
+  // Bottom accent bar
   objects.push({
     rect: {
       x: 0,
-      y: '50%',
+      y: '92%',
       w: '100%',
-      h: '50%',
+      h: '8%',
       fill: { color: theme.colors.secondary },
-    },
-  });
-
-  // Decorative circle
-  objects.push({
-    rect: {
-      x: '40%',
-      y: '35%',
-      w: '20%',
-      h: '30%',
-      fill: { color: safeColor(theme.colors.accent) },
     },
   });
 
@@ -403,13 +357,10 @@ export function getMasterForSlideType(type: string): string {
     title: 'MASTER_TITLE',
     section: 'MASTER_SECTION',
     content: 'MASTER_CONTENT',
-    twoColumn: 'MASTER_TWO_COLUMN',
-    comparison: 'MASTER_TWO_COLUMN',
     imageOnly: 'MASTER_IMAGE',
     quote: 'MASTER_QUOTE',
     blank: 'MASTER_BLANK',
     thankyou: 'MASTER_THANKYOU',
-    agenda: 'MASTER_CONTENT',
   };
 
   return mapping[type] || 'MASTER_DEFAULT';

@@ -55,7 +55,7 @@ export function buildImage(
       h: 0.4,
       fontSize: FONT_SIZES.caption,
       italic: true,
-      color: theme.colors.bodyText + 'AA',
+      color: lightenColor(theme.colors.bodyText, 30),
       fontFace: theme.fonts.body,
       align: 'center',
     });
@@ -123,7 +123,7 @@ export function buildPositionedImage(
       h: 0.35,
       fontSize: FONT_SIZES.caption,
       italic: true,
-      color: theme.colors.bodyText + 'AA',
+      color: lightenColor(theme.colors.bodyText, 30),
       fontFace: theme.fonts.body,
       align: 'center',
     });
@@ -341,7 +341,7 @@ export function buildPlaceholderImage(
     w: width,
     h: typeof height === 'number' ? height * 0.3 : height,
     fontSize: FONT_SIZES.caption,
-    color: theme.colors.bodyText + '88',
+    color: lightenColor(theme.colors.bodyText, 50),
     fontFace: theme.fonts.body,
     align: 'center',
     valign: 'top',

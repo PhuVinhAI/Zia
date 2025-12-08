@@ -26,21 +26,9 @@ export interface PresentationOptions {
   // Slide numbering
   showSlideNumbers?: boolean;
 
-  // Transitions
-  defaultTransition?: TransitionType;
 }
 
 export type LayoutType = 'LAYOUT_16x9' | 'LAYOUT_16x10' | 'LAYOUT_4x3' | 'LAYOUT_WIDE';
-
-export type TransitionType =
-  | 'none'
-  | 'fade'
-  | 'push'
-  | 'wipe'
-  | 'split'
-  | 'reveal'
-  | 'cover'
-  | 'dissolve';
 
 // ═══════════════════════════════════════════════════
 // THEME & STYLING
@@ -133,12 +121,9 @@ export type SlideType =
   | 'title'
   | 'content'
   | 'section'
-  | 'twoColumn'
-  | 'comparison'
   | 'imageOnly'
   | 'blank'
   | 'quote'
-  | 'agenda'
   | 'thankyou';
 
 export interface SlideConfig {
@@ -146,9 +131,6 @@ export interface SlideConfig {
   title?: string;
   subtitle?: string;
   content?: SlideContent;
-  background?: BackgroundConfig;
-  transition?: TransitionType;
-  notes?: string;
 }
 
 export interface SlideContent {
@@ -162,8 +144,6 @@ export interface SlideContent {
   code?: CodeConfig;
   quote?: QuoteConfig;
   columns?: ColumnContent[];
-  shapes?: ShapeConfig[];
-  icons?: IconConfig[];
 }
 
 // ═══════════════════════════════════════════════════
@@ -250,36 +230,7 @@ export interface ColumnContent {
   text?: string;
 }
 
-export interface ShapeConfig {
-  type: ShapeType;
-  x: number | string;
-  y: number | string;
-  width: number | string;
-  height: number | string;
-  fill?: string;
-  line?: { color: string; width: number };
-  text?: string;
-  fontSize?: number;
-  fontColor?: string;
-}
 
-export type ShapeType =
-  | 'rect'
-  | 'roundRect'
-  | 'ellipse'
-  | 'triangle'
-  | 'diamond'
-  | 'arrow'
-  | 'star'
-  | 'callout';
-
-export interface IconConfig {
-  name: string;
-  x: number | string;
-  y: number | string;
-  size?: number;
-  color?: string;
-}
 
 // ═══════════════════════════════════════════════════
 // PARSED CONTENT
@@ -295,9 +246,6 @@ export interface ParsedSlide {
   images: ParsedImage[];
   table?: ParsedTable;
   quote?: QuoteConfig;
-  notes?: string;
-  background?: BackgroundConfig;
-  transition?: TransitionType;
 }
 
 export interface ParsedBullet {

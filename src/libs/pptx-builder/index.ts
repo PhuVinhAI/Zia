@@ -30,20 +30,14 @@ export {
 // CONSTANTS
 // ═══════════════════════════════════════════════════
 export {
-  BADGE_STYLES,
-  BOX_STYLES,
   BULLET_STYLES,
-  CALLOUT_STYLES,
   CHART_TYPES,
   COLORS,
   FONT_SIZES,
-  ICONS,
   LAYOUT_DIMENSIONS,
   LAYOUTS,
   POSITIONS,
-  SHAPE_TYPES,
   SLIDE_SEPARATORS,
-  TRANSITIONS,
 } from './constants.js';
 
 // ═══════════════════════════════════════════════════
@@ -83,21 +77,7 @@ export {
   buildSimplePresentation,
   PresentationBuilder,
 } from './presentationBuilder.js';
-// ═══════════════════════════════════════════════════
-// SHAPE BUILDER
-// ═══════════════════════════════════════════════════
-export {
-  buildArrow,
-  buildBadge,
-  buildBox,
-  buildCallout,
-  buildDecoratedDivider,
-  buildDivider,
-  buildIconGrid,
-  buildProcessFlow,
-  buildShape,
-  buildTimeline,
-} from './shapeBuilder.js';
+
 // ═══════════════════════════════════════════════════
 // SLIDE BUILDER
 // ═══════════════════════════════════════════════════

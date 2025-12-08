@@ -57,12 +57,6 @@ export const POSITIONS = {
     body: { x: 0.5, y: 2.0, w: '90%', h: 4.0 },
     code: { x: 0.5, y: 2.0, w: '90%', h: 3.0 },
   },
-  // Two column
-  twoColumn: {
-    title: { x: 0.5, y: 0.5, w: '90%', h: 1.0 },
-    leftColumn: { x: 0.5, y: 1.8, w: '44%', h: 4.0 },
-    rightColumn: { x: 5.2, y: 1.8, w: '44%', h: 4.0 },
-  },
   // Image slide
   imageSlide: {
     title: { x: 0.5, y: 0.5, w: '90%', h: 0.8 },
@@ -95,39 +89,6 @@ export const BULLET_STYLES = {
   check: { type: 'bullet', code: '✓' },
   star: { type: 'bullet', code: '★' },
   dash: { type: 'bullet', code: '—' },
-} as const;
-
-// ═══════════════════════════════════════════════════
-// TRANSITIONS
-// ═══════════════════════════════════════════════════
-
-export const TRANSITIONS = {
-  none: null,
-  fade: { type: 'fade' },
-  push: { type: 'push' },
-  wipe: { type: 'wipe' },
-  split: { type: 'split' },
-  reveal: { type: 'reveal' },
-  cover: { type: 'cover' },
-  dissolve: { type: 'dissolve' },
-} as const;
-
-// ═══════════════════════════════════════════════════
-// SHAPE TYPES
-// ═══════════════════════════════════════════════════
-
-export const SHAPE_TYPES = {
-  rect: 'rect',
-  roundRect: 'roundRect',
-  ellipse: 'ellipse',
-  triangle: 'triangle',
-  diamond: 'diamond',
-  arrow: 'rightArrow',
-  star: 'star5',
-  callout: 'wedgeRectCallout',
-  cloud: 'cloud',
-  heart: 'heart',
-  lightning: 'lightningBolt',
 } as const;
 
 // ═══════════════════════════════════════════════════
@@ -181,60 +142,6 @@ export const COLORS = {
 } as const;
 
 // ═══════════════════════════════════════════════════
-// ICONS (Unicode)
-// ═══════════════════════════════════════════════════
-
-export const ICONS = {
-  check: '✓',
-  cross: '✗',
-  star: '★',
-  starEmpty: '☆',
-  heart: '♥',
-  diamond: '◆',
-  circle: '●',
-  circleEmpty: '○',
-  square: '■',
-  squareEmpty: '□',
-  triangle: '▲',
-  triangleDown: '▼',
-  arrow: '→',
-  arrowLeft: '←',
-  arrowUp: '↑',
-  arrowDown: '↓',
-  bullet: '•',
-  dash: '—',
-  plus: '+',
-  minus: '−',
-  warning: '⚠',
-  info: 'ℹ',
-  question: '?',
-  exclamation: '!',
-  lightbulb: '💡',
-  fire: '🔥',
-  rocket: '🚀',
-  thumbsUp: '👍',
-  thumbsDown: '👎',
-  clock: '🕐',
-  calendar: '📅',
-  folder: '📁',
-  file: '📄',
-  email: '✉',
-  phone: '📞',
-  location: '📍',
-  link: '🔗',
-  lock: '🔒',
-  unlock: '🔓',
-  settings: '⚙',
-  search: '🔍',
-  user: '👤',
-  users: '👥',
-  chart: '📊',
-  money: '💰',
-  trophy: '🏆',
-  target: '🎯',
-} as const;
-
-// ═══════════════════════════════════════════════════
 // SLIDE SEPARATORS
 // ═══════════════════════════════════════════════════
 
@@ -246,113 +153,4 @@ export const SLIDE_SEPARATORS = [
   /\[NEW_SLIDE\]/i,
 ] as const;
 
-// ═══════════════════════════════════════════════════
-// CALLOUT TYPES
-// ═══════════════════════════════════════════════════
 
-export const CALLOUT_STYLES = {
-  info: {
-    icon: 'ℹ️',
-    backgroundColor: 'E3F2FD',
-    borderColor: '2196F3',
-    textColor: '0D47A1',
-  },
-  tip: {
-    icon: '💡',
-    backgroundColor: 'E8F5E9',
-    borderColor: '4CAF50',
-    textColor: '1B5E20',
-  },
-  note: {
-    icon: '📝',
-    backgroundColor: 'FFF8E1',
-    borderColor: 'FFC107',
-    textColor: 'F57F17',
-  },
-  warning: {
-    icon: '⚠️',
-    backgroundColor: 'FFF3E0',
-    borderColor: 'FF9800',
-    textColor: 'E65100',
-  },
-  important: {
-    icon: '❗',
-    backgroundColor: 'FCE4EC',
-    borderColor: 'E91E63',
-    textColor: '880E4F',
-  },
-  success: {
-    icon: '✅',
-    backgroundColor: 'E8F5E9',
-    borderColor: '4CAF50',
-    textColor: '1B5E20',
-  },
-  error: {
-    icon: '❌',
-    backgroundColor: 'FFEBEE',
-    borderColor: 'F44336',
-    textColor: 'B71C1C',
-  },
-} as const;
-
-// ═══════════════════════════════════════════════════
-// BOX STYLES
-// ═══════════════════════════════════════════════════
-
-export const BOX_STYLES = {
-  info: {
-    fill: 'E3F2FD',
-    border: '2196F3',
-    titleColor: '1565C0',
-    textColor: '0D47A1',
-  },
-  success: {
-    fill: 'E8F5E9',
-    border: '4CAF50',
-    titleColor: '2E7D32',
-    textColor: '1B5E20',
-  },
-  warning: {
-    fill: 'FFF3E0',
-    border: 'FF9800',
-    titleColor: 'EF6C00',
-    textColor: 'E65100',
-  },
-  error: {
-    fill: 'FFEBEE',
-    border: 'F44336',
-    titleColor: 'C62828',
-    textColor: 'B71C1C',
-  },
-  note: {
-    fill: 'FFF8E1',
-    border: 'FFC107',
-    titleColor: 'F9A825',
-    textColor: 'F57F17',
-  },
-  quote: {
-    fill: 'F3E5F5',
-    border: '9C27B0',
-    titleColor: '7B1FA2',
-    textColor: '4A148C',
-  },
-  code: {
-    fill: 'ECEFF1',
-    border: '607D8B',
-    titleColor: '455A64',
-    textColor: '263238',
-  },
-} as const;
-
-// ═══════════════════════════════════════════════════
-// BADGE STYLES
-// ═══════════════════════════════════════════════════
-
-export const BADGE_STYLES = {
-  default: { fill: '6C757D', text: 'FFFFFF' },
-  primary: { fill: '0066CC', text: 'FFFFFF' },
-  success: { fill: '28A745', text: 'FFFFFF' },
-  warning: { fill: 'FFC107', text: '000000' },
-  danger: { fill: 'DC3545', text: 'FFFFFF' },
-  info: { fill: '17A2B8', text: 'FFFFFF' },
-} as const;
