@@ -642,6 +642,18 @@ export const JoinGroupLinkSchema = z.object({
   ),
 });
 
+// Leave Group params
+export const LeaveGroupSchema = z.object({
+  groupId: z.string().optional().describe('ID nhóm cần rời (mặc định: threadId hiện tại)'),
+  silent: z.boolean().default(false).describe('Rời âm thầm không thông báo'),
+});
+
+// Disperse Group params (giải tán nhóm)
+export const DisperseGroupSchema = z.object({
+  groupId: z.string().optional().describe('ID nhóm cần giải tán (mặc định: threadId hiện tại)'),
+  confirm: z.boolean().describe('Phải truyền true để xác nhận giải tán'),
+});
+
 // ============ HELPER FUNCTION ============
 
 /**
@@ -755,6 +767,10 @@ export const TOOL_EXAMPLES: Record<string, string> = {
   // Group Creation & Join
   createGroup: `[tool:createGroup]{"members":["uid1","uid2"],"name":"Nhóm hỗ trợ"}[/tool]`,
   joinGroupLink: `[tool:joinGroupLink]{"link":"https://zalo.me/g/abcxyz"}[/tool]`,
+
+  // Group Leave & Disperse (Destructive)
+  leaveGroup: `[tool:leaveGroup]{"silent":false}[/tool]`,
+  disperseGroup: `[tool:disperseGroup]{"confirm":true}[/tool]`,
 };
 
 /**
@@ -871,3 +887,5 @@ export type ChangeGroupOwnerParams = z.infer<typeof ChangeGroupOwnerSchema>;
 export type GetGroupLinkInfoParams = z.infer<typeof GetGroupLinkInfoSchema>;
 export type CreateGroupParams = z.infer<typeof CreateGroupSchema>;
 export type JoinGroupLinkParams = z.infer<typeof JoinGroupLinkSchema>;
+export type LeaveGroupParams = z.infer<typeof LeaveGroupSchema>;
+export type DisperseGroupParams = z.infer<typeof DisperseGroupSchema>;

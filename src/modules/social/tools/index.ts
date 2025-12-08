@@ -35,4 +35,7 @@ export {
   // Group Creation & Join
   createGroupTool,
   joinGroupLinkTool,
+  // Group Leave & Disperse (Destructive)
+  leaveGroupTool,
+  disperseGroupTool,
 } from './groupAdmin.js';

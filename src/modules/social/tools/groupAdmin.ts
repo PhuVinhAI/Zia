@@ -1069,3 +1069,137 @@ export const joinGroupLinkTool: ToolDefinition = {
     }
   },
 };
+
+
+// ═══════════════════════════════════════════════════
+// GROUP LEAVE & DISPERSE (DESTRUCTIVE ACTIONS)
+// ═══════════════════════════════════════════════════
+
+/**
+ * Rời khỏi nhóm
+ */
+export const leaveGroupTool: ToolDefinition = {
+  name: 'leaveGroup',
+  description: `⚠️ Bot tự rời khỏi nhóm. Sau khi rời, Bot sẽ không còn nhận tin nhắn từ nhóm đó.
+Có thể rời "âm thầm" (không hiện thông báo) hoặc bình thường.
+Chỉ dùng khi Admin/Owner yêu cầu Bot rời đi.`,
+  parameters: [
+    {
+      name: 'groupId',
+      type: 'string',
+      description: 'ID của nhóm cần rời. Nếu không truyền, sẽ dùng threadId hiện tại.',
+      required: false,
+    },
+    {
+      name: 'silent',
+      type: 'boolean',
+      description: 'true = Rời âm thầm (không hiện thông báo), false = Hiện thông báo rời nhóm. Mặc định: false',
+      required: false,
+    },
+  ],
+  execute: async (params: Record<string, any>, context: ToolContext): Promise<ToolResult> => {
+    try {
+      const groupId = params.groupId || context.threadId;
+      const silent = params.silent === true;
+
+      // Kiểm tra ngữ cảnh nhóm
+      if (!isGroupContext(groupId)) {
+        return {
+          success: false,
+          error: 'Chỉ có thể rời khỏi nhóm chat, không phải chat 1-1.',
+        };
+      }
+
+      debugLog('TOOL:leaveGroup', `Leaving group ${groupId}, silent: ${silent}`);
+
+      const result = await context.api.leaveGroup(groupId, silent);
+      logZaloAPI('tool:leaveGroup', { groupId, silent }, result);
+
+      return {
+        success: true,
+        data: {
+          groupId,
+          silent,
+          message: silent
+            ? 'Đã rời nhóm âm thầm. Tạm biệt!'
+            : 'Đã rời khỏi nhóm. Tạm biệt mọi người!',
+        },
+      };
+    } catch (error: any) {
+      debugLog('TOOL:leaveGroup', `Error: ${error.message}`);
+      return { success: false, error: `Lỗi rời nhóm: ${error.message}` };
+    }
+  },
+};
+
+/**
+ * Giải tán nhóm (xóa vĩnh viễn)
+ */
+export const disperseGroupTool: ToolDefinition = {
+  name: 'disperseGroup',
+  description: `💥 NGUY HIỂM: Giải tán (xóa vĩnh viễn) nhóm. Tất cả thành viên sẽ bị kick và nhóm biến mất hoàn toàn.
+⚠️ YÊU CẦU: Bot PHẢI là Trưởng nhóm (Owner/Key) mới có quyền giải tán.
+Nếu Bot chỉ là Phó nhóm (Admin), lệnh này sẽ thất bại.
+CHỈ DÙNG KHI OWNER YÊU CẦU VÀ XÁC NHẬN RÕ RÀNG.`,
+  parameters: [
+    {
+      name: 'groupId',
+      type: 'string',
+      description: 'ID của nhóm cần giải tán. Nếu không truyền, sẽ dùng threadId hiện tại.',
+      required: false,
+    },
+    {
+      name: 'confirm',
+      type: 'boolean',
+      description: 'Phải truyền confirm=true để xác nhận giải tán. Đây là biện pháp an toàn.',
+      required: true,
+    },
+  ],
+  execute: async (params: Record<string, any>, context: ToolContext): Promise<ToolResult> => {
+    try {
+      const groupId = params.groupId || context.threadId;
+      const confirm = params.confirm === true;
+
+      // Kiểm tra xác nhận
+      if (!confirm) {
+        return {
+          success: false,
+          error: 'Cần truyền confirm=true để xác nhận giải tán nhóm. Đây là hành động không thể hoàn tác!',
+        };
+      }
+
+      // Kiểm tra ngữ cảnh nhóm
+      if (!isGroupContext(groupId)) {
+        return {
+          success: false,
+          error: 'Chỉ có thể giải tán nhóm chat, không phải chat 1-1.',
+        };
+      }
+
+      debugLog('TOOL:disperseGroup', `Dispersing group ${groupId}`);
+
+      const result = await context.api.disperseGroup(groupId);
+      logZaloAPI('tool:disperseGroup', { groupId }, result);
+
+      return {
+        success: true,
+        data: {
+          groupId,
+          message: '💥 Đã giải tán nhóm thành công! Nhóm đã bị xóa vĩnh viễn.',
+        },
+      };
+    } catch (error: any) {
+      debugLog('TOOL:disperseGroup', `Error: ${error.message}`);
+
+      // Xử lý lỗi quyền
+      if (error.message?.includes('permission') || error.message?.includes('quyền')) {
+        return {
+          success: false,
+          error: 'Bot không phải Trưởng nhóm nên không có quyền giải tán. Chỉ Owner mới có thể xóa nhóm.',
+        };
+      }
+
+      return { success: false, error: `Lỗi giải tán nhóm: ${error.message}` };
+    }
+  },
+};
