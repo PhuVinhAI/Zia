@@ -101,20 +101,27 @@ export async function toGeminiContent(msg: any): Promise<Content> {
   if (isMedia && mediaUrl) {
     try {
       // Thêm mô tả text
+      // Lấy metadata chung cho forward
+      const msgId = msg.data?.msgId || '';
+      const ts = msg.data?.ts || '';
+      const metaStr = `(msgId=${msgId}, msgType=${msgType}, ts=${ts})`;
+
       let description = '';
-      if (msgType.includes('sticker')) description = '[Sticker]';
-      else if (msgType.includes('photo') || msgType === 'webchat') description = '[Hình ảnh]';
-      else if (msgType.includes('video')) {
+      if (msgType.includes('sticker')) {
+        description = `[Sticker] ${metaStr}`;
+      } else if (msgType.includes('photo') || msgType === 'webchat') {
+        description = `[Hình ảnh] ${metaStr}`;
+      } else if (msgType.includes('video')) {
         const params = content?.params ? JSON.parse(content.params) : {};
         const duration = params?.duration ? Math.round(params.duration / 1000) : 0;
-        description = `[Video ${duration}s]`;
+        description = `[Video ${duration}s] ${metaStr}`;
       } else if (msgType.includes('voice')) {
         const params = content?.params ? JSON.parse(content.params) : {};
         const duration = params?.duration ? Math.round(params.duration / 1000) : 0;
-        description = `[Voice ${duration}s]`;
+        description = `[Voice ${duration}s] ${metaStr}`;
       } else if (msgType.includes('file')) {
         const fileName = content?.title || 'file';
-        description = `[File: ${fileName}]`;
+        description = `[File: ${fileName}] ${metaStr}`;
       }
 
       // Kiểm tra xem có nên skip media cho tin nhắn nhóm không
