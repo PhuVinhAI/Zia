@@ -348,7 +348,10 @@ export async function getFullGameInfo(appId: number): Promise<{
   const details = await getGameDetails(appId);
   if (!details) return null;
 
-  const [stats, currentPlayers] = await Promise.all([getGameStats(appId), getCurrentPlayers(appId)]);
+  const [stats, currentPlayers] = await Promise.all([
+    getGameStats(appId),
+    getCurrentPlayers(appId),
+  ]);
 
   return { details, stats, currentPlayers };
 }

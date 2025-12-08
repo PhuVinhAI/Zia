@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import * as zcajs from 'zca-js';
-import { debugLog, logError, logStep } from '../../../core/logger/logger.js';
 import { CONFIG } from '../../../core/config/config.js';
+import { debugLog, logError, logStep } from '../../../core/logger/logger.js';
 
 export const { Zalo, ThreadType, Reactions, TextStyle } = zcajs as any;
 

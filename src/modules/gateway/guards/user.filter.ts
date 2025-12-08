@@ -1,8 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { debugLog } from '../../../core/logger/logger.js';
 import { CONFIG } from '../../../core/config/config.js';
+import { debugLog } from '../../../core/logger/logger.js';
 import { now } from '../../../shared/utils/datetime.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));

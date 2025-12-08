@@ -3,9 +3,9 @@
  */
 
 import ky, { type KyInstance, type Options } from 'ky';
-import { debugLog, logError } from '../../core/logger/logger.js';
 import { CONFIG } from '../../core/config/config.js';
 import { MIME_TYPES } from '../../core/config/config.schema.js';
+import { debugLog, logError } from '../../core/logger/logger.js';
 
 // ═══════════════════════════════════════════════════
 // CONFIG

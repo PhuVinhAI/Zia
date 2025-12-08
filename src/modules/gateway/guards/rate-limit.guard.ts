@@ -1,5 +1,5 @@
-import { debugLog } from '../../../core/logger/logger.js';
 import { CONFIG } from '../../../core/config/config.js';
+import { debugLog } from '../../../core/logger/logger.js';
 
 const lastCallTime = new Map<string, number>();
 

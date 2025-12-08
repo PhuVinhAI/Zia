@@ -75,7 +75,6 @@ export function buildSlide(
   if (showSlideNumbers) {
     addSlideNumber(slide, index + 1, theme);
   }
-
 }
 
 // ═══════════════════════════════════════════════════

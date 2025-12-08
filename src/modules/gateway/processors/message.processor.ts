@@ -2,6 +2,7 @@
  * Mixed Content Handler - Xử lý tất cả loại tin nhắn
  */
 
+import { CONFIG } from '../../../core/config/config.js';
 import { debugLog, logError, logStep } from '../../../core/logger/logger.js';
 import {
   extractYouTubeUrls,
@@ -11,7 +12,6 @@ import {
 } from '../../../infrastructure/ai/providers/gemini/gemini.provider.js';
 import { PROMPTS } from '../../../infrastructure/ai/providers/gemini/prompts.js';
 import { ThreadType } from '../../../infrastructure/messaging/zalo/zalo.service.js';
-import { CONFIG } from '../../../core/config/config.js';
 import {
   getHistory,
   saveResponseToHistory,
@@ -27,6 +27,7 @@ import {
   countMessageTypes,
   isBotMentioned,
 } from '../classifier.js';
+import { checkRateLimit, markApiCall } from '../guards/rate-limit.guard.js';
 import {
   createStreamCallbacks,
   sendResponse,
@@ -36,7 +37,6 @@ import { handleToolCalls, isToolOnlyResponse } from '../handlers/tool.handler.js
 import { startTypingWithRefresh } from '../services/message.buffer.js';
 import { buildPrompt, extractTextFromMessages, processPrefix } from '../services/prompt.builder.js';
 import { extractQuoteInfo } from '../services/quote.parser.js';
-import { checkRateLimit, markApiCall } from '../guards/rate-limit.guard.js';
 import { addQuoteMedia, prepareMediaParts } from './media.processor.js';
 
 // Re-export types cho backward compatibility

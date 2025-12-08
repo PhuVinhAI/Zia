@@ -5,11 +5,7 @@
 
 import { debugLog, logZaloAPI } from '../../../core/logger/logger.js';
 import { ThreadType } from '../../../infrastructure/messaging/zalo/zalo.service.js';
-import type {
-  ToolContext,
-  ToolDefinition,
-  ToolResult,
-} from '../../../shared/types/tools.types.js';
+import type { ToolContext, ToolDefinition, ToolResult } from '../../../shared/types/tools.types.js';
 
 // Repeat mode enum (tự định nghĩa vì zca-js không export)
 const ReminderRepeatMode = {

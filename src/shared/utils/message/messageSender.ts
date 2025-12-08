@@ -55,7 +55,6 @@ export interface SendMessageResult {
   error?: string;
 }
 
-
 // ═══════════════════════════════════════════════════
 // THREAD TYPE STORE
 // ═══════════════════════════════════════════════════
@@ -144,11 +143,7 @@ export function parseMentions(text: string): { text: string; mentions: MentionIn
 /**
  * Gửi media image (table/mermaid PNG) từ buffer
  */
-export async function sendMediaImage(
-  api: any,
-  image: MediaImage,
-  threadId: string,
-): Promise<void> {
+export async function sendMediaImage(api: any, image: MediaImage, threadId: string): Promise<void> {
   try {
     const typeLabel = image.type === 'table' ? 'bảng' : 'sơ đồ';
     debugLog('MEDIA_IMG', `Sending ${image.type} image: ${image.filename}`);
@@ -391,7 +386,6 @@ export async function sendImageFromUrl(
     } catch {}
   }
 }
-
 
 // ═══════════════════════════════════════════════════
 // MAIN SEND MESSAGE FUNCTION

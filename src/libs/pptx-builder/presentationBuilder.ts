@@ -11,8 +11,8 @@ import { createMasterSlides, getMasterForSlideType } from './masterSlide.js';
 import { buildSlide } from './slideBuilder.js';
 import { buildTable } from './tableBuilder.js';
 import { getTheme } from './themes.js';
-import { lightenColor } from './utils.js';
 import type { ChartConfig, PresentationOptions, PresentationTheme, SlideType } from './types.js';
+import { lightenColor } from './utils.js';
 
 // ═══════════════════════════════════════════════════
 // PRESENTATION BUILDER CLASS

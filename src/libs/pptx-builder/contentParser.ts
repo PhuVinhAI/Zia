@@ -102,8 +102,6 @@ export function parseSlide(text: string, index: number): ParsedSlide {
       continue;
     }
 
-
-
     // Quote
     const quoteMatch = trimmed.match(/^\[QUOTE:([^:]+)(?::([^\]]+))?\]$/i);
     if (quoteMatch) {

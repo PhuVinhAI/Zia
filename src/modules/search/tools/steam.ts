@@ -5,23 +5,34 @@
 
 import { debugLog } from '../../../core/logger/logger.js';
 import {
-  SteamSearchSchema,
   SteamGameSchema,
+  SteamSearchSchema,
   SteamTopGamesSchema,
   validateParamsWithExample,
 } from '../../../shared/schemas/tools.schema.js';
 import type { ToolDefinition, ToolResult } from '../../../shared/types/tools.types.js';
-import { searchGames, getFullGameInfo, getTopGames, formatPlaytime } from '../services/steamClient.js';
+import {
+  formatPlaytime,
+  getFullGameInfo,
+  getTopGames,
+  searchGames,
+} from '../services/steamClient.js';
 
 /**
  * Tool: steamSearch - Tìm kiếm game trên Steam
  */
 export const steamSearchTool: ToolDefinition = {
   name: 'steamSearch',
-  description: 'Tìm kiếm game trên Steam theo tên. Trả về danh sách game với appId, tên, và hình ảnh.',
+  description:
+    'Tìm kiếm game trên Steam theo tên. Trả về danh sách game với appId, tên, và hình ảnh.',
   parameters: [
     { name: 'query', type: 'string', description: 'Tên game cần tìm', required: true },
-    { name: 'limit', type: 'number', description: 'Số kết quả (1-20, mặc định 10)', required: false },
+    {
+      name: 'limit',
+      type: 'number',
+      description: 'Số kết quả (1-20, mặc định 10)',
+      required: false,
+    },
   ],
   execute: async (params): Promise<ToolResult> => {
     const validation = validateParamsWithExample(SteamSearchSchema, params, 'steamSearch');
@@ -32,7 +43,10 @@ export const steamSearchTool: ToolDefinition = {
       const results = await searchGames(data.query, data.limit);
 
       if (results.length === 0) {
-        return { success: true, data: { query: data.query, results: [], message: 'Không tìm thấy game nào' } };
+        return {
+          success: true,
+          data: { query: data.query, results: [], message: 'Không tìm thấy game nào' },
+        };
       }
 
       debugLog('STEAM', `Found ${results.length} games for "${data.query}"`);
@@ -63,7 +77,9 @@ export const steamGameTool: ToolDefinition = {
   name: 'steamGame',
   description:
     'Xem thông tin chi tiết game Steam: giá, đánh giá, mô tả, số người chơi, thống kê, screenshots.',
-  parameters: [{ name: 'appId', type: 'number', description: 'Steam App ID của game', required: true }],
+  parameters: [
+    { name: 'appId', type: 'number', description: 'Steam App ID của game', required: true },
+  ],
   execute: async (params): Promise<ToolResult> => {
     const validation = validateParamsWithExample(SteamGameSchema, params, 'steamGame');
     if (!validation.success) return { success: false, error: validation.error };
@@ -99,7 +115,8 @@ export const steamGameTool: ToolDefinition = {
                   isFree: false,
                   original: details.price.initial,
                   final: details.price.final,
-                  discount: details.price.discountPercent > 0 ? `${details.price.discountPercent}%` : null,
+                  discount:
+                    details.price.discountPercent > 0 ? `${details.price.discountPercent}%` : null,
                   formatted: details.price.formatted,
                 }
               : null,
@@ -142,7 +159,8 @@ export const steamGameTool: ToolDefinition = {
  */
 export const steamTopTool: ToolDefinition = {
   name: 'steamTop',
-  description: 'Xem danh sách top games trên Steam theo số người chơi, doanh thu, hoặc số lượng sở hữu.',
+  description:
+    'Xem danh sách top games trên Steam theo số người chơi, doanh thu, hoặc số lượng sở hữu.',
   parameters: [
     {
       name: 'mode',

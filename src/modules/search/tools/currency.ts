@@ -4,14 +4,18 @@
  */
 
 import { debugLog } from '../../../core/logger/logger.js';
-import { CurrencyConvertSchema, CurrencyRatesSchema, validateParamsWithExample } from '../../../shared/schemas/tools.schema.js';
+import {
+  CurrencyConvertSchema,
+  CurrencyRatesSchema,
+  validateParamsWithExample,
+} from '../../../shared/schemas/tools.schema.js';
 import type { ToolDefinition, ToolResult } from '../../../shared/types/tools.types.js';
 import {
+  CURRENCY_NAMES,
   convertCurrency,
+  formatCurrency,
   getExchangeRates,
   getVNDRates,
-  formatCurrency,
-  CURRENCY_NAMES,
   POPULAR_CURRENCIES,
 } from '../services/currencyClient.js';
 
@@ -20,11 +24,22 @@ import {
  */
 export const currencyConvertTool: ToolDefinition = {
   name: 'currencyConvert',
-  description: 'Đổi tiền từ một loại tiền tệ sang loại khác. Hỗ trợ 150+ loại tiền tệ trên thế giới.',
+  description:
+    'Đổi tiền từ một loại tiền tệ sang loại khác. Hỗ trợ 150+ loại tiền tệ trên thế giới.',
   parameters: [
     { name: 'amount', type: 'number', description: 'Số tiền cần đổi', required: true },
-    { name: 'from', type: 'string', description: 'Mã tiền tệ nguồn (VD: USD, VND, EUR)', required: true },
-    { name: 'to', type: 'string', description: 'Mã tiền tệ đích (VD: VND, USD, JPY)', required: true },
+    {
+      name: 'from',
+      type: 'string',
+      description: 'Mã tiền tệ nguồn (VD: USD, VND, EUR)',
+      required: true,
+    },
+    {
+      name: 'to',
+      type: 'string',
+      description: 'Mã tiền tệ đích (VD: VND, USD, JPY)',
+      required: true,
+    },
   ],
   execute: async (params): Promise<ToolResult> => {
     const validation = validateParamsWithExample(CurrencyConvertSchema, params, 'currencyConvert');
@@ -35,7 +50,10 @@ export const currencyConvertTool: ToolDefinition = {
       const result = await convertCurrency(amount, from, to);
 
       if (!result) {
-        return { success: false, error: `Không thể đổi tiền từ ${from} sang ${to}. Kiểm tra mã tiền tệ.` };
+        return {
+          success: false,
+          error: `Không thể đổi tiền từ ${from} sang ${to}. Kiểm tra mã tiền tệ.`,
+        };
       }
 
       debugLog('CURRENCY', `Converted ${amount} ${from} to ${result.result} ${to}`);
@@ -73,8 +91,18 @@ export const currencyRatesTool: ToolDefinition = {
   name: 'currencyRates',
   description: 'Xem tỷ giá của nhiều loại tiền tệ so với một loại tiền cơ sở (mặc định VND).',
   parameters: [
-    { name: 'base', type: 'string', description: 'Mã tiền tệ cơ sở (mặc định VND)', required: false },
-    { name: 'currencies', type: 'string', description: 'Danh sách mã tiền cần xem, cách nhau bởi dấu phẩy (VD: USD,EUR,JPY)', required: false },
+    {
+      name: 'base',
+      type: 'string',
+      description: 'Mã tiền tệ cơ sở (mặc định VND)',
+      required: false,
+    },
+    {
+      name: 'currencies',
+      type: 'string',
+      description: 'Danh sách mã tiền cần xem, cách nhau bởi dấu phẩy (VD: USD,EUR,JPY)',
+      required: false,
+    },
   ],
   execute: async (params): Promise<ToolResult> => {
     const validation = validateParamsWithExample(CurrencyRatesSchema, params, 'currencyRates');

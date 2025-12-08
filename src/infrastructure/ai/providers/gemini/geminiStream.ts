@@ -2,6 +2,7 @@
  * Gemini Stream - Xử lý streaming responses
  */
 import type { Content } from '@google/genai';
+import { CONFIG } from '../../../../core/config/config.js';
 import {
   debugLog,
   logAIHistory,
@@ -9,7 +10,6 @@ import {
   logError,
   logSystemPrompt,
 } from '../../../../core/logger/logger.js';
-import { CONFIG } from '../../../../core/config/config.js';
 import { checkInputTokens } from '../../../../shared/utils/tokenCounter.js';
 import {
   buildMessageParts,

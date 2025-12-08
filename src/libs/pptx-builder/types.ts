@@ -25,7 +25,6 @@ export interface PresentationOptions {
 
   // Slide numbering
   showSlideNumbers?: boolean;
-
 }
 
 export type LayoutType = 'LAYOUT_16x9' | 'LAYOUT_16x10' | 'LAYOUT_4x3' | 'LAYOUT_WIDE';
@@ -229,8 +228,6 @@ export interface ColumnContent {
   image?: ImageConfig;
   text?: string;
 }
-
-
 
 // ═══════════════════════════════════════════════════
 // PARSED CONTENT

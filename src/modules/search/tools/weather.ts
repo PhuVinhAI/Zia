@@ -4,7 +4,7 @@
  */
 
 import { debugLog } from '../../../core/logger/logger.js';
-import { WeatherSchema, validateParamsWithExample } from '../../../shared/schemas/tools.schema.js';
+import { validateParamsWithExample, WeatherSchema } from '../../../shared/schemas/tools.schema.js';
 import type { ToolDefinition, ToolResult } from '../../../shared/types/tools.types.js';
 import { getWeather } from '../services/weatherClient.js';
 
@@ -13,9 +13,24 @@ export const weatherTool: ToolDefinition = {
   description:
     'Tra cứu thời tiết hiện tại và dự báo theo địa điểm. Hỗ trợ tất cả địa điểm trên thế giới, đặc biệt các tỉnh thành Việt Nam.',
   parameters: [
-    { name: 'location', type: 'string', description: 'Tên địa điểm (VD: Hà Nội, Đà Nẵng, Tokyo)', required: true },
-    { name: 'days', type: 'number', description: 'Số ngày dự báo (1-16, mặc định 7)', required: false },
-    { name: 'hourlyHours', type: 'number', description: 'Số giờ dự báo theo giờ (0-168, mặc định 24)', required: false },
+    {
+      name: 'location',
+      type: 'string',
+      description: 'Tên địa điểm (VD: Hà Nội, Đà Nẵng, Tokyo)',
+      required: true,
+    },
+    {
+      name: 'days',
+      type: 'number',
+      description: 'Số ngày dự báo (1-16, mặc định 7)',
+      required: false,
+    },
+    {
+      name: 'hourlyHours',
+      type: 'number',
+      description: 'Số giờ dự báo theo giờ (0-168, mặc định 24)',
+      required: false,
+    },
   ],
   execute: async (params): Promise<ToolResult> => {
     const validation = validateParamsWithExample(WeatherSchema, params, 'weather');
@@ -29,7 +44,10 @@ export const weatherTool: ToolDefinition = {
         hourlyHours: data.hourlyHours,
       });
 
-      debugLog('WEATHER', `Got weather for ${result.location.name}: ${result.current.temperature}°C`);
+      debugLog(
+        'WEATHER',
+        `Got weather for ${result.location.name}: ${result.current.temperature}°C`,
+      );
 
       // Format response
       const response = {

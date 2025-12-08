@@ -25,16 +25,15 @@ export const gatewayModule = new GatewayModule();
 
 // Classifier
 export { classifyMessage, classifyMessages, countMessageTypes } from './classifier.js';
+export * from './guards/index.js';
 
+// Re-export from sub-modules
+export * from './handlers/index.js';
 // Message Listener
 export {
   createMessageHandler,
   type MessageListenerOptions,
   registerMessageListener,
 } from './message.listener.js';
-
-// Re-export from sub-modules
-export * from './handlers/index.js';
 export * from './processors/index.js';
 export * from './services/index.js';
-export * from './guards/index.js';

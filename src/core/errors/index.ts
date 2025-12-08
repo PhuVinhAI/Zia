@@ -15,7 +15,10 @@ export class AppError extends Error {
 }
 
 export class ValidationError extends AppError {
-  constructor(message: string, public field?: string) {
+  constructor(
+    message: string,
+    public field?: string,
+  ) {
     super(message, 'VALIDATION_ERROR', 400);
     this.name = 'ValidationError';
   }
@@ -53,7 +56,10 @@ export class RateLimitError extends AppError {
 }
 
 export class NotFoundError extends AppError {
-  constructor(message: string, public resource?: string) {
+  constructor(
+    message: string,
+    public resource?: string,
+  ) {
     super(message, 'NOT_FOUND', 404);
     this.name = 'NotFoundError';
   }

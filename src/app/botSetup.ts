@@ -2,6 +2,7 @@
  * Bot Setup - Khởi tạo và cấu hình bot
  */
 
+import { CONFIG } from '../core/config/config.js';
 import {
   debugLog,
   enableFileLogging,
@@ -11,7 +12,6 @@ import {
 } from '../core/logger/logger.js';
 import { loginWithQR, ThreadType } from '../infrastructure/messaging/zalo/zalo.service.js';
 import { setupSelfMessageListener } from '../modules/gateway/gateway.module.js';
-import { CONFIG } from '../core/config/config.js';
 import { preloadAllHistory } from '../shared/utils/history/history.js';
 
 /**

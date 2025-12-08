@@ -10,11 +10,7 @@ import {
   SaveMemorySchema,
   validateParamsWithExample,
 } from '../../../shared/schemas/tools.schema.js';
-import type {
-  ToolContext,
-  ToolDefinition,
-  ToolResult,
-} from '../../../shared/types/tools.types.js';
+import type { ToolContext, ToolDefinition, ToolResult } from '../../../shared/types/tools.types.js';
 
 // ═══════════════════════════════════════════════════
 // SAVE MEMORY TOOL

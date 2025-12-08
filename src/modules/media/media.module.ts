@@ -2,7 +2,12 @@
  * Media Module - Charts, files, images, TTS
  */
 import { BaseModule, type ITool, type ModuleMetadata } from '../../core/index.js';
-import { createChartTool, createFileTool, freepikImageTool, textToSpeechTool } from './tools/index.js';
+import {
+  createChartTool,
+  createFileTool,
+  freepikImageTool,
+  textToSpeechTool,
+} from './tools/index.js';
 
 export class MediaModule extends BaseModule {
   readonly metadata: ModuleMetadata = {

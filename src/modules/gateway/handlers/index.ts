@@ -4,9 +4,9 @@
 
 export {
   createStreamCallbacks,
+  getThreadType,
   sendResponse,
   setupSelfMessageListener,
-  getThreadType,
 } from './response.handler.js';
 
 export {

@@ -219,7 +219,9 @@ export function formatContextForPrompt(context: EnvironmentContext): string {
   lines.push(`   Ví dụ: "Chúc mừng sinh nhật! [sticker:love]" → Gửi tin nhắn + sticker`);
   lines.push('');
   lines.push(`3. **Gửi link với preview:** [text](url)`);
-  lines.push(`   Ví dụ: "Xem video này [YouTube](https://youtube.com/watch?v=xxx)" → Gửi link với preview`);
+  lines.push(
+    `   Ví dụ: "Xem video này [YouTube](https://youtube.com/watch?v=xxx)" → Gửi link với preview`,
+  );
   lines.push('');
   lines.push(`4. **Markdown:** Hỗ trợ **bold**, *italic*, \`code\``);
   lines.push('');

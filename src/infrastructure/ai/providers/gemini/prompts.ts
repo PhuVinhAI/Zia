@@ -397,7 +397,9 @@ export const PROMPTS = {
           parts.push(`[${index}] Video ${item.duration || 0}s: (URL: ${item.url})${metaInfo}`);
           break;
         case 'voice':
-          parts.push(`[${index}] Tin nhắn thoại ${item.duration || 0}s: (URL: ${item.url})${metaInfo}`);
+          parts.push(
+            `[${index}] Tin nhắn thoại ${item.duration || 0}s: (URL: ${item.url})${metaInfo}`,
+          );
           break;
         case 'file':
           parts.push(`[${index}] File "${item.fileName}": (URL: ${item.url})${metaInfo}`);

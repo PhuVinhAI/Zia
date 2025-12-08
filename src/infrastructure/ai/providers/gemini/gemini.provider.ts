@@ -7,6 +7,7 @@
  * - geminiStream.ts: Xử lý streaming
  */
 import type { Content } from '@google/genai';
+import { CONFIG } from '../../../../core/config/config.js';
 import {
   debugLog,
   logAIHistory,
@@ -14,7 +15,6 @@ import {
   logError,
   logStep,
 } from '../../../../core/logger/logger.js';
-import { CONFIG } from '../../../../core/config/config.js';
 import {
   type AIResponse,
   DEFAULT_RESPONSE,

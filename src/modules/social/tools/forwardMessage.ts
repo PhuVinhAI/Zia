@@ -9,11 +9,7 @@ import {
   ForwardMessageSchema,
   validateParamsWithExample,
 } from '../../../shared/schemas/tools.schema.js';
-import type {
-  ToolContext,
-  ToolDefinition,
-  ToolResult,
-} from '../../../shared/types/tools.types.js';
+import type { ToolContext, ToolDefinition, ToolResult } from '../../../shared/types/tools.types.js';
 
 /**
  * Mapping msgType string sang logSrcType number cho Zalo API

@@ -4,9 +4,9 @@
  */
 
 import type { Content } from '@google/genai';
+import { CONFIG } from '../../../core/config/config.js';
 import { debugLog } from '../../../core/logger/logger.js';
 import type { MediaPart } from '../../../infrastructure/ai/providers/gemini/gemini.provider.js';
-import { CONFIG } from '../../../core/config/config.js';
 import {
   fetchAndConvertToTextBase64,
   fetchDocxAndConvertToPdfBase64,

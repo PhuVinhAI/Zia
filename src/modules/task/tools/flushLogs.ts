@@ -4,11 +4,7 @@
  */
 
 import { forceFlushLogs, getLogCacheSize } from '../../../core/logger/logger.js';
-import type {
-  ToolContext,
-  ToolDefinition,
-  ToolResult,
-} from '../../../shared/types/tools.types.js';
+import type { ToolContext, ToolDefinition, ToolResult } from '../../../shared/types/tools.types.js';
 
 export const flushLogsTool: ToolDefinition = {
   name: 'flush_logs',

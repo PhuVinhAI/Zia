@@ -2,8 +2,8 @@
  * Quote Parser - Parse quote attachment từ tin nhắn reply
  */
 
-import { debugLog } from '../../../core/logger/logger.js';
 import { CONFIG } from '../../../core/config/config.js';
+import { debugLog } from '../../../core/logger/logger.js';
 
 export interface QuoteMedia {
   type: 'image' | 'video' | 'audio' | 'file' | 'sticker' | 'gif' | 'doodle' | 'none';

@@ -2,8 +2,8 @@
  * History Loader - Tải lịch sử tin nhắn từ Zalo API
  */
 import type { Content } from '@google/genai';
-import { debugLog } from '../../../core/logger/logger.js';
 import { CONFIG } from '../../../core/config/config.js';
+import { debugLog } from '../../../core/logger/logger.js';
 import { toGeminiContent } from './historyConverter.js';
 
 /** Ngủ (Delay) */

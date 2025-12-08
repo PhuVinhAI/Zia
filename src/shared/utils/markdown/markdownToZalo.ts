@@ -67,18 +67,18 @@ interface TableData {
  */
 function stripLatexSyntax(text: string): string {
   let result = text;
-  
+
   // Remove $$...$$ wrapper (display math) - process first (longer pattern)
   result = result.replace(/\$\$([^$]+)\$\$/g, (_, content) => {
     return convertLatexContent(content);
   });
-  
+
   // Remove $...$ wrapper (inline math) - handle escaped \$ inside
   // Match $ followed by content (not starting with space) and ending with $
   result = result.replace(/\$([^$]+?)\$/g, (_, content) => {
     return convertLatexContent(content);
   });
-  
+
   // Handle remaining escaped LaTeX commands outside of $...$
   // \% → %
   result = result.replace(/\\%/g, '%');
@@ -90,7 +90,7 @@ function stripLatexSyntax(text: string): string {
   result = result.replace(/\\#/g, '#');
   // \_ → _
   result = result.replace(/\\_/g, '_');
-  
+
   return result;
 }
 
@@ -104,7 +104,7 @@ function convertLatexContent(latex: string): string {
   // ═══════════════════════════════════════════════════
   // TEXT COMMANDS
   // ═══════════════════════════════════════════════════
-  
+
   // \text{...}, \textbf{...}, \textit{...}, \textrm{...}, \texttt{...}
   result = result.replace(/\\text(?:bf|it|rm|tt|sf|sc)?\{([^}]+)\}/g, '$1');
   // \mathrm{...}, \mathbf{...}, \mathit{...}, \mathsf{...}, \mathtt{...}
@@ -117,7 +117,7 @@ function convertLatexContent(latex: string): string {
   // ═══════════════════════════════════════════════════
   // FRACTIONS
   // ═══════════════════════════════════════════════════
-  
+
   // \frac{a}{b} → a/b
   result = result.replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '($1/$2)');
   // \dfrac{a}{b} → a/b
@@ -128,7 +128,7 @@ function convertLatexContent(latex: string): string {
   // ═══════════════════════════════════════════════════
   // ROOTS
   // ═══════════════════════════════════════════════════
-  
+
   // \sqrt{x} → √x
   result = result.replace(/\\sqrt\{([^}]+)\}/g, '√($1)');
   // \sqrt[n]{x} → ⁿ√x
@@ -139,7 +139,7 @@ function convertLatexContent(latex: string): string {
   // ═══════════════════════════════════════════════════
   // SUPERSCRIPTS & SUBSCRIPTS
   // ═══════════════════════════════════════════════════
-  
+
   // ^{\circ} or ^\circ → °
   result = result.replace(/\^\{?\\circ\}?/g, '°');
   // ^{2} → ²
@@ -156,23 +156,66 @@ function convertLatexContent(latex: string): string {
   // ═══════════════════════════════════════════════════
   // GREEK LETTERS
   // ═══════════════════════════════════════════════════
-  
+
   const greekLetters: Record<string, string> = {
     // Lowercase
-    'alpha': 'α', 'beta': 'β', 'gamma': 'γ', 'delta': 'δ', 'epsilon': 'ε',
-    'varepsilon': 'ε', 'zeta': 'ζ', 'eta': 'η', 'theta': 'θ', 'vartheta': 'ϑ',
-    'iota': 'ι', 'kappa': 'κ', 'lambda': 'λ', 'mu': 'μ', 'nu': 'ν',
-    'xi': 'ξ', 'omicron': 'ο', 'pi': 'π', 'varpi': 'ϖ', 'rho': 'ρ',
-    'varrho': 'ϱ', 'sigma': 'σ', 'varsigma': 'ς', 'tau': 'τ', 'upsilon': 'υ',
-    'phi': 'φ', 'varphi': 'ϕ', 'chi': 'χ', 'psi': 'ψ', 'omega': 'ω',
+    alpha: 'α',
+    beta: 'β',
+    gamma: 'γ',
+    delta: 'δ',
+    epsilon: 'ε',
+    varepsilon: 'ε',
+    zeta: 'ζ',
+    eta: 'η',
+    theta: 'θ',
+    vartheta: 'ϑ',
+    iota: 'ι',
+    kappa: 'κ',
+    lambda: 'λ',
+    mu: 'μ',
+    nu: 'ν',
+    xi: 'ξ',
+    omicron: 'ο',
+    pi: 'π',
+    varpi: 'ϖ',
+    rho: 'ρ',
+    varrho: 'ϱ',
+    sigma: 'σ',
+    varsigma: 'ς',
+    tau: 'τ',
+    upsilon: 'υ',
+    phi: 'φ',
+    varphi: 'ϕ',
+    chi: 'χ',
+    psi: 'ψ',
+    omega: 'ω',
     // Uppercase
-    'Alpha': 'Α', 'Beta': 'Β', 'Gamma': 'Γ', 'Delta': 'Δ', 'Epsilon': 'Ε',
-    'Zeta': 'Ζ', 'Eta': 'Η', 'Theta': 'Θ', 'Iota': 'Ι', 'Kappa': 'Κ',
-    'Lambda': 'Λ', 'Mu': 'Μ', 'Nu': 'Ν', 'Xi': 'Ξ', 'Omicron': 'Ο',
-    'Pi': 'Π', 'Rho': 'Ρ', 'Sigma': 'Σ', 'Tau': 'Τ', 'Upsilon': 'Υ',
-    'Phi': 'Φ', 'Chi': 'Χ', 'Psi': 'Ψ', 'Omega': 'Ω',
+    Alpha: 'Α',
+    Beta: 'Β',
+    Gamma: 'Γ',
+    Delta: 'Δ',
+    Epsilon: 'Ε',
+    Zeta: 'Ζ',
+    Eta: 'Η',
+    Theta: 'Θ',
+    Iota: 'Ι',
+    Kappa: 'Κ',
+    Lambda: 'Λ',
+    Mu: 'Μ',
+    Nu: 'Ν',
+    Xi: 'Ξ',
+    Omicron: 'Ο',
+    Pi: 'Π',
+    Rho: 'Ρ',
+    Sigma: 'Σ',
+    Tau: 'Τ',
+    Upsilon: 'Υ',
+    Phi: 'Φ',
+    Chi: 'Χ',
+    Psi: 'Ψ',
+    Omega: 'Ω',
   };
-  
+
   for (const [name, symbol] of Object.entries(greekLetters)) {
     result = result.replace(new RegExp(`\\\\${name}(?![a-zA-Z])`, 'g'), symbol);
   }
@@ -180,66 +223,167 @@ function convertLatexContent(latex: string): string {
   // ═══════════════════════════════════════════════════
   // MATHEMATICAL OPERATORS & RELATIONS
   // ═══════════════════════════════════════════════════
-  
+
   const operators: Record<string, string> = {
     // Basic operators
-    'times': '×', 'div': '÷', 'cdot': '·', 'ast': '*',
-    'pm': '±', 'mp': '∓', 'oplus': '⊕', 'ominus': '⊖', 'otimes': '⊗',
-    
+    times: '×',
+    div: '÷',
+    cdot: '·',
+    ast: '*',
+    pm: '±',
+    mp: '∓',
+    oplus: '⊕',
+    ominus: '⊖',
+    otimes: '⊗',
+
     // Relations
-    'approx': '≈', 'approxeq': '≊', 'sim': '∼', 'simeq': '≃', 'cong': '≅',
-    'equiv': '≡', 'neq': '≠', 'ne': '≠', 'leq': '≤', 'le': '≤',
-    'geq': '≥', 'ge': '≥', 'll': '≪', 'gg': '≫',
-    'prec': '≺', 'succ': '≻', 'preceq': '⪯', 'succeq': '⪰',
-    'subset': '⊂', 'supset': '⊃', 'subseteq': '⊆', 'supseteq': '⊇',
-    'in': '∈', 'notin': '∉', 'ni': '∋', 'notni': '∌',
-    'propto': '∝', 'parallel': '∥', 'perp': '⊥',
-    
+    approx: '≈',
+    approxeq: '≊',
+    sim: '∼',
+    simeq: '≃',
+    cong: '≅',
+    equiv: '≡',
+    neq: '≠',
+    ne: '≠',
+    leq: '≤',
+    le: '≤',
+    geq: '≥',
+    ge: '≥',
+    ll: '≪',
+    gg: '≫',
+    prec: '≺',
+    succ: '≻',
+    preceq: '⪯',
+    succeq: '⪰',
+    subset: '⊂',
+    supset: '⊃',
+    subseteq: '⊆',
+    supseteq: '⊇',
+    in: '∈',
+    notin: '∉',
+    ni: '∋',
+    notni: '∌',
+    propto: '∝',
+    parallel: '∥',
+    perp: '⊥',
+
     // Arrows
-    'to': '→', 'rightarrow': '→', 'leftarrow': '←', 'leftrightarrow': '↔',
-    'Rightarrow': '⇒', 'Leftarrow': '⇐', 'Leftrightarrow': '⇔',
-    'uparrow': '↑', 'downarrow': '↓', 'updownarrow': '↕',
-    'mapsto': '↦', 'longmapsto': '⟼', 'implies': '⟹', 'iff': '⟺',
-    
+    to: '→',
+    rightarrow: '→',
+    leftarrow: '←',
+    leftrightarrow: '↔',
+    Rightarrow: '⇒',
+    Leftarrow: '⇐',
+    Leftrightarrow: '⇔',
+    uparrow: '↑',
+    downarrow: '↓',
+    updownarrow: '↕',
+    mapsto: '↦',
+    longmapsto: '⟼',
+    implies: '⟹',
+    iff: '⟺',
+
     // Logic
-    'land': '∧', 'lor': '∨', 'lnot': '¬', 'neg': '¬',
-    'forall': '∀', 'exists': '∃', 'nexists': '∄',
-    'therefore': '∴', 'because': '∵',
-    
+    land: '∧',
+    lor: '∨',
+    lnot: '¬',
+    neg: '¬',
+    forall: '∀',
+    exists: '∃',
+    nexists: '∄',
+    therefore: '∴',
+    because: '∵',
+
     // Set theory
-    'emptyset': '∅', 'varnothing': '∅',
-    'cap': '∩', 'cup': '∪', 'setminus': '∖',
-    
+    emptyset: '∅',
+    varnothing: '∅',
+    cap: '∩',
+    cup: '∪',
+    setminus: '∖',
+
     // Calculus & Analysis
-    'partial': '∂', 'nabla': '∇', 'infty': '∞',
-    'int': '∫', 'iint': '∬', 'iiint': '∭', 'oint': '∮',
-    'sum': '∑', 'prod': '∏', 'coprod': '∐',
-    
+    partial: '∂',
+    nabla: '∇',
+    infty: '∞',
+    int: '∫',
+    iint: '∬',
+    iiint: '∭',
+    oint: '∮',
+    sum: '∑',
+    prod: '∏',
+    coprod: '∐',
+
     // Misc symbols
-    'degree': '°', 'circ': '°', 'bullet': '•', 'cdots': '⋯', 'ldots': '…',
-    'vdots': '⋮', 'ddots': '⋱', 'prime': '′', 'dprime': '″',
-    'angle': '∠', 'measuredangle': '∡', 'triangle': '△',
-    'square': '□', 'diamond': '◇', 'star': '⋆',
-    'hbar': 'ℏ', 'ell': 'ℓ', 'wp': '℘', 'Re': 'ℜ', 'Im': 'ℑ',
-    'aleph': 'ℵ', 'beth': 'ℶ',
-    
+    degree: '°',
+    circ: '°',
+    bullet: '•',
+    cdots: '⋯',
+    ldots: '…',
+    vdots: '⋮',
+    ddots: '⋱',
+    prime: '′',
+    dprime: '″',
+    angle: '∠',
+    measuredangle: '∡',
+    triangle: '△',
+    square: '□',
+    diamond: '◇',
+    star: '⋆',
+    hbar: 'ℏ',
+    ell: 'ℓ',
+    wp: '℘',
+    Re: 'ℜ',
+    Im: 'ℑ',
+    aleph: 'ℵ',
+    beth: 'ℶ',
+
     // Units & misc
-    'percent': '%',
+    percent: '%',
   };
-  
+
   for (const [cmd, symbol] of Object.entries(operators)) {
-    result = result.replace(new RegExp(`\\\\${cmd.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![a-zA-Z])`, 'g'), symbol);
+    result = result.replace(
+      new RegExp(`\\\\${cmd.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![a-zA-Z])`, 'g'),
+      symbol,
+    );
   }
 
   // ═══════════════════════════════════════════════════
   // FUNCTIONS (sin, cos, log, etc.)
   // ═══════════════════════════════════════════════════
-  
-  const functions = ['sin', 'cos', 'tan', 'cot', 'sec', 'csc',
-    'arcsin', 'arccos', 'arctan', 'sinh', 'cosh', 'tanh',
-    'log', 'ln', 'lg', 'exp', 'lim', 'max', 'min', 'sup', 'inf',
-    'det', 'dim', 'ker', 'deg', 'gcd', 'lcm', 'mod', 'arg'];
-  
+
+  const functions = [
+    'sin',
+    'cos',
+    'tan',
+    'cot',
+    'sec',
+    'csc',
+    'arcsin',
+    'arccos',
+    'arctan',
+    'sinh',
+    'cosh',
+    'tanh',
+    'log',
+    'ln',
+    'lg',
+    'exp',
+    'lim',
+    'max',
+    'min',
+    'sup',
+    'inf',
+    'det',
+    'dim',
+    'ker',
+    'deg',
+    'gcd',
+    'lcm',
+    'mod',
+    'arg',
+  ];
+
   for (const fn of functions) {
     result = result.replace(new RegExp(`\\\\${fn}(?![a-zA-Z])`, 'g'), fn);
   }
@@ -247,7 +391,7 @@ function convertLatexContent(latex: string): string {
   // ═══════════════════════════════════════════════════
   // BRACKETS & DELIMITERS
   // ═══════════════════════════════════════════════════
-  
+
   // \left and \right (remove, keep delimiter)
   result = result.replace(/\\(left|right|big|Big|bigg|Bigg)/g, '');
   // \{ and \} → { and }
@@ -267,7 +411,7 @@ function convertLatexContent(latex: string): string {
   // ═══════════════════════════════════════════════════
   // SPACING & FORMATTING
   // ═══════════════════════════════════════════════════
-  
+
   // Remove spacing commands: \, \; \: \! \quad \qquad \hspace \vspace
   result = result.replace(/\\[,;:!]/g, ' ');
   result = result.replace(/\\(quad|qquad|hspace|vspace|kern|mkern)(\{[^}]*\})?/g, ' ');
@@ -279,7 +423,7 @@ function convertLatexContent(latex: string): string {
   // ═══════════════════════════════════════════════════
   // ESCAPED CHARACTERS
   // ═══════════════════════════════════════════════════
-  
+
   // \% → %
   result = result.replace(/\\%/g, '%');
   // \$ → $
@@ -294,7 +438,7 @@ function convertLatexContent(latex: string): string {
   // ═══════════════════════════════════════════════════
   // CLEANUP
   // ═══════════════════════════════════════════════════
-  
+
   // Remove any remaining \command that wasn't matched
   result = result.replace(/\\[a-zA-Z]+/g, '');
   // Remove empty braces {}
@@ -303,7 +447,7 @@ function convertLatexContent(latex: string): string {
   result = result.replace(/\s+/g, ' ');
   // Clean up spaces around operators
   result = result.replace(/\s*([+\-×÷=<>])\s*/g, ' $1 ');
-  
+
   return result.trim();
 }
 
@@ -312,25 +456,27 @@ function convertLatexContent(latex: string): string {
  * Loại bỏ: **bold**, *italic*, ~~strikethrough~~, `code`, [link](url), LaTeX
  */
 function stripMarkdownSyntax(text: string): string {
-  return text
-    // Strip LaTeX first
-    .replace(/\$([^$]+)\$/g, (_, content) => convertLatexContent(content))
-    .replace(/\$\$([^$]+)\$\$/g, (_, content) => convertLatexContent(content))
-    // ***bold italic*** → content
-    .replace(/\*\*\*(.+?)\*\*\*/g, '$1')
-    // **bold** → content
-    .replace(/\*\*(.+?)\*\*/g, '$1')
-    // ~~strikethrough~~ → content
-    .replace(/~~(.+?)~~/g, '$1')
-    // *italic* → content (không phải **)
-    .replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '$1')
-    // _italic_ → content (không phải __)
-    .replace(/(?<!_)_(?!_)(.+?)(?<!_)_(?!_)/g, '$1')
-    // `inline code` → content
-    .replace(/`([^`]+)`/g, '$1')
-    // [link text](url) → link text
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
-    .trim();
+  return (
+    text
+      // Strip LaTeX first
+      .replace(/\$([^$]+)\$/g, (_, content) => convertLatexContent(content))
+      .replace(/\$\$([^$]+)\$\$/g, (_, content) => convertLatexContent(content))
+      // ***bold italic*** → content
+      .replace(/\*\*\*(.+?)\*\*\*/g, '$1')
+      // **bold** → content
+      .replace(/\*\*(.+?)\*\*/g, '$1')
+      // ~~strikethrough~~ → content
+      .replace(/~~(.+?)~~/g, '$1')
+      // *italic* → content (không phải **)
+      .replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '$1')
+      // _italic_ → content (không phải __)
+      .replace(/(?<!_)_(?!_)(.+?)(?<!_)_(?!_)/g, '$1')
+      // `inline code` → content
+      .replace(/`([^`]+)`/g, '$1')
+      // [link text](url) → link text
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+      .trim()
+  );
 }
 
 function parseMarkdownTable(tableText: string): TableData | null {
@@ -668,7 +814,7 @@ function extractCodeBlocksAndTables(markdown: string): ExtractResult {
 function parseInlineStyles(text: string): { text: string; styles: StyleItem[]; links: LinkItem[] } {
   const styles: StyleItem[] = [];
   const links: LinkItem[] = [];
-  
+
   // Strip LaTeX syntax first (before processing other markdown)
   let result = stripLatexSyntax(text);
 
@@ -700,7 +846,7 @@ function parseInlineStyles(text: string): { text: string; styles: StyleItem[]; l
       const startIndex = match.index;
 
       result = result.slice(0, startIndex) + content + result.slice(startIndex + fullMatch.length);
-      
+
       // Thêm một entry cho mỗi style trong styleList
       for (const st of styleList) {
         styles.push({ start: startIndex, len: content.length, st: st as any });
