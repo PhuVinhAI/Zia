@@ -17,7 +17,7 @@ word/
 ├── listBuilder.ts     # Checklist, definition lists
 ├── columnBuilder.ts   # Multi-column layouts
 ├── dividerBuilder.ts  # Dividers/separators
-├── mathBuilder.ts     # Math expressions (LaTeX)
+├── mathBuilder.ts     # Math expressions (OMML)
 ├── highlightBuilder.ts# Text highlighting
 ├── coverPageBuilder.ts# Cover pages
 ├── documentBuilder.ts # Main builder class
@@ -98,7 +98,9 @@ Term
 | Cell 4   | Cell 5   | Cell 6   |
 ```
 
-## ➗ Math Expressions
+## ➗ Math Expressions (OMML)
+
+Math được render bằng OMML (Office Math Markup Language) - format native của Word.
 
 ### Inline math
 ```
@@ -106,19 +108,24 @@ $E = mc^2$
 $\alpha + \beta = \gamma$
 ```
 
-### Block math
+### Block math (centered)
 ```
 $$\sum_{i=1}^{n} x_i$$
 $$\int_0^\infty e^{-x} dx$$
 ```
 
-### Supported symbols
-- Greek: \alpha, \beta, \gamma, \delta, \pi, \sigma, etc.
+### Supported LaTeX
+- Fractions: `\frac{a}{b}`
+- Square root: `\sqrt{x}`
+- Superscript: `x^{2}` or `x^2`
+- Subscript: `x_{i}` or `x_i`
+- Sum: `\sum_{i=1}^{n}`
+- Integral: `\int_{0}^{\infty}`
+- Greek: \alpha, \beta, \gamma, \delta, \pi, \sigma, \omega
 - Operators: \times, \div, \pm, \cdot
 - Relations: \leq, \geq, \neq, \approx, \equiv
 - Arrows: \rightarrow, \leftarrow, \Rightarrow
-- Big ops: \sum, \prod, \int
-- Misc: \infty, \partial, \nabla, \sqrt
+- Misc: \infty, \partial, \nabla
 
 ## 🖼️ Images
 
@@ -222,8 +229,11 @@ function hello() {
 
 ## 🔢 Footnotes
 
-```markdown
-This is text with a footnote[^1].
+Footnotes hiển thị ở cuối trang như trong Word chuẩn.
 
-[^1]: This is the footnote content.
+```markdown
+This is text with a footnote[^1]. And another[^2].
+
+[^1]: This is the first footnote content.
+[^2]: This is the second footnote.
 ```
