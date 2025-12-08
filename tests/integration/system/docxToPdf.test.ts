@@ -9,7 +9,7 @@ import { Document, Packer, Paragraph, TextRun, ImageRun, HeadingLevel } from 'do
 import {
   convertDocxToPdfLocal,
   convertDocxToPdfBase64Local,
-} from '../../../src/modules/system/services/docxToPdfService.js';
+} from '../../../src/modules/media/services/docxToPdfService.js';
 
 /**
  * Helper: Tạo DOCX buffer đơn giản để test

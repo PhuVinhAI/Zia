@@ -4,7 +4,7 @@
  */
 
 import { readFileSync, writeFileSync } from 'node:fs';
-import { convertDocxToPdfLocal } from '../src/modules/system/services/docxToPdfService.js';
+import { convertDocxToPdfLocal } from '../src/modules/media/services/docxToPdfService.js';
 
 const INPUT_FILE = 'C:\\Users\\tomis\\Docs\\Zia\\scripts\\BAO_CAO Mon HCI_VVT.doc';
 const OUTPUT_FILE = 'scripts/output-doc.pdf';

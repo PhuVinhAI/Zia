@@ -191,7 +191,7 @@ export async function fetchAndConvertToTextBase64(url: string): Promise<string |
 }
 
 // Import local DOCX to PDF conversion service (no API key needed)
-import { convertDocxToPdfLocal } from '../../modules/system/services/docxToPdfService.js';
+import { convertDocxToPdfLocal } from '../../modules/media/services/docxToPdfService.js';
 
 /**
  * Fetch DOC/DOCX file, convert sang PDF locally, trả về base64

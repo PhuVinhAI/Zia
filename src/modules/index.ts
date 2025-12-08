@@ -6,8 +6,23 @@
 export { gatewayModule } from './gateway/gateway.module.js';
 export * from './gateway/gateway.module.js';
 
-// System - Core tools
+// System - Utility tools
 export { systemModule } from './system/system.module.js';
+
+// Chat - History và memory
+export { chatModule } from './chat/chat.module.js';
+
+// Media - Charts, files, images, TTS
+export { mediaModule } from './media/media.module.js';
+
+// Search - Web search, YouTube, weather
+export { searchModule } from './search/search.module.js';
+
+// Social - User info, friends, groups
+export { socialModule } from './social/social.module.js';
+
+// Task - Code execution, math, scheduling
+export { taskModule } from './task/task.module.js';
 
 // Entertainment - Anime, media tools
 export { entertainmentModule } from './entertainment/entertainment.module.js';

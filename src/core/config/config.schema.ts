@@ -69,6 +69,11 @@ export const FetchConfigSchema = z.object({
 // Modules config schema
 export const ModulesConfigSchema = z.object({
   system: z.boolean().default(true),
+  chat: z.boolean().default(true),
+  media: z.boolean().default(true),
+  search: z.boolean().default(true),
+  social: z.boolean().default(true),
+  task: z.boolean().default(true),
   academic: z.boolean().default(true),
   entertainment: z.boolean().default(true),
 });
@@ -126,6 +131,11 @@ export const SettingsSchema = z.object({
   }),
   modules: ModulesConfigSchema.optional().default({
     system: true,
+    chat: true,
+    media: true,
+    search: true,
+    social: true,
+    task: true,
     academic: true,
     entertainment: true,
   }),
