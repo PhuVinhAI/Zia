@@ -3,6 +3,9 @@
  * Quyết định gửi file/media qua Zalo hay trả text về AI
  */
 
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { debugLog } from '../../../core/index.js';
 import type { ToolCall, ToolResult } from '../../../core/types.js';
 import { getThreadType } from './response.handler.js';
@@ -163,10 +166,31 @@ const outputHandlers: Record<string, OutputHandler> = {
     }
   },
 
-  // freepikImage → send images from buffer
+  // freepikImage → send images from buffer + save temp files for AI to use
   freepikImage: async (api, threadId, result) => {
     if (result.data?.imageBuffers) {
       await sendImages(api, threadId, result.data.imageBuffers, 'freepik');
+
+      // Lưu ảnh vào temp files để AI có thể dùng cho các tool khác (VD: changeGroupAvatar)
+      const tempPaths: string[] = [];
+      for (let i = 0; i < result.data.imageBuffers.length; i++) {
+        const img = result.data.imageBuffers[i];
+        const ext = img.mimeType.includes('png') ? 'png' : 'jpg';
+        const tempPath = path.join(os.tmpdir(), `freepik_${Date.now()}_${i}.${ext}`);
+        try {
+          fs.writeFileSync(tempPath, img.buffer);
+          tempPaths.push(tempPath);
+          debugLog('TOOL:FREEPIK', `Saved temp file for AI: ${tempPath}`);
+        } catch (e: any) {
+          debugLog('TOOL:FREEPIK', `Failed to save temp file: ${e.message}`);
+        }
+      }
+
+      // Thêm tempPaths vào result.data để AI có thể sử dụng
+      if (tempPaths.length > 0) {
+        result.data.tempImagePaths = tempPaths;
+        result.data.hint = `Ảnh đã được lưu tạm. Dùng tempImagePaths[0] = "${tempPaths[0]}" cho changeGroupAvatar nếu cần đổi avatar nhóm.`;
+      }
     }
   },
 

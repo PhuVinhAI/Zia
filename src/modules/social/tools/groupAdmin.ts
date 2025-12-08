@@ -3,8 +3,12 @@
  * API: kick, block, add members, settings, admin roles, group link
  */
 
+import fs from 'node:fs';
+import path from 'node:path';
+import os from 'node:os';
 import { debugLog, logZaloAPI } from '../../../core/logger/logger.js';
 import { getThreadType } from '../../../shared/utils/message/messageSender.js';
+import { fetchImageAsBuffer } from '../../../shared/utils/httpClient.js';
 import type { ToolContext, ToolDefinition, ToolResult } from '../../../shared/types/tools.types.js';
 
 // ═══════════════════════════════════════════════════
@@ -522,27 +526,30 @@ export const changeGroupNameTool: ToolDefinition = {
 
 /**
  * Đổi ảnh đại diện nhóm
+ * Hỗ trợ: file path local, URL ảnh
  */
 export const changeGroupAvatarTool: ToolDefinition = {
   name: 'changeGroupAvatar',
   description:
-    'Đổi ảnh đại diện nhóm. Bot phải có quyền. Cần đường dẫn file ảnh trên máy hoặc URL.',
+    'Đổi ảnh đại diện nhóm. Bot phải có quyền. Hỗ trợ đường dẫn file ảnh trên máy hoặc URL ảnh (http/https).',
   parameters: [
     {
       name: 'filePath',
       type: 'string',
-      description: 'Đường dẫn file ảnh (VD: "./avatar.jpg") hoặc URL ảnh',
+      description: 'Đường dẫn file ảnh (VD: "./avatar.jpg") hoặc URL ảnh (http://... hoặc https://...)',
       required: true,
     },
   ],
   execute: async (params: Record<string, any>, context: ToolContext): Promise<ToolResult> => {
+    let tempFilePath: string | null = null;
+
     try {
       // Kiểm tra ngữ cảnh nhóm
       if (!isGroupContext(context.threadId)) {
         return notGroupError();
       }
 
-      const { filePath } = params;
+      let { filePath } = params;
 
       if (!filePath || typeof filePath !== 'string') {
         return { success: false, error: 'Thiếu đường dẫn file ảnh (filePath)' };
@@ -550,19 +557,55 @@ export const changeGroupAvatarTool: ToolDefinition = {
 
       debugLog('TOOL:changeGroupAvatar', `Changing group avatar: ${filePath}`);
 
+      // Kiểm tra nếu là URL -> download về temp file
+      if (filePath.startsWith('http://') || filePath.startsWith('https://')) {
+        debugLog('TOOL:changeGroupAvatar', `Detected URL, downloading image...`);
+
+        const downloaded = await fetchImageAsBuffer(filePath);
+        if (!downloaded) {
+          return { success: false, error: 'Không thể tải ảnh từ URL. URL có thể đã hết hạn hoặc không hợp lệ.' };
+        }
+
+        // Xác định extension từ mimeType
+        const ext = downloaded.mimeType.includes('png') ? '.png' : '.jpg';
+        tempFilePath = path.join(os.tmpdir(), `zalo_avatar_${Date.now()}${ext}`);
+
+        // Lưu buffer vào temp file
+        fs.writeFileSync(tempFilePath, downloaded.buffer);
+        debugLog('TOOL:changeGroupAvatar', `Saved temp file: ${tempFilePath} (${downloaded.buffer.length} bytes)`);
+
+        // Sử dụng temp file path
+        filePath = tempFilePath;
+      }
+
+      // Kiểm tra file tồn tại (cho cả local file và temp file)
+      if (!fs.existsSync(filePath)) {
+        return { success: false, error: `File không tồn tại: ${filePath}` };
+      }
+
       const result = await context.api.changeGroupAvatar(filePath, context.threadId);
       logZaloAPI('tool:changeGroupAvatar', { filePath, threadId: context.threadId }, result);
 
       return {
         success: true,
         data: {
-          filePath,
+          filePath: params.filePath, // Trả về path gốc user cung cấp
           message: 'Đã đổi ảnh đại diện nhóm',
         },
       };
     } catch (error: any) {
       debugLog('TOOL:changeGroupAvatar', `Error: ${error.message}`);
       return { success: false, error: `Lỗi đổi ảnh nhóm: ${error.message}` };
+    } finally {
+      // Cleanup temp file nếu có
+      if (tempFilePath && fs.existsSync(tempFilePath)) {
+        try {
+          fs.unlinkSync(tempFilePath);
+          debugLog('TOOL:changeGroupAvatar', `Cleaned up temp file: ${tempFilePath}`);
+        } catch {
+          // Ignore cleanup errors
+        }
+      }
     }
   },
 };
