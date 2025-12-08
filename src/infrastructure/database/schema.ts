@@ -91,7 +91,7 @@ export const agentTasks = sqliteTable(
     id: integer('id').primaryKey({ autoIncrement: true }),
     // Note: accept_friend đã được xử lý tự động trong agent.runner
     type: text('type', {
-      enum: ['send_message', 'send_friend_request'],
+      enum: ['send_message'],
     }).notNull(),
     status: text('status', {
       enum: ['pending', 'processing', 'completed', 'failed', 'cancelled'],
@@ -148,5 +148,5 @@ export type NewAgentTask = typeof agentTasks.$inferInsert;
 
 export type MemoryType = 'conversation' | 'fact' | 'person' | 'preference' | 'task' | 'note';
 // Note: accept_friend đã được xử lý tự động trong agent.runner, không cần task
-export type TaskType = 'send_message' | 'send_friend_request';
+export type TaskType = 'send_message';
 export type TaskStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';

@@ -127,7 +127,7 @@ function runMigrations(sqlite: Database) {
   sqlite.exec(`
     CREATE TABLE IF NOT EXISTS agent_tasks (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      type TEXT NOT NULL CHECK(type IN ('send_message', 'accept_friend', 'send_friend_request')),
+      type TEXT NOT NULL CHECK(type IN ('send_message')),
       status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'processing', 'completed', 'failed', 'cancelled')),
       target_user_id TEXT,
       target_thread_id TEXT,

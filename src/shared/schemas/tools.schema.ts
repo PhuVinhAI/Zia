@@ -429,11 +429,11 @@ export const CreateAppSchema = z.object({
 // ============ BACKGROUND AGENT TOOLS ============
 
 // Task types (accept_friend được xử lý tự động, không cần task)
-const TASK_TYPES = ['send_message', 'send_friend_request'] as const;
+const TASK_TYPES = ['send_message'] as const;
 
 // Schedule Task params
 export const ScheduleTaskSchema = z.object({
-  type: z.enum(TASK_TYPES).describe('Loại task: send_message, send_friend_request'),
+  type: z.enum(TASK_TYPES).describe('Loại task: send_message'),
   targetUserId: z.string().optional().describe('ID người dùng đích'),
   targetThreadId: z.string().optional().describe('ID thread/nhóm đích (cho send_message)'),
   targetDescription: z

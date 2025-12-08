@@ -28,8 +28,6 @@ export async function executeTask(api: any, task: AgentTask): Promise<ExecutionR
   switch (task.type) {
     case 'send_message':
       return executeSendMessage(api, task, payload);
-    case 'send_friend_request':
-      return executeSendFriendRequest(api, task, payload);
     default:
       return { success: false, error: `Unknown task type: ${task.type}` };
   }
@@ -185,89 +183,4 @@ async function executeSendMessage(
   }
 }
 
-/**
- * Gửi lời mời kết bạn
- * Hỗ trợ cả số điện thoại (sẽ tự động findUser) và UID trực tiếp
- */
-async function executeSendFriendRequest(
-  api: any,
-  task: AgentTask,
-  payload: { message?: string },
-): Promise<ExecutionResult> {
-  const targetId = task.targetUserId;
-  if (!targetId) {
-    return { success: false, error: 'Missing targetUserId' };
-  }
 
-  // Message tối đa ~150 ký tự theo spec Zalo
-  const message = (payload.message || 'Xin chào, mình muốn kết bạn với bạn!').substring(0, 150);
-
-  try {
-    let uid = targetId;
-    let displayName = targetId;
-
-    // Kiểm tra xem targetId có phải số điện thoại không (bắt đầu bằng 0 hoặc 84)
-    const isPhoneNumber = /^(0|84)\d{9,10}$/.test(targetId);
-
-    if (isPhoneNumber) {
-      // Bước 1: Tìm user từ số điện thoại
-      debugLog('EXECUTOR', `Finding user by phone: ${targetId}`);
-      const userInfo = await api.findUser(targetId);
-
-      if (!userInfo || !userInfo.uid) {
-        return {
-          success: false,
-          error: `Không tìm thấy user với SĐT: ${targetId} (có thể họ chặn tìm kiếm)`,
-        };
-      }
-
-      uid = userInfo.uid;
-      displayName = userInfo.display_name || uid;
-      debugLog('EXECUTOR', `Found user: ${displayName} (${uid})`);
-    }
-
-    // Bước 2: Gửi lời mời kết bạn
-    debugLog('EXECUTOR', `Sending friend request to ${displayName} (${uid}): ${message}`);
-    await api.sendFriendRequest(message, uid);
-
-    debugLog('EXECUTOR', `Friend request sent successfully`);
-    return {
-      success: true,
-      data: { uid, displayName, message, action: 'sent' },
-    };
-  } catch (error: any) {
-    // Xử lý các mã lỗi Zalo
-    const errorCode = error.code;
-
-    if (errorCode === 225) {
-      debugLog('EXECUTOR', `Already friends with ${targetId}`);
-      return { success: true, data: { targetId, action: 'already_friends' } };
-    }
-
-    if (errorCode === 215) {
-      debugLog('EXECUTOR', `User ${targetId} blocked friend requests`);
-      return { success: false, error: 'Người này chặn nhận lời mời kết bạn' };
-    }
-
-    if (errorCode === 222) {
-      debugLog('EXECUTOR', `User ${targetId} already sent request to us`);
-      // Tự động accept nếu họ đã gửi lời mời cho mình
-      try {
-        const uid = targetId.match(/^(0|84)\d{9,10}$/)
-          ? (await api.findUser(targetId))?.uid
-          : targetId;
-        if (uid) {
-          await api.acceptFriendRequest(uid);
-          debugLog('EXECUTOR', `Auto-accepted friend request from ${uid}`);
-          return { success: true, data: { uid, action: 'auto_accepted' } };
-        }
-      } catch (acceptError) {
-        debugLog('EXECUTOR', `Failed to auto-accept: ${acceptError}`);
-      }
-      return { success: false, error: 'Người này đã gửi lời mời cho bạn rồi' };
-    }
-
-    debugLog('EXECUTOR', `Failed to send friend request: ${error.message} (code: ${errorCode})`);
-    return { success: false, error: error.message };
-  }
-}
