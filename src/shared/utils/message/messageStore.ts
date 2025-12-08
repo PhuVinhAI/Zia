@@ -202,3 +202,39 @@ export async function getBotMessageByMsgId(msgId: string): Promise<SentMessage |
   debugLog('MSG_STORE', `getBotMessageByMsgId: NOT found msgId=${msgIdStr}`);
   return null;
 }
+
+/**
+ * Lấy tin nhắn gần nhất của bot trong thread (trong vòng 5 phút)
+ * Dùng cho trường hợp reaction event trả về msgId khác với msgId đã lưu
+ */
+export async function getLastBotMessageInThread(threadId: string): Promise<SentMessage | null> {
+  const fiveMinutesAgo = Date.now() - 5 * 60 * 1000;
+  
+  // Check cache trước
+  const cache = messageCache.get(threadId);
+  if (cache && cache.length > 0) {
+    // Lấy tin nhắn gần nhất trong vòng 5 phút
+    for (let i = cache.length - 1; i >= 0; i--) {
+      if (cache[i].timestamp > fiveMinutesAgo) {
+        debugLog('MSG_STORE', `getLastBotMessageInThread: found in cache msgId=${cache[i].msgId}`);
+        return cache[i];
+      }
+    }
+  }
+
+  // Fallback to DB
+  const dbMsg = await sentMessagesRepository.getLastMessage(threadId);
+  if (dbMsg && dbMsg.timestamp.getTime() > fiveMinutesAgo) {
+    debugLog('MSG_STORE', `getLastBotMessageInThread: found in DB msgId=${dbMsg.msgId}`);
+    return {
+      msgId: dbMsg.msgId,
+      cliMsgId: dbMsg.cliMsgId || '',
+      content: dbMsg.content || '',
+      threadId: dbMsg.threadId,
+      timestamp: dbMsg.timestamp.getTime(),
+    };
+  }
+
+  debugLog('MSG_STORE', `getLastBotMessageInThread: NOT found recent message in thread=${threadId}`);
+  return null;
+}
