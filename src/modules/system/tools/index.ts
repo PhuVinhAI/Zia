@@ -35,3 +35,7 @@ export { executeCodeTool } from './task/executeCode.js';
 export { flushLogsTool } from './task/flushLogs.js';
 export { scheduleTaskTool } from './task/scheduleTask.js';
 export { solveMathTool } from './task/solveMath.js';
+
+// Utility tools
+export { qrCodeTool } from './utility/qrCode.js';
+export { urlShortenerTool } from './utility/urlShortener.js';

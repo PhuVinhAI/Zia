@@ -11,7 +11,10 @@ import { createFileTool } from './tools/media/createFile/index.js';
 import { freepikImageTool } from './tools/media/freepikImage.js';
 import { textToSpeechTool } from './tools/media/textToSpeech.js';
 // Search tools
+import { currencyConvertTool, currencyRatesTool } from './tools/search/currency.js';
 import { googleSearchTool } from './tools/search/googleSearch.js';
+import { steamGameTool, steamSearchTool, steamTopTool } from './tools/search/steam.js';
+import { weatherTool } from './tools/search/weather.js';
 import { youtubeChannelTool, youtubeSearchTool, youtubeVideoTool } from './tools/search/youtube.js';
 // Social tools
 import { createNoteTool, editNoteTool, getListBoardTool } from './tools/social/board.js';
@@ -37,6 +40,9 @@ import { executeCodeTool } from './tools/task/executeCode.js';
 import { flushLogsTool } from './tools/task/flushLogs.js';
 import { scheduleTaskTool } from './tools/task/scheduleTask.js';
 import { solveMathTool } from './tools/task/solveMath.js';
+// Utility tools
+import { qrCodeTool } from './tools/utility/qrCode.js';
+import { urlShortenerTool } from './tools/utility/urlShortener.js';
 
 export class SystemModule extends BaseModule {
   readonly metadata: ModuleMetadata = {
@@ -62,6 +68,15 @@ export class SystemModule extends BaseModule {
     youtubeVideoTool,
     youtubeChannelTool,
     googleSearchTool,
+    // Weather tool
+    weatherTool,
+    // Steam tools
+    steamSearchTool,
+    steamGameTool,
+    steamTopTool,
+    // Currency tools
+    currencyConvertTool,
+    currencyRatesTool,
     clearHistoryTool,
     // Memory tools
     saveMemoryTool,
@@ -83,6 +98,9 @@ export class SystemModule extends BaseModule {
     removeReminderTool,
     // Forward message tool
     forwardMessageTool,
+    // Utility tools
+    qrCodeTool,
+    urlShortenerTool,
     // Admin tools
     flushLogsTool,
   ];
