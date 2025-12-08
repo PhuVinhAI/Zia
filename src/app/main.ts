@@ -87,6 +87,10 @@ async function main() {
     console.log('⚠️ GROQ_API_KEY not set, background agent disabled');
   }
 
+  // 7. Start sleep mode (auto offline theo giờ)
+  const { startSleepMode } = await import('../infrastructure/messaging/zalo/sleepMode.service.js');
+  startSleepMode(api);
+
   console.log('\n👂 Bot đang lắng nghe...');
   logStep('main:listening', 'Bot is now listening for messages');
 }

@@ -29,6 +29,12 @@
     "cloudDebug": {
       "enabled": true,
       "prefix": "#b"
+    },
+    "sleepMode": {
+      "enabled": true,
+      "sleepHour": 23,
+      "wakeHour": 6,
+      "checkIntervalMs": 1800000
     }
   },
   "historyLoader": {

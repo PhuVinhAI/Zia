@@ -71,6 +71,7 @@ function buildConfig(settings: Settings) {
     showToolCalls: settings.bot.showToolCalls,
     allowNSFW: settings.bot.allowNSFW,
     cloudDebug: settings.bot.cloudDebug,
+    sleepMode: settings.bot.sleepMode,
     allowedUserIds: settings.allowedUserIds,
     retry: settings.retry,
     stickerKeywords: settings.stickers.keywords,
