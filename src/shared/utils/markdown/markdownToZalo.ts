@@ -60,6 +60,29 @@ interface TableData {
   rows: string[][];
 }
 
+/**
+ * Strip markdown syntax từ text (dùng cho nội dung cell trong bảng)
+ * Loại bỏ: **bold**, *italic*, ~~strikethrough~~, `code`, [link](url)
+ */
+function stripMarkdownSyntax(text: string): string {
+  return text
+    // ***bold italic*** → content
+    .replace(/\*\*\*(.+?)\*\*\*/g, '$1')
+    // **bold** → content
+    .replace(/\*\*(.+?)\*\*/g, '$1')
+    // ~~strikethrough~~ → content
+    .replace(/~~(.+?)~~/g, '$1')
+    // *italic* → content (không phải **)
+    .replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '$1')
+    // _italic_ → content (không phải __)
+    .replace(/(?<!_)_(?!_)(.+?)(?<!_)_(?!_)/g, '$1')
+    // `inline code` → content
+    .replace(/`([^`]+)`/g, '$1')
+    // [link text](url) → link text
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .trim();
+}
+
 function parseMarkdownTable(tableText: string): TableData | null {
   const lines = tableText
     .trim()
@@ -69,14 +92,14 @@ function parseMarkdownTable(tableText: string): TableData | null {
 
   const headers = lines[0]
     .split('|')
-    .map((cell) => cell.trim())
+    .map((cell) => stripMarkdownSyntax(cell.trim()))
     .filter((cell) => cell);
 
   const rows: string[][] = [];
   for (let i = 2; i < lines.length; i++) {
     const cells = lines[i]
       .split('|')
-      .map((cell) => cell.trim())
+      .map((cell) => stripMarkdownSyntax(cell.trim()))
       .filter((cell) => cell);
     if (cells.length > 0) rows.push(cells);
   }
