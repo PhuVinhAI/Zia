@@ -4,7 +4,13 @@
  * Sử dụng cơ chế tag [tool:xxx] giống Gemini để dễ mở rộng custom tools
  */
 import { debugLog } from '../../core/logger/logger.js';
-import { parseToolCalls } from '../../core/tool-registry/tool-registry.js';
+import {
+  executeAllTools,
+  generateToolsPrompt,
+  hasToolCalls,
+  parseToolCalls,
+} from '../../core/tool-registry/tool-registry.js';
+import type { ToolContext } from '../../core/types.js';
 import {
   type GroqMessage,
   generateGroqResponse,
@@ -26,6 +32,7 @@ let zaloApi: any = null;
 // Config
 const POLL_INTERVAL_MS = 90_000; // 1 phút 30 giây
 const GROQ_ENABLED = true; // Set false để skip Groq và execute trực tiếp
+const MAX_TOOL_ITERATIONS = 5; // Số lần tối đa gọi tools trong 1 session
 
 /**
  * Khởi động background agent
@@ -176,7 +183,82 @@ async function processTaskWithDecision(
 }
 
 /**
+ * Execute tools từ Groq response và trả về kết quả
+ */
+async function executeGroqTools(
+  response: string,
+  toolContext: ToolContext,
+): Promise<{ hasTools: boolean; results: string }> {
+  if (!hasToolCalls(response)) {
+    return { hasTools: false, results: '' };
+  }
+
+  const toolCalls = parseToolCalls(response);
+  // Lọc bỏ tool "decide" vì đó là internal tool cho task decisions
+  const externalToolCalls = toolCalls.filter((call) => call.toolName !== 'decide');
+
+  if (externalToolCalls.length === 0) {
+    return { hasTools: false, results: '' };
+  }
+
+  debugLog('AGENT', `Executing ${externalToolCalls.length} external tools`);
+
+  const results = await executeAllTools(externalToolCalls, toolContext);
+  const resultLines: string[] = [];
+
+  for (const [rawTag, result] of results) {
+    if (result.success) {
+      resultLines.push(`✅ ${rawTag}\nKết quả: ${JSON.stringify(result.data)}`);
+    } else {
+      resultLines.push(`❌ ${rawTag}\nLỗi: ${result.error}`);
+    }
+  }
+
+  return {
+    hasTools: true,
+    results: resultLines.join('\n\n'),
+  };
+}
+
+/**
+ * Gọi Groq với tool loop - cho phép multi-turn tool execution
+ */
+async function callGroqWithTools(
+  messages: GroqMessage[],
+  toolContext: ToolContext,
+  options?: { temperature?: number },
+): Promise<string> {
+  let currentMessages = [...messages];
+  let finalResponse = '';
+
+  for (let iteration = 0; iteration < MAX_TOOL_ITERATIONS; iteration++) {
+    const response = await generateGroqResponse(currentMessages, options);
+    finalResponse = response;
+
+    // Execute external tools (không phải "decide")
+    const { hasTools, results } = await executeGroqTools(response, toolContext);
+
+    if (!hasTools) {
+      // Không có tool calls hoặc chỉ có "decide" → kết thúc
+      break;
+    }
+
+    debugLog('AGENT', `Tool iteration ${iteration + 1}: executed tools, continuing...`);
+
+    // Thêm response và tool results vào conversation
+    currentMessages.push({ role: 'assistant', content: response });
+    currentMessages.push({
+      role: 'user',
+      content: `## Kết quả thực thi tools:\n\n${results}\n\nHãy tiếp tục xử lý dựa trên kết quả trên.`,
+    });
+  }
+
+  return finalResponse;
+}
+
+/**
  * Gọi Groq 1 lần duy nhất để quyết định cho tất cả tasks
+ * Có hỗ trợ full custom tools của hệ thống
  */
 async function getBatchGroqDecisions(
   tasks: any[],
@@ -185,6 +267,7 @@ async function getBatchGroqDecisions(
   Map<number, { action: 'execute' | 'skip' | 'delay'; reason: string; adjustedPayload?: any }>
 > {
   const contextStr = formatContextForPrompt(context);
+  const toolsPrompt = generateToolsPrompt();
 
   // Format tất cả tasks vào 1 prompt
   const tasksDescription = tasks
@@ -201,7 +284,9 @@ async function getBatchGroqDecisions(
 
   const batchSystemPrompt = `Bạn là một AI assistant chạy nền, nhiệm vụ của bạn là xử lý NHIỀU tasks cùng lúc.
 
-## CÁCH TRẢ LỜI:
+${toolsPrompt}
+
+## CÁCH TRẢ LỜI CHO TASKS:
 Với MỖI task, sử dụng tool tag với task_id:
 [tool:decide task_id="<ID>" action="execute|skip|delay" reason="Lý do"]
 
@@ -213,6 +298,7 @@ Nếu cần điều chỉnh message hoặc resolve targetDescription:
 - Hệ thống TỰ ĐỘNG accept friend requests
 - Điều chỉnh tone dựa trên giới tính
 - Trả lời cho TẤT CẢ tasks trong 1 response
+- Có thể sử dụng CUSTOM TOOLS ở trên để lấy thêm thông tin nếu cần
 
 ## RESOLVE targetDescription:
 Nếu task có targetDescription (mô tả nhóm/người) thay vì ID:
@@ -228,15 +314,25 @@ ${tasksDescription}
 
 ${contextStr}
 
-Hãy phân tích và sử dụng [tool:decide] cho TỪNG task (theo task_id).`;
+Hãy phân tích và sử dụng [tool:decide] cho TỪNG task (theo task_id).
+Nếu cần thông tin thêm, hãy sử dụng các CUSTOM TOOLS có sẵn.`;
 
   const messages: GroqMessage[] = [
     { role: 'system', content: batchSystemPrompt },
     { role: 'user', content: userPrompt },
   ];
 
+  // Tạo tool context cho background agent
+  const toolContext: ToolContext = {
+    api: zaloApi,
+    threadId: tasks[0]?.targetThreadId || tasks[0]?.targetUserId || 'background-agent',
+    senderId: 'background-agent',
+    senderName: 'Background Agent',
+  };
+
   try {
-    const response = await generateGroqResponse(messages, { temperature: 0.3 });
+    // Gọi Groq với tool loop
+    const response = await callGroqWithTools(messages, toolContext, { temperature: 0.3 });
     debugLog('AGENT', `Groq batch response: ${response.substring(0, 300)}...`);
 
     return parseBatchDecisions(response, tasks);

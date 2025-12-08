@@ -162,15 +162,25 @@ async function handleReaction(
   }
 
   const reactionObj = reactionMap[reactionType];
-  if (reactionObj && targetMsg) {
-    try {
-      const result = await api.addReaction(reactionObj, targetMsg);
-      logZaloAPI('addReaction', { reaction: reactionType, msgId: targetMsg?.data?.msgId }, result);
-      console.log(`[Bot] 💖 Đã thả reaction: ${reactionType}`);
-      logMessage('OUT', threadId, { type: 'reaction', reaction: reactionType });
-    } catch (e: any) {
-      logError('handleReaction', e);
-    }
+  if (!reactionObj || !targetMsg) {
+    debugLog('REACTION', `Skip reaction: no reactionObj or targetMsg`);
+    return;
+  }
+
+  // Kiểm tra nếu targetMsg là fake reaction message (không có msgId thực)
+  // Fake message được tạo khi user thả reaction vào tin nhắn bot
+  if (targetMsg?.data?._isReaction || !targetMsg?.data?.msgId) {
+    debugLog('REACTION', `Skip reaction: targetMsg is fake reaction message or has no msgId`);
+    return;
+  }
+
+  try {
+    const result = await api.addReaction(reactionObj, targetMsg);
+    logZaloAPI('addReaction', { reaction: reactionType, msgId: targetMsg?.data?.msgId }, result);
+    console.log(`[Bot] 💖 Đã thả reaction: ${reactionType}`);
+    logMessage('OUT', threadId, { type: 'reaction', reaction: reactionType });
+  } catch (e: any) {
+    logError('handleReaction', e);
   }
 }
 

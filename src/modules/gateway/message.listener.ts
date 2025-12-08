@@ -167,8 +167,14 @@ const REACTION_NAMES: Record<string, string> = {
   ':-h': 'phẫn nộ 😡',
 };
 
+// Track pending reactions để debounce khi user thả nhiều reaction liên tục
+// Key: `${threadId}:${reactorId}:${originalMsgId}`, Value: { timeout, icons: string[] }
+const pendingReactions = new Map<string, { timeout: NodeJS.Timeout; icons: string[] }>();
+const REACTION_DEBOUNCE_MS = 2000; // Đợi 2s trước khi xử lý reaction
+
 /**
  * Xử lý reaction event - tạo fake message để AI tự suy nghĩ phản hồi
+ * Có debounce để gom tất cả reactions trong 2s thành danh sách
  */
 function registerReactionListener(api: any): void {
   api.listener.on('reaction', async (reactionObj: any) => {
@@ -190,6 +196,9 @@ function registerReactionListener(api: any): void {
     const oriMsgId = data?.content?.oriMsgId; // Original message ID
     const cliMsgId = data?.content?.cliMsgId; // Client message ID
     const globalMsgId = data?.content?.globalMsgId; // Global message ID
+    // rMsg array chứa thông tin tin nhắn gốc được react - ĐÂY LÀ ID CHÍNH XÁC NHẤT
+    const rMsgGlobalId = data?.content?.rMsg?.[0]?.gMsgID; // Global msg ID từ rMsg
+    const rMsgCliId = data?.content?.rMsg?.[0]?.cMsgID; // Client msg ID từ rMsg
 
     if (!reactorId || !icon) {
       debugLog('REACTION', 'Missing reactorId or icon in reaction event');
@@ -199,11 +208,12 @@ function registerReactionListener(api: any): void {
     // Log tất cả các loại msgId để debug
     debugLog(
       'REACTION',
-      `User ${reactorId} reacted ${icon} - msgId=${targetMsgId}, oriMsgId=${oriMsgId}, cliMsgId=${cliMsgId}, globalMsgId=${globalMsgId} in ${threadId}`,
+      `User ${reactorId} reacted ${icon} - msgId=${targetMsgId}, rMsgGlobalId=${rMsgGlobalId}, rMsgCliId=${rMsgCliId}, oriMsgId=${oriMsgId} in ${threadId}`,
     );
 
     // Thử tìm tin nhắn bot với tất cả các loại ID có thể
-    const possibleIds = [targetMsgId, oriMsgId, cliMsgId, globalMsgId]
+    // Ưu tiên rMsgGlobalId vì đây là ID chính xác của tin nhắn được react
+    const possibleIds = [rMsgGlobalId, rMsgCliId, targetMsgId, oriMsgId, cliMsgId, globalMsgId]
       .filter((id) => id != null)
       .map((id) => String(id));
 
@@ -234,31 +244,69 @@ function registerReactionListener(api: any): void {
 
     // Lấy tên reaction
     const reactionName = REACTION_NAMES[icon] || icon;
+    
+    // Key để track reaction: threadId:reactorId:originalMsgId
+    const reactionKey = `${threadId}:${reactorId}:${botMsg.msgId}`;
+    const pending = pendingReactions.get(reactionKey);
+    
+    // Nếu đã có pending reaction cho cùng tin nhắn, clear timeout cũ và thêm icon mới vào danh sách
+    if (pending) {
+      clearTimeout(pending.timeout);
+      pending.icons.push(icon);
+      debugLog('REACTION', `User added another reaction: ${icon} (total: ${pending.icons.length})`);
+    }
+    
+    // Lấy danh sách icons hiện tại hoặc tạo mới
+    const icons = pending?.icons || [icon];
+    
+    // Debounce: đợi 2s trước khi xử lý để gom tất cả reactions
+    const newPending = {
+      timeout: setTimeout(async () => {
+        pendingReactions.delete(reactionKey);
+        
+        // Chuyển danh sách icons thành tên reactions
+        const reactionNames = icons.map(i => REACTION_NAMES[i] || i);
+        const uniqueReactions = [...new Set(reactionNames)];
+        const reactionList = reactionNames.join(', ');
+        
+        // Tạo nội dung mô tả reaction để AI hiểu context
+        // Nhấn mạnh đây là reaction LÊN TIN NHẮN chứ không phải cảm xúc cá nhân
+        let reactionContent: string;
+        const msgPreview = botMsg.content.substring(0, 150) + (botMsg.content.length > 150 ? '...' : '');
+        if (icons.length > 1) {
+          reactionContent = `[REACTION] Người dùng vừa thả ${icons.length} reaction lên tin nhắn của bạn: [${reactionList}]. Tin nhắn được react: "${msgPreview}"`;
+        } else {
+          reactionContent = `[REACTION] Người dùng vừa thả reaction "${reactionNames[0]}" lên tin nhắn của bạn: "${msgPreview}"`;
+        }
 
-    // Tạo nội dung mô tả reaction để AI hiểu context
-    const reactionContent = `[REACTION] Người dùng vừa thả cảm xúc "${reactionName}" vào tin nhắn của bạn: "${botMsg.content.substring(0, 200)}${botMsg.content.length > 200 ? '...' : ''}"`;
+        // Tạo fake message để đẩy vào luồng xử lý chung
+        const fakeMessage = {
+          type: 'reaction',
+          threadId,
+          isSelf: false,
+          data: {
+            uidFrom: reactorId,
+            content: reactionContent,
+            msgType: 'chat',
+            // Metadata để AI biết đây là reaction event
+            _isReaction: true,
+            _reactionIcons: icons, // Danh sách tất cả icons
+            _reactionNames: reactionNames, // Danh sách tên reactions
+            _originalMsgContent: botMsg.content,
+            _originalMsgId: botMsg.msgId,
+          },
+        };
 
-    // Tạo fake message để đẩy vào luồng xử lý chung
-    const fakeMessage = {
-      type: 'reaction',
-      threadId,
-      isSelf: false,
-      data: {
-        uidFrom: reactorId,
-        content: reactionContent,
-        msgType: 'chat',
-        // Metadata để AI biết đây là reaction event
-        _isReaction: true,
-        _reactionIcon: icon,
-        _reactionName: reactionName,
-        _originalMsgContent: botMsg.content,
-      },
+        debugLog('REACTION', `Processing ${icons.length} reactions after debounce: ${reactionList}`);
+
+        // Đẩy vào buffer để AI xử lý như tin nhắn bình thường
+        addToBuffer(api, threadId, fakeMessage);
+      }, REACTION_DEBOUNCE_MS),
+      icons,
     };
-
-    debugLog('REACTION', `Created fake message for AI processing: ${reactionContent}`);
-
-    // Đẩy vào buffer để AI xử lý như tin nhắn bình thường
-    addToBuffer(api, threadId, fakeMessage);
+    
+    pendingReactions.set(reactionKey, newPending);
+    debugLog('REACTION', `Queued reaction (will process in ${REACTION_DEBOUNCE_MS}ms): ${reactionName}`);
   });
 
   console.log('[Gateway] 💝 Reaction listener registered');
