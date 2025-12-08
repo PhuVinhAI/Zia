@@ -255,6 +255,15 @@ export const YouTubeChannelSchema = z.object({
   channelId: z.string().min(1, 'Thiếu ID channel YouTube'),
 });
 
+// ============ WEATHER API ============
+
+// Weather params (Open-Meteo API)
+export const WeatherSchema = z.object({
+  location: z.string().min(1, 'Thiếu tên địa điểm'),
+  days: z.coerce.number().min(1).max(16).default(7),
+  hourlyHours: z.coerce.number().min(0).max(168).default(24),
+});
+
 // ============ GOOGLE CUSTOM SEARCH API ============
 
 // Google Search params (chấp nhận cả q và query)
@@ -512,6 +521,9 @@ export const RemoveReminderSchema = z.object({
  * Ví dụ cấu trúc đúng cho từng tool - giúp AI tránh ảo giác
  */
 export const TOOL_EXAMPLES: Record<string, string> = {
+  // Weather
+  weather: `[tool:weather]{"location":"Hà Nội","days":7}[/tool]`,
+
   // Entertainment
   jikanSearch: `[tool:jikanSearch]{"q":"naruto","mediaType":"anime","limit":5}[/tool]`,
   jikanDetails: `[tool:jikanDetails]{"id":20,"mediaType":"anime"}[/tool]`,
@@ -643,6 +655,7 @@ export type YouTubeVideoParams = z.infer<typeof YouTubeVideoSchema>;
 export type YouTubeChannelParams = z.infer<typeof YouTubeChannelSchema>;
 export type CreateAppParams = z.infer<typeof CreateAppSchema>;
 export type GoogleSearchParams = z.infer<typeof GoogleSearchSchema>;
+export type WeatherParams = z.infer<typeof WeatherSchema>;
 export type SaveMemoryParams = z.infer<typeof SaveMemorySchema>;
 export type RecallMemoryParams = z.infer<typeof RecallMemorySchema>;
 export type ScheduleTaskParams = z.infer<typeof ScheduleTaskSchema>;
