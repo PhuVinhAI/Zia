@@ -31,6 +31,7 @@ import {
   addGroupDeputyTool,
   removeGroupDeputyTool,
   changeGroupOwnerTool,
+  getGroupLinkDetailTool,
   enableGroupLinkTool,
   disableGroupLinkTool,
   getGroupLinkInfoTool,
@@ -40,6 +41,9 @@ import {
   // Group Leave & Disperse (Destructive)
   leaveGroupTool,
   disperseGroupTool,
+  // Friend Request Tools
+  findUserByPhoneTool,
+  sendFriendRequestTool,
 } from './tools/index.js';
 
 export class SocialModule extends BaseModule {
@@ -86,6 +90,7 @@ export class SocialModule extends BaseModule {
     removeGroupDeputyTool,
     changeGroupOwnerTool,
     // Group Admin - Link
+    getGroupLinkDetailTool,
     enableGroupLinkTool,
     disableGroupLinkTool,
     getGroupLinkInfoTool,
@@ -95,6 +100,9 @@ export class SocialModule extends BaseModule {
     // Group Leave & Disperse (Destructive)
     leaveGroupTool,
     disperseGroupTool,
+    // Friend Request
+    findUserByPhoneTool,
+    sendFriendRequestTool,
   ];
 
   get tools(): ITool[] {

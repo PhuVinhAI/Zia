@@ -17,6 +17,7 @@ import {
   addGroupDeputyTool,
   removeGroupDeputyTool,
   changeGroupOwnerTool,
+  getGroupLinkDetailTool,
   enableGroupLinkTool,
   disableGroupLinkTool,
   getGroupLinkInfoTool,
@@ -127,6 +128,11 @@ const createMockApi = () => ({
   }),
 
   // Group Link
+  getGroupLinkDetail: async (groupId: string) => ({
+    link: 'https://zalo.me/g/abc123',
+    expiration_date: 0,
+    enabled: 1,
+  }),
   enableGroupLink: async (groupId: string) => ({
     success: true,
     link: 'https://zalo.me/g/newlink123',
@@ -1165,6 +1171,80 @@ describe('Group Admin Tools Integration', () => {
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('Lỗi giải tán');
+    });
+  });
+
+  // ═══════════════════════════════════════════════════
+  // GET GROUP LINK DETAIL
+  // ═══════════════════════════════════════════════════
+
+  describe('getGroupLinkDetail', () => {
+    test('lấy link nhóm thành công', async () => {
+      const context = { ...mockToolContext, api: mockApi, threadId: mockGroupId };
+
+      const result = await getGroupLinkDetailTool.execute({}, context);
+
+      expect(result.success).toBe(true);
+      expect(result.data.link).toContain('zalo.me/g/');
+      expect(result.data.enabled).toBe(true);
+      expect(result.data.message).toContain('Link nhóm');
+    });
+
+    test('lấy link với groupId cụ thể', async () => {
+      const context = { ...mockToolContext, api: mockApi, threadId: mockGroupId };
+
+      const result = await getGroupLinkDetailTool.execute({ groupId: mockGroupId }, context);
+
+      expect(result.success).toBe(true);
+      expect(result.data.groupId).toBe(mockGroupId);
+    });
+
+    test('trả về thông báo khi link chưa bật', async () => {
+      const disabledLinkApi = {
+        getGroupLinkDetail: async () => ({
+          link: '',
+          enabled: 0,
+          expiration_date: 0,
+        }),
+      };
+      const context = { ...mockToolContext, api: disabledLinkApi, threadId: mockGroupId };
+
+      const result = await getGroupLinkDetailTool.execute({}, context);
+
+      expect(result.success).toBe(true);
+      expect(result.data.enabled).toBe(false);
+      expect(result.data.link).toBeNull();
+      expect(result.data.hint).toContain('enableGroupLink');
+    });
+
+    test('hiển thị thời gian hết hạn', async () => {
+      const expiringLinkApi = {
+        getGroupLinkDetail: async () => ({
+          link: 'https://zalo.me/g/expiring',
+          enabled: 1,
+          expiration_date: Math.floor(Date.now() / 1000) + 86400, // 1 ngày sau
+        }),
+      };
+      const context = { ...mockToolContext, api: expiringLinkApi, threadId: mockGroupId };
+
+      const result = await getGroupLinkDetailTool.execute({}, context);
+
+      expect(result.success).toBe(true);
+      expect(result.data.expirationInfo).not.toBe('Vĩnh viễn');
+    });
+
+    test('xử lý API error', async () => {
+      const errorApi = {
+        getGroupLinkDetail: async () => {
+          throw new Error('Not admin');
+        },
+      };
+      const context = { ...mockToolContext, api: errorApi, threadId: mockGroupId };
+
+      const result = await getGroupLinkDetailTool.execute({}, context);
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('Lỗi lấy link');
     });
   });
 });
