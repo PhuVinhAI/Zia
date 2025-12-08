@@ -1,6 +1,6 @@
 # Word Framework - Tổng hợp tính năng
 
-## 📁 Cấu trúc thư mục (23 files)
+## 📁 Cấu trúc thư mục (18 files)
 
 ```
 word/
@@ -17,13 +17,8 @@ word/
 ├── listBuilder.ts     # Checklist, definition lists
 ├── columnBuilder.ts   # Multi-column layouts
 ├── dividerBuilder.ts  # Dividers/separators
-├── badgeBuilder.ts    # Badges/tags
 ├── mathBuilder.ts     # Math expressions (LaTeX)
-├── boxBuilder.ts      # Styled boxes
 ├── highlightBuilder.ts# Text highlighting
-├── emojiBuilder.ts    # Emoji shortcuts
-├── watermarkBuilder.ts# Watermarks
-├── signatureBuilder.ts# Signatures & approvals
 ├── coverPageBuilder.ts# Cover pages
 ├── documentBuilder.ts # Main builder class
 └── index.ts           # Export all
@@ -88,13 +83,6 @@ word/
 3. Third
 ```
 
-### Checklist
-```markdown
-- [ ] Unchecked item
-- [x] Checked item
-- [ ] Another unchecked
-```
-
 ### Definition list
 ```
 Term
@@ -108,39 +96,6 @@ Term
 |----------|----------|----------|
 | Cell 1   | Cell 2   | Cell 3   |
 | Cell 4   | Cell 5   | Cell 6   |
-```
-
-## 📦 Boxes & Callouts
-
-### Callouts (inline)
-```
-[!INFO] Information message
-[!TIP] Helpful tip
-[!NOTE] Note to remember
-[!WARNING] Warning message
-[!IMPORTANT] Important notice
-[!SUCCESS] Success message
-[!ERROR] Error message
-```
-
-### Boxes (multi-line)
-```
-[BOX:info:Title]
-Content inside the box
-Can be multiple lines
-[/BOX]
-
-Types: info, success, warning, error, note, quote, code
-```
-
-## 🏷️ Badges
-
-```
-[BADGE:New:primary]
-[BADGE:Hot:danger]
-[BADGE:Sale:success]
-[BADGE:Info:info]
-[BADGE:Warning:warning]
 ```
 
 ## ➗ Math Expressions
@@ -189,29 +144,6 @@ $$\int_0^\infty e^{-x} dx$$
 [DIVIDER:floral]
 ```
 
-## 😀 Emojis & Icons
-
-### Shortcuts
-```
-:check: → ✅
-:x: → ❌
-:warning: → ⚠️
-:info: → ℹ️
-:star: → ⭐
-:fire: → 🔥
-:thumbsup: → 👍
-:rocket: → 🚀
-:bulb: → 💡
-:heart: → ❤️
-```
-
-### Icon paragraph
-```
-[ICON:star:large]
-[ICON:check:medium]
-[ICON:fire:small]
-```
-
 ## 📄 Document Structure
 
 ### Cover page
@@ -230,27 +162,6 @@ Styles: simple, professional, academic, modern
 ### Table of Contents
 ```json
 <!--OPTIONS: {"includeToc": true, "tocTitle": "Mục Lục"} -->
-```
-
-## ✍️ Signatures
-
-### Single signature
-```
-[SIGNATURE:Nguyễn Văn A:Giám đốc:Công ty ABC:01/01/2024]
-```
-
-### Approval block
-```
-[APPROVAL:Người duyệt:Chức vụ|Người lập:Chức vụ]
-```
-
-## 💧 Watermarks
-
-```
-[WATERMARK:BẢN NHÁP]
-[WATERMARK:MẬT:FF0000]
-
-Predefined: draft, confidential, sample, copy, original, urgent, approved, rejected, pending, internal
 ```
 
 ## ⚙️ Document Options
@@ -272,10 +183,6 @@ Predefined: draft, confidential, sample, copy, original, urgent, approved, rejec
     "text": "Footer Text",
     "alignment": "center",
     "includePageNumber": true
-  },
-  "watermark": {
-    "text": "DRAFT",
-    "color": "E0E0E0"
   }
 } -->
 ```

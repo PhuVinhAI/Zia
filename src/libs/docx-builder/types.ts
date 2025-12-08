@@ -29,9 +29,6 @@ export interface WordDocumentOptions {
   // Table of Contents
   includeToc?: boolean;
   tocTitle?: string;
-
-  // Watermark
-  watermark?: WatermarkConfig;
 }
 
 export interface PageMargins {
@@ -46,12 +43,6 @@ export interface HeaderFooterConfig {
   alignment?: 'left' | 'center' | 'right';
   includePageNumber?: boolean;
   pageNumberFormat?: 'decimal' | 'roman' | 'romanUpper';
-}
-
-export interface WatermarkConfig {
-  text: string;
-  color?: string;
-  opacity?: number;
 }
 
 // ═══════════════════════════════════════════════════

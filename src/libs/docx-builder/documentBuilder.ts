@@ -23,12 +23,6 @@ import { buildDocumentStyles, buildNumberingConfig } from './styleBuilder.js';
 import { getTheme } from './themes.js';
 import { buildManualTOC, extractHeadings } from './tocBuilder.js';
 import type { WordDocumentOptions } from './types.js';
-import {
-  buildWatermarkHeader,
-  getPredefinedWatermark,
-  parseWatermarkSyntax,
-  removeWatermarkSyntax,
-} from './watermarkBuilder.js';
 
 // ═══════════════════════════════════════════════════
 // DOCUMENT BUILDER CLASS
@@ -58,33 +52,16 @@ export class WordDocumentBuilder {
     let processedContent = content;
     const allChildren: (Paragraph | Table)[] = [];
 
-    // 1. Check for watermark
-    let watermarkConfig = this.options.watermark;
-    const inlineWatermark = parseWatermarkSyntax(processedContent);
-    if (inlineWatermark) {
-      watermarkConfig = inlineWatermark;
-      processedContent = removeWatermarkSyntax(processedContent);
-    }
-    // Check for predefined watermark keywords
-    const predefinedMatch = processedContent.match(/\[WATERMARK:(\w+)\]/i);
-    if (predefinedMatch) {
-      const predefined = getPredefinedWatermark(predefinedMatch[1]);
-      if (predefined) {
-        watermarkConfig = predefined;
-        processedContent = processedContent.replace(predefinedMatch[0], '');
-      }
-    }
-
-    // 2. Check if content has cover page - skip title section if so
+    // 1. Check if content has cover page - skip title section if so
     const hasCover = /\[COVER:[^\]]+\]/i.test(processedContent);
 
-    // 3. Build title if provided AND no cover page in content
+    // 2. Build title if provided AND no cover page in content
     if (!hasCover) {
       const titleParagraphs = this.buildTitleSection();
       allChildren.push(...titleParagraphs);
     }
 
-    // 4. Build TOC if requested
+    // 3. Build TOC if requested
     if (this.options.includeToc) {
       const headings = extractHeadings(processedContent);
       if (headings.length > 0) {
@@ -93,19 +70,17 @@ export class WordDocumentBuilder {
       }
     }
 
-    // 5. Parse main content (includes all features: boxes, callouts, tables, etc.)
+    // 4. Parse main content (includes all features: callouts, tables, etc.)
     const paragraphs = parseExtendedContent(processedContent, this.theme);
     allChildren.push(...paragraphs);
 
-    // 6. Build section properties
+    // 5. Build section properties
     const sectionProperties = this.buildSectionProperties();
 
-    // 7. Build headers (with watermark if specified)
-    const headerConfig = watermarkConfig
-      ? buildWatermarkHeader(watermarkConfig, this.theme)
-      : this.options.header
-        ? buildHeader(this.options.header, this.theme)
-        : buildDefaultHeader(this.options.title, this.theme);
+    // 6. Build headers
+    const headerConfig = this.options.header
+      ? buildHeader(this.options.header, this.theme)
+      : buildDefaultHeader(this.options.title, this.theme);
 
     const doc = new Document({
       creator: this.options.author || 'Zia AI Bot',

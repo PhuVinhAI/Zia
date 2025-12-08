@@ -113,37 +113,6 @@ export const ORIENTATIONS = {
 } as const;
 
 // ═══════════════════════════════════════════════════
-// CALLOUT STYLES
-// ═══════════════════════════════════════════════════
-
-export const CALLOUT_STYLES = {
-  info: {
-    icon: 'ℹ️',
-    backgroundColor: 'E7F3FF',
-    borderColor: '2196F3',
-    textColor: '0D47A1',
-  },
-  warning: {
-    icon: '⚠️',
-    backgroundColor: 'FFF8E1',
-    borderColor: 'FFC107',
-    textColor: 'F57F17',
-  },
-  success: {
-    icon: '✅',
-    backgroundColor: 'E8F5E9',
-    borderColor: '4CAF50',
-    textColor: '1B5E20',
-  },
-  error: {
-    icon: '❌',
-    backgroundColor: 'FFEBEE',
-    borderColor: 'F44336',
-    textColor: 'B71C1C',
-  },
-} as const;
-
-// ═══════════════════════════════════════════════════
 // NUMBERING FORMATS
 // ═══════════════════════════════════════════════════
 
