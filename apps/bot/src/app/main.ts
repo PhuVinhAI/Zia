@@ -26,6 +26,7 @@ import {
 import { Hono } from 'hono';
 import { apiApp, onSettingsChange } from '../infrastructure/api/index.js';
 import { reloadSettingsFromData } from '../core/config/config.js';
+import { initAutoBackup } from '../infrastructure/backup/index.js';
 
 // API Server với Hono - bao gồm health check và settings API
 function startApiServer() {
@@ -66,6 +67,10 @@ function startApiServer() {
 async function main() {
   // 0. Start API server (includes health check + settings API)
   startApiServer();
+
+  // 0.5. Auto backup/restore từ cloud (chạy TRƯỚC khi init database)
+  // Nếu database không tồn tại, sẽ tự động restore từ cloud
+  await initAutoBackup();
 
   // 1. Khởi tạo logging
   initLogging();
