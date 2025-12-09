@@ -328,6 +328,16 @@ export async function downloadAndRestoreFromCloud(
 
     // Decode base64
     const dbContent = Buffer.from(base64Content, 'base64');
+    
+    // Debug: Log restore info
+    debugLog('CLOUD_BACKUP', `Restore: base64 length=${base64Content.length}, decoded size=${dbContent.length} bytes`);
+    
+    // Validate SQLite header (first 16 bytes should be "SQLite format 3\0")
+    const sqliteHeader = dbContent.slice(0, 16).toString('utf-8');
+    if (!sqliteHeader.startsWith('SQLite format 3')) {
+      debugLog('CLOUD_BACKUP', `Invalid SQLite header: ${sqliteHeader.slice(0, 20)}`);
+      return { success: false, message: 'Backup file is not a valid SQLite database' };
+    }
 
     const dataDir = dbPath.substring(0, dbPath.lastIndexOf('/'));
 
@@ -343,6 +353,13 @@ export async function downloadAndRestoreFromCloud(
 
     // Write database file
     await writeFile(dbPath, dbContent);
+    
+    // Verify file was written correctly
+    const writtenSize = statSync(dbPath).size;
+    debugLog('CLOUD_BACKUP', `File written: expected=${dbContent.length}, actual=${writtenSize}`);
+    if (writtenSize !== dbContent.length) {
+      return { success: false, message: `File write mismatch: expected ${dbContent.length}, got ${writtenSize}` };
+    }
 
     // Remove WAL/SHM files if exist
     const walPath = `${dbPath}-wal`;

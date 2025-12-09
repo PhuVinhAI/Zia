@@ -30,12 +30,18 @@ export function checkDatabaseIntegrity(dbPath: string): boolean {
     try {
       const result = testDb.query('PRAGMA integrity_check').get() as { integrity_check: string };
       testDb.close();
-      return result?.integrity_check === 'ok';
-    } catch {
+      const isOk = result?.integrity_check === 'ok';
+      if (!isOk) {
+        debugLog('DATABASE', `Integrity check failed: ${result?.integrity_check}`);
+      }
+      return isOk;
+    } catch (e) {
+      debugLog('DATABASE', `Integrity check error: ${e}`);
       testDb.close();
       return false;
     }
-  } catch {
+  } catch (e) {
+    debugLog('DATABASE', `Cannot open DB for integrity check: ${e}`);
     return false;
   }
 }
