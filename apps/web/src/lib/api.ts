@@ -104,33 +104,109 @@ export interface Thread {
   last_message: number;
 }
 
-// Settings type (partial)
+// Settings types
+export interface SleepModeSettings {
+  enabled: boolean;
+  sleepHour: number;
+  wakeHour: number;
+  checkIntervalMs: number;
+}
+
+export interface MaintenanceModeSettings {
+  enabled: boolean;
+  message: string;
+}
+
+export interface CloudDebugSettings {
+  enabled: boolean;
+  prefix: string;
+}
+
+export interface BotConfig {
+  name: string;
+  prefix: string;
+  requirePrefix: boolean;
+  rateLimitMs: number;
+  maxTokenHistory: number;
+  maxInputTokens: number;
+  selfListen: boolean;
+  logging: boolean;
+  useStreaming: boolean;
+  useCharacter: boolean;
+  fileLogging: boolean;
+  maxToolDepth: number;
+  showToolCalls: boolean;
+  allowNSFW: boolean;
+  cloudDebug: CloudDebugSettings;
+  sleepMode: SleepModeSettings;
+  maintenanceMode: MaintenanceModeSettings;
+}
+
+export interface GeminiConfig {
+  temperature: number;
+  topP: number;
+  maxOutputTokens: number;
+  thinkingBudget: number;
+  models: string[];
+  rateLimitMinuteMs: number;
+  rateLimitDayMs: number;
+}
+
+export interface GroqModelsConfig {
+  primary: string;
+  fallback: string;
+  primaryMaxTokens: number;
+  fallbackMaxTokens: number;
+  temperature: number;
+  topP: number;
+}
+
+export interface BufferConfig {
+  delayMs: number;
+  typingRefreshMs: number;
+}
+
+export interface HistoryConfig {
+  maxTrimAttempts: number;
+  maxContextTokens: number;
+  estimatedCharsPerToken: number;
+}
+
+export interface MemoryConfig {
+  decayHalfLifeDays: number;
+  accessBoostFactor: number;
+  embeddingModel: string;
+}
+
+export interface CloudBackupConfig {
+  enabled: boolean;
+  throttleMs: number;
+  restoreDelayMs: number;
+  initialBackupDelayMs: number;
+}
+
+export interface BackgroundAgentConfig {
+  pollIntervalMs: number;
+  maxToolIterations: number;
+  groupBatchSize: number;
+  batchDelayMinMs: number;
+  batchDelayMaxMs: number;
+  groqEnabled: boolean;
+  allowedTools: string[];
+}
+
 export interface BotSettings {
   adminUserId: string;
-  bot: {
-    name: string;
-    prefix: string;
-    requirePrefix: boolean;
-    rateLimitMs: number;
-    maxTokenHistory: number;
-    selfListen: boolean;
-    logging: boolean;
-    useStreaming: boolean;
-    useCharacter: boolean;
-    maxToolDepth: number;
-    showToolCalls: boolean;
-    allowNSFW: boolean;
-    sleepMode: {
-      enabled: boolean;
-      sleepHour: number;
-      wakeHour: number;
-    };
-    maintenanceMode?: {
-      enabled: boolean;
-      message: string;
-    };
-  };
+  bot: BotConfig;
   modules: Record<string, boolean>;
+  gemini: GeminiConfig;
+  groqModels: GroqModelsConfig;
+  buffer: BufferConfig;
+  history: HistoryConfig;
+  memory: MemoryConfig;
+  cloudBackup: CloudBackupConfig;
+  backgroundAgent: BackgroundAgentConfig;
+  allowedUserIds: string[];
   [key: string]: unknown;
 }
 
