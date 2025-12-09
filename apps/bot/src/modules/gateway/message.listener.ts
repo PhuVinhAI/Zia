@@ -285,17 +285,22 @@ function registerReactionListener(api: any): void {
       timeout: setTimeout(async () => {
         pendingReactions.delete(reactionKey);
 
-        // Chuyển danh sách icons thành tên reactions
+        // Chuyển danh sách icons thành tên reactions (unique)
         const reactionNames = icons.map((i) => REACTION_NAMES[i] || i);
-        const reactionList = reactionNames.join(', ');
+        const uniqueReactions = [...new Set(reactionNames)];
 
         // Tạo nội dung mô tả reaction để AI hiểu context
         // Nhấn mạnh đây là reaction LÊN TIN NHẮN chứ không phải cảm xúc cá nhân
         let reactionContent: string;
         const msgPreview =
           botMsg.content.substring(0, 150) + (botMsg.content.length > 150 ? '...' : '');
-        if (icons.length > 1) {
-          reactionContent = `[REACTION] Người dùng vừa thả ${icons.length} reaction lên tin nhắn của bạn: [${reactionList}]. Tin nhắn được react: "${msgPreview}"`;
+
+        // Nếu tất cả reactions giống nhau, chỉ hiển thị 1 lần với số lượng
+        if (uniqueReactions.length === 1 && icons.length > 1) {
+          reactionContent = `[REACTION] Người dùng vừa thả ${icons.length} reaction "${uniqueReactions[0]}" lên tin nhắn của bạn: "${msgPreview}"`;
+        } else if (icons.length > 1) {
+          // Nhiều loại reaction khác nhau - hiển thị unique list
+          reactionContent = `[REACTION] Người dùng vừa thả ${icons.length} reaction lên tin nhắn của bạn: ${uniqueReactions.join(', ')}. Tin nhắn được react: "${msgPreview}"`;
         } else {
           reactionContent = `[REACTION] Người dùng vừa thả reaction "${reactionNames[0]}" lên tin nhắn của bạn: "${msgPreview}"`;
         }
@@ -320,7 +325,7 @@ function registerReactionListener(api: any): void {
 
         debugLog(
           'REACTION',
-          `Processing ${icons.length} reactions after debounce: ${reactionList}`,
+          `Processing ${icons.length} reactions after debounce: ${uniqueReactions.join(', ')}`,
         );
 
         // Đẩy vào buffer để AI xử lý như tin nhắn bình thường
