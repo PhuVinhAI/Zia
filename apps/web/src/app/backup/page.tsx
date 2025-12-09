@@ -360,8 +360,9 @@ export default function BackupPage() {
                           Hủy
                         </AlertDialogCancel>
                         <AlertDialogAction
+                          variant="destructive"
                           onClick={() => deleteMutation.mutate(backup.name)}
-                          className="rounded-xl font-semibold bg-[#FF4B4B] hover:bg-[#E63E3E]"
+                          className="rounded-xl font-semibold"
                         >
                           Xóa
                         </AlertDialogAction>
