@@ -78,18 +78,9 @@ export default function LogsPage() {
   };
 
   const handleDownload = () => {
-    if (!fileContent?.lines || !selectedFile) return;
-    const content = fileContent.lines.join('\n');
-    const blob = new Blob([content], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = selectedFile;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    toast.success('Đã tải xuống file');
+    if (!selectedFolder || !selectedFile) return;
+    window.open(logsApiClient.getDownloadUrl(selectedFolder, selectedFile), '_blank');
+    toast.success('Đang tải xuống file');
   };
 
   const handleLoadMore = () => {

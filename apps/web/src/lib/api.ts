@@ -190,6 +190,7 @@ export const logsApiClient = {
     ),
   getUnauthorized: () => api.get<ApiResponse<unknown[]>>('/logs/file/unauthorized'),
   deleteFolder: (folder: string) => api.delete<ApiResponse<void>>(`/logs/${folder}`),
+  getDownloadUrl: (folder: string, file: string) => `/api/logs/download/${folder}/${file}`,
 };
 
 // Backup types
