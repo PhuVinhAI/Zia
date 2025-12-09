@@ -187,3 +187,34 @@ export const logsApiClient = {
   getUnauthorized: () => api.get<ApiResponse<unknown[]>>('/logs/file/unauthorized'),
   deleteFolder: (folder: string) => api.delete<ApiResponse<void>>(`/logs/${folder}`),
 };
+
+// Backup types
+export interface BackupFile {
+  name: string;
+  size: number;
+  createdAt: string;
+  modifiedAt: string;
+}
+
+export interface DatabaseInfo {
+  path: string;
+  size: number;
+  modifiedAt: string;
+  tables: Record<string, number>;
+}
+
+export const backupApiClient = {
+  list: () => api.get<ApiResponse<BackupFile[]>>('/backup'),
+  create: () => api.post<ApiResponse<BackupFile>>('/backup'),
+  restore: (name: string) => api.post<ApiResponse<{ restoredFrom: string; preRestoreBackup: string }>>(`/backup/restore/${name}`),
+  delete: (name: string) => api.delete<ApiResponse<{ deleted: string }>>(`/backup/${name}`),
+  getInfo: () => api.get<ApiResponse<DatabaseInfo>>('/backup/info'),
+  getDownloadUrl: (name: string) => `${API_URL}/backup/download/${name}`,
+  upload: (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post<ApiResponse<BackupFile>>('/backup/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+};

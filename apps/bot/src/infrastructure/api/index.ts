@@ -11,6 +11,7 @@ import { tasksApi } from './tasks.api.js';
 import { memoriesApi } from './memories.api.js';
 import { historyApi } from './history.api.js';
 import { logsApi } from './logs.api.js';
+import { backupApi } from './backup.api.js';
 
 // API Key từ env - dùng chung cho cả dự án
 const API_KEY = process.env.API_KEY;
@@ -40,6 +41,7 @@ apiApp.route('/tasks', tasksApi);
 apiApp.route('/memories', memoriesApi);
 apiApp.route('/history', historyApi);
 apiApp.route('/logs', logsApi);
+apiApp.route('/backup', backupApi);
 
 // API documentation endpoint
 apiApp.get('/', (c) => {
@@ -54,6 +56,7 @@ apiApp.get('/', (c) => {
       '/memories': 'Long-term memory',
       '/history': 'Conversation history',
       '/logs': 'System logs',
+      '/backup': 'Database backup & restore',
     },
   });
 });

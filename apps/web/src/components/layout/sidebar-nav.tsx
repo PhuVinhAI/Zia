@@ -11,6 +11,7 @@ import {
   Settings,
   FileText,
   Bot,
+  HardDrive,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -49,6 +50,11 @@ const navItems = [
     title: 'Nhật ký',
     href: '/logs',
     icon: FileText,
+  },
+  {
+    title: 'Backup',
+    href: '/backup',
+    icon: HardDrive,
   },
   {
     title: 'Cài đặt',
