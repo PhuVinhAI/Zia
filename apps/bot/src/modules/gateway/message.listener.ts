@@ -176,8 +176,11 @@ const REACTION_NAMES: Record<string, string> = {
 };
 
 // Track pending reactions để debounce khi user thả nhiều reaction liên tục
-// Key: `${threadId}:${reactorId}:${originalMsgId}`, Value: { timeout, icons: string[] }
-const pendingReactions = new Map<string, { timeout: NodeJS.Timeout; icons: string[] }>();
+// Key: `${threadId}:${reactorId}:${originalMsgId}`, Value: { timeout, icons: string[], processedEventIds: Set }
+const pendingReactions = new Map<
+  string,
+  { timeout: NodeJS.Timeout; icons: string[]; processedEventIds: Set<string> }
+>();
 
 /**
  * Xử lý reaction event - tạo fake message để AI tự suy nghĩ phản hồi
@@ -256,15 +259,25 @@ function registerReactionListener(api: any): void {
     const reactionKey = `${threadId}:${reactorId}:${botMsg.msgId}`;
     const pending = pendingReactions.get(reactionKey);
 
+    // Deduplicate: Zalo API có thể gửi nhiều event trùng lặp cho cùng 1 reaction
+    // Dùng targetMsgId (msgId của reaction event) để detect duplicate
+    const eventId = String(targetMsgId);
+    if (pending?.processedEventIds.has(eventId)) {
+      debugLog('REACTION', `Duplicate event ignored: ${eventId}`);
+      return;
+    }
+
     // Nếu đã có pending reaction cho cùng tin nhắn, clear timeout cũ và thêm icon mới vào danh sách
     if (pending) {
       clearTimeout(pending.timeout);
       pending.icons.push(icon);
+      pending.processedEventIds.add(eventId);
       debugLog('REACTION', `User added another reaction: ${icon} (total: ${pending.icons.length})`);
     }
 
     // Lấy danh sách icons hiện tại hoặc tạo mới
     const icons = pending?.icons || [icon];
+    const processedEventIds = pending?.processedEventIds || new Set([eventId]);
 
     // Debounce: đợi trước khi xử lý để gom tất cả reactions (từ config)
     const reactionDebounceMs = CONFIG.reaction?.debounceMs ?? 2000;
@@ -274,7 +287,6 @@ function registerReactionListener(api: any): void {
 
         // Chuyển danh sách icons thành tên reactions
         const reactionNames = icons.map((i) => REACTION_NAMES[i] || i);
-        const uniqueReactions = [...new Set(reactionNames)];
         const reactionList = reactionNames.join(', ');
 
         // Tạo nội dung mô tả reaction để AI hiểu context
@@ -315,6 +327,7 @@ function registerReactionListener(api: any): void {
         addToBuffer(api, threadId, fakeMessage);
       }, reactionDebounceMs),
       icons,
+      processedEventIds,
     };
 
     pendingReactions.set(reactionKey, newPending);
