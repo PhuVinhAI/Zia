@@ -36,6 +36,21 @@ const SAFETY_SETTINGS = [
   { category: HarmCategory.HARM_CATEGORY_CIVIC_INTEGRITY, threshold: HarmBlockThreshold.OFF },
 ];
 
+import { CONFIG } from '../../../../core/config/config.js';
+
+// Getter để lấy config từ settings.json
+export const getGeminiConfig = () => ({
+  temperature: CONFIG.gemini?.temperature ?? 1,
+  topP: CONFIG.gemini?.topP ?? 0.95,
+  maxOutputTokens: CONFIG.gemini?.maxOutputTokens ?? 65536,
+  thinkingConfig: {
+    thinkingBudget: CONFIG.gemini?.thinkingBudget ?? 8192,
+  },
+  tools: [{ urlContext: {} }],
+  safetySettings: SAFETY_SETTINGS,
+});
+
+// Backward compatibility - static config (sẽ được thay thế bởi getGeminiConfig())
 export const GEMINI_CONFIG = {
   temperature: 1,
   topP: 0.95,

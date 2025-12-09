@@ -12,20 +12,30 @@ export const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY,
 });
 
-// Model chính và fallback khi bị rate limit
-const GROQ_MODELS = {
-  primary: 'openai/gpt-oss-120b',
-  fallback: 'moonshotai/kimi-k2-instruct-0905',
-} as const;
+// Model chính và fallback khi bị rate limit - lấy từ config
+const getGroqModels = () => ({
+  primary: CONFIG.groqModels?.primary ?? 'openai/gpt-oss-120b',
+  fallback: CONFIG.groqModels?.fallback ?? 'moonshotai/kimi-k2-instruct-0905',
+});
 
 // Track model hiện tại và thời gian cooldown
-let currentModel: keyof typeof GROQ_MODELS = 'primary';
+let currentModel: 'primary' | 'fallback' = 'primary';
 let primaryCooldownUntil: number | null = null;
 const getRateLimitCooldownMs = () => CONFIG.groq?.rateLimitCooldownMs ?? 60000;
 
 // Model với reasoning capability
-export const GROQ_MODEL = GROQ_MODELS.primary;
+export const GROQ_MODEL = CONFIG.groqModels?.primary ?? 'openai/gpt-oss-120b';
 
+// Getter để lấy config từ settings.json
+export const getGroqConfig = () => ({
+  temperature: CONFIG.groqModels?.temperature ?? 0.7,
+  max_completion_tokens: CONFIG.groqModels?.primaryMaxTokens ?? 65536,
+  top_p: CONFIG.groqModels?.topP ?? 0.95,
+  reasoning_effort: 'high' as const,
+  stop: null,
+});
+
+// Backward compatibility
 export const GROQ_CONFIG = {
   temperature: 0.7,
   max_completion_tokens: 65536,
@@ -35,6 +45,13 @@ export const GROQ_CONFIG = {
 };
 
 // Config cho fallback model (không có reasoning_effort)
+const getGroqFallbackConfig = () => ({
+  temperature: CONFIG.groqModels?.temperature ?? 0.7,
+  max_completion_tokens: CONFIG.groqModels?.fallbackMaxTokens ?? 16384,
+  top_p: CONFIG.groqModels?.topP ?? 0.95,
+  stop: null,
+});
+
 const GROQ_FALLBACK_CONFIG = {
   temperature: 0.7,
   max_completion_tokens: 16384,
@@ -64,25 +81,27 @@ function isRateLimitError(error: any): boolean {
  * Lấy model hiện tại (kiểm tra cooldown)
  */
 function getCurrentModel(): string {
+  const models = getGroqModels();
   // Nếu đang dùng fallback và đã hết cooldown, thử quay lại primary
   if (currentModel === 'fallback' && primaryCooldownUntil && Date.now() > primaryCooldownUntil) {
     debugLog('GROQ', 'Cooldown ended, switching back to primary model');
     currentModel = 'primary';
     primaryCooldownUntil = null;
   }
-  return GROQ_MODELS[currentModel];
+  return models[currentModel];
 }
 
 /**
  * Chuyển sang fallback model
  */
 function switchToFallback(): void {
+  const models = getGroqModels();
   if (currentModel === 'primary') {
     currentModel = 'fallback';
     const cooldownMs = getRateLimitCooldownMs();
     primaryCooldownUntil = Date.now() + cooldownMs;
-    console.log(`[Groq] ⚠️ Rate limit! Chuyển sang ${GROQ_MODELS.fallback}, cooldown ${cooldownMs / 1000}s`);
-    debugLog('GROQ', `Switched to fallback model: ${GROQ_MODELS.fallback}`);
+    console.log(`[Groq] ⚠️ Rate limit! Chuyển sang ${models.fallback}, cooldown ${cooldownMs / 1000}s`);
+    debugLog('GROQ', `Switched to fallback model: ${models.fallback}`);
   }
 }
 
@@ -90,11 +109,12 @@ function switchToFallback(): void {
  * Lấy config phù hợp với model hiện tại
  */
 function getConfigForModel(model: string, options?: Partial<typeof GROQ_CONFIG>): any {
-  const baseConfig = model === GROQ_MODELS.fallback ? GROQ_FALLBACK_CONFIG : GROQ_CONFIG;
+  const models = getGroqModels();
+  const baseConfig = model === models.fallback ? getGroqFallbackConfig() : getGroqConfig();
   const merged = { ...baseConfig, ...options };
   
   // Fallback model không hỗ trợ reasoning_effort
-  if (model === GROQ_MODELS.fallback && 'reasoning_effort' in merged) {
+  if (model === models.fallback && 'reasoning_effort' in merged) {
     delete (merged as any).reasoning_effort;
   }
   
@@ -130,7 +150,8 @@ export async function generateGroqResponse(
       switchToFallback();
       
       // Retry với fallback model
-      const fallbackModel = GROQ_MODELS.fallback;
+      const models = getGroqModels();
+      const fallbackModel = models.fallback;
       const fallbackConfig = getConfigForModel(fallbackModel, options);
       
       debugLog('GROQ', `Retrying with fallback model: ${fallbackModel}`);
@@ -186,7 +207,8 @@ export async function* streamGroqResponse(
     if (isRateLimitError(error) && currentModel === 'primary') {
       switchToFallback();
       
-      const fallbackModel = GROQ_MODELS.fallback;
+      const models = getGroqModels();
+      const fallbackModel = models.fallback;
       const fallbackConfig = getConfigForModel(fallbackModel, options);
       
       debugLog('GROQ', `Retrying stream with fallback model: ${fallbackModel}`);
@@ -207,10 +229,11 @@ export async function* streamGroqResponse(
  * Lấy thông tin model hiện tại (để debug/logging)
  */
 export function getGroqModelInfo(): { current: string; primary: string; fallback: string; isFallback: boolean } {
+  const models = getGroqModels();
   return {
     current: getCurrentModel(),
-    primary: GROQ_MODELS.primary,
-    fallback: GROQ_MODELS.fallback,
+    primary: models.primary,
+    fallback: models.fallback,
     isFallback: currentModel === 'fallback',
   };
 }

@@ -55,8 +55,9 @@ const jikanApi: KyInstance = ky.create({
       async (_request, _options, response) => {
         // Handle 429 rate limit
         if (response.status === 429) {
-          debugLog('JIKAN', '⚠ Rate limited (429), waiting 2s...');
-          await new Promise((r) => setTimeout(r, 2000));
+          const retryDelay = CONFIG.jikanRateLimitRetryMs ?? 2000;
+          debugLog('JIKAN', `⚠ Rate limited (429), waiting ${retryDelay}ms...`);
+          await new Promise((r) => setTimeout(r, retryDelay));
           throw new Error('Rate limited');
         }
         debugLog('JIKAN', `← ${response.status}`);

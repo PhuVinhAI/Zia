@@ -95,16 +95,17 @@ export async function setupListeners(api: any) {
   debugLog('INIT', 'Listener starting...');
 
   // Chờ WebSocket connect
+  const wsTimeout = CONFIG.websocketConnectTimeoutMs ?? 2000;
   await new Promise<void>((resolve) => {
     const checkReady = () => {
-      setTimeout(resolve, 2000);
+      setTimeout(resolve, wsTimeout);
     };
     if (api.listener.on) {
       api.listener.once('connected', () => {
         debugLog('INIT', 'WebSocket connected');
         resolve();
       });
-      setTimeout(resolve, 2000);
+      setTimeout(resolve, wsTimeout);
     } else {
       checkReady();
     }

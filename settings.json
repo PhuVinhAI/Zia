@@ -155,5 +155,36 @@
   "database": {
     "cleanupIntervalMs": 3600000,
     "embeddingDim": 768
+  },
+  "responseHandler": {
+    "reactionDelayMs": 300,
+    "chunkDelayMs": 300,
+    "stickerDelayMs": 800,
+    "cardDelayMs": 500,
+    "messageDelayMinMs": 500,
+    "messageDelayMaxMs": 1000,
+    "imageDelayMs": 500
+  },
+  "jikanRateLimitRetryMs": 2000,
+  "websocketConnectTimeoutMs": 2000,
+  "groupMembersFetch": {
+    "delayMinMs": 300,
+    "delayMaxMs": 800,
+    "errorDelayMinMs": 500,
+    "errorDelayMaxMs": 1000
+  },
+  "gemini": {
+    "temperature": 1,
+    "topP": 0.95,
+    "maxOutputTokens": 65536,
+    "thinkingBudget": 8192
+  },
+  "groqModels": {
+    "primary": "openai/gpt-oss-120b",
+    "fallback": "moonshotai/kimi-k2-instruct-0905",
+    "primaryMaxTokens": 65536,
+    "fallbackMaxTokens": 16384,
+    "temperature": 0.7,
+    "topP": 0.95
   }
 }

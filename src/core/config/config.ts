@@ -100,6 +100,12 @@ function buildConfig(settings: Settings) {
     tvu: settings.tvu,
     groq: settings.groq,
     database: settings.database,
+    responseHandler: settings.responseHandler,
+    jikanRateLimitRetryMs: settings.jikanRateLimitRetryMs,
+    websocketConnectTimeoutMs: settings.websocketConnectTimeoutMs,
+    groupMembersFetch: settings.groupMembersFetch,
+    gemini: settings.gemini,
+    groqModels: settings.groqModels,
   };
 }
 

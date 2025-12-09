@@ -137,11 +137,12 @@ export async function loadOldMessages(
   debugLog('HISTORY', `No cached messages for ${threadId}, requesting from API`);
 
   return new Promise((resolve) => {
+    const pageTimeout = CONFIG.historyLoader?.pageTimeoutMs ?? 10000;
     const timeout = setTimeout(() => {
       console.log(`[History] ⚠️ Timeout lấy lịch sử thread ${threadId}`);
       debugLog('HISTORY', `Timeout loading history for thread ${threadId}`);
       resolve([]);
-    }, 10000);
+    }, pageTimeout);
 
     const handler = async (messages: any[], msgType: number) => {
       if (msgType !== type) return;

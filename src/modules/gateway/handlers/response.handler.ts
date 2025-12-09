@@ -1,3 +1,4 @@
+import { CONFIG } from '../../../core/config/config.js';
 import {
   debugLog,
   logError,
@@ -206,9 +207,10 @@ export async function sendResponse(
   });
 
   // Thả reactions
+  const reactionDelay = CONFIG.responseHandler?.reactionDelayMs ?? 300;
   for (const r of response.reactions) {
     await handleReaction(api, r, threadId, originalMessage, allMessages);
-    await new Promise((r) => setTimeout(r, 300));
+    await new Promise((r) => setTimeout(r, reactionDelay));
   }
 
   // Gửi messages
@@ -221,6 +223,7 @@ export async function sendResponse(
     );
 
     if (msg.text) {
+      const chunkDelay = CONFIG.responseHandler?.chunkDelayMs ?? 300;
       try {
         // Sử dụng sendTextWithChunking để tự động chia nhỏ tin nhắn dài
         await sendTextWithChunking(api, msg.text, threadId, quoteData);
@@ -232,24 +235,28 @@ export async function sendResponse(
         for (const chunk of chunks) {
           try {
             await api.sendMessage(chunk, threadId, threadType);
-            await new Promise((r) => setTimeout(r, 300));
+            await new Promise((r) => setTimeout(r, chunkDelay));
           } catch {}
         }
       }
     }
 
     if (msg.sticker) {
-      if (msg.text) await new Promise((r) => setTimeout(r, 800));
+      const stickerDelay = CONFIG.responseHandler?.stickerDelayMs ?? 800;
+      if (msg.text) await new Promise((r) => setTimeout(r, stickerDelay));
       await sendSticker(api, msg.sticker, threadId);
     }
 
     if (msg.card !== undefined) {
-      if (msg.text || msg.sticker) await new Promise((r) => setTimeout(r, 500));
+      const cardDelay = CONFIG.responseHandler?.cardDelayMs ?? 500;
+      if (msg.text || msg.sticker) await new Promise((r) => setTimeout(r, cardDelay));
       await sendCard(api, msg.card || undefined, threadId);
     }
 
     if (i < response.messages.length - 1) {
-      await new Promise((r) => setTimeout(r, 500 + Math.random() * 500));
+      const msgDelayMin = CONFIG.responseHandler?.messageDelayMinMs ?? 500;
+      const msgDelayMax = CONFIG.responseHandler?.messageDelayMaxMs ?? 1000;
+      await new Promise((r) => setTimeout(r, msgDelayMin + Math.random() * (msgDelayMax - msgDelayMin)));
     }
   }
 
@@ -309,13 +316,15 @@ export function createStreamCallbacks(
     onCard: async (userId?: string) => {
       messageCount++;
       await sendCard(api, userId, threadId);
-      await new Promise((r) => setTimeout(r, 300));
+      const cardDelay = CONFIG.responseHandler?.cardDelayMs ?? 500;
+      await new Promise((r) => setTimeout(r, cardDelay));
     },
 
     onImage: async (url: string, caption?: string) => {
       messageCount++;
       await sendImageFromUrl(api, url, caption, threadId);
-      await new Promise((r) => setTimeout(r, 500));
+      const imageDelay = CONFIG.responseHandler?.imageDelayMs ?? 500;
+      await new Promise((r) => setTimeout(r, imageDelay));
     },
 
     onMessage: async (text: string, quoteIndex?: number) => {
@@ -342,15 +351,17 @@ export function createStreamCallbacks(
         logError('onMessage', e);
         // Fallback: gửi text thuần với chunking
         const chunks = splitMessage(cleanText);
+        const chunkDelayMs = CONFIG.responseHandler?.chunkDelayMs ?? 300;
         for (const chunk of chunks) {
           try {
             const threadType = getThreadType(threadId);
             await api.sendMessage(chunk, threadId, threadType);
-            await new Promise((r) => setTimeout(r, 300));
+            await new Promise((r) => setTimeout(r, chunkDelayMs));
           } catch {}
         }
       }
-      await new Promise((r) => setTimeout(r, 300));
+      const chunkDelay = CONFIG.responseHandler?.chunkDelayMs ?? 300;
+      await new Promise((r) => setTimeout(r, chunkDelay));
     },
 
     onUndo: async (index: number) => {

@@ -212,6 +212,43 @@ export const DatabaseConfigSchema = z.object({
   embeddingDim: z.coerce.number().min(1).default(768),
 });
 
+// Response handler config schema
+export const ResponseHandlerConfigSchema = z.object({
+  reactionDelayMs: z.coerce.number().min(100).default(300),
+  chunkDelayMs: z.coerce.number().min(100).default(300),
+  stickerDelayMs: z.coerce.number().min(100).default(800),
+  cardDelayMs: z.coerce.number().min(100).default(500),
+  messageDelayMinMs: z.coerce.number().min(100).default(500),
+  messageDelayMaxMs: z.coerce.number().min(100).default(1000),
+  imageDelayMs: z.coerce.number().min(100).default(500),
+});
+
+// Group members fetch config schema
+export const GroupMembersFetchConfigSchema = z.object({
+  delayMinMs: z.coerce.number().min(100).default(300),
+  delayMaxMs: z.coerce.number().min(100).default(800),
+  errorDelayMinMs: z.coerce.number().min(100).default(500),
+  errorDelayMaxMs: z.coerce.number().min(100).default(1000),
+});
+
+// Gemini AI config schema
+export const GeminiConfigSchema = z.object({
+  temperature: z.coerce.number().min(0).max(2).default(1),
+  topP: z.coerce.number().min(0).max(1).default(0.95),
+  maxOutputTokens: z.coerce.number().min(1000).default(65536),
+  thinkingBudget: z.coerce.number().min(0).default(8192),
+});
+
+// Groq models config schema
+export const GroqModelsConfigSchema = z.object({
+  primary: z.string().default('openai/gpt-oss-120b'),
+  fallback: z.string().default('moonshotai/kimi-k2-instruct-0905'),
+  primaryMaxTokens: z.coerce.number().min(1000).default(65536),
+  fallbackMaxTokens: z.coerce.number().min(1000).default(16384),
+  temperature: z.coerce.number().min(0).max(2).default(0.7),
+  topP: z.coerce.number().min(0).max(1).default(0.95),
+});
+
 // Full settings schema
 export const SettingsSchema = z.object({
   bot: BotConfigSchema.optional().default({
@@ -350,6 +387,37 @@ export const SettingsSchema = z.object({
     cleanupIntervalMs: 3600000,
     embeddingDim: 768,
   }),
+  responseHandler: ResponseHandlerConfigSchema.optional().default({
+    reactionDelayMs: 300,
+    chunkDelayMs: 300,
+    stickerDelayMs: 800,
+    cardDelayMs: 500,
+    messageDelayMinMs: 500,
+    messageDelayMaxMs: 1000,
+    imageDelayMs: 500,
+  }),
+  jikanRateLimitRetryMs: z.coerce.number().min(500).default(2000),
+  websocketConnectTimeoutMs: z.coerce.number().min(500).default(2000),
+  groupMembersFetch: GroupMembersFetchConfigSchema.optional().default({
+    delayMinMs: 300,
+    delayMaxMs: 800,
+    errorDelayMinMs: 500,
+    errorDelayMaxMs: 1000,
+  }),
+  gemini: GeminiConfigSchema.optional().default({
+    temperature: 1,
+    topP: 0.95,
+    maxOutputTokens: 65536,
+    thinkingBudget: 8192,
+  }),
+  groqModels: GroqModelsConfigSchema.optional().default({
+    primary: 'openai/gpt-oss-120b',
+    fallback: 'moonshotai/kimi-k2-instruct-0905',
+    primaryMaxTokens: 65536,
+    fallbackMaxTokens: 16384,
+    temperature: 0.7,
+    topP: 0.95,
+  }),
 });
 
 // Type inference từ schema
@@ -378,6 +446,10 @@ export type MemoryConfig = z.infer<typeof MemoryConfigSchema>;
 export type TvuConfig = z.infer<typeof TvuConfigSchema>;
 export type GroqConfig = z.infer<typeof GroqConfigSchema>;
 export type DatabaseConfig = z.infer<typeof DatabaseConfigSchema>;
+export type ResponseHandlerConfig = z.infer<typeof ResponseHandlerConfigSchema>;
+export type GroupMembersFetchConfig = z.infer<typeof GroupMembersFetchConfigSchema>;
+export type GeminiConfig = z.infer<typeof GeminiConfigSchema>;
+export type GroqModelsConfig = z.infer<typeof GroqModelsConfigSchema>;
 export type Settings = z.infer<typeof SettingsSchema>;
 
 // MIME types (static, không cần validate)
