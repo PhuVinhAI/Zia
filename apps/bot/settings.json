@@ -25,7 +25,7 @@
     "logFile": "logs/bot.txt",
     "unauthorizedLogFile": "logs/unauthorized.json",
     "maxToolDepth": 10,
-    "showToolCalls": true,
+    "showToolCalls": false,
     "allowNSFW": false,
     "cloudDebug": {
       "enabled": true,
@@ -102,7 +102,14 @@
     "batchDelayMinMs": 500,
     "batchDelayMaxMs": 1500,
     "groqEnabled": true,
-    "allowedTools": ["googleSearch"]
+    "exploreEnabled": true,
+    "allowedTools": [
+      "saveMemory",
+      "recallMemory",
+      "googleSearch",
+      "youtubeSearch",
+      "weather"
+    ]
   },
   "messageChunker": {
     "maxMessageLength": 1800

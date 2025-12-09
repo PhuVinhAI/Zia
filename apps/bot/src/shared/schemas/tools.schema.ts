@@ -424,19 +424,20 @@ export const CreateAppSchema = z.object({
 // ============ BACKGROUND AGENT TOOLS ============
 
 // Task types (accept_friend được xử lý tự động, không cần task)
-const TASK_TYPES = ['send_message'] as const;
+const TASK_TYPES = ['send_message', 'reminder'] as const;
 
 // Schedule Task params
 export const ScheduleTaskSchema = z.object({
-  type: z.enum(TASK_TYPES).describe('Loại task: send_message'),
+  type: z.enum(TASK_TYPES).describe('Loại task: send_message (gửi tin) hoặc reminder (nhắc nhở)'),
   targetUserId: z.string().optional().describe('ID người dùng đích'),
   targetThreadId: z.string().optional().describe('ID thread/nhóm đích (cho send_message)'),
   targetDescription: z
     .string()
     .optional()
     .describe('Mô tả nhóm/người nhận (VD: "nhóm lớp 12A", "nhóm gia đình") - agent sẽ tự tìm'),
-  message: z.string().optional().describe('Nội dung tin nhắn'),
+  message: z.string().optional().describe('Nội dung tin nhắn hoặc nội dung nhắc nhở'),
   delayMinutes: z.coerce.number().min(0).default(0).describe('Số phút delay (0 = ngay lập tức)'),
+  scheduledTime: z.string().optional().describe('Thời điểm thực hiện (ISO format, VD: "2024-12-25T08:00:00")'),
   context: z.string().optional().describe('Ngữ cảnh/lý do tạo task'),
 });
 
@@ -711,7 +712,7 @@ export const TOOL_EXAMPLES: Record<string, string> = {
   solveMath: `[tool:solveMath]{"problem":"Giải $x^2 = 4$","solution":"$x = \\pm 2$"}[/tool]`,
   saveMemory: `[tool:saveMemory]{"content":"User thích màu xanh","type":"preference","importance":7}[/tool]`,
   recallMemory: `[tool:recallMemory]{"query":"sở thích","limit":5}[/tool]`,
-  scheduleTask: `[tool:scheduleTask]{"type":"send_message","targetDescription":"nhóm lớp 12A","message":"Hello","delayMinutes":5}[/tool]`,
+  scheduleTask: `[tool:scheduleTask]{"type":"reminder","message":"Nhớ uống thuốc nha!","scheduledTime":"2024-12-10T08:00:00"}[/tool]`,
   clearHistory: `[tool:clearHistory]{}[/tool]`,
   flush_logs: `[tool:flush_logs]{}[/tool]`,
   getAllFriends: `[tool:getAllFriends]{"limit":50}[/tool]`,

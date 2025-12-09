@@ -363,3 +363,71 @@ backupApi.post('/cloud/restore', async (c) => {
     return c.json({ success: false, error: 'Failed to restore from cloud' }, 500);
   }
 });
+
+/**
+ * DELETE /backup/database - Xóa toàn bộ database (reset)
+ * Tạo backup trước khi xóa
+ */
+backupApi.delete('/database', async (c) => {
+  try {
+    const dbPath = getDbPath();
+    
+    if (!existsSync(dbPath)) {
+      return c.json({ success: false, error: 'Database not found' }, 404);
+    }
+
+    // Tạo backup trước khi xóa
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const preDeleteBackup = `pre-delete-${timestamp}.db`;
+    const backupPath = join(BACKUP_DIR, preDeleteBackup);
+
+    // Checkpoint WAL trước khi backup
+    try {
+      const sqlite = getSqliteDb();
+      sqlite.exec('PRAGMA wal_checkpoint(TRUNCATE);');
+    } catch (e) {
+      debugLog('BACKUP_API', `WAL checkpoint warning: ${e}`);
+    }
+
+    // Copy database hiện tại làm backup
+    const dbContent = await readFile(dbPath);
+    await writeFile(backupPath, dbContent);
+    debugLog('BACKUP_API', `Pre-delete backup created: ${preDeleteBackup}`);
+
+    // Đóng database connection
+    closeDatabase();
+    debugLog('BACKUP_API', 'Database closed for deletion');
+
+    // Xóa database files
+    const walPath = `${dbPath}-wal`;
+    const shmPath = `${dbPath}-shm`;
+    
+    if (existsSync(dbPath)) unlinkSync(dbPath);
+    if (existsSync(walPath)) unlinkSync(walPath);
+    if (existsSync(shmPath)) unlinkSync(shmPath);
+    
+    debugLog('BACKUP_API', 'Database files deleted');
+
+    // Khởi tạo lại database mới (sẽ tự động tạo tables)
+    initDatabase();
+    debugLog('BACKUP_API', 'New database initialized');
+
+    return c.json({
+      success: true,
+      data: {
+        message: 'Database reset successfully',
+        preDeleteBackup,
+        timestamp: new Date().toISOString(),
+      },
+    });
+  } catch (error) {
+    debugLog('BACKUP_API', `Database reset error: ${error}`);
+    // Cố gắng khởi tạo lại database
+    try {
+      initDatabase();
+    } catch (e) {
+      debugLog('BACKUP_API', `Failed to reinit database: ${e}`);
+    }
+    return c.json({ success: false, error: 'Failed to reset database' }, 500);
+  }
+});

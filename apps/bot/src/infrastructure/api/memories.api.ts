@@ -1,5 +1,6 @@
 /**
- * Memories API - Quản lý long-term memory
+ * Memories API - Quản lý BỘ NHỚ CHUNG (Shared Memory)
+ * Chia sẻ giữa tất cả AI và background agent
  */
 import { Hono } from 'hono';
 import { getDatabase } from '../database/connection.js';

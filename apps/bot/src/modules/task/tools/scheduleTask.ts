@@ -11,22 +11,26 @@ import { createTask } from '../../background-agent/index.js';
 
 export const scheduleTaskTool: ToolDefinition = {
   name: 'scheduleTask',
-  description: `Lên lịch một task để hệ thống nền thực hiện. Dùng khi:
+  description: `Giao tiếp với Background Agent - nhờ thực hiện task trong tương lai. Dùng khi:
 - Người dùng yêu cầu gửi tin nhắn sau một khoảng thời gian
-- Muốn thực hiện hành động không cần response ngay
+- Người dùng nhờ nhắc nhở việc gì đó (sinh nhật, deadline, uống thuốc...)
+- Muốn gửi tin chúc mừng vào thời điểm cụ thể
+- Báo lỗi/bug cho admin
 
 Lưu ý: 
-- accept_friend được xử lý tự động, không cần tạo task
-- Có thể dùng targetDescription thay vì ID, agent nền sẽ tự tìm nhóm phù hợp
+- type="send_message": Gửi tin nhắn cho ai đó
+- type="reminder": Nhắc nhở user về việc gì đó
+- Có thể dùng targetDescription thay vì ID, agent nền sẽ tự tìm
 
 Ví dụ:
-- "5 phút nữa nhắn A hỏi thăm" → scheduleTask với delayMinutes=5
-- "Gửi tin vào nhóm lớp" → scheduleTask với targetDescription="nhóm lớp"`,
+- "5 phút nữa nhắn A" → type="send_message", delayMinutes=5
+- "Nhắc tui 8h sáng mai uống thuốc" → type="reminder", scheduledTime="2024-12-10T08:00:00"
+- "Chúc sinh nhật B vào 0h" → type="send_message", scheduledTime="2024-12-25T00:00:00"`,
   parameters: [
     {
       name: 'type',
       type: 'string',
-      description: 'Loại task: send_message',
+      description: 'Loại task: send_message (gửi tin) hoặc reminder (nhắc nhở)',
       required: true,
     },
     {
@@ -61,6 +65,12 @@ Ví dụ:
       default: 0,
     },
     {
+      name: 'scheduledTime',
+      type: 'string',
+      description: 'Thời điểm thực hiện (ISO format, VD: "2024-12-25T08:00:00"). Ưu tiên hơn delayMinutes',
+      required: false,
+    },
+    {
       name: 'context',
       type: 'string',
       description: 'Ngữ cảnh/lý do tạo task',
@@ -81,29 +91,39 @@ Ví dụ:
       targetDescription,
       message,
       delayMinutes,
+      scheduledTime,
       context,
     } = validation.data;
 
     try {
       // Validate business logic
-      if (type === 'send_message' && !message) {
+      if ((type === 'send_message' || type === 'reminder') && !message) {
         return {
           success: false,
-          error: 'Cần có nội dung tin nhắn cho task send_message',
+          error: `Cần có nội dung ${type === 'reminder' ? 'nhắc nhở' : 'tin nhắn'} cho task ${type}`,
         };
       }
 
       // Cho phép dùng targetDescription thay vì ID - agent nền sẽ resolve
-      if (!targetUserId && !targetThreadId && !targetDescription) {
+      // Với reminder, mặc định gửi cho người tạo task nếu không có target
+      if (!targetUserId && !targetThreadId && !targetDescription && type !== 'reminder') {
         return {
           success: false,
           error: 'Cần có targetUserId, targetThreadId hoặc targetDescription',
         };
       }
 
-      // Calculate scheduled time
-      const scheduledAt = new Date();
-      if (delayMinutes > 0) {
+      // Calculate scheduled time - ưu tiên scheduledTime nếu có
+      let scheduledAt = new Date();
+      if (scheduledTime) {
+        scheduledAt = new Date(scheduledTime);
+        if (isNaN(scheduledAt.getTime())) {
+          return {
+            success: false,
+            error: 'scheduledTime không hợp lệ. Dùng format ISO: "2024-12-25T08:00:00"',
+          };
+        }
+      } else if (delayMinutes > 0) {
         scheduledAt.setMinutes(scheduledAt.getMinutes() + delayMinutes);
       }
 
@@ -117,10 +137,13 @@ Ví dụ:
         `Creating task: ${type} for ${targetUserId || targetThreadId || targetDescription}`,
       );
 
+      // Với reminder mà không có target, gửi cho người tạo
+      const finalTargetUserId = targetUserId || (type === 'reminder' ? ctx.senderId : undefined);
+
       // Create task
       const task = await createTask({
         type,
-        targetUserId,
+        targetUserId: finalTargetUserId,
         targetThreadId,
         payload,
         context,
@@ -131,9 +154,18 @@ Ví dụ:
       // Format response
       const typeLabels: Record<string, string> = {
         send_message: 'Gửi tin nhắn',
+        reminder: 'Nhắc nhở',
       };
 
-      const delayText = delayMinutes > 0 ? `sau ${delayMinutes} phút` : 'ngay khi có thể';
+      // Format thời gian đẹp hơn
+      let delayText: string;
+      if (scheduledTime) {
+        delayText = `vào lúc ${scheduledAt.toLocaleString('vi-VN')}`;
+      } else if (delayMinutes > 0) {
+        delayText = `sau ${delayMinutes} phút`;
+      } else {
+        delayText = 'ngay khi có thể';
+      }
 
       return {
         success: true,

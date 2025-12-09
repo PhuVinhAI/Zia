@@ -771,7 +771,7 @@ export default function SettingsPage() {
               </div>
               <div>
                 <h3 className="text-lg font-bold">Memory</h3>
-                <p className="text-sm text-muted-foreground">Cấu hình bộ nhớ dài hạn</p>
+                <p className="text-sm text-muted-foreground">Cấu hình bộ nhớ chung (shared memory)</p>
               </div>
             </div>
 

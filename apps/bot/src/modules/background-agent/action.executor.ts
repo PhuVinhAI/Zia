@@ -28,8 +28,90 @@ export async function executeTask(api: any, task: AgentTask): Promise<ExecutionR
   switch (task.type) {
     case 'send_message':
       return executeSendMessage(api, task, payload);
+    case 'reminder':
+      return executeReminder(api, task, payload);
     default:
       return { success: false, error: `Unknown task type: ${task.type}` };
+  }
+}
+
+/**
+ * Gửi nhắc nhở cho user
+ * Reminder là tin nhắn đặc biệt với format nhắc nhở
+ */
+async function executeReminder(
+  api: any,
+  task: AgentTask,
+  payload: {
+    message: string;
+    targetDescription?: string;
+    resolvedThreadId?: string;
+    resolvedUserId?: string;
+  },
+): Promise<ExecutionResult> {
+  // Reminder mặc định gửi cho người tạo task nếu không có target
+  const targetUserId =
+    payload.resolvedUserId || task.targetUserId || task.createdBy;
+
+  if (!targetUserId) {
+    return { success: false, error: 'Missing target user for reminder' };
+  }
+
+  if (!payload.message) {
+    return { success: false, error: 'Missing reminder content' };
+  }
+
+  // Format tin nhắn nhắc nhở với emoji và style đặc biệt
+  const reminderMessage = `⏰ **NHẮC NHỞ**\n\n${payload.message}`;
+
+  try {
+    debugLog('EXECUTOR', `Sending reminder to ${targetUserId}: ${payload.message.substring(0, 50)}...`);
+
+    // Set thread type là User vì reminder gửi cho cá nhân
+    setThreadType(targetUserId, ThreadType.User);
+
+    // Gửi tin nhắn nhắc nhở
+    const result = await sendTextMessage(api, reminderMessage, targetUserId, {
+      source: 'background-agent-reminder',
+      parseMarkdown: true,
+      sendMediaImages: false,
+      sendCodeFiles: false,
+      sendLinks: false,
+    });
+
+    if (!result.success) {
+      debugLog('EXECUTOR', `Failed to send reminder: ${result.error}`);
+      return {
+        success: false,
+        error: result.error || 'Unknown error',
+      };
+    }
+
+    // Lưu vào sent messages
+    let msgIndex = -1;
+    if (result.msgId) {
+      msgIndex = saveSentMessage(targetUserId, result.msgId, '', reminderMessage.substring(0, 200));
+    }
+
+    // Lưu vào history
+    await saveResponseToHistory(targetUserId, reminderMessage);
+
+    debugLog('EXECUTOR', `Reminder sent successfully to ${targetUserId}`);
+
+    return {
+      success: true,
+      data: {
+        msgId: result.msgId,
+        targetUserId,
+        msgIndex,
+        savedToHistory: true,
+        reminderContent: payload.message,
+      },
+    };
+  } catch (error: any) {
+    const errorMsg = error.message || 'Unknown error';
+    debugLog('EXECUTOR', `Failed to send reminder: ${errorMsg}`);
+    return { success: false, error: errorMsg };
   }
 }
 

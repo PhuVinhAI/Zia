@@ -39,7 +39,8 @@ export const sentMessages = sqliteTable(
 );
 
 // ============================================
-// 3. Bảng memories - Long-term memory (đơn giản, không phân loại)
+// 3. Bảng memories - BỘ NHỚ CHUNG (Shared Memory)
+// Chia sẻ giữa tất cả AI và background agent
 // ============================================
 export const memories = sqliteTable(
   'memories',
@@ -69,7 +70,7 @@ export const agentTasks = sqliteTable(
     id: integer('id').primaryKey({ autoIncrement: true }),
     // Note: accept_friend đã được xử lý tự động trong agent.runner
     type: text('type', {
-      enum: ['send_message'],
+      enum: ['send_message', 'reminder'],
     }).notNull(),
     status: text('status', {
       enum: ['pending', 'processing', 'completed', 'failed', 'cancelled'],
@@ -123,5 +124,5 @@ export type AgentTask = typeof agentTasks.$inferSelect;
 export type NewAgentTask = typeof agentTasks.$inferInsert;
 
 // Note: accept_friend đã được xử lý tự động trong agent.runner, không cần task
-export type TaskType = 'send_message';
+export type TaskType = 'send_message' | 'reminder';
 export type TaskStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';

@@ -1,5 +1,6 @@
 /**
- * Memory Tools - AI có thể lưu và tìm kiếm long-term memory
+ * Memory Tools - AI có thể lưu và tìm kiếm BỘ NHỚ CHUNG (Shared Memory)
+ * Chia sẻ giữa tất cả AI và background agent
  */
 
 import { debugLog } from '../../../core/logger/logger.js';
@@ -17,11 +18,14 @@ import type { ToolContext, ToolDefinition, ToolResult } from '../../../shared/ty
 
 export const saveMemoryTool: ToolDefinition = {
   name: 'saveMemory',
-  description: `Lưu thông tin quan trọng vào bộ nhớ dài hạn. Dùng khi:
+  description: `Lưu thông tin quan trọng vào BỘ NHỚ CHUNG (shared memory).
+⚠️ BỘ NHỚ CHUNG: Tất cả AI và background agent đều có thể truy cập!
+Dùng khi:
 - User chia sẻ thông tin cá nhân (tên, sở thích, công việc...)
 - Có sự kiện/thông tin quan trọng cần nhớ
 - User yêu cầu "nhớ giúp" điều gì đó
-- Kết thúc cuộc trò chuyện có nội dung đáng nhớ`,
+- Kết thúc cuộc trò chuyện có nội dung đáng nhớ
+- Thông tin cần chia sẻ giữa các AI/agent`,
   parameters: [
     {
       name: 'content',
@@ -69,11 +73,14 @@ export const saveMemoryTool: ToolDefinition = {
 
 export const recallMemoryTool: ToolDefinition = {
   name: 'recallMemory',
-  description: `Tìm kiếm thông tin trong bộ nhớ dài hạn. Dùng khi:
-- Cần nhớ lại thông tin về user
+  description: `Tìm kiếm thông tin trong BỘ NHỚ CHUNG (shared memory).
+⚠️ BỘ NHỚ CHUNG: Truy cập được tất cả memories từ mọi AI và background agent!
+Dùng khi:
+- Cần nhớ lại thông tin về user (bất kỳ user nào)
 - User hỏi "mình đã nói gì về..."
 - Cần context từ các cuộc trò chuyện trước
-- Muốn biết sở thích/thông tin của user`,
+- Muốn biết sở thích/thông tin của user
+- Background agent cần context để xử lý task`,
   parameters: [
     {
       name: 'query',
