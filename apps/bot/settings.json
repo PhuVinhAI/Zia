@@ -38,7 +38,7 @@
       "checkIntervalMs": 1800000
     },
     "maintenanceMode": {
-      "enabled": true,
+      "enabled": false,
       "message": "🔧 Bot đang trong chế độ bảo trì. Vui lòng thử lại sau!"
     }
   },
@@ -220,7 +220,7 @@
   },
   "cloudBackup": {
     "enabled": true,
-    "throttleMs": 30000,
+    "throttleMs": 10000,
     "restoreDelayMs": 15000,
     "initialBackupDelayMs": 30000
   }
