@@ -11,5 +11,6 @@
   },
   "[json]": {
     "editor.defaultFormatter": "biomejs.biome"
-  }
+  },
+  "typescript.autoClosingTags": false
 }
