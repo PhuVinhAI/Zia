@@ -110,7 +110,7 @@ class RotatingFileStream extends Writable {
 
 /**
  * Khởi tạo Pino logger
- * Production: console + cache (gửi qua transport khi đủ threshold)
+ * Production: console + file rotation + cache (gửi qua transport)
  * Development: console + file rotation
  */
 export function initFileLogger(basePath: string): void {
@@ -130,33 +130,33 @@ export function initFileLogger(basePath: string): void {
     }),
   });
 
+  // File logging - cả production và development đều ghi file
+  const logsRoot = path.dirname(basePath);
+
+  if (!fs.existsSync(logsRoot)) {
+    fs.mkdirSync(logsRoot, { recursive: true });
+  }
+
+  sessionDir = path.join(logsRoot, getTimestamp());
+  if (!fs.existsSync(sessionDir)) {
+    fs.mkdirSync(sessionDir, { recursive: true });
+  }
+
+  const logFile = path.join(sessionDir, 'bot.txt');
+  const rotatingStream = new RotatingFileStream(logFile);
+
+  streams.push({
+    level: 'debug',
+    stream: rotatingStream,
+  });
+
   if (isProduction) {
-    // Production: cache logs và gửi qua transport
+    // Production: thêm cache stream để gửi qua transport (API realtime)
     streams.push({
       level: 'debug',
       stream: new ProductionLogStream(),
     });
-    console.log('📝 Production mode: logs will be sent via registered transport');
-  } else {
-    // Development: ghi file như cũ
-    const logsRoot = path.dirname(basePath);
-
-    if (!fs.existsSync(logsRoot)) {
-      fs.mkdirSync(logsRoot, { recursive: true });
-    }
-
-    sessionDir = path.join(logsRoot, getTimestamp());
-    if (!fs.existsSync(sessionDir)) {
-      fs.mkdirSync(sessionDir, { recursive: true });
-    }
-
-    const logFile = path.join(sessionDir, 'bot.txt');
-    const rotatingStream = new RotatingFileStream(logFile);
-
-    streams.push({
-      level: 'debug',
-      stream: rotatingStream,
-    });
+    console.log('📝 Production mode: logs written to file + sent via transport');
   }
 
   logger = pino(
@@ -168,7 +168,7 @@ export function initFileLogger(basePath: string): void {
   );
 
   logger.info(
-    { session: sessionDir || 'cloud', env: isProduction ? 'production' : 'development' },
+    { session: sessionDir, env: isProduction ? 'production' : 'development' },
     '🚀 Bot started',
   );
 }
@@ -284,14 +284,14 @@ export function logError(context: string, error: any): void {
 }
 
 /**
- * Log AI history (chỉ ghi file ở development)
+ * Log AI history (ghi file cả production và development)
  */
 export function logAIHistory(threadId: string, history: any[]): void {
   if (!logger) return;
 
   logger.debug({ threadId, messageCount: history.length }, 'AI History updated');
 
-  // Chỉ ghi file ở development
+  // Ghi file nếu có sessionDir (cả production và development)
   if (!sessionDir) return;
 
   const historyFile = path.join(sessionDir, `history_${threadId}.json`);
@@ -336,14 +336,14 @@ export function logZaloAPI(action: string, request: any, response?: any, error?:
 }
 
 /**
- * Log system prompt (chỉ ghi file ở development)
+ * Log system prompt (ghi file cả production và development)
  */
 export function logSystemPrompt(threadId: string, systemPrompt: string): void {
   if (!logger) return;
 
   logger.debug({ threadId }, 'System prompt set');
 
-  // Chỉ ghi file ở development
+  // Ghi file nếu có sessionDir (cả production và development)
   if (!sessionDir) return;
 
   const promptFile = path.join(sessionDir, `system_prompt_${threadId}.txt`);
