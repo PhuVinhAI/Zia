@@ -101,6 +101,9 @@ export function registerMessageListener(api: any, options: MessageListenerOption
 
   // Đăng ký reaction listener
   registerReactionListener(api);
+  
+  // Đăng ký group event listener để lưu sự kiện nhóm vào history
+  registerGroupEventListener(api);
 }
 
 /**
@@ -313,4 +316,154 @@ function registerReactionListener(api: any): void {
   });
 
   console.log('[Gateway] 💝 Reaction listener registered');
+}
+
+// GroupEventType from zca-js
+const GroupEventType = {
+  JOIN_REQUEST: 'join_request',
+  JOIN: 'join',
+  LEAVE: 'leave',
+  REMOVE_MEMBER: 'remove_member',
+  BLOCK_MEMBER: 'block_member',
+  UPDATE_SETTING: 'update_setting',
+  UPDATE: 'update',
+  NEW_LINK: 'new_link',
+  ADD_ADMIN: 'add_admin',
+  REMOVE_ADMIN: 'remove_admin',
+  NEW_PIN_TOPIC: 'new_pin_topic',
+  UPDATE_PIN_TOPIC: 'update_pin_topic',
+  REORDER_PIN_TOPIC: 'reorder_pin_topic',
+  UPDATE_BOARD: 'update_board',
+  REMOVE_BOARD: 'remove_board',
+  UPDATE_TOPIC: 'update_topic',
+  UNPIN_TOPIC: 'unpin_topic',
+  REMOVE_TOPIC: 'remove_topic',
+  ACCEPT_REMIND: 'accept_remind',
+  REJECT_REMIND: 'reject_remind',
+  REMIND_TOPIC: 'remind_topic',
+  UPDATE_AVATAR: 'update_avatar',
+  UNKNOWN: 'unknown',
+} as const;
+
+/**
+ * Xử lý group event - lưu vào history để AI hiểu context nhóm
+ * Các sự kiện như thêm/xóa thành viên, đổi tên nhóm, etc.
+ */
+export function registerGroupEventListener(api: any): void {
+  api.listener.on('group_event', async (event: any) => {
+    debugLog('GROUP_EVENT', `RAW event: ${JSON.stringify(event)}`);
+    
+    const { type, data, threadId, isSelf } = event;
+    
+    // Bỏ qua một số event không cần thiết
+    if (type === GroupEventType.JOIN_REQUEST || 
+        type === GroupEventType.UPDATE_SETTING ||
+        type === GroupEventType.UNKNOWN) {
+      debugLog('GROUP_EVENT', `Skipping event type: ${type}`);
+      return;
+    }
+    
+    // Tạo mô tả sự kiện để AI hiểu
+    let eventDescription = '';
+    const actorName = data?.updateMembers?.[0]?.dName || data?.creatorId || 'Ai đó';
+    const groupName = data?.groupName || 'nhóm';
+    
+    switch (type) {
+      case GroupEventType.JOIN:
+        const joinMembers = data?.updateMembers?.map((m: any) => m.dName).join(', ') || actorName;
+        eventDescription = `[HỆ THỐNG] ${joinMembers} đã tham gia ${groupName}`;
+        break;
+        
+      case GroupEventType.LEAVE:
+        const leaveMembers = data?.updateMembers?.map((m: any) => m.dName).join(', ') || actorName;
+        eventDescription = `[HỆ THỐNG] ${leaveMembers} đã rời khỏi ${groupName}`;
+        break;
+        
+      case GroupEventType.REMOVE_MEMBER:
+        const removedMembers = data?.updateMembers?.map((m: any) => m.dName).join(', ') || 'Thành viên';
+        eventDescription = `[HỆ THỐNG] ${removedMembers} đã bị xóa khỏi ${groupName}`;
+        break;
+        
+      case GroupEventType.BLOCK_MEMBER:
+        const blockedMembers = data?.updateMembers?.map((m: any) => m.dName).join(', ') || 'Thành viên';
+        eventDescription = `[HỆ THỐNG] ${blockedMembers} đã bị chặn khỏi ${groupName}`;
+        break;
+        
+      case GroupEventType.ADD_ADMIN:
+        const newAdmins = data?.updateMembers?.map((m: any) => m.dName).join(', ') || 'Thành viên';
+        eventDescription = `[HỆ THỐNG] ${newAdmins} đã được thêm làm quản trị viên ${groupName}`;
+        break;
+        
+      case GroupEventType.REMOVE_ADMIN:
+        const removedAdmins = data?.updateMembers?.map((m: any) => m.dName).join(', ') || 'Thành viên';
+        eventDescription = `[HỆ THỐNG] ${removedAdmins} đã bị xóa quyền quản trị viên ${groupName}`;
+        break;
+        
+      case GroupEventType.UPDATE:
+        // Đổi tên nhóm hoặc cập nhật thông tin
+        if (data?.groupName) {
+          eventDescription = `[HỆ THỐNG] Tên nhóm đã được đổi thành "${data.groupName}"`;
+        } else {
+          eventDescription = `[HỆ THỐNG] Thông tin nhóm đã được cập nhật`;
+        }
+        break;
+        
+      case GroupEventType.UPDATE_AVATAR:
+        eventDescription = `[HỆ THỐNG] Ảnh đại diện nhóm đã được thay đổi`;
+        break;
+        
+      case GroupEventType.NEW_LINK:
+        eventDescription = `[HỆ THỐNG] Link nhóm đã được tạo mới`;
+        break;
+        
+      case GroupEventType.NEW_PIN_TOPIC:
+      case GroupEventType.UPDATE_PIN_TOPIC:
+        eventDescription = `[HỆ THỐNG] Một tin nhắn đã được ghim trong nhóm`;
+        break;
+        
+      case GroupEventType.UNPIN_TOPIC:
+        eventDescription = `[HỆ THỐNG] Một tin nhắn đã được bỏ ghim`;
+        break;
+        
+      default:
+        debugLog('GROUP_EVENT', `Unhandled event type: ${type}`);
+        return;
+    }
+    
+    if (!eventDescription) return;
+    
+    console.log(`[Bot] 📢 ${eventDescription}`);
+    debugLog('GROUP_EVENT', `Event description: ${eventDescription}`);
+    
+    // Tạo fake message để lưu vào history
+    const fakeMessage = {
+      type: 1, // Group type
+      threadId,
+      isSelf: false,
+      data: {
+        uidFrom: data?.sourceId || data?.creatorId || 'system',
+        dName: 'Hệ thống',
+        content: eventDescription,
+        msgType: `group.${type}`,
+        // Metadata
+        _isGroupEvent: true,
+        _eventType: type,
+        _eventData: data,
+      },
+    };
+    
+    // Khởi tạo history nếu chưa có
+    if (!isThreadInitialized(threadId)) {
+      debugLog('GROUP_EVENT', `Initializing history for thread: ${threadId}`);
+      await initThreadHistory(api, threadId, 1); // 1 = Group
+    }
+    
+    // Thêm vào buffer để lưu vào history (không cần AI trả lời)
+    // Chỉ lưu vào history, không trigger AI response
+    const { saveToHistory } = await import('../../shared/utils/history/history.js');
+    await saveToHistory(threadId, fakeMessage);
+    debugLog('GROUP_EVENT', `Saved group event to history: ${threadId}`);
+  });
+
+  console.log('[Gateway] 📢 Group event listener registered');
 }

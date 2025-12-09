@@ -3,12 +3,44 @@
  */
 import type { Content, Part } from '@google/genai';
 import { CONFIG } from '../../../core/config/config.js';
+import { debugLog } from '../../../core/logger/logger.js';
 import { ThreadType } from '../../../infrastructure/messaging/zalo/zalo.service.js';
 import { fetchAsBase64 } from '../httpClient.js';
 import { isSupportedMime } from '../tokenCounter.js';
 
 // Size limit cho media trong tin nhắn nhóm (từ config)
 const getGroupMediaSizeLimit = () => (CONFIG.markdown?.groupMediaSizeLimitMB ?? 1) * 1024 * 1024;
+
+// Các loại msgType hệ thống cần lưu vào history để AI hiểu context
+// Bao gồm cả format từ Zalo API và từ zca-js GroupEventType
+const SYSTEM_MSG_TYPES = [
+  // Format từ group_event listener (zca-js)
+  'group.join',
+  'group.leave', 
+  'group.remove_member',
+  'group.block_member',
+  'group.add_admin',
+  'group.remove_admin',
+  'group.update',
+  'group.update_avatar',
+  'group.new_link',
+  'group.new_pin_topic',
+  'group.update_pin_topic',
+  'group.unpin_topic',
+  // Format cũ (backward compatibility)
+  'group.kick',
+  'group.block',
+  'group.unblock',
+  'group.name_change',
+  'group.avatar_change',
+  'group.pin',
+  'group.unpin',
+  'group.link_change',
+  'group.setting_change',
+  // Các loại khác
+  'chat.undo',
+  'undo',
+];
 
 /** Lấy URL media từ message content */
 export function getMediaUrl(content: any, msgType?: string): string | null {
@@ -74,6 +106,39 @@ function shouldSkipMediaForGroup(msg: any, msgType: string, content: any): boole
 }
 
 /**
+ * Parse system message content để tạo mô tả dễ hiểu cho AI
+ * Tin nhắn hệ thống từ group_event listener đã có sẵn content dạng string
+ * bắt đầu bằng [HỆ THỐNG], chỉ cần trả về trực tiếp
+ */
+function parseSystemMessage(msg: any): string | null {
+  const content = msg.data?.content;
+  
+  // Nếu content đã là string (từ fake message của group_event listener)
+  // và bắt đầu bằng [HỆ THỐNG], trả về trực tiếp
+  if (typeof content === 'string' && content.startsWith('[HỆ THỐNG]')) {
+    return content;
+  }
+  
+  // Fallback: tạo mô tả generic cho các msgType hệ thống khác
+  const msgType = msg.data?.msgType || '';
+  if (msgType.includes('group.') || msgType.includes('undo')) {
+    return `[HỆ THỐNG] Sự kiện nhóm: ${msgType}`;
+  }
+  
+  return null;
+}
+
+/**
+ * Kiểm tra xem msgType có phải là tin nhắn hệ thống không
+ */
+function isSystemMessage(msgType: string): boolean {
+  if (!msgType) return false;
+  return SYSTEM_MSG_TYPES.some(type => msgType.includes(type)) ||
+    msgType.includes('group.') ||
+    msgType.includes('undo');
+}
+
+/**
  * Convert raw Zalo message sang Gemini Content format (với media support)
  */
 export async function toGeminiContent(msg: any): Promise<Content> {
@@ -81,6 +146,16 @@ export async function toGeminiContent(msg: any): Promise<Content> {
   const content = msg.data?.content;
   const msgType = msg.data?.msgType || '';
   const parts: Part[] = [];
+
+  // Xử lý tin nhắn hệ thống (group events)
+  if (isSystemMessage(msgType)) {
+    const systemText = parseSystemMessage(msg);
+    if (systemText) {
+      debugLog('HISTORY', `System message: ${systemText}`);
+      parts.push({ text: systemText });
+      return { role: 'user', parts }; // System messages luôn là 'user' role
+    }
+  }
 
   // Text message
   if (typeof content === 'string') {
