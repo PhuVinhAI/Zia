@@ -121,6 +121,7 @@ export const BackgroundAgentConfigSchema = z.object({
   groupBatchSize: z.coerce.number().min(1).default(10),
   batchDelayMinMs: z.coerce.number().min(100).default(500),
   batchDelayMaxMs: z.coerce.number().min(100).default(1500),
+  groqEnabled: z.boolean().default(true),
 });
 
 // Message chunker config schema
@@ -199,6 +200,14 @@ export const HistoryConfigSchema = z.object({
 export const MemoryConfigSchema = z.object({
   decayHalfLifeDays: z.coerce.number().min(1).default(30),
   accessBoostFactor: z.coerce.number().min(0).default(0.2),
+  embeddingModel: z.string().default('gemini-embedding-001'),
+});
+
+// Database config schema
+export const DatabaseConfigSchema = z.object({
+  path: z.string().default('data/bot.db'),
+  cleanupIntervalMs: z.coerce.number().min(60000).default(3600000),
+  embeddingDim: z.coerce.number().min(1).default(768),
 });
 
 // TVU config schema
@@ -212,11 +221,7 @@ export const GroqConfigSchema = z.object({
   rateLimitCooldownMs: z.coerce.number().min(1000).default(60000),
 });
 
-// Database config schema
-export const DatabaseConfigSchema = z.object({
-  cleanupIntervalMs: z.coerce.number().min(60000).default(3600000),
-  embeddingDim: z.coerce.number().min(1).default(768),
-});
+
 
 // Response handler config schema
 export const ResponseHandlerConfigSchema = z.object({
@@ -340,6 +345,7 @@ export const SettingsSchema = z.object({
     groupBatchSize: 10,
     batchDelayMinMs: 500,
     batchDelayMaxMs: 1500,
+    groqEnabled: true,
   }),
   messageChunker: MessageChunkerConfigSchema.optional().default({
     maxMessageLength: 1800,
@@ -394,6 +400,7 @@ export const SettingsSchema = z.object({
   memory: MemoryConfigSchema.optional().default({
     decayHalfLifeDays: 30,
     accessBoostFactor: 0.2,
+    embeddingModel: 'gemini-embedding-001',
   }),
   tvu: TvuConfigSchema.optional().default({
     timeoutMs: 10000,
@@ -403,6 +410,7 @@ export const SettingsSchema = z.object({
     rateLimitCooldownMs: 60000,
   }),
   database: DatabaseConfigSchema.optional().default({
+    path: 'data/bot.db',
     cleanupIntervalMs: 3600000,
     embeddingDim: 768,
   }),

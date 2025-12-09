@@ -13,7 +13,7 @@ import * as schema from './schema.js';
 // Embedding dimensions cho vector search (từ config)
 export const EMBEDDING_DIM = CONFIG.database?.embeddingDim ?? 768;
 
-const DB_PATH = 'data/bot.db';
+const getDbPath = () => CONFIG.database?.path ?? 'data/bot.db';
 
 let db: ReturnType<typeof drizzle<typeof schema>> | null = null;
 let sqliteDb: Database | null = null;
@@ -24,18 +24,20 @@ let sqliteDb: Database | null = null;
 export function initDatabase() {
   if (db) return db;
 
+  const dbPath = getDbPath();
+  
   // Đảm bảo thư mục data tồn tại
   const fs = require('node:fs');
   const path = require('node:path');
-  const dir = path.dirname(DB_PATH);
+  const dir = path.dirname(dbPath);
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
 
-  debugLog('DATABASE', `Connecting to ${DB_PATH}...`);
+  debugLog('DATABASE', `Connecting to ${dbPath}...`);
 
   // Khởi tạo SQLite với Bun native driver
-  sqliteDb = new Database(DB_PATH);
+  sqliteDb = new Database(dbPath);
 
   // Bật WAL mode để tăng hiệu năng ghi đồng thời
   sqliteDb.exec('PRAGMA journal_mode = WAL;');

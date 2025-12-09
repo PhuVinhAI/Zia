@@ -32,7 +32,7 @@ let pollInterval: ReturnType<typeof setInterval> | null = null;
 let zaloApi: any = null;
 
 // Config from settings.json
-const GROQ_ENABLED = true; // Set false để skip Groq và execute trực tiếp
+const getGroqEnabled = () => CONFIG.backgroundAgent?.groqEnabled ?? true;
 
 /**
  * Khởi động background agent
@@ -109,7 +109,7 @@ async function processTasksInParallel(tasks: any[]): Promise<void> {
     { action: 'execute' | 'skip' | 'delay'; reason: string; adjustedPayload?: any }
   >;
 
-  if (GROQ_ENABLED && process.env.GROQ_API_KEY) {
+  if (getGroqEnabled() && process.env.GROQ_API_KEY) {
     decisions = await getBatchGroqDecisions(tasks, sharedContext);
   } else {
     // Fallback: execute tất cả

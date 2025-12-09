@@ -96,7 +96,8 @@
     "maxToolIterations": 5,
     "groupBatchSize": 10,
     "batchDelayMinMs": 500,
-    "batchDelayMaxMs": 1500
+    "batchDelayMaxMs": 1500,
+    "groqEnabled": true
   },
   "messageChunker": {
     "maxMessageLength": 1800
@@ -150,7 +151,8 @@
   },
   "memory": {
     "decayHalfLifeDays": 30,
-    "accessBoostFactor": 0.2
+    "accessBoostFactor": 0.2,
+    "embeddingModel": "gemini-embedding-001"
   },
   "tvu": {
     "timeoutMs": 10000,
@@ -160,6 +162,7 @@
     "rateLimitCooldownMs": 60000
   },
   "database": {
+    "path": "data/bot.db",
     "cleanupIntervalMs": 3600000,
     "embeddingDim": 768
   },

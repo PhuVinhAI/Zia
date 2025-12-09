@@ -15,7 +15,7 @@ import { type Memory, type MemoryType, memories, type NewMemory } from '../datab
 
 import { CONFIG } from '../../core/config/config.js';
 
-const EMBEDDING_MODEL = 'gemini-embedding-001';
+const getEmbeddingModel = () => CONFIG.memory?.embeddingModel ?? 'gemini-embedding-001';
 const getDecayHalfLifeDays = () => CONFIG.memory?.decayHalfLifeDays ?? 30;
 const getAccessBoostFactor = () => CONFIG.memory?.accessBoostFactor ?? 0.2;
 
@@ -46,7 +46,7 @@ class EmbeddingService {
       try {
         const ai = keyManager.getCurrentAI();
         const result = await ai.models.embedContent({
-          model: EMBEDDING_MODEL,
+          model: getEmbeddingModel(),
           contents: text,
           config: { taskType, outputDimensionality: EMBEDDING_DIM },
         });
