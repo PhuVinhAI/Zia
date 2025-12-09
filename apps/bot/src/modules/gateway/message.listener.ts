@@ -176,8 +176,11 @@ const REACTION_NAMES: Record<string, string> = {
 };
 
 // Track pending reactions để debounce khi user thả nhiều reaction liên tục
-// Key: `${threadId}:${reactorId}:${originalMsgId}`, Value: { timeout, icons: string[] }
-const pendingReactions = new Map<string, { timeout: NodeJS.Timeout; icons: string[] }>();
+// Key: `${threadId}:${reactorId}:${originalMsgId}`, Value: { timeout, icons: string[], processedEventIds: Set }
+const pendingReactions = new Map<
+  string,
+  { timeout: NodeJS.Timeout; icons: string[]; processedEventIds: Set<string> }
+>();
 
 /**
  * Xử lý reaction event - tạo fake message để AI tự suy nghĩ phản hồi
@@ -256,15 +259,25 @@ function registerReactionListener(api: any): void {
     const reactionKey = `${threadId}:${reactorId}:${botMsg.msgId}`;
     const pending = pendingReactions.get(reactionKey);
 
+    // Deduplicate: Zalo API có thể gửi nhiều event trùng lặp cho cùng 1 reaction
+    // Dùng targetMsgId (msgId của reaction event) để detect duplicate
+    const eventId = String(targetMsgId);
+    if (pending?.processedEventIds.has(eventId)) {
+      debugLog('REACTION', `Duplicate event ignored: ${eventId}`);
+      return;
+    }
+
     // Nếu đã có pending reaction cho cùng tin nhắn, clear timeout cũ và thêm icon mới vào danh sách
     if (pending) {
       clearTimeout(pending.timeout);
       pending.icons.push(icon);
+      pending.processedEventIds.add(eventId);
       debugLog('REACTION', `User added another reaction: ${icon} (total: ${pending.icons.length})`);
     }
 
     // Lấy danh sách icons hiện tại hoặc tạo mới
     const icons = pending?.icons || [icon];
+    const processedEventIds = pending?.processedEventIds || new Set([eventId]);
 
     // Debounce: đợi trước khi xử lý để gom tất cả reactions (từ config)
     const reactionDebounceMs = CONFIG.reaction?.debounceMs ?? 2000;
@@ -272,18 +285,22 @@ function registerReactionListener(api: any): void {
       timeout: setTimeout(async () => {
         pendingReactions.delete(reactionKey);
 
-        // Chuyển danh sách icons thành tên reactions
+        // Chuyển danh sách icons thành tên reactions (unique)
         const reactionNames = icons.map((i) => REACTION_NAMES[i] || i);
         const uniqueReactions = [...new Set(reactionNames)];
-        const reactionList = reactionNames.join(', ');
 
         // Tạo nội dung mô tả reaction để AI hiểu context
         // Nhấn mạnh đây là reaction LÊN TIN NHẮN chứ không phải cảm xúc cá nhân
         let reactionContent: string;
         const msgPreview =
           botMsg.content.substring(0, 150) + (botMsg.content.length > 150 ? '...' : '');
-        if (icons.length > 1) {
-          reactionContent = `[REACTION] Người dùng vừa thả ${icons.length} reaction lên tin nhắn của bạn: [${reactionList}]. Tin nhắn được react: "${msgPreview}"`;
+
+        // Nếu tất cả reactions giống nhau, chỉ hiển thị 1 lần với số lượng
+        if (uniqueReactions.length === 1 && icons.length > 1) {
+          reactionContent = `[REACTION] Người dùng vừa thả ${icons.length} reaction "${uniqueReactions[0]}" lên tin nhắn của bạn: "${msgPreview}"`;
+        } else if (icons.length > 1) {
+          // Nhiều loại reaction khác nhau - hiển thị unique list
+          reactionContent = `[REACTION] Người dùng vừa thả ${icons.length} reaction lên tin nhắn của bạn: ${uniqueReactions.join(', ')}. Tin nhắn được react: "${msgPreview}"`;
         } else {
           reactionContent = `[REACTION] Người dùng vừa thả reaction "${reactionNames[0]}" lên tin nhắn của bạn: "${msgPreview}"`;
         }
@@ -308,13 +325,14 @@ function registerReactionListener(api: any): void {
 
         debugLog(
           'REACTION',
-          `Processing ${icons.length} reactions after debounce: ${reactionList}`,
+          `Processing ${icons.length} reactions after debounce: ${uniqueReactions.join(', ')}`,
         );
 
         // Đẩy vào buffer để AI xử lý như tin nhắn bình thường
         addToBuffer(api, threadId, fakeMessage);
       }, reactionDebounceMs),
       icons,
+      processedEventIds,
     };
 
     pendingReactions.set(reactionKey, newPending);
