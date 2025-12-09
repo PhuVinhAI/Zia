@@ -1,16 +1,16 @@
 /**
- * API Client - Kết nối với Bot API
+ * API Client - Kết nối với Bot API qua Next.js API Routes
+ * Credentials được giữ server-side, không expose ra client
  */
 import axios from 'axios';
 
-const API_URL = process.env.NEXT_PUBLIC_BOT_API_URL || 'https://zia-mccs.onrender.com/api';
-const API_KEY = process.env.NEXT_PUBLIC_API_KEY || '';
+// Gọi qua internal API route - credentials được xử lý server-side
+const API_URL = '/api';
 
 export const api = axios.create({
   baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
-    ...(API_KEY && { Authorization: `Bearer ${API_KEY}` }),
   },
 });
 
@@ -213,7 +213,7 @@ export const backupApiClient = {
   restore: (name: string) => api.post<ApiResponse<{ restoredFrom: string; preRestoreBackup: string }>>(`/backup/restore/${name}`),
   delete: (name: string) => api.delete<ApiResponse<{ deleted: string }>>(`/backup/${name}`),
   getInfo: () => api.get<ApiResponse<DatabaseInfo>>('/backup/info'),
-  getDownloadUrl: (name: string) => `${API_URL}/backup/download/${name}`,
+  getDownloadUrl: (name: string) => `/api/backup/download/${name}`,
   upload: (file: File) => {
     const formData = new FormData();
     formData.append('file', file);
