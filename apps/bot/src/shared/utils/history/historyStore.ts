@@ -23,7 +23,23 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const randomDelay = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1) + min);
 
 /**
+ * Strip media data từ content parts để lưu DB nhẹ hơn
+ * Thay base64 bằng placeholder, giữ nguyên text
+ */
+function stripMediaForDb(parts: Content['parts']): Content['parts'] {
+  if (!parts) return [];
+  return parts.map((part) => {
+    if ('inlineData' in part && part.inlineData) {
+      // Thay base64 data bằng placeholder
+      return { text: '[Media đã hết hạn - chỉ có trong session hiện tại]' };
+    }
+    return part;
+  });
+}
+
+/**
  * Persist message to database (async, non-blocking)
+ * Media được strip để giảm size DB
  */
 async function persistToDb(
   threadId: string,
@@ -31,7 +47,9 @@ async function persistToDb(
   content: Content,
 ): Promise<void> {
   try {
-    const serialized = JSON.stringify(content.parts);
+    // Strip media trước khi lưu DB
+    const strippedParts = stripMediaForDb(content.parts);
+    const serialized = JSON.stringify(strippedParts);
     await historyRepository.addMessage(threadId, role, serialized);
   } catch (err) {
     debugLog('HISTORY', `DB persist error: ${err}`);

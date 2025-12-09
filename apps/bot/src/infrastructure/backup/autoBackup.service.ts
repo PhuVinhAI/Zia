@@ -144,10 +144,7 @@ export async function initAutoBackup(): Promise<void> {
   }
 
   if (!dbExists || !dbHealthy) {
-    console.log(`📥 Database not found/corrupt, waiting ${backupConfig.restoreDelayMs / 1000}s before restore...`);
-    await new Promise((r) => setTimeout(r, backupConfig.restoreDelayMs));
-
-    console.log('📥 Attempting to restore from cloud...');
+    console.log('📥 Database not found/corrupt, restoring from cloud...');
     const result = await downloadAndRestoreFromCloud();
 
     if (result.success && !result.skipped) {

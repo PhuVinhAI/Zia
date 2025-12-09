@@ -314,16 +314,27 @@ export async function downloadAndRestoreFromCloud(
     }
 
     // Gist API truncates large files, need to fetch raw content
-    const backupFile = gist.files[BACKUP_FILENAME];
+    const backupFile = gist.files[BACKUP_FILENAME] as GistFile & { raw_url?: string; truncated?: boolean };
     let base64Content: string;
 
-    if (backupFile.content && backupFile.content.length < 1000000) {
-      base64Content = backupFile.content;
-    } else {
-      const rawResponse = await fetch(
-        `https://gist.githubusercontent.com/raw/${config.gistId}/${BACKUP_FILENAME}`
-      );
+    // Luôn fetch raw URL cho file lớn hoặc bị truncate
+    if (backupFile.truncated || !backupFile.content || backupFile.content.length >= 1000000) {
+      if (!backupFile.raw_url) {
+        return { success: false, message: 'Backup file truncated but no raw_url available' };
+      }
+      debugLog('CLOUD_BACKUP', `Fetching raw content from: ${backupFile.raw_url}`);
+      const rawResponse = await fetch(backupFile.raw_url, {
+        headers: {
+          Authorization: `Bearer ${config.token}`,
+          Accept: 'application/vnd.github.raw',
+        },
+      });
+      if (!rawResponse.ok) {
+        return { success: false, message: `Failed to fetch raw content: ${rawResponse.status}` };
+      }
       base64Content = await rawResponse.text();
+    } else {
+      base64Content = backupFile.content;
     }
 
     // Decode base64
