@@ -43,6 +43,44 @@ interface ParserState {
   sentCards: Set<string>;
   sentUndos: Set<string>;
   sentImages: Set<string>;
+  // Track sent message texts để tránh gửi tin nhắn trùng lặp hoặc là prefix của tin đã gửi
+  sentMessageTexts: string[];
+}
+
+/**
+ * Kiểm tra xem tin nhắn mới có nên được gửi không
+ * Trả về false nếu:
+ * - Tin nhắn đã được gửi trước đó (exact match)
+ * - Tin nhắn là prefix của tin đã gửi (streaming partial)
+ * - Tin nhắn là extension của tin đã gửi (cần skip vì đã gửi phần đầu)
+ */
+function shouldSendMessage(newText: string, sentTexts: string[]): boolean {
+  const normalizedNew = newText.trim().toLowerCase();
+  
+  for (const sent of sentTexts) {
+    const normalizedSent = sent.trim().toLowerCase();
+    
+    // Exact match - đã gửi rồi
+    if (normalizedNew === normalizedSent) {
+      return false;
+    }
+    
+    // New text là prefix của tin đã gửi - không gửi vì đã gửi bản đầy đủ hơn
+    if (normalizedSent.startsWith(normalizedNew)) {
+      return false;
+    }
+    
+    // New text là extension của tin đã gửi - không gửi vì đã gửi phần đầu
+    // Chỉ skip nếu overlap > 80% để tránh false positive
+    if (normalizedNew.startsWith(normalizedSent)) {
+      const overlapRatio = normalizedSent.length / normalizedNew.length;
+      if (overlapRatio > 0.8) {
+        return false;
+      }
+    }
+  }
+  
+  return true;
 }
 
 const VALID_REACTIONS = new Set(['heart', 'haha', 'wow', 'sad', 'angry', 'like']);
@@ -161,13 +199,18 @@ async function processStreamChunk(state: ParserState, callbacks: StreamCallbacks
   }
 
   // Parse [quote:index]...[/quote] - xử lý quote reply
+  // CHỈ parse quote tags ở TOP-LEVEL (không nằm trong [msg]...[/msg])
   // AI hay viết: [quote:0]Tin gốc[/quote] Câu trả lời
-  // Logic mới:
+  // Logic:
   // - Nếu có text SAU [/quote] → đó là câu trả lời thực, gửi kèm quote
   // - Nếu KHÔNG có text sau → AI chỉ echo tin gốc, bỏ qua không gửi
+  
+  // Tạo buffer không chứa [msg]...[/msg] để chỉ parse quote ở top-level
+  const bufferWithoutMsg = buffer.replace(/\[msg\][\s\S]*?\[\/msg\]/gi, '');
+  
   const quoteRegex = /\[quote:(-?\d+)\]([\s\S]*?)\[\/quote\](\s*)([^[]*?)(?=\[|$)/gi;
   let quoteMatch;
-  while ((quoteMatch = quoteRegex.exec(buffer)) !== null) {
+  while ((quoteMatch = quoteRegex.exec(bufferWithoutMsg)) !== null) {
     const quoteIndex = parseInt(quoteMatch[1], 10);
     const insideQuote = quoteMatch[2].trim();
     // match[3] là whitespace giữa [/quote] và text sau
@@ -188,24 +231,37 @@ async function processStreamChunk(state: ParserState, callbacks: StreamCallbacks
     const key = `quote:${quoteIndex}:${rawText}`;
 
     if (rawText && !state.sentMessages.has(key)) {
-      state.sentMessages.add(key);
       await processInlineTags(rawText, state, callbacks);
       const cleanText = cleanInlineTags(rawText);
-      if (cleanText && callbacks.onMessage) {
+      
+      // Kiểm tra xem tin nhắn có nên được gửi không (tránh trùng lặp)
+      if (cleanText && callbacks.onMessage && shouldSendMessage(cleanText, state.sentMessageTexts)) {
+        state.sentMessages.add(key);
+        state.sentMessageTexts.push(cleanText);
         await callbacks.onMessage(cleanText, quoteIndex);
       }
     }
   }
 
   // Parse [msg]...[/msg]
+  // Strip các [quote:X]...[/quote] tags bên trong vì chúng không nên được gửi như text thuần
   for (const match of buffer.matchAll(/\[msg\]([\s\S]*?)\[\/msg\]/gi)) {
-    const rawText = match[1].trim();
+    let rawText = match[1].trim();
+    
+    // Strip [quote:X]...[/quote] tags bên trong [msg] - AI đôi khi viết quote tags trong msg
+    // Ví dụ: [msg]Đây là tin [quote:0]nội dung[/quote] và tiếp tục[/msg]
+    // → Chỉ giữ lại: "Đây là tin  và tiếp tục"
+    rawText = rawText.replace(/\[quote:-?\d+\][\s\S]*?\[\/quote\]/gi, '').trim();
+    
     const key = `msg:${rawText}`;
     if (rawText && !state.sentMessages.has(key)) {
-      state.sentMessages.add(key);
       await processInlineTags(rawText, state, callbacks);
       const cleanText = cleanInlineTags(rawText);
-      if (cleanText && callbacks.onMessage) {
+      
+      // Kiểm tra xem tin nhắn có nên được gửi không (tránh trùng lặp)
+      if (cleanText && callbacks.onMessage && shouldSendMessage(cleanText, state.sentMessageTexts)) {
+        state.sentMessages.add(key);
+        state.sentMessageTexts.push(cleanText);
         await callbacks.onMessage(cleanText);
       }
     }
@@ -261,6 +317,7 @@ export async function generateContentStream(
     sentCards: new Set(),
     sentUndos: new Set(),
     sentImages: new Set(),
+    sentMessageTexts: [],
   };
 
   debugLog(
@@ -309,6 +366,7 @@ export async function generateContentStream(
     state.sentCards.clear();
     state.sentUndos.clear();
     state.sentImages.clear();
+    state.sentMessageTexts = [];
     hasPartialResponse = false;
 
     try {
@@ -350,7 +408,9 @@ export async function generateContentStream(
       const plainText = getPlainText(state.buffer);
       if (plainText && callbacks.onMessage) {
         const hasTableOrCode = /(\|[^\n]+\|\n\|[-:\s|]+\|)|(```\w*\n[\s\S]*?```)/.test(plainText);
-        if (state.sentMessages.size === 0 || hasTableOrCode) {
+        // Kiểm tra xem tin nhắn có nên được gửi không (tránh trùng lặp)
+        if ((state.sentMessages.size === 0 || hasTableOrCode) && shouldSendMessage(plainText, state.sentMessageTexts)) {
+          state.sentMessageTexts.push(plainText);
           await callbacks.onMessage(plainText);
         }
       }

@@ -113,6 +113,9 @@ CÁCH TRẢ LỜI - Dùng các tag:
    - CHỈ viết câu trả lời bên trong tag, KHÔNG lặp lại nội dung tin gốc!
    - SAI: [quote:0]Giống con dán hả[/quote] Không, đó là con kiến! ← Lặp lại tin gốc
    - ĐÚNG: [quote:0]Không, đó là con kiến![/quote] ← Chỉ có câu trả lời
+   - ⚠️ KHÔNG đặt [quote:X] bên trong [msg]! Quote và msg là 2 tags riêng biệt!
+   - SAI: [msg]Đây là [quote:0]nội dung[/quote] và tiếp[/msg]
+   - ĐÚNG: [quote:0]Trả lời tin 0[/quote] [msg]Tin nhắn khác[/msg]
 
 ⚠️ VỀ GỬI ẢNH TỪ TOOL:
 - Tool nekosImages, freepikImage: Ảnh được GỬI TỰ ĐỘNG khi tool chạy xong!
