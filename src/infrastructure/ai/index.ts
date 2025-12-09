@@ -16,7 +16,6 @@ export { DEFAULT_AI_RESPONSE } from './ai.interface.js';
 
 // Gemini Provider
 export {
-  ai,
   deleteChatSession,
   extractYouTubeUrls,
   GEMINI_CONFIG,

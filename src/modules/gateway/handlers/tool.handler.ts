@@ -101,7 +101,7 @@ export async function notifyToolCall(
   const message = `🔧 Đang gọi tool: ${toolNames}...`;
 
   try {
-    const { getThreadType } = await import('./response.handler.js');
+    const { getThreadType } = await import('../../../shared/utils/message/messageSender.js');
     const threadType = getThreadType(threadId);
     await api.sendMessage(message, threadId, threadType);
     console.log(`[Tool] 🔧 Gọi tool: ${toolNames}`);

@@ -4,10 +4,11 @@
 
 export {
   createStreamCallbacks,
-  getThreadType,
   sendResponse,
   setupSelfMessageListener,
 } from './response.handler.js';
+
+export { getThreadType, setThreadType } from '../../../shared/utils/message/messageSender.js';
 
 export {
   formatToolResultForAI,
