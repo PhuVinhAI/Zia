@@ -46,7 +46,7 @@ function getModelDisplayName(model: string): string {
 // Parse keys từ env
 // Hỗ trợ 2 cách:
 // 1. Comma-separated: GEMINI_API_KEY=key1,key2,key3
-// 2. Dọc (nhiều biến): GEMINI_API_KEY_1=key1, GEMINI_API_KEY_2=key2, ...
+// 2. Dọc (nhiều biến): GEMINI_API_KEY_1=key1, GEMINI_API_KEY_2=key2, ... (không giới hạn số lượng)
 function parseApiKeys(): string[] {
   const keys: string[] = [];
 
@@ -60,9 +60,17 @@ function parseApiKeys(): string[] {
     keys.push(...parsed);
   }
 
-  // Cách 2: Đọc từ GEMINI_API_KEY_1, GEMINI_API_KEY_2, ... (dọc)
-  for (let i = 1; i <= 20; i++) {
-    const key = Bun.env[`GEMINI_API_KEY_${i}`]?.trim();
+  // Cách 2: Đọc từ GEMINI_API_KEY_1, GEMINI_API_KEY_2, ... (không giới hạn)
+  // Quét tất cả env vars có pattern GEMINI_API_KEY_<số>
+  const envKeys = Object.keys(Bun.env).filter((k) => /^GEMINI_API_KEY_\d+$/.test(k));
+  // Sắp xếp theo số thứ tự
+  envKeys.sort((a, b) => {
+    const numA = parseInt(a.replace('GEMINI_API_KEY_', ''), 10);
+    const numB = parseInt(b.replace('GEMINI_API_KEY_', ''), 10);
+    return numA - numB;
+  });
+  for (const envKey of envKeys) {
+    const key = Bun.env[envKey]?.trim();
     if (key && !key.startsWith('your_')) {
       keys.push(key);
     }
