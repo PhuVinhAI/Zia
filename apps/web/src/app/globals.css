@@ -230,6 +230,12 @@
   animation: pulse-soft 2s ease-in-out infinite;
 }
 
+/* Word wrap for logs */
+.overflow-wrap-anywhere {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
 /* Scrollbar styling */
 .scrollbar-thin {
   scrollbar-width: thin;
