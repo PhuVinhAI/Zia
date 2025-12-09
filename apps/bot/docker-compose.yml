@@ -10,7 +10,7 @@ services:
     volumes:
       - ./data:/app/data
       - ./logs:/app/logs
-      - ./settings.json:/app/settings.json  # Writable for Settings API
+      - ./settings.json:/app/settings.json
       - ./.env:/app/.env:ro
     ports:
-      - "10000:10000"  # API server (health check + settings API)
+      - "10000:10000"

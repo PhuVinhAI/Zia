@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt
 # Copy package files
 COPY package.json bun.lock ./
 
-# Install production dependencies only (skip devDependencies like better-sqlite3)
+# Install production dependencies only
 RUN bun install --production
 
 # Copy source code
@@ -41,7 +41,7 @@ RUN mkdir -p /app/data /app/logs
 ENV NODE_ENV=production
 ENV PORT=10000
 
-# Expose port for health check
+# Expose port for API server
 EXPOSE 10000
 
 # Expose volume for persistent data
