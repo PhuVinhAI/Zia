@@ -1,0 +1,16 @@
+services:
+  zia:
+    build: .
+    container_name: zia-bot
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - SETTINGS_API_KEY=${SETTINGS_API_KEY:-}
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./settings.json:/app/settings.json
+      - ./.env:/app/.env:ro
+    ports:
+      - "10000:10000"
