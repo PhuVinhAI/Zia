@@ -1,5 +1,6 @@
 /**
- * Memory Store - Long-term memory với SQLite-vec + Drizzle
+ * Memory Store - BỘ NHỚ CHUNG (Shared Memory) với SQLite-vec + Drizzle
+ * Chia sẻ giữa tất cả AI (Gemini, Groq) và background agent
  * Sử dụng chung database với bot (data/bot.db)
  */
 

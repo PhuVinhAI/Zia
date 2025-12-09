@@ -53,7 +53,7 @@ apiApp.get('/', (c) => {
       '/settings': 'Bot settings management',
       '/stats': 'System statistics',
       '/tasks': 'Background tasks',
-      '/memories': 'Long-term memory',
+      '/memories': 'Shared memory (bộ nhớ chung)',
       '/history': 'Conversation history',
       '/logs': 'System logs',
       '/backup': 'Database backup & restore',

@@ -147,7 +147,8 @@ function runMigrations(sqlite: Database) {
     );
   `);
 
-  // Tạo bảng memories (long-term memory)
+  // Tạo bảng memories (BỘ NHỚ CHUNG - Shared Memory)
+  // Chia sẻ giữa tất cả AI và background agent
   sqlite.exec(`
     CREATE TABLE IF NOT EXISTS memories (
       id INTEGER PRIMARY KEY AUTOINCREMENT,

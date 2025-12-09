@@ -65,7 +65,7 @@ export function StatsCards() {
       title: 'Bộ nhớ',
       value: formatNumber(data.memories),
       icon: Brain,
-      description: 'Bộ nhớ dài hạn',
+      description: 'Bộ nhớ chung',
       color: '#CE82FF',
       shadowColor: '#B86EE6',
       bgColor: 'bg-[#CE82FF]/10',

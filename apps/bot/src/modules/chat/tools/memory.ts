@@ -1,5 +1,6 @@
 /**
- * Memory Tools - AI có thể lưu và tìm kiếm long-term memory
+ * Memory Tools - AI có thể lưu và tìm kiếm BỘ NHỚ CHUNG (Shared Memory)
+ * Chia sẻ giữa tất cả AI và background agent
  */
 
 import { debugLog } from '../../../core/logger/logger.js';

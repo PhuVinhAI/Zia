@@ -45,7 +45,7 @@ export default function MemoriesPage() {
           </div>
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Bộ nhớ</h1>
-            <p className="text-muted-foreground font-medium">Bộ nhớ dài hạn của bot</p>
+            <p className="text-muted-foreground font-medium">Bộ nhớ chung chia sẻ giữa tất cả AI</p>
           </div>
         </div>
       </div>

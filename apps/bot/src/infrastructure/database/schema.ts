@@ -39,7 +39,8 @@ export const sentMessages = sqliteTable(
 );
 
 // ============================================
-// 3. Bảng memories - Long-term memory (đơn giản, không phân loại)
+// 3. Bảng memories - BỘ NHỚ CHUNG (Shared Memory)
+// Chia sẻ giữa tất cả AI và background agent
 // ============================================
 export const memories = sqliteTable(
   'memories',
