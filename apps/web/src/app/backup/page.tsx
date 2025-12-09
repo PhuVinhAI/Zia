@@ -26,6 +26,7 @@ import {
   FileArchive,
   Clock,
   Server,
+  AlertTriangle,
 } from 'lucide-react';
 import { useRef, useState } from 'react';
 
@@ -103,6 +104,16 @@ export default function BackupPage() {
     onError: () => toast.error('Lỗi khi upload'),
   });
 
+  const resetMutation = useMutation({
+    mutationFn: () => backupApiClient.resetDatabase(),
+    onSuccess: (res) => {
+      queryClient.invalidateQueries({ queryKey: ['backups'] });
+      queryClient.invalidateQueries({ queryKey: ['dbInfo'] });
+      toast.success(`Database đã được reset. Backup: ${res.data.data?.preDeleteBackup}`);
+    },
+    onError: () => toast.error('Lỗi khi reset database'),
+  });
+
   const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -162,14 +173,63 @@ export default function BackupPage() {
 
       {/* Database Info Card */}
       <div className="rounded-2xl border-2 border-border bg-card p-6">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-[#1CB0F6] text-white shadow-[0_3px_0_0_#1899D6]">
-            <Database className="h-5 w-5" />
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-[#1CB0F6] text-white shadow-[0_3px_0_0_#1899D6]">
+              <Database className="h-5 w-5" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold">Thông tin Database</h3>
+              <p className="text-sm text-muted-foreground">Trạng thái database hiện tại</p>
+            </div>
           </div>
-          <div>
-            <h3 className="text-lg font-bold">Thông tin Database</h3>
-            <p className="text-sm text-muted-foreground">Trạng thái database hiện tại</p>
-          </div>
+          
+          {/* Reset Database Button */}
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="outline"
+                className="h-10 px-4 rounded-xl border-2 border-[#FF4B4B]/50 text-[#FF4B4B] hover:bg-[#FF4B4B]/10 hover:border-[#FF4B4B] font-semibold"
+              >
+                <AlertTriangle className="h-4 w-4 mr-2" />
+                Reset Database
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent className="rounded-2xl border-2">
+              <AlertDialogHeader>
+                <AlertDialogTitle className="text-xl font-bold flex items-center gap-2 text-[#FF4B4B]">
+                  <AlertTriangle className="h-5 w-5" />
+                  Xác nhận xóa Database?
+                </AlertDialogTitle>
+                <AlertDialogDescription className="text-base">
+                  <span className="block mb-2">
+                    Hành động này sẽ <strong className="text-[#FF4B4B]">xóa toàn bộ dữ liệu</strong> trong database bao gồm:
+                  </span>
+                  <ul className="list-disc list-inside space-y-1 text-sm mb-3">
+                    <li>Lịch sử tin nhắn (history)</li>
+                    <li>Bộ nhớ AI (memories)</li>
+                    <li>Các task đã lên lịch</li>
+                    <li>Tin nhắn đã gửi</li>
+                  </ul>
+                  <span className="block text-[#58CC02] font-medium">
+                    ✓ Một bản backup sẽ được tạo tự động trước khi xóa
+                  </span>
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel className="rounded-xl border-2 font-semibold">
+                  Hủy
+                </AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => resetMutation.mutate()}
+                  disabled={resetMutation.isPending}
+                  className="rounded-xl font-semibold bg-[#FF4B4B] hover:bg-[#E63E3E] text-white"
+                >
+                  {resetMutation.isPending ? 'Đang xóa...' : 'Xóa Database'}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
 
         {loadingInfo ? (

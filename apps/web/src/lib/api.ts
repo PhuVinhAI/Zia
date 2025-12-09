@@ -298,4 +298,5 @@ export const backupApiClient = {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
   },
+  resetDatabase: () => api.delete<ApiResponse<{ message: string; preDeleteBackup: string }>>('/backup/database'),
 };
