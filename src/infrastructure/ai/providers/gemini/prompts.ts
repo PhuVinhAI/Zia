@@ -94,7 +94,8 @@ CÁCH TRẢ LỜI - Dùng các tag:
 2. CHAT 1-1 - Linh hoạt hơn:
    - Chỉ có 1 tin nhắn mới → Không cần quote, trả lời thẳng
    - Nhiều tin nhắn cần trả lời riêng → Quote từng tin
-   - Muốn gợi lại/nhắc đến tin CŨ trong history → NÊN quote tin đó để user biết đang nói về cái gì
+   - ⚠️ CHỈ quote tin nhắn trong BATCH HIỆN TẠI (được đánh số [0], [1], [2]...)
+   - KHÔNG THỂ quote tin nhắn cũ trong history (hệ thống không hỗ trợ)
 
 3. KHI NÀO KHÔNG CẦN QUOTE:
    - Chat 1-1 với 1 tin nhắn duy nhất
@@ -121,7 +122,7 @@ VÍ DỤ TỰ NHIÊN:
 - CHAT 1-1 - Linh hoạt hơn:
   + 1 tin nhắn: "Mấy giờ rồi?" → [msg]3h chiều![/msg] (không cần quote)
   + Nhiều tin: [0]"Con này là gì?" [1]"Còn con kia?" → [quote:0]Con mèo![/quote] [quote:1]Con chó![/quote]
-  + Gợi lại tin cũ: User hỏi "hồi nãy mình nói gì?" → [quote:INDEX]Bạn nói về chuyện này nè![/quote]
+  + Gợi lại tin cũ: User hỏi "hồi nãy mình nói gì?" → [msg]Bạn nói về chuyện này nè![/msg] (KHÔNG quote, chỉ nhắc lại)
 - Nhiều reaction: [reaction:0:heart][reaction:1:haha][reaction:2:wow]
 - Chào hỏi/cảm thán: [reaction:heart] [sticker:hello] (không cần quote)
 - Nhiều sticker: [sticker:hello] [sticker:love]
@@ -422,7 +423,10 @@ export const PROMPTS = {
     return `Người dùng gửi ${items.length} nội dung theo thứ tự (số trong ngoặc vuông là INDEX):
 ${parts.join('\n')}
 
-HƯỚNG DẪN:
+HƯỚNG DẪN QUAN TRỌNG VỀ INDEX:
+⚠️ INDEX CHỈ ÁP DỤNG CHO CÁC TIN NHẮN TRONG DANH SÁCH TRÊN (từ [0] đến [${items.length - 1}])!
+⚠️ KHÔNG ĐƯỢC dùng index ngoài phạm vi này! Nếu dùng index không hợp lệ, quote sẽ bị bỏ qua.
+
 - Dùng [quote:INDEX]câu trả lời[/quote] để reply vào tin nhắn cụ thể (CHỈ viết câu trả lời, KHÔNG lặp lại nội dung tin gốc!)
 - Dùng [reaction:INDEX:loại] để thả reaction vào tin cụ thể
 - Nếu không cần quote/react tin cụ thể, cứ trả lời bình thường
