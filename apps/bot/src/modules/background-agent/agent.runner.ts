@@ -289,6 +289,13 @@ async function getBatchGroqDecisions(
 
 ${toolsPrompt}
 
+## BỘ NHỚ CHUNG (SHARED MEMORY):
+⚠️ QUAN TRỌNG: Bạn có quyền truy cập BỘ NHỚ CHUNG với tất cả AI khác!
+- Dùng [tool:recallMemory] để TÌM KIẾM thông tin về user/context từ bộ nhớ chung
+- Dùng [tool:saveMemory] để LƯU thông tin quan trọng vào bộ nhớ chung
+- Bộ nhớ này được CHIA SẺ giữa: Gemini (AI chính), Groq (background agent), và tất cả AI khác
+- Khi xử lý task, HÃY TÌM KIẾM trong bộ nhớ chung để có context về user
+
 ## CÁCH TRẢ LỜI CHO TASKS:
 Với MỖI task, sử dụng tool tag với task_id:
 [tool:decide task_id="<ID>" action="execute|skip|delay" reason="Lý do"]
@@ -302,6 +309,7 @@ Nếu cần điều chỉnh message hoặc resolve targetDescription:
 - Điều chỉnh tone dựa trên giới tính
 - Trả lời cho TẤT CẢ tasks trong 1 response
 - Có thể sử dụng CUSTOM TOOLS ở trên để lấy thêm thông tin nếu cần
+- TRƯỚC KHI xử lý task, hãy dùng recallMemory để tìm context về user
 
 ## RESOLVE targetDescription:
 Nếu task có targetDescription (mô tả nhóm/người) thay vì ID:

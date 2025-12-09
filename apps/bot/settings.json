@@ -102,7 +102,7 @@
     "batchDelayMinMs": 500,
     "batchDelayMaxMs": 1500,
     "groqEnabled": true,
-    "allowedTools": ["googleSearch"]
+    "allowedTools": ["googleSearch", "saveMemory", "recallMemory"]
   },
   "messageChunker": {
     "maxMessageLength": 1800

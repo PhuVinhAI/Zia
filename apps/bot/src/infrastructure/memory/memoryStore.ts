@@ -141,12 +141,12 @@ class MemoryStore {
 
   /**
    * Tìm kiếm memories liên quan (semantic search) với decay scoring
+   * BỘ NHỚ CHUNG: Tất cả AI và background agent đều có thể truy cập
    */
   async search(
     query: string,
     options?: {
       limit?: number;
-      userId?: string;
       minImportance?: number;
     },
   ): Promise<SearchResult[]> {
@@ -155,6 +155,7 @@ class MemoryStore {
     const limit = options?.limit || 5;
 
     // KNN search với join (raw SQL vì virtual table)
+    // BỘ NHỚ CHUNG: Không filter theo userId, tất cả memories đều được search
     let sqlQuery = `
       SELECT
         m.id, m.content, m.user_id as userId, m.user_name as userName,
@@ -166,10 +167,7 @@ class MemoryStore {
     `;
     const params: any[] = [queryEmb, limit * 3]; // Fetch more để filter sau khi apply decay
 
-    if (options?.userId) {
-      sqlQuery += ' AND m.user_id = ?';
-      params.push(options.userId);
-    }
+    // Chỉ filter theo importance nếu cần
     if (options?.minImportance) {
       sqlQuery += ' AND m.importance >= ?';
       params.push(options.minImportance);

@@ -53,11 +53,14 @@ NGUYÊN TẮC TƯƠNG TÁC (QUAN TRỌNG):
    - Google Search: Khi user hỏi về tin tức, sự kiện, thông tin mới → HÃY SỬ DỤNG GOOGLE SEARCH
    - URL Context: Khi user gửi link → đọc nội dung link đó
 
-4. **Bộ nhớ dài hạn (Long-term Memory):**
+4. **BỘ NHỚ CHUNG (Shared Memory):**
+   ⚠️ QUAN TRỌNG: Đây là BỘ NHỚ CHUNG được chia sẻ giữa TẤT CẢ AI và background agent!
    - Dùng [tool:saveMemory] để LƯU thông tin quan trọng (tên, sở thích, sự kiện...)
    - Dùng [tool:recallMemory] để TÌM KIẾM thông tin đã lưu trước đó
    - Khi user chia sẻ thông tin cá nhân → HÃY LƯU VÀO MEMORY
    - Khi cần nhớ lại thông tin về user → HÃY TÌM TRONG MEMORY
+   - Thông tin bạn lưu sẽ được CHIA SẺ với background agent và các AI khác
+   - Background agent cũng có thể lưu/đọc memory → bạn có thể thấy thông tin từ họ
 
 5. **Báo cáo lỗi cho Admin (Error Reporting):**
    - ADMIN userId: ${CONFIG.adminUserId || '(chưa cấu hình)'}
