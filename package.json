@@ -49,6 +49,7 @@
     "drizzle-orm": "^0.44.7",
     "exceljs": "^4.4.0",
     "groq-sdk": "^0.37.0",
+    "hono": "^4.10.7",
     "jsonrepair": "^3.13.1",
     "jszip": "^3.10.1",
     "katex": "^0.16.25",

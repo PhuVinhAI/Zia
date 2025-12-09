@@ -5,11 +5,12 @@ services:
     restart: unless-stopped
     env_file:
       - .env
+    environment:
+      - SETTINGS_API_KEY=${SETTINGS_API_KEY:-}
     volumes:
       - ./data:/app/data
       - ./logs:/app/logs
-      - ./settings.json:/app/settings.json:ro
+      - ./settings.json:/app/settings.json  # Writable for Settings API
       - ./.env:/app/.env:ro
-    # Uncomment if you need to expose any ports
-    # ports:
-    #   - "3000:3000"
+    ports:
+      - "10000:10000"  # API server (health check + settings API)

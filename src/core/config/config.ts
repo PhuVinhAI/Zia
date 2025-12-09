@@ -28,10 +28,31 @@ function loadSettings(): Settings {
   return result.data;
 }
 
-// Reload settings (hot reload)
+// Reload settings từ Settings object (được gọi từ API)
+export function reloadSettingsFromData(settings: Settings) {
+  try {
+    debugLog('CONFIG', 'Reloading settings from API data...');
+    Object.assign(CONFIG, buildConfig(settings));
+    console.log('[Config] ✅ Đã reload settings từ API');
+    debugLog(
+      'CONFIG',
+      `Settings reloaded: ${JSON.stringify({
+        name: CONFIG.name,
+        prefix: CONFIG.prefix,
+        useStreaming: CONFIG.useStreaming,
+        allowedUserIds: CONFIG.allowedUserIds,
+      })}`,
+    );
+  } catch (error) {
+    console.error('[Config] ❌ Lỗi reload settings:', error);
+    logError('reloadSettings', error);
+  }
+}
+
+// Reload settings từ file (legacy, vẫn giữ để tương thích)
 export function reloadSettings() {
   try {
-    debugLog('CONFIG', 'Reloading settings...');
+    debugLog('CONFIG', 'Reloading settings from file...');
     const settings = loadSettings();
     Object.assign(CONFIG, buildConfig(settings));
     console.log('[Config] ✅ Đã reload settings');
@@ -112,28 +133,13 @@ function buildConfig(settings: Settings) {
   };
 }
 
-// Watch file settings.json để auto reload
-let debounceTimer: NodeJS.Timeout | null = null;
-try {
-  fs.watch(settingsPath, (eventType) => {
-    if (eventType === 'change') {
-      if (debounceTimer) clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(() => {
-        console.log('[Config] 🔄 Phát hiện thay đổi settings.json...');
-        debugLog('CONFIG', 'settings.json changed, triggering reload');
-        reloadSettings();
-      }, 100);
-    }
-  });
-  console.log('[Config] 👀 Đang watch settings.json để auto reload');
-  debugLog('CONFIG', `Watching ${settingsPath} for changes`);
-} catch (err) {
-  console.warn('[Config] ⚠️ Không thể watch settings.json:', (err as Error).message);
-  debugLog('CONFIG', `Failed to watch settings.json: ${(err as Error).message}`);
-}
+// Không dùng file watcher nữa - sử dụng Settings API để reload
+// API endpoint: POST /api/settings/reload hoặc PUT/PATCH /api/settings
 
 const settings = loadSettings();
 export const CONFIG = buildConfig(settings);
+
+console.log('[Config] ✅ Settings loaded (use API to reload, no file watcher)');
 
 export type { AIMessage, AIResponse } from '../../shared/types/config.schema.js';
 export { DEFAULT_RESPONSE, parseAIResponse } from '../../shared/types/config.schema.js';

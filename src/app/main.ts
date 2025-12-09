@@ -23,32 +23,49 @@ import {
   shouldSkipMessage,
 } from './botSetup.js';
 
-// Health check server cho Render/cloud platforms
-function startHealthServer() {
+import { Hono } from 'hono';
+import { apiApp, onSettingsChange } from '../infrastructure/api/index.js';
+import { reloadSettingsFromData } from '../core/config/config.js';
+
+// API Server với Hono - bao gồm health check và settings API
+function startApiServer() {
   const port = Number(process.env.PORT) || 10000;
   const startTime = Date.now();
 
-  Bun.serve({
-    port,
-    fetch(req) {
-      const url = new URL(req.url);
-      if (url.pathname === '/' || url.pathname === '/health') {
-        const uptime = Math.floor((Date.now() - startTime) / 1000);
-        return new Response(
-          JSON.stringify({ status: 'ok', service: 'Zia Bot', uptime: `${uptime}s` }),
-          { headers: { 'Content-Type': 'application/json' } },
-        );
-      }
-      return new Response('Not Found', { status: 404 });
-    },
+  const app = new Hono();
+
+  // Health check
+  app.get('/', (c) => {
+    const uptime = Math.floor((Date.now() - startTime) / 1000);
+    return c.json({ status: 'ok', service: 'Zia Bot', uptime: `${uptime}s` });
+  });
+  app.get('/health', (c) => {
+    const uptime = Math.floor((Date.now() - startTime) / 1000);
+    return c.json({ status: 'ok', service: 'Zia Bot', uptime: `${uptime}s` });
   });
 
-  console.log(`🌐 Health server running on port ${port}`);
+  // Mount Settings API
+  app.route('/api', apiApp);
+
+  // Register settings change listener để auto reload CONFIG
+  onSettingsChange((settings) => {
+    console.log('[API] 🔄 Settings changed via API, reloading CONFIG...');
+    reloadSettingsFromData(settings);
+  });
+
+  Bun.serve({
+    port,
+    fetch: app.fetch,
+  });
+
+  console.log(`🌐 API server running on port ${port}`);
+  console.log(`   - Health: http://localhost:${port}/health`);
+  console.log(`   - Settings API: http://localhost:${port}/api/settings`);
 }
 
 async function main() {
-  // 0. Start health server
-  startHealthServer();
+  // 0. Start API server (includes health check + settings API)
+  startApiServer();
 
   // 1. Khởi tạo logging
   initLogging();
