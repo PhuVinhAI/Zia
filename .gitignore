@@ -6,7 +6,7 @@ temp/
 qr.png
 credentials.json
 credentials.base64.txt
-logs/
+/apps/bot/logs/
 
 # Bun
 bun.lockb
