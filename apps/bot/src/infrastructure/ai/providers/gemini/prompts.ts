@@ -453,4 +453,25 @@ Hãy XEM/NGHE tất cả nội dung đính kèm và phản hồi phù hợp.`;
 
   // Prefix hint
   prefixHint: (prefix: string) => `💡 Cú pháp: ${prefix} <câu hỏi>`,
+
+  // Character card detected
+  characterCardDetected: (charName: string) => 
+    `🎭 Đã phát hiện thẻ nhân vật **${charName}**! Bạn có muốn bắt đầu roleplay không?\n\n` +
+    `💡 Gõ "có" hoặc "roleplay" để bắt đầu\n` +
+    `💡 Gõ "không" để bỏ qua`,
+
+  // Character card activated
+  characterCardActivated: (charName: string, tags?: string[]) => {
+    let msg = `✨ **Đã kích hoạt roleplay với ${charName}!**\n\n`;
+    if (tags && tags.length > 0) {
+      msg += `🏷️ Tags: ${tags.slice(0, 5).join(', ')}\n\n`;
+    }
+    msg += `💡 Gõ \`/stopchar\` để thoát roleplay\n`;
+    msg += `💡 Gõ \`/charinfo\` để xem thông tin nhân vật`;
+    return msg;
+  },
+
+  // Character card deactivated
+  characterCardDeactivated: (charName: string) =>
+    `👋 Đã thoát roleplay với **${charName}**!\n\nBot đã trở về chế độ bình thường.`,
 };

@@ -2,6 +2,49 @@
  * Message Classifier - Phân loại tin nhắn Zalo
  */
 
+/**
+ * Check if image might be a character card based on hints
+ * Character cards are typically PNG files with specific naming patterns
+ * 
+ * Returns:
+ * - 'definite': User explicitly mentioned character card keywords
+ * - 'possible': URL pattern suggests it might be a character card
+ * - 'unlikely': No hints found
+ */
+function isCharacterCardHint(caption: string, url: string): 'definite' | 'possible' | 'unlikely' {
+  const lowerCaption = (caption || '').toLowerCase();
+  const lowerUrl = (url || '').toLowerCase();
+  
+  // Check caption for explicit character card keywords
+  const explicitKeywords = [
+    'character card', 'char card', 'thẻ nhân vật', 'roleplay với',
+    'nhập vai với', 'rp với', 'chara card', 'tavern card',
+    'sillytavern', 'kobold', 'oobabooga', 'agnai', 'risu', 'pygmalion',
+  ];
+  
+  if (explicitKeywords.some(kw => lowerCaption.includes(kw))) {
+    return 'definite';
+  }
+  
+  // Check URL for common character card patterns
+  const urlPatterns = [
+    'chub.ai', 'characterhub', 'pygmalion.chat',
+    'risu.ai', 'janitorai', 'character_card',
+    '_card.png', '-card.png', 'tavern',
+  ];
+  
+  if (urlPatterns.some(pattern => lowerUrl.includes(pattern))) {
+    return 'possible';
+  }
+  
+  // Check if URL ends with .png (might be character card)
+  if (lowerUrl.endsWith('.png') || lowerUrl.includes('.png?')) {
+    return 'possible';
+  }
+  
+  return 'unlikely';
+}
+
 export type MessageType =
   | 'text'
   | 'image'
@@ -15,6 +58,7 @@ export type MessageType =
   | 'doodle'
   | 'friend_added'
   | 'system'
+  | 'character_card' // Character card PNG for roleplay
   | 'unknown';
 
 export type ClassifiedMessage = {
@@ -34,6 +78,8 @@ export type ClassifiedMessage = {
   contactAvatar?: string;
   contactUserId?: string;
   contactPhone?: string;
+  // Character card flag
+  isCharacterCard?: boolean;
 };
 
 /**
@@ -69,11 +115,40 @@ export function classifyMessage(msg: any): ClassifiedMessage {
     };
   }
 
-  // Image/Photo
+  // Image/Photo - Check for character card
   if (msgType === 'chat.photo' || (msgType === 'webchat' && content?.href)) {
     const url = content?.href || content?.hdUrl || content?.thumbUrl;
     // Lấy caption text nếu có (content.title chứa text đi kèm ảnh)
     const caption = content?.title || '';
+    
+    // Check if this might be a character card based on caption hints
+    const cardHint = isCharacterCardHint(caption, url);
+    
+    // Only mark as character_card if user explicitly mentioned it
+    // For 'possible' cases, we'll check the PNG metadata later in the processor
+    if (cardHint === 'definite') {
+      return { 
+        type: 'character_card', 
+        message: msg, 
+        url, 
+        mimeType: 'image/png', 
+        text: caption,
+        isCharacterCard: true,
+      };
+    }
+    
+    // For possible cases, mark it so processor can check PNG metadata
+    if (cardHint === 'possible') {
+      return { 
+        type: 'image', 
+        message: msg, 
+        url, 
+        mimeType: 'image/png', 
+        text: caption,
+        isCharacterCard: false, // Will be checked later
+      };
+    }
+    
     return { type: 'image', message: msg, url, mimeType: 'image/jpeg', text: caption };
   }
 

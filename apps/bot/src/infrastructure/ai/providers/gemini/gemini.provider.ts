@@ -54,6 +54,7 @@ export async function generateContent(
   media?: MediaPart[],
   threadId?: string,
   history?: Content[],
+  characterPrompt?: string,
 ): Promise<AIResponse> {
   const mediaTypes = media?.map((m) => m.type) || [];
   logStep('generateContent', {
@@ -117,8 +118,8 @@ export async function generateContent(
     }
 
     try {
-      const chat = getChatSession(sessionId, history);
-      debugLog('GEMINI', `Using chat session: ${sessionId}, history=${history?.length || 0}`);
+      const chat = getChatSession(sessionId, history, characterPrompt);
+      debugLog('GEMINI', `Using chat session: ${sessionId}, history=${history?.length || 0}, hasCharacter=${!!characterPrompt}`);
 
       if (history && history.length > 0) {
         logAIHistory(sessionId, history);
