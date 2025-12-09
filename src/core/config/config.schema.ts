@@ -122,6 +122,9 @@ export const BackgroundAgentConfigSchema = z.object({
   batchDelayMinMs: z.coerce.number().min(100).default(500),
   batchDelayMaxMs: z.coerce.number().min(100).default(1500),
   groqEnabled: z.boolean().default(true),
+  // Danh sách tên tools được phép gửi cho Groq (giảm token usage)
+  // Nếu rỗng → gửi tất cả tools (như cũ)
+  allowedTools: z.array(z.string()).default([]),
 });
 
 // Message chunker config schema
@@ -357,6 +360,7 @@ export const SettingsSchema = z.object({
     batchDelayMinMs: 500,
     batchDelayMaxMs: 1500,
     groqEnabled: true,
+    allowedTools: [],
   }),
   messageChunker: MessageChunkerConfigSchema.optional().default({
     maxMessageLength: 1800,

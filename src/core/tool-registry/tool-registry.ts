@@ -338,3 +338,65 @@ QUY TẮC:
 export function getRegisteredTools(): ITool[] {
   return moduleManager.getAllTools();
 }
+
+/**
+ * Generate prompt mô tả tools có sẵn - CHỈ các tools được chỉ định
+ * Dùng cho background agent để giảm token usage
+ * @param allowedToolNames - Danh sách tên tools được phép. Nếu rỗng → trả về tất cả tools
+ */
+export function generateToolsPromptFiltered(allowedToolNames: string[]): string {
+  const allTools = moduleManager.getAllTools();
+  
+  // Nếu không có filter → trả về tất cả (như generateToolsPrompt)
+  const tools = allowedToolNames.length > 0
+    ? allTools.filter((tool) => allowedToolNames.includes(tool.name))
+    : allTools;
+
+  debugLog('TOOL', `Filtered tools: ${tools.length}/${allTools.length}`);
+
+  const toolDescriptions = tools
+    .map((tool) => {
+      const paramsDesc = tool.parameters
+        .map(
+          (p) =>
+            `  - ${p.name} (${p.type}${p.required ? ', bắt buộc' : ', tùy chọn'}): ${p.description}`,
+        )
+        .join('\n');
+
+      return `📌 ${tool.name}
+Mô tả: ${tool.description}
+Tham số:
+${paramsDesc || '  (Không có tham số)'}`;
+    })
+    .join('\n\n');
+
+  return `
+═══════════════════════════════════════════════════
+CUSTOM TOOLS - Công cụ tùy chỉnh
+═══════════════════════════════════════════════════
+
+${getCurrentTimeInfo()}
+
+Bạn có thể sử dụng các tool sau:
+
+${toolDescriptions}
+
+CÁCH GỌI TOOL:
+- Cú pháp ngắn (không có body): [tool:tên_tool param1="giá_trị1" param2="giá_trị2"]
+- Cú pháp JSON (có body): [tool:tên_tool]{"param1": "giá_trị1"}[/tool]
+
+⚠️ QUAN TRỌNG: Thẻ đóng PHẢI là [/tool] (KHÔNG có tên tool!)
+- ✅ ĐÚNG: [tool:createFile]{"filename":"test.docx"}[/tool]
+- ❌ SAI: [tool:createFile]{"filename":"test.docx"}[/tool:createFile]
+
+VÍ DỤ:
+- Không có tham số: [tool:getUserInfo]
+- Tham số inline: [tool:getAllFriends limit=10]
+- Tham số JSON: [tool:createFile]{"filename":"report.docx","content":"Nội dung..."}[/tool]
+
+QUY TẮC:
+1. Khi gọi tool, có thể kèm text thông báo ngắn
+2. Sau khi tool trả kết quả, tiếp tục trả lời user
+3. KHÔNG tự bịa thông tin, hãy dùng tool để lấy thông tin chính xác
+`;
+}

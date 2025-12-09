@@ -97,7 +97,8 @@
     "groupBatchSize": 10,
     "batchDelayMinMs": 500,
     "batchDelayMaxMs": 1500,
-    "groqEnabled": true
+    "groqEnabled": true,
+    "allowedTools": ["googleSearch"]
   },
   "messageChunker": {
     "maxMessageLength": 1800

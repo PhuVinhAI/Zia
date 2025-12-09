@@ -6,7 +6,7 @@
 import { debugLog } from '../../core/logger/logger.js';
 import {
   executeAllTools,
-  generateToolsPrompt,
+  generateToolsPromptFiltered,
   hasToolCalls,
   parseToolCalls,
 } from '../../core/tool-registry/tool-registry.js';
@@ -269,7 +269,8 @@ async function getBatchGroqDecisions(
   Map<number, { action: 'execute' | 'skip' | 'delay'; reason: string; adjustedPayload?: any }>
 > {
   const contextStr = formatContextForPrompt(context);
-  const toolsPrompt = generateToolsPrompt();
+  const allowedTools = CONFIG.backgroundAgent?.allowedTools ?? [];
+  const toolsPrompt = generateToolsPromptFiltered(allowedTools);
 
   // Format tất cả tasks vào 1 prompt
   const tasksDescription = tasks
