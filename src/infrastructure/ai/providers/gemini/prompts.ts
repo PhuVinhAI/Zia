@@ -301,8 +301,7 @@ export function getSystemPrompt(useCharacter: boolean = true): string {
   return basePrompt + generateToolsPrompt() + silentPrompt + nsfwPrompt;
 }
 
-// Default export (deprecated - dùng getSystemPrompt() thay thế)
-export const SYSTEM_PROMPT = CHARACTER_SYSTEM_PROMPT;
+
 
 // ═══════════════════════════════════════════════════
 // MESSAGE PROMPTS - Các template prompt cho tin nhắn

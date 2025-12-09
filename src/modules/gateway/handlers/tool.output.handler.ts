@@ -9,7 +9,7 @@ import path from 'node:path';
 import { debugLog } from '../../../core/index.js';
 import { CONFIG } from '../../../core/config/config.js';
 import type { ToolCall, ToolResult } from '../../../core/types.js';
-import { getThreadType } from './response.handler.js';
+import { getThreadType } from '../../../shared/utils/message/messageSender.js';
 
 // ═══════════════════════════════════════════════════
 // MEDIA SENDERS

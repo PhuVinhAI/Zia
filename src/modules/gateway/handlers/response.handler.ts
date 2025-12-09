@@ -23,8 +23,7 @@ import {
   saveSentMessage,
 } from '../../../shared/utils/message/messageStore.js';
 
-// Re-export để các module khác có thể import từ đây (backward compatibility)
-export { getThreadType, setThreadType } from '../../../shared/utils/message/messageSender.js';
+
 
 // ═══════════════════════════════════════════════════
 // SHARED HELPERS

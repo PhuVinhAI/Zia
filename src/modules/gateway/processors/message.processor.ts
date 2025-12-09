@@ -19,29 +19,24 @@ import {
   saveToolResultToHistory,
 } from '../../../shared/utils/history/history.js';
 import { markPendingToolExecution } from '../../../shared/utils/taskManager.js';
-import type { ClassifiedMessage, MessageType } from '../classifier.js';
-// Import từ các module mới
+// Import từ classifier
 import {
-  classifyMessage,
+  type ClassifiedMessage,
   classifyMessages,
   countMessageTypes,
   isBotMentioned,
+  type MessageType,
 } from '../classifier.js';
 import { checkRateLimit, markApiCall } from '../guards/rate-limit.guard.js';
-import {
-  createStreamCallbacks,
-  sendResponse,
-  setThreadType,
-} from '../handlers/response.handler.js';
+import { createStreamCallbacks, sendResponse } from '../handlers/response.handler.js';
+import { setThreadType } from '../../../shared/utils/message/messageSender.js';
 import { handleToolCalls, isToolOnlyResponse } from '../handlers/tool.handler.js';
 import { startTypingWithRefresh } from '../services/message.buffer.js';
 import { buildPrompt, extractTextFromMessages, processPrefix } from '../services/prompt.builder.js';
 import { extractQuoteInfo } from '../services/quote.parser.js';
 import { addQuoteMedia, prepareMediaParts } from './media.processor.js';
 
-// Re-export types cho backward compatibility
-export type { ClassifiedMessage, MessageType };
-export { classifyMessage as classifyMessageDetailed };
+
 
 /**
  * Handler CHÍNH - xử lý TẤT CẢ loại tin nhắn trong 1 flow duy nhất

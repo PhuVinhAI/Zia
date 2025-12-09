@@ -4,9 +4,5 @@
 
 export { addQuoteMedia, prepareMediaParts } from './media.processor.js';
 
-export {
-  type ClassifiedMessage,
-  classifyMessageDetailed,
-  handleMixedContent,
-  type MessageType,
-} from './message.processor.js';
+export { handleMixedContent } from './message.processor.js';
+export { type ClassifiedMessage, type MessageType } from '../classifier.js';

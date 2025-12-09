@@ -12,8 +12,7 @@ debugLog('GEMINI', 'Initializing Gemini API with Key Manager...');
 // Export getter để luôn lấy AI instance hiện tại (có thể đã rotate)
 export const getAI = () => keyManager.getCurrentAI();
 
-// Backward compatibility - export ai như getter
-export const ai = keyManager.getCurrentAI();
+
 
 // Register AI service cho shared layer (dependency inversion)
 // Sử dụng getter để luôn dùng key hiện tại
@@ -38,25 +37,21 @@ const SAFETY_SETTINGS = [
 
 import { CONFIG } from '../../../../core/config/config.js';
 
-// Getter để lấy config từ settings.json
-export const getGeminiConfig = () => ({
-  temperature: CONFIG.gemini?.temperature ?? 1,
-  topP: CONFIG.gemini?.topP ?? 0.95,
-  maxOutputTokens: CONFIG.gemini?.maxOutputTokens ?? 65536,
-  thinkingConfig: {
-    thinkingBudget: CONFIG.gemini?.thinkingBudget ?? 8192,
-  },
-  tools: [{ urlContext: {} }],
-  safetySettings: SAFETY_SETTINGS,
-});
-
-// Backward compatibility - static config (sẽ được thay thế bởi getGeminiConfig())
+// Lấy config từ settings.json
 export const GEMINI_CONFIG = {
-  temperature: 1,
-  topP: 0.95,
-  maxOutputTokens: 65536,
-  thinkingConfig: {
-    thinkingBudget: 8192,
+  get temperature() {
+    return CONFIG.gemini?.temperature ?? 1;
+  },
+  get topP() {
+    return CONFIG.gemini?.topP ?? 0.95;
+  },
+  get maxOutputTokens() {
+    return CONFIG.gemini?.maxOutputTokens ?? 65536;
+  },
+  get thinkingConfig() {
+    return {
+      thinkingBudget: CONFIG.gemini?.thinkingBudget ?? 8192,
+    };
   },
   tools: [{ urlContext: {} }],
   safetySettings: SAFETY_SETTINGS,

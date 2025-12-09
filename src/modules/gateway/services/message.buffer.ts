@@ -16,7 +16,7 @@ import {
   startTask,
 } from '../../../shared/utils/taskManager.js';
 import { handleMixedContent } from '../gateway.module.js';
-import { getThreadType } from '../handlers/response.handler.js';
+import { getThreadType } from '../../../shared/utils/message/messageSender.js';
 
 // Buffer config từ settings.json
 const getBufferDelayMs = () => CONFIG.buffer?.delayMs ?? 2500;

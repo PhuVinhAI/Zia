@@ -23,26 +23,17 @@ let currentModel: 'primary' | 'fallback' = 'primary';
 let primaryCooldownUntil: number | null = null;
 const getRateLimitCooldownMs = () => CONFIG.groq?.rateLimitCooldownMs ?? 60000;
 
-// Model với reasoning capability
+// Model với reasoning capability - lấy từ config
 export const GROQ_MODEL = CONFIG.groqModels?.primary ?? 'openai/gpt-oss-120b';
 
-// Getter để lấy config từ settings.json
-export const getGroqConfig = () => ({
+// Config cho primary model - lấy từ settings.json
+const getGroqConfig = () => ({
   temperature: CONFIG.groqModels?.temperature ?? 0.7,
   max_completion_tokens: CONFIG.groqModels?.primaryMaxTokens ?? 65536,
   top_p: CONFIG.groqModels?.topP ?? 0.95,
   reasoning_effort: 'high' as const,
   stop: null,
 });
-
-// Backward compatibility
-export const GROQ_CONFIG = {
-  temperature: 0.7,
-  max_completion_tokens: 65536,
-  top_p: 0.95,
-  reasoning_effort: 'high' as const,
-  stop: null,
-};
 
 // Config cho fallback model (không có reasoning_effort)
 const getGroqFallbackConfig = () => ({
@@ -51,13 +42,6 @@ const getGroqFallbackConfig = () => ({
   top_p: CONFIG.groqModels?.topP ?? 0.95,
   stop: null,
 });
-
-const GROQ_FALLBACK_CONFIG = {
-  temperature: 0.7,
-  max_completion_tokens: 16384,
-  top_p: 0.95,
-  stop: null,
-};
 
 export interface GroqMessage {
   role: 'system' | 'user' | 'assistant';
@@ -108,7 +92,7 @@ function switchToFallback(): void {
 /**
  * Lấy config phù hợp với model hiện tại
  */
-function getConfigForModel(model: string, options?: Partial<typeof GROQ_CONFIG>): any {
+function getConfigForModel(model: string, options?: Partial<ReturnType<typeof getGroqConfig>>): any {
   const models = getGroqModels();
   const baseConfig = model === models.fallback ? getGroqFallbackConfig() : getGroqConfig();
   const merged = { ...baseConfig, ...options };
@@ -127,7 +111,7 @@ function getConfigForModel(model: string, options?: Partial<typeof GROQ_CONFIG>)
  */
 export async function generateGroqResponse(
   messages: GroqMessage[],
-  options?: Partial<typeof GROQ_CONFIG>,
+  options?: Partial<ReturnType<typeof getGroqConfig>>,
 ): Promise<string> {
   const model = getCurrentModel();
   const config = getConfigForModel(model, options);
@@ -187,7 +171,7 @@ async function createGroqStream(messages: GroqMessage[], model: string, config: 
  */
 export async function* streamGroqResponse(
   messages: GroqMessage[],
-  options?: Partial<typeof GROQ_CONFIG>,
+  options?: Partial<ReturnType<typeof getGroqConfig>>,
 ): AsyncGenerator<string> {
   const model = getCurrentModel();
   const config = getConfigForModel(model, options);
