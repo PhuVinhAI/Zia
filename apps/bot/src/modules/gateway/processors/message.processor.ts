@@ -31,6 +31,14 @@ import {
 import { checkRateLimit, markApiCall } from '../guards/rate-limit.guard.js';
 import { createStreamCallbacks, sendResponse } from '../handlers/response.handler.js';
 import { handleToolCalls, isToolOnlyResponse } from '../handlers/tool.handler.js';
+import {
+  checkAndIncrementCharacter,
+  getCharacterCardUrl,
+  getCharacterSystemPrompt,
+  handleCharacterCommand,
+  hasCharacterCard,
+  processCharacterCard,
+} from '../handlers/characterCard.handler.js';
 import { startTypingWithRefresh } from '../services/message.buffer.js';
 import { buildPrompt, extractTextFromMessages, processPrefix } from '../services/prompt.builder.js';
 import { extractQuoteInfo } from '../services/quote.parser.js';
@@ -67,6 +75,53 @@ export async function handleMixedContent(
     // 3. Xác định loại Thread (User hay Group)
     const lastMsg = messages[messages.length - 1];
     const isGroup = lastMsg.type === ThreadType.Group;
+    const senderId = lastMsg.data?.uidFrom || threadId;
+    const senderName = lastMsg.data?.dName;
+
+    // 3.1 Check for character commands first
+    const combinedTextForCommand = extractTextFromMessages(classified);
+    if (await handleCharacterCommand(api, threadId, combinedTextForCommand, senderId)) {
+      debugLog('MIXED', 'Character command handled');
+      return;
+    }
+
+    // 3.2 Check for character card in messages
+    if (hasCharacterCard(classified)) {
+      const cardUrl = getCharacterCardUrl(classified);
+      if (cardUrl) {
+        console.log(`[Bot] 🎭 Phát hiện character card, đang xử lý...`);
+        const result = await processCharacterCard(api, threadId, cardUrl, senderId, senderName);
+        if (result.success) {
+          debugLog('MIXED', `Character card activated: ${result.character?.name}`);
+          return; // Character card handled, greeting already sent
+        } else {
+          // Failed to parse, treat as normal image
+          debugLog('MIXED', `Character card parse failed: ${result.error}`);
+          // Continue processing as normal image
+        }
+      }
+    }
+
+    // 3.3 Check PNG images for hidden character card data
+    // This handles cases where user sends a PNG without explicit keywords
+    const pngImages = classified.filter(c => 
+      c.type === 'image' && 
+      c.mimeType === 'image/png' && 
+      c.url
+    );
+    
+    for (const pngImage of pngImages) {
+      if (!pngImage.url) continue;
+      
+      // Try to parse as character card (silent mode - don't show errors for regular images)
+      const result = await processCharacterCard(api, threadId, pngImage.url, senderId, senderName, true);
+      if (result.success) {
+        console.log(`[Bot] 🎭 Phát hiện character card ẩn trong PNG!`);
+        debugLog('MIXED', `Hidden character card found: ${result.character?.name}`);
+        return; // Character card handled
+      }
+      // If not a character card, continue processing as normal image
+    }
 
     // 4. Logic chặn trả lời trong nhóm nếu không được mention
     if (isGroup) {
@@ -153,10 +208,16 @@ export async function handleMixedContent(
     }
     markApiCall(threadId);
 
-    // 12. Gọi Gemini và xử lý response
+    // 12. Check for active character roleplay
+    const activeCharacter = checkAndIncrementCharacter(threadId);
+    const characterPrompt = getCharacterSystemPrompt(threadId);
+    
+    if (activeCharacter) {
+      console.log(`[Bot] 🎭 Roleplay mode: ${activeCharacter.name}`);
+    }
+
+    // 13. Gọi Gemini và xử lý response
     const mediaToSend = media.length > 0 ? media : undefined;
-    const senderId = lastMsg.data?.uidFrom || threadId;
-    const senderName = lastMsg.data?.dName;
 
     await processAIResponse(
       api,
@@ -170,6 +231,7 @@ export async function handleMixedContent(
       senderName,
       signal,
       0,
+      characterPrompt,
     );
   } catch (e: any) {
     if (e.message === 'Aborted' || signal?.aborted) {
@@ -195,6 +257,7 @@ async function processAIResponse(
   senderName: string | undefined,
   signal: AbortSignal | undefined,
   depth: number,
+  characterPrompt?: string | null,
 ): Promise<void> {
   const MAX_TOOL_DEPTH = CONFIG.maxToolDepth || 10;
   if (depth >= MAX_TOOL_DEPTH) {
@@ -215,6 +278,7 @@ async function processAIResponse(
       senderName,
       signal,
       depth,
+      characterPrompt,
     );
   } else {
     await processNonStreamingResponse(
@@ -229,6 +293,7 @@ async function processAIResponse(
       senderName,
       signal,
       depth,
+      characterPrompt,
     );
   }
 }
@@ -248,6 +313,7 @@ async function processStreamingResponse(
   senderName: string | undefined,
   signal: AbortSignal | undefined,
   depth: number,
+  characterPrompt?: string | null,
 ): Promise<void> {
   const callbacks = createStreamCallbacks(api, threadId, lastMsg, messages, true);
   callbacks.signal = signal;
@@ -258,6 +324,7 @@ async function processStreamingResponse(
     currentMedia,
     threadId,
     currentHistory,
+    characterPrompt || undefined,
   );
 
   if (signal?.aborted) {
@@ -303,6 +370,7 @@ async function processStreamingResponse(
       senderName,
       signal,
       depth + 1,
+      characterPrompt,
     );
   } else {
     await saveResponseToHistory(threadId, result);
@@ -325,8 +393,9 @@ async function processNonStreamingResponse(
   senderName: string | undefined,
   signal: AbortSignal | undefined,
   depth: number,
+  characterPrompt?: string | null,
 ): Promise<void> {
-  const aiReply = await generateContent(currentPrompt, currentMedia, threadId, currentHistory);
+  const aiReply = await generateContent(currentPrompt, currentMedia, threadId, currentHistory, characterPrompt || undefined);
 
   const responseText = aiReply.messages
     .map((m) => m.text)
@@ -388,6 +457,7 @@ async function processNonStreamingResponse(
       senderName,
       signal,
       depth + 1,
+      characterPrompt,
     );
   } else {
     await sendResponse(api, aiReply, threadId, lastMsg, messages);

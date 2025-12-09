@@ -5,18 +5,24 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const badgeVariants = cva(
-  "inline-flex items-center justify-center rounded-full border px-2 py-0.5 text-xs font-medium w-fit whitespace-nowrap shrink-0 [&>svg]:size-3 gap-1 [&>svg]:pointer-events-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive transition-[color,box-shadow] overflow-hidden",
+  "inline-flex items-center justify-center rounded-full px-3 py-1 text-xs font-semibold transition-colors",
   {
     variants: {
       variant: {
         default:
-          "border-transparent bg-primary text-primary-foreground [a&]:hover:bg-primary/90",
+          "bg-[#58CC02]/10 text-[#58CC02] border border-[#58CC02]/30",
         secondary:
-          "border-transparent bg-secondary text-secondary-foreground [a&]:hover:bg-secondary/90",
+          "bg-muted text-muted-foreground border border-border",
         destructive:
-          "border-transparent bg-destructive text-white [a&]:hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60",
+          "bg-[#FF4B4B]/10 text-[#FF4B4B] border border-[#FF4B4B]/30",
         outline:
-          "text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground",
+          "bg-transparent text-foreground border-2 border-border",
+        accent:
+          "bg-[#1CB0F6]/10 text-[#1CB0F6] border border-[#1CB0F6]/30",
+        warning:
+          "bg-[#FF9600]/10 text-[#FF9600] border border-[#FF9600]/30",
+        purple:
+          "bg-[#CE82FF]/10 text-[#CE82FF] border border-[#CE82FF]/30",
       },
     },
     defaultVariants: {

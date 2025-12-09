@@ -1,14 +1,19 @@
 /**
- * Backup API - Backup và Restore database
+ * Backup API - Backup và Restore database (local + cloud)
  */
 import { Hono } from 'hono';
-import { createReadStream, createWriteStream, existsSync, mkdirSync, readdirSync, statSync, unlinkSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, statSync, unlinkSync } from 'node:fs';
 import { readFile, writeFile } from 'node:fs/promises';
-import { basename, join } from 'node:path';
-import { pipeline } from 'node:stream/promises';
+import { join } from 'node:path';
 import { CONFIG } from '../../core/config/config.js';
 import { debugLog } from '../../core/logger/logger.js';
 import { closeDatabase, initDatabase, getSqliteDb } from '../database/connection.js';
+import {
+  isCloudBackupEnabled,
+  getCloudBackupInfo,
+  triggerCloudBackup,
+  triggerCloudRestore,
+} from '../backup/index.js';
 
 export const backupApi = new Hono();
 
@@ -290,5 +295,71 @@ backupApi.get('/info', (c) => {
   } catch (error) {
     debugLog('BACKUP_API', `Info error: ${error}`);
     return c.json({ success: false, error: 'Failed to get database info' }, 500);
+  }
+});
+
+
+// ============================================
+// Cloud Backup Endpoints
+// ============================================
+
+/**
+ * GET /backup/cloud - Thông tin cloud backup
+ */
+backupApi.get('/cloud', async (c) => {
+  try {
+    const enabled = isCloudBackupEnabled();
+    
+    if (!enabled) {
+      return c.json({
+        success: true,
+        data: {
+          enabled: false,
+          message: 'Cloud backup not configured. Set GITHUB_GIST_TOKEN and GITHUB_GIST_ID',
+        },
+      });
+    }
+
+    const info = await getCloudBackupInfo();
+    return c.json({ success: true, data: info });
+  } catch (error) {
+    debugLog('BACKUP_API', `Cloud info error: ${error}`);
+    return c.json({ success: false, error: 'Failed to get cloud backup info' }, 500);
+  }
+});
+
+/**
+ * POST /backup/cloud - Upload backup lên cloud
+ */
+backupApi.post('/cloud', async (c) => {
+  try {
+    const result = await triggerCloudBackup();
+    
+    if (result.success) {
+      return c.json({ success: true, data: { message: result.message } });
+    } else {
+      return c.json({ success: false, error: result.message }, 400);
+    }
+  } catch (error) {
+    debugLog('BACKUP_API', `Cloud backup error: ${error}`);
+    return c.json({ success: false, error: 'Failed to backup to cloud' }, 500);
+  }
+});
+
+/**
+ * POST /backup/cloud/restore - Restore từ cloud backup
+ */
+backupApi.post('/cloud/restore', async (c) => {
+  try {
+    const result = await triggerCloudRestore();
+    
+    if (result.success) {
+      return c.json({ success: true, data: { message: result.message } });
+    } else {
+      return c.json({ success: false, error: result.message }, 400);
+    }
+  } catch (error) {
+    debugLog('BACKUP_API', `Cloud restore error: ${error}`);
+    return c.json({ success: false, error: 'Failed to restore from cloud' }, 500);
   }
 });

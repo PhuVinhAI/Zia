@@ -5,7 +5,7 @@
 import { desc, eq, lt } from 'drizzle-orm';
 import { debugLog } from '../../../core/logger/logger.js';
 import { nowDate, subtract } from '../../../shared/utils/datetime.js';
-import { getDatabase } from '../connection.js';
+import { getDatabase, notifyDbChange } from '../connection.js';
 import { type SentMessage, sentMessages } from '../schema.js';
 
 export class SentMessagesRepository {
@@ -31,6 +31,7 @@ export class SentMessagesRepository {
     });
 
     debugLog('SENT_MSG', `Saved message ${data.msgId} for thread ${data.threadId}`);
+    notifyDbChange();
   }
 
   /**
@@ -82,6 +83,7 @@ export class SentMessagesRepository {
       .where(eq(sentMessages.msgId, msgId))
       .returning();
 
+    if (result.length > 0) notifyDbChange();
     return result.length > 0;
   }
 

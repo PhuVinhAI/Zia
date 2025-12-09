@@ -46,6 +46,12 @@ const mediaHandlers: Record<string, MediaHandler> = {
     return null;
   },
 
+  // Character card - treat as image for now, actual parsing happens in message processor
+  character_card: async (_api, item) => {
+    if (!item.url) return null;
+    return { type: 'image', url: item.url, mimeType: 'image/png' };
+  },
+
   image: async (_api, item) => {
     if (!item.url) return null;
     return { type: 'image', url: item.url, mimeType: item.mimeType || 'image/jpeg' };

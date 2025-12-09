@@ -186,3 +186,35 @@ export function closeDatabase() {
     debugLog('DATABASE', 'Database connection closed');
   }
 }
+
+// ============================================
+// Database Change Notification (for cloud backup)
+// ============================================
+
+type DbChangeListener = () => void;
+const dbChangeListeners: DbChangeListener[] = [];
+
+/**
+ * Register listener for database changes
+ */
+export function onDbChange(listener: DbChangeListener): () => void {
+  dbChangeListeners.push(listener);
+  return () => {
+    const index = dbChangeListeners.indexOf(listener);
+    if (index > -1) dbChangeListeners.splice(index, 1);
+  };
+}
+
+/**
+ * Notify all listeners that database has changed
+ * Call this after write operations (insert, update, delete)
+ */
+export function notifyDbChange(): void {
+  for (const listener of dbChangeListeners) {
+    try {
+      listener();
+    } catch (e) {
+      debugLog('DATABASE', `Change listener error: ${e}`);
+    }
+  }
+}

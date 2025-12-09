@@ -23,8 +23,32 @@ const getPrompt = () => getSystemPrompt(CONFIG.useCharacter);
 /**
  * Lấy hoặc tạo chat session cho thread
  * Sử dụng getAI() để lấy instance với key hiện tại
+ * @param characterPrompt - Custom system prompt for character roleplay (overrides default)
  */
-export function getChatSession(threadId: string, history?: Content[]): Chat {
+export function getChatSession(threadId: string, history?: Content[], characterPrompt?: string): Chat {
+  // If character prompt is provided, always create new session with custom prompt
+  if (characterPrompt) {
+    const model = getGeminiModel();
+    debugLog(
+      'GEMINI',
+      `Creating character roleplay session for thread ${threadId} with key #${keyManager.getCurrentKeyIndex()}, model=${model}`,
+    );
+    
+    // Combine character prompt with base interaction prompt
+    const fullPrompt = characterPrompt + '\n\n' + getPrompt();
+    
+    const chat = getAI().chats.create({
+      model,
+      config: {
+        ...GEMINI_CONFIG,
+        systemInstruction: fullPrompt,
+      },
+      history: history || [],
+    });
+    chatSessions.set(threadId, chat);
+    return chat;
+  }
+
   let chat = chatSessions.get(threadId);
 
   if (!chat) {

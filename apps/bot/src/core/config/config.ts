@@ -130,6 +130,7 @@ function buildConfig(settings: Settings) {
     gemini: settings.gemini,
     groqModels: settings.groqModels,
     sandbox: settings.sandbox,
+    cloudBackup: settings.cloudBackup,
   };
 }
 
@@ -149,6 +150,7 @@ export type {
   BackgroundAgentConfig,
   BotConfig,
   BufferConfig,
+  CloudBackupConfig,
   DatabaseConfig,
   ElevenLabsConfig,
   FetchConfig,

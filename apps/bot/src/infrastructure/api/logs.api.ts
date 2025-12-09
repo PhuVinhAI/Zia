@@ -116,6 +116,31 @@ logsApi.get('/file/unauthorized', async (c) => {
   }
 });
 
+// GET /logs/download/:folder/:file - Download file log
+logsApi.get('/download/:folder/:file', async (c) => {
+  try {
+    const folder = c.req.param('folder');
+    const file = c.req.param('file');
+    const filePath = path.join(logsDir, folder, file);
+
+    if (!fs.existsSync(filePath)) {
+      return c.json({ success: false, error: 'File not found' }, 404);
+    }
+
+    const content = fs.readFileSync(filePath);
+
+    return new Response(content, {
+      headers: {
+        'Content-Type': 'text/plain; charset=utf-8',
+        'Content-Disposition': `attachment; filename="${file}"`,
+        'Content-Length': content.length.toString(),
+      },
+    });
+  } catch (e) {
+    return c.json({ success: false, error: (e as Error).message }, 500);
+  }
+});
+
 // DELETE /logs/:folder - Xóa folder log
 logsApi.delete('/:folder', async (c) => {
   try {

@@ -2,7 +2,7 @@
  * Task Repository - CRUD operations cho agent_tasks
  */
 import { and, eq, lte, sql } from 'drizzle-orm';
-import { getDatabase } from '../../infrastructure/database/connection.js';
+import { getDatabase, notifyDbChange } from '../../infrastructure/database/connection.js';
 import {
   type AgentTask,
   agentTasks,
@@ -40,6 +40,7 @@ export async function createTask(task: {
     })
     .returning();
 
+  notifyDbChange();
   return created;
 }
 
@@ -78,6 +79,7 @@ export async function updateTaskStatus(
       ...extra,
     })
     .where(eq(agentTasks.id, taskId));
+  notifyDbChange();
 }
 
 /**

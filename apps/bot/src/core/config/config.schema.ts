@@ -17,9 +17,9 @@ export const SleepModeSchema = z.object({
   checkIntervalMs: z.coerce.number().min(60000).default(1800000), // Interval check (default 30 phút)
 });
 
-// Maintenance Mode schema - Chế độ bảo trì (mặc định BẬT để an toàn khi deploy)
+// Maintenance Mode schema - Chế độ bảo trì
 export const MaintenanceModeSchema = z.object({
-  enabled: z.boolean().default(true),
+  enabled: z.boolean().default(false),
   message: z.string().default('🔧 Bot đang trong chế độ bảo trì. Vui lòng thử lại sau!'),
 });
 
@@ -286,6 +286,14 @@ export const SandboxConfigSchema = z.object({
   executeTimeoutMs: z.coerce.number().min(5000).default(30000),
 });
 
+// Cloud Backup config schema
+export const CloudBackupConfigSchema = z.object({
+  enabled: z.boolean().default(true),
+  throttleMs: z.coerce.number().min(5000).default(10000), // 10 giây throttle - backup ngay, sau đó chờ 10s mới backup tiếp
+  restoreDelayMs: z.coerce.number().min(5000).default(15000), // 15 giây delay trước restore
+  initialBackupDelayMs: z.coerce.number().min(5000).default(30000), // 30 giây sau start
+});
+
 // Full settings schema
 export const SettingsSchema = z.object({
   adminUserId: z.string().default(''),
@@ -308,7 +316,7 @@ export const SettingsSchema = z.object({
     allowNSFW: false,
     cloudDebug: { enabled: false, prefix: '#bot' },
     sleepMode: { enabled: false, sleepHour: 23, wakeHour: 6, checkIntervalMs: 1800000 },
-    maintenanceMode: { enabled: true, message: '🔧 Bot đang trong chế độ bảo trì. Vui lòng thử lại sau!' },
+    maintenanceMode: { enabled: false, message: '🔧 Bot đang trong chế độ bảo trì. Vui lòng thử lại sau!' },
   }),
   retry: RetryConfigSchema.optional().default({
     maxRetries: 3,
@@ -480,6 +488,12 @@ export const SettingsSchema = z.object({
     installTimeoutMs: 60000,
     executeTimeoutMs: 30000,
   }),
+  cloudBackup: CloudBackupConfigSchema.optional().default({
+    enabled: true,
+    throttleMs: 10000,
+    restoreDelayMs: 15000,
+    initialBackupDelayMs: 30000,
+  }),
 });
 
 // Type inference từ schema
@@ -512,6 +526,7 @@ export type GroupMembersFetchConfig = z.infer<typeof GroupMembersFetchConfigSche
 export type GeminiConfig = z.infer<typeof GeminiConfigSchema>;
 export type GroqModelsConfig = z.infer<typeof GroqModelsConfigSchema>;
 export type SandboxConfig = z.infer<typeof SandboxConfigSchema>;
+export type CloudBackupConfig = z.infer<typeof CloudBackupConfigSchema>;
 export type Settings = z.infer<typeof SettingsSchema>;
 
 // MIME types (static, không cần validate)

@@ -83,3 +83,31 @@ export {
 
 // Token counter
 export { filterUnsupportedMedia, isSupportedMime } from './tokenCounter.js';
+
+// Character Card
+export {
+  activateCharacter,
+  buildCharacterPrompt,
+  buildCharacterSummary,
+  CHARACTER_COMMANDS,
+  CharacterCardValidator,
+  clearAllSessions,
+  deactivateCharacter,
+  fetchAndParseCharacterCard,
+  getActiveCharacter,
+  getAllActiveSessions,
+  getFirstMessage,
+  getRandomGreeting,
+  getSessionStats,
+  hasActiveCharacter,
+  hasCharacterData,
+  incrementMessageCount,
+  parseCharacterCommand,
+  parseCharacterData,
+  parseFromJSON,
+  parseFromPNG,
+  validateCharacterCard,
+  type CharacterCard,
+  type CharacterSession,
+  type ParsedCharacter,
+} from './characterCard/index.js';

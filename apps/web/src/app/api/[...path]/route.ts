@@ -7,6 +7,13 @@ import { NextRequest, NextResponse } from 'next/server';
 const BOT_API_URL = process.env.BOT_API_URL || 'http://localhost:3001/api';
 const BOT_API_KEY = process.env.BOT_API_KEY || '';
 
+// Paths that return binary/file responses
+const BINARY_PATHS = ['backup/download', 'logs/download'];
+
+function isBinaryPath(path: string): boolean {
+  return BINARY_PATHS.some((p) => path.includes(p));
+}
+
 async function proxyRequest(request: NextRequest, path: string) {
   const url = `${BOT_API_URL}/${path}`;
   
@@ -44,8 +51,30 @@ async function proxyRequest(request: NextRequest, path: string) {
 
   try {
     const response = await fetch(url, init);
-    const data = await response.json();
     
+    // Handle binary/file downloads
+    if (isBinaryPath(path)) {
+      const contentType = response.headers.get('content-type') || '';
+      
+      // If response is JSON (error), parse and return
+      if (contentType.includes('application/json')) {
+        const data = await response.json();
+        return NextResponse.json(data, { status: response.status });
+      }
+      
+      // Return binary response with original headers
+      const buffer = await response.arrayBuffer();
+      return new NextResponse(buffer, {
+        status: response.status,
+        headers: {
+          'Content-Type': response.headers.get('content-type') || 'application/octet-stream',
+          'Content-Disposition': response.headers.get('content-disposition') || '',
+          'Content-Length': response.headers.get('content-length') || '',
+        },
+      });
+    }
+    
+    const data = await response.json();
     return NextResponse.json(data, { status: response.status });
   } catch (error) {
     console.error('Proxy error:', error);

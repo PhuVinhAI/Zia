@@ -160,10 +160,11 @@ async function processStreamChunk(state: ParserState, callbacks: StreamCallbacks
     }
   }
 
-  // Parse [quote:index]...[/quote] - bao gồm cả text ngay sau [/quote]
-  // AI hay viết: [quote:0]Tin gốc[/quote] Câu trả lời → cần gộp "Câu trả lời" vào quote
-  // Fix Bug 2: Sử dụng regex không greedy và xử lý đúng khi có tags khác đứng trước [quote]
-  // Ví dụ: [reaction:sad] [quote:0]Mình hiểu... → phải giữ nguyên "Mình hiểu..."
+  // Parse [quote:index]...[/quote] - xử lý quote reply
+  // AI hay viết: [quote:0]Tin gốc[/quote] Câu trả lời
+  // Logic mới:
+  // - Nếu có text SAU [/quote] → đó là câu trả lời thực, gửi kèm quote
+  // - Nếu KHÔNG có text sau → AI chỉ echo tin gốc, bỏ qua không gửi
   const quoteRegex = /\[quote:(-?\d+)\]([\s\S]*?)\[\/quote\](\s*)([^[]*?)(?=\[|$)/gi;
   let quoteMatch;
   while ((quoteMatch = quoteRegex.exec(buffer)) !== null) {
@@ -172,8 +173,18 @@ async function processStreamChunk(state: ParserState, callbacks: StreamCallbacks
     // match[3] là whitespace giữa [/quote] và text sau
     const afterQuote = quoteMatch[4].trim();
 
-    // Gộp nội dung trong quote và sau quote
-    const rawText = afterQuote ? `${insideQuote} ${afterQuote}`.trim() : insideQuote;
+    // CHỈ gửi nếu có text SAU quote (câu trả lời thực)
+    // Nếu không có afterQuote → AI chỉ echo tin gốc, skip
+    if (!afterQuote) {
+      // Log để debug
+      if (insideQuote) {
+        console.log(`[Bot] ⚠️ Quote without reply detected, skipping echo: "${insideQuote.substring(0, 30)}..."`);
+      }
+      continue;
+    }
+
+    // Chỉ gửi afterQuote (câu trả lời), không gửi insideQuote (echo)
+    const rawText = afterQuote;
     const key = `quote:${quoteIndex}:${rawText}`;
 
     if (rawText && !state.sentMessages.has(key)) {
@@ -241,6 +252,7 @@ export async function generateContentStream(
   media?: MediaPart[],
   threadId?: string,
   history?: Content[],
+  characterPrompt?: string,
 ): Promise<string> {
   const state: ParserState = {
     buffer: '',
@@ -302,10 +314,13 @@ export async function generateContentStream(
 
     try {
       deleteChatSession(sessionId);
-      const chat = getChatSession(sessionId, history);
+      const chat = getChatSession(sessionId, history, characterPrompt);
 
       // Log system prompt
-      logSystemPrompt(sessionId, getSystemPrompt(CONFIG.useCharacter));
+      const systemPrompt = characterPrompt 
+        ? characterPrompt + '\n\n' + getSystemPrompt(CONFIG.useCharacter)
+        : getSystemPrompt(CONFIG.useCharacter);
+      logSystemPrompt(sessionId, systemPrompt);
 
       if (history && history.length > 0) {
         logAIHistory(sessionId, history);
