@@ -100,6 +100,15 @@ export function setupSelfMessageListener(api: any) {
 // SHARED QUOTE RESOLVER
 // ═══════════════════════════════════════════════════
 
+/**
+ * Resolve quote data từ index
+ *
+ * Logic:
+ * 1. Index >= 0: Quote tin nhắn user
+ *    - Ưu tiên batch messages (tin nhắn vừa gửi trong lượt này)
+ *    - Fallback: tìm tin nhắn USER thứ N trong history (bỏ qua tin bot)
+ * 2. Index < 0: Quote tin bot đã gửi (từ messageStore)
+ */
 function resolveQuoteData(
   quoteIndex: number | undefined,
   threadId: string,
@@ -108,24 +117,51 @@ function resolveQuoteData(
   if (quoteIndex === undefined) return undefined;
 
   if (quoteIndex >= 0) {
-    // Quote từ batch messages hoặc history
+    // Quote từ batch messages (ưu tiên cao nhất)
     if (batchMessages && quoteIndex < batchMessages.length) {
       const msg = batchMessages[quoteIndex];
       if (msg?.data?.msgId) {
-        console.log(`[Bot] 📎 Quote tin #${quoteIndex}`);
+        debugLog('QUOTE', `Quote batch #${quoteIndex}: msgId=${msg.data.msgId}`);
+        console.log(`[Bot] 📎 Quote tin batch #${quoteIndex}`);
         return msg.data;
       }
     }
-    // Fallback to history
+
+    // Fallback to history - tìm tin nhắn USER thứ N (không phải tin thứ N trong rawHistory)
+    // Vì rawHistory chứa cả tin bot xen kẽ, cần filter chỉ lấy tin user
     const rawHistory = getRawHistory(threadId);
+    const userMessages = rawHistory.filter((msg) => !msg.isSelf && !msg.isToolResult);
+
+    debugLog(
+      'QUOTE',
+      `Fallback to history: index=${quoteIndex}, userMsgs=${userMessages.length}, rawHistory=${rawHistory.length}`,
+    );
+
+    if (quoteIndex < userMessages.length) {
+      const msg = userMessages[quoteIndex];
+      if (msg?.data?.msgId) {
+        debugLog('QUOTE', `Quote user history #${quoteIndex}: msgId=${msg.data.msgId}`);
+        console.log(`[Bot] 📎 Quote tin user history #${quoteIndex}`);
+        return msg.data;
+      }
+    }
+
+    // Fallback cuối: thử tìm trong toàn bộ rawHistory (cho trường hợp đặc biệt)
     if (quoteIndex < rawHistory.length) {
       const msg = rawHistory[quoteIndex];
-      if (msg?.data?.msgId) return msg.data;
+      if (msg?.data?.msgId) {
+        debugLog('QUOTE', `Quote raw history #${quoteIndex}: msgId=${msg.data.msgId}`);
+        console.log(`[Bot] 📎 Quote tin raw history #${quoteIndex}`);
+        return msg.data;
+      }
     }
+
+    debugLog('QUOTE', `No message found for index ${quoteIndex}`);
   } else {
     // Quote tin bot đã gửi (index âm)
     const botMsg = getSentMessage(threadId, quoteIndex);
     if (botMsg) {
+      debugLog('QUOTE', `Quote bot #${quoteIndex}: msgId=${botMsg.msgId}`);
       console.log(`[Bot] 📎 Quote tin bot #${quoteIndex}`);
       return {
         msgId: botMsg.msgId,
@@ -133,6 +169,7 @@ function resolveQuoteData(
         msg: botMsg.content,
       };
     }
+    debugLog('QUOTE', `No bot message found for index ${quoteIndex}`);
   }
   return undefined;
 }

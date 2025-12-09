@@ -31,7 +31,8 @@ const getRateLimitDurations = () => ({
   day: CONFIG.gemini?.rateLimitDayMs ?? 86400000, // 24 giờ cho RPD
 });
 
-type _RateLimitType = 'minute' | 'day' | 'default';
+// Thời gian block cho permission denied (key invalid/revoked)
+const PERMISSION_DENIED_BLOCK_MS = 7 * 24 * 60 * 60 * 1000; // 7 ngày (coi như vĩnh viễn)
 
 // Cache MODEL_NAMES để tránh tính toán lại
 const MODEL_NAMES: Record<string, string> = {};
@@ -310,6 +311,27 @@ class GeminiKeyManager {
   }
 
   /**
+   * Xử lý lỗi 403 (permission denied) - block key vĩnh viễn và chuyển sang key khác
+   * Lỗi này xảy ra khi key không hợp lệ, bị revoke, hoặc không có quyền truy cập model
+   * @returns true nếu đã chuyển key thành công
+   */
+  handlePermissionDeniedError(): boolean {
+    const blockedUntil = Date.now() + PERMISSION_DENIED_BLOCK_MS;
+    this.rateLimitedKeys.set(this.currentKeyIndex, { blockedUntil, retryCount: 999 }); // retryCount cao để không retry
+
+    console.log(
+      `[KeyManager] 🚫 Key #${this.currentKeyIndex + 1} bị PERMISSION_DENIED (403), block 7 ngày`,
+    );
+    debugLog(
+      'KEY_MANAGER',
+      `Key #${this.currentKeyIndex + 1} blocked for 7 days due to PERMISSION_DENIED`,
+    );
+
+    // Thử chuyển sang key khác (không đổi model vì lỗi này do key, không phải model)
+    return this.rotateToNextKey();
+  }
+
+  /**
    * Xử lý lỗi 429 (rate limit) - đánh dấu key và chuyển sang key khác
    * Logic thông minh:
    * - Lần đầu bị 429: block key 2 phút (có thể là per-minute limit)
@@ -408,4 +430,18 @@ export const keyManager = new GeminiKeyManager();
 export function isRateLimitError(error: any): boolean {
   const status = error?.status || error?.code;
   return status === 429;
+}
+
+/**
+ * Check if error is a permission denied error (403)
+ * Có thể do key không hợp lệ, bị revoke, hoặc không có quyền truy cập model
+ */
+export function isPermissionDeniedError(error: any): boolean {
+  const status = error?.status || error?.code;
+  const message = error?.message || '';
+  return (
+    status === 403 ||
+    message.includes('PERMISSION_DENIED') ||
+    message.includes('does not have permission')
+  );
 }
