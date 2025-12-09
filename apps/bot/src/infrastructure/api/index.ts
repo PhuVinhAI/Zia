@@ -13,8 +13,8 @@ import { memoriesApi } from './memories.api.js';
 import { historyApi } from './history.api.js';
 import { logsApi } from './logs.api.js';
 
-// API Key từ env
-const API_KEY = process.env.SETTINGS_API_KEY;
+// API Key từ env - dùng chung cho cả dự án
+const API_KEY = process.env.API_KEY;
 
 export const apiApp = new Hono();
 
@@ -26,7 +26,7 @@ if (API_KEY) {
   apiApp.use('*', bearerAuth({ token: API_KEY }));
   console.log('[API] 🔐 Authentication enabled for all endpoints');
 } else {
-  console.warn('[API] ⚠️ No SETTINGS_API_KEY set - API is PUBLIC (dev mode only!)');
+  console.warn('[API] ⚠️ No API_KEY set - API is PUBLIC (dev mode only!)');
 }
 
 // Health check (không cần auth)

@@ -6,7 +6,7 @@ services:
     env_file:
       - .env
     environment:
-      - SETTINGS_API_KEY=${SETTINGS_API_KEY:-}
+      - API_KEY=${API_KEY:-}
     volumes:
       - ./data:/app/data
       - ./logs:/app/logs

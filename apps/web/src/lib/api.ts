@@ -4,7 +4,7 @@
 import axios from 'axios';
 
 const API_URL = process.env.NEXT_PUBLIC_BOT_API_URL || 'https://zia-mccs.onrender.com/api';
-const API_KEY = process.env.NEXT_PUBLIC_BOT_API_KEY || '';
+const API_KEY = process.env.NEXT_PUBLIC_API_KEY || '';
 
 export const api = axios.create({
   baseURL: API_URL,

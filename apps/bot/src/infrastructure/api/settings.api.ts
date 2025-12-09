@@ -2,12 +2,10 @@
  * Settings API - Hono REST API để quản lý settings
  * Thay thế file watcher bằng API endpoint
  *
- * Authentication: Bearer token via SETTINGS_API_KEY env var
+ * Authentication: Handled by main API router (index.ts)
  * Usage: curl -H "Authorization: Bearer YOUR_API_KEY" http://host/api/settings
  */
 import { Hono } from 'hono';
-import { cors } from 'hono/cors';
-import { bearerAuth } from 'hono/bearer-auth';
 import { SettingsSchema, type Settings } from '../../core/config/config.schema.js';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -16,9 +14,6 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, '../../../');
 const settingsPath = path.join(projectRoot, 'settings.json');
-
-// API Key từ env (bắt buộc cho production)
-const API_KEY = process.env.SETTINGS_API_KEY;
 
 // Event emitter để notify khi settings thay đổi
 type SettingsChangeListener = (settings: Settings) => void;
@@ -58,18 +53,8 @@ function saveSettingsToFile(settings: Settings) {
   fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2), 'utf-8');
 }
 
-// Hono app
+// Hono app - Auth được handle ở index.ts
 export const settingsApi = new Hono();
-
-settingsApi.use('*', cors());
-
-// Bearer auth middleware - chỉ bật khi có API_KEY
-if (API_KEY) {
-  settingsApi.use('*', bearerAuth({ token: API_KEY }));
-  console.log('[SettingsAPI] 🔐 Authentication enabled');
-} else {
-  console.warn('[SettingsAPI] ⚠️ No SETTINGS_API_KEY set - API is PUBLIC (dev mode only!)');
-}
 
 // GET /settings - Lấy toàn bộ settings
 settingsApi.get('/', (c) => {
