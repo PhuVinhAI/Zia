@@ -100,6 +100,18 @@ export function setupSelfMessageListener(api: any) {
 // SHARED QUOTE RESOLVER
 // ═══════════════════════════════════════════════════
 
+/**
+ * Resolve quote data từ index
+ *
+ * Logic:
+ * 1. Index >= 0: Quote tin nhắn user
+ *    - CHỈ tìm trong batch messages (tin nhắn vừa gửi trong lượt này)
+ *    - KHÔNG fallback ra history để tránh quote sai tin nhắn
+ * 2. Index < 0: Quote tin bot đã gửi (từ messageStore)
+ *
+ * LƯU Ý: AI được prompt với index từ batch hiện tại (0, 1, 2...)
+ * Nếu AI dùng index lớn hơn batch size → bỏ qua (AI nhầm lẫn)
+ */
 function resolveQuoteData(
   quoteIndex: number | undefined,
   threadId: string,
@@ -107,33 +119,51 @@ function resolveQuoteData(
 ): any {
   if (quoteIndex === undefined) return undefined;
 
+  const batchSize = batchMessages?.length || 0;
+  debugLog(
+    'QUOTE',
+    `resolveQuoteData: index=${quoteIndex}, batchSize=${batchSize}, threadId=${threadId}`,
+  );
+
   if (quoteIndex >= 0) {
-    // Quote từ batch messages hoặc history
+    // Quote từ batch messages - CHỈ tìm trong batch, không fallback
     if (batchMessages && quoteIndex < batchMessages.length) {
       const msg = batchMessages[quoteIndex];
       if (msg?.data?.msgId) {
-        console.log(`[Bot] 📎 Quote tin #${quoteIndex}`);
+        const content = msg?.data?.content || '(no content)';
+        const preview = typeof content === 'string' ? content.substring(0, 50) : JSON.stringify(content).substring(0, 50);
+        debugLog('QUOTE', `✅ Quote batch #${quoteIndex}: msgId=${msg.data.msgId}, content="${preview}..."`);
+        console.log(`[Bot] 📎 Quote tin batch #${quoteIndex}`);
         return msg.data;
       }
     }
-    // Fallback to history
-    const rawHistory = getRawHistory(threadId);
-    if (quoteIndex < rawHistory.length) {
-      const msg = rawHistory[quoteIndex];
-      if (msg?.data?.msgId) return msg.data;
+
+    // Index vượt quá batch size → AI đang nhầm lẫn, bỏ qua quote
+    if (quoteIndex >= batchSize) {
+      debugLog(
+        'QUOTE',
+        `⚠️ Index ${quoteIndex} vượt quá batch size ${batchSize}, bỏ qua quote (AI nhầm lẫn)`,
+      );
+      console.log(`[Bot] ⚠️ Quote index ${quoteIndex} không hợp lệ (batch chỉ có ${batchSize} tin), bỏ qua`);
+      return undefined;
     }
-  } else {
-    // Quote tin bot đã gửi (index âm)
-    const botMsg = getSentMessage(threadId, quoteIndex);
-    if (botMsg) {
-      console.log(`[Bot] 📎 Quote tin bot #${quoteIndex}`);
-      return {
-        msgId: botMsg.msgId,
-        cliMsgId: botMsg.cliMsgId,
-        msg: botMsg.content,
-      };
-    }
+
+    debugLog('QUOTE', `❌ No message found for index ${quoteIndex} in batch`);
+    return undefined;
   }
+
+  // Quote tin bot đã gửi (index âm)
+  const botMsg = getSentMessage(threadId, quoteIndex);
+  if (botMsg) {
+    debugLog('QUOTE', `✅ Quote bot #${quoteIndex}: msgId=${botMsg.msgId}`);
+    console.log(`[Bot] 📎 Quote tin bot #${quoteIndex}`);
+    return {
+      msgId: botMsg.msgId,
+      cliMsgId: botMsg.cliMsgId,
+      msg: botMsg.content,
+    };
+  }
+  debugLog('QUOTE', `❌ No bot message found for index ${quoteIndex}`);
   return undefined;
 }
 

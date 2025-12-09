@@ -20,7 +20,7 @@ import {
   sleep,
 } from './geminiChat.js';
 import { keyManager, type MediaPart } from './geminiConfig.js';
-import { isRateLimitError } from './keyManager.js';
+import { isPermissionDeniedError, isRateLimitError } from './keyManager.js';
 import { getSystemPrompt } from './prompts.js';
 
 export interface StreamCallbacks {
@@ -355,6 +355,24 @@ export async function generateContentStream(
           await callbacks.onComplete();
         }
         return state.buffer;
+      }
+
+      // Xử lý lỗi 403 (permission denied) - key không hợp lệ, đổi key và gọi ngay
+      if (isPermissionDeniedError(error)) {
+        const rotated = keyManager.handlePermissionDeniedError();
+        if (rotated) {
+          console.log(
+            `[Gemini] ⚠️ Lỗi 403: Permission denied, đổi sang key #${keyManager.getCurrentKeyIndex()}/${keyManager.getTotalKeys()} và gọi ngay`,
+          );
+          debugLog(
+            'STREAM',
+            `Permission denied, rotated to key #${keyManager.getCurrentKeyIndex()}, calling immediately`,
+          );
+          continue; // Gọi ngay với key mới, không delay
+        }
+        // Không còn key khả dụng
+        console.log('[Gemini] ❌ Tất cả keys đều bị permission denied hoặc rate limit');
+        break;
       }
 
       // Xử lý lỗi 429 (rate limit) - đổi key/model và gọi ngay, KHÔNG delay
