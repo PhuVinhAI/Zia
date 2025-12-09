@@ -42,35 +42,35 @@ export default function UsersPage() {
     mutationFn: (userId: string) => usersApiClient.block(userId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
-      toast.success('Đã block user');
+      toast.success('Đã chặn người dùng');
     },
-    onError: () => toast.error('Lỗi khi block user'),
+    onError: () => toast.error('Lỗi khi chặn người dùng'),
   });
 
   const unblockMutation = useMutation({
     mutationFn: (userId: string) => usersApiClient.unblock(userId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
-      toast.success('Đã unblock user');
+      toast.success('Đã bỏ chặn người dùng');
     },
-    onError: () => toast.error('Lỗi khi unblock user'),
+    onError: () => toast.error('Lỗi khi bỏ chặn người dùng'),
   });
 
   const getRoleBadge = (role: string) => {
     switch (role) {
       case 'admin':
-        return <Badge variant="default">Admin</Badge>;
+        return <Badge variant="default">Quản trị</Badge>;
       case 'blocked':
-        return <Badge variant="destructive">Blocked</Badge>;
+        return <Badge variant="destructive">Đã chặn</Badge>;
       default:
-        return <Badge variant="secondary">User</Badge>;
+        return <Badge variant="secondary">Người dùng</Badge>;
     }
   };
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Users</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Người dùng</h1>
         <p className="text-muted-foreground">Quản lý người dùng</p>
       </div>
 
@@ -78,7 +78,7 @@ export default function UsersPage() {
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Tìm kiếm user..."
+            placeholder="Tìm kiếm người dùng..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9"
@@ -90,9 +90,9 @@ export default function UsersPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>User ID</TableHead>
+              <TableHead>ID người dùng</TableHead>
               <TableHead>Tên</TableHead>
-              <TableHead>Role</TableHead>
+              <TableHead>Vai trò</TableHead>
               <TableHead>Ngày tạo</TableHead>
               <TableHead className="w-[70px]"></TableHead>
             </TableRow>
@@ -111,7 +111,7 @@ export default function UsersPage() {
             ) : data?.data?.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} className="text-center text-muted-foreground">
-                  Không có user nào
+                  Không có người dùng nào
                 </TableCell>
               </TableRow>
             ) : (
@@ -132,7 +132,7 @@ export default function UsersPage() {
                         {user.role === 'blocked' ? (
                           <DropdownMenuItem onClick={() => unblockMutation.mutate(user.userId)}>
                             <UserCheck className="mr-2 h-4 w-4" />
-                            Unblock
+                            Bỏ chặn
                           </DropdownMenuItem>
                         ) : (
                           <DropdownMenuItem
@@ -140,7 +140,7 @@ export default function UsersPage() {
                             className="text-destructive"
                           >
                             <UserX className="mr-2 h-4 w-4" />
-                            Block
+                            Chặn
                           </DropdownMenuItem>
                         )}
                       </DropdownMenuContent>
@@ -156,7 +156,7 @@ export default function UsersPage() {
       {data?.pagination && data.pagination.totalPages > 1 && (
         <div className="flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
-            Trang {data.pagination.page} / {data.pagination.totalPages} ({data.pagination.total} users)
+            Trang {data.pagination.page} / {data.pagination.totalPages} ({data.pagination.total} người dùng)
           </p>
           <div className="flex gap-2">
             <Button

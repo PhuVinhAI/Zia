@@ -67,7 +67,7 @@ export default function SettingsPage() {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Cài đặt</h1>
           <p className="text-muted-foreground">Cấu hình bot</p>
         </div>
         <Skeleton className="h-[400px] w-full" />
@@ -79,13 +79,13 @@ export default function SettingsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Cài đặt</h1>
           <p className="text-muted-foreground">Cấu hình bot</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => reloadMutation.mutate()} disabled={reloadMutation.isPending}>
             <RefreshCw className="mr-2 h-4 w-4" />
-            Reload
+            Tải lại
           </Button>
           <Button onClick={() => updateMutation.mutate(localSettings)} disabled={updateMutation.isPending}>
             <Save className="mr-2 h-4 w-4" />
@@ -97,14 +97,14 @@ export default function SettingsPage() {
       <Tabs defaultValue="general">
         <TabsList>
           <TabsTrigger value="general">Chung</TabsTrigger>
-          <TabsTrigger value="modules">Modules</TabsTrigger>
+          <TabsTrigger value="modules">Mô-đun</TabsTrigger>
           <TabsTrigger value="advanced">Nâng cao</TabsTrigger>
         </TabsList>
 
         <TabsContent value="general" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Bot Settings</CardTitle>
+              <CardTitle>Cài đặt Bot</CardTitle>
               <CardDescription>Cấu hình cơ bản của bot</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -118,7 +118,7 @@ export default function SettingsPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="prefix">Prefix</Label>
+                  <Label htmlFor="prefix">Tiền tố</Label>
                   <Input
                     id="prefix"
                     value={localSettings.bot.prefix}
@@ -129,8 +129,8 @@ export default function SettingsPage() {
 
               <div className="flex items-center justify-between">
                 <div>
-                  <Label>Yêu cầu prefix</Label>
-                  <p className="text-sm text-muted-foreground">Bắt buộc dùng prefix để gọi bot</p>
+                  <Label>Yêu cầu tiền tố</Label>
+                  <p className="text-sm text-muted-foreground">Bắt buộc dùng tiền tố để gọi bot</p>
                 </div>
                 <Switch
                   checked={localSettings.bot.requirePrefix}
@@ -140,8 +140,8 @@ export default function SettingsPage() {
 
               <div className="flex items-center justify-between">
                 <div>
-                  <Label>Streaming</Label>
-                  <p className="text-sm text-muted-foreground">Gửi tin nhắn theo stream</p>
+                  <Label>Phát trực tiếp</Label>
+                  <p className="text-sm text-muted-foreground">Gửi tin nhắn theo luồng</p>
                 </div>
                 <Switch
                   checked={localSettings.bot.useStreaming}
@@ -151,8 +151,8 @@ export default function SettingsPage() {
 
               <div className="flex items-center justify-between">
                 <div>
-                  <Label>Hiện tool calls</Label>
-                  <p className="text-sm text-muted-foreground">Hiển thị khi bot gọi tools</p>
+                  <Label>Hiện lệnh gọi công cụ</Label>
+                  <p className="text-sm text-muted-foreground">Hiển thị khi bot gọi công cụ</p>
                 </div>
                 <Switch
                   checked={localSettings.bot.showToolCalls}
@@ -162,8 +162,8 @@ export default function SettingsPage() {
 
               <div className="flex items-center justify-between">
                 <div>
-                  <Label>Logging</Label>
-                  <p className="text-sm text-muted-foreground">Ghi log hoạt động</p>
+                  <Label>Ghi nhật ký</Label>
+                  <p className="text-sm text-muted-foreground">Ghi nhật ký hoạt động</p>
                 </div>
                 <Switch
                   checked={localSettings.bot.logging}
@@ -177,8 +177,8 @@ export default function SettingsPage() {
         <TabsContent value="modules" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Modules</CardTitle>
-              <CardDescription>Bật/tắt các module của bot</CardDescription>
+              <CardTitle>Mô-đun</CardTitle>
+              <CardDescription>Bật/tắt các mô-đun của bot</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {Object.entries(localSettings.modules).map(([key, value]) => (
@@ -200,7 +200,7 @@ export default function SettingsPage() {
             <CardContent className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Max Tool Depth</Label>
+                  <Label>Độ sâu công cụ tối đa</Label>
                   <Input
                     type="number"
                     value={localSettings.bot.maxToolDepth}
@@ -208,7 +208,7 @@ export default function SettingsPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Rate Limit (ms)</Label>
+                  <Label>Giới hạn tốc độ (ms)</Label>
                   <Input
                     type="number"
                     value={localSettings.bot.rateLimitMs}
@@ -216,7 +216,7 @@ export default function SettingsPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Max Token History</Label>
+                  <Label>Lịch sử token tối đa</Label>
                   <Input
                     type="number"
                     value={localSettings.bot.maxTokenHistory}
@@ -227,8 +227,8 @@ export default function SettingsPage() {
 
               <div className="flex items-center justify-between">
                 <div>
-                  <Label>Allow NSFW</Label>
-                  <p className="text-sm text-muted-foreground">Cho phép nội dung NSFW</p>
+                  <Label>Cho phép NSFW</Label>
+                  <p className="text-sm text-muted-foreground">Cho phép nội dung người lớn</p>
                 </div>
                 <Switch
                   checked={localSettings.bot.allowNSFW}
@@ -238,7 +238,7 @@ export default function SettingsPage() {
 
               <div className="flex items-center justify-between">
                 <div>
-                  <Label>Self Listen</Label>
+                  <Label>Tự nghe</Label>
                   <p className="text-sm text-muted-foreground">Bot nghe tin nhắn của chính mình</p>
                 </div>
                 <Switch

@@ -27,37 +27,37 @@ import {
 
 const navItems = [
   {
-    title: 'Dashboard',
+    title: 'Tổng quan',
     href: '/',
     icon: LayoutDashboard,
   },
   {
-    title: 'Users',
+    title: 'Người dùng',
     href: '/users',
     icon: Users,
   },
   {
-    title: 'History',
+    title: 'Lịch sử',
     href: '/history',
     icon: MessageSquare,
   },
   {
-    title: 'Memories',
+    title: 'Bộ nhớ',
     href: '/memories',
     icon: Brain,
   },
   {
-    title: 'Tasks',
+    title: 'Tác vụ',
     href: '/tasks',
     icon: ListTodo,
   },
   {
-    title: 'Logs',
+    title: 'Nhật ký',
     href: '/logs',
     icon: FileText,
   },
   {
-    title: 'Settings',
+    title: 'Cài đặt',
     href: '/settings',
     icon: Settings,
   },
@@ -76,7 +76,7 @@ export function SidebarNav() {
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Menu</SidebarGroupLabel>
+          <SidebarGroupLabel>Điều hướng</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {navItems.map((item) => (

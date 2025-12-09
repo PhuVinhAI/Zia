@@ -41,7 +41,7 @@ export default function HistoryPage() {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
-            <h1 className="text-xl font-bold tracking-tight">Thread: {truncate(selectedThread, 30)}</h1>
+            <h1 className="text-xl font-bold tracking-tight">Cuộc trò chuyện: {truncate(selectedThread, 30)}</h1>
             <p className="text-sm text-muted-foreground">{messages?.length || 0} tin nhắn</p>
           </div>
         </div>
@@ -105,7 +105,7 @@ export default function HistoryPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">History</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Lịch sử</h1>
         <p className="text-muted-foreground">Lịch sử hội thoại</p>
       </div>
 

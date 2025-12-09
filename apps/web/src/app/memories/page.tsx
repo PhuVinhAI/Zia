@@ -75,8 +75,8 @@ export default function MemoriesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Memories</h1>
-        <p className="text-muted-foreground">Long-term memory của bot</p>
+        <h1 className="text-3xl font-bold tracking-tight">Bộ nhớ</h1>
+        <p className="text-muted-foreground">Bộ nhớ dài hạn của bot</p>
       </div>
 
       <div className="flex items-center gap-4">
@@ -91,7 +91,7 @@ export default function MemoriesPage() {
         </div>
         <Select value={type} onValueChange={setType}>
           <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Lọc theo type" />
+            <SelectValue placeholder="Lọc theo loại" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Tất cả</SelectItem>
@@ -109,11 +109,11 @@ export default function MemoriesPage() {
           <TableHeader>
             <TableRow>
               <TableHead>ID</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead className="max-w-[300px]">Content</TableHead>
-              <TableHead>User</TableHead>
-              <TableHead>Importance</TableHead>
-              <TableHead>Created</TableHead>
+              <TableHead>Loại</TableHead>
+              <TableHead className="max-w-[300px]">Nội dung</TableHead>
+              <TableHead>Người dùng</TableHead>
+              <TableHead>Độ quan trọng</TableHead>
+              <TableHead>Ngày tạo</TableHead>
               <TableHead className="w-[70px]"></TableHead>
             </TableRow>
           </TableHeader>
@@ -129,7 +129,7 @@ export default function MemoriesPage() {
             ) : data?.data?.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="text-center text-muted-foreground">
-                  Không có memory nào
+                  Không có bộ nhớ nào
                 </TableCell>
               </TableRow>
             ) : (

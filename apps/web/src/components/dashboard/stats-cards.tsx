@@ -60,10 +60,10 @@ export function StatsCards() {
       description: `${formatNumber(data.messagesLast24h)} trong 24h qua`,
     },
     {
-      title: 'Memories',
+      title: 'Bộ nhớ',
       value: formatNumber(data.memories),
       icon: Brain,
-      description: 'Long-term memory',
+      description: 'Bộ nhớ dài hạn',
     },
     {
       title: 'Uptime',
