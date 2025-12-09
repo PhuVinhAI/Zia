@@ -1,4 +1,5 @@
 {
+  "adminUserId": "7307295734920277074",
   "fetch": {
     "timeoutMs": 60000,
     "maxRetries": 3,
@@ -110,7 +111,9 @@
   },
   "jikan": {
     "rateLimitDelayMs": 350,
-    "timeoutMs": 15000
+    "timeoutMs": 15000,
+    "retryLimit": 3,
+    "backoffLimitMs": 3000
   },
   "elevenlabs": {
     "defaultVoiceId": "fUjY9K2nAIwlALOwSiwc",
@@ -119,15 +122,18 @@
   "giphy": {
     "timeoutMs": 15000,
     "defaultLimit": 10,
-    "defaultRating": "g"
+    "defaultRating": "g",
+    "retryLimit": 2
   },
   "nekos": {
-    "timeoutMs": 15000
+    "timeoutMs": 15000,
+    "retryLimit": 2
   },
   "freepik": {
     "timeoutMs": 60000,
     "pollMaxAttempts": 30,
-    "pollIntervalMs": 2000
+    "pollIntervalMs": 2000,
+    "retryLimit": 2
   },
   "messageSender": {
     "mediaDelayMs": 300,
@@ -147,7 +153,8 @@
     "accessBoostFactor": 0.2
   },
   "tvu": {
-    "timeoutMs": 10000
+    "timeoutMs": 10000,
+    "retryLimit": 2
   },
   "groq": {
     "rateLimitCooldownMs": 60000
@@ -186,5 +193,9 @@
     "fallbackMaxTokens": 16384,
     "temperature": 0.7,
     "topP": 0.95
+  },
+  "sandbox": {
+    "installTimeoutMs": 60000,
+    "executeTimeoutMs": 30000
   }
 }

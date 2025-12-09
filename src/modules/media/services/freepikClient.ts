@@ -23,7 +23,7 @@ const freepikApi: KyInstance = ky.create({
   prefixUrl: BASE_URL,
   timeout: CONFIG.freepik?.timeoutMs ?? 60000,
   retry: {
-    limit: 2,
+    limit: CONFIG.freepik?.retryLimit ?? 2,
     methods: ['get', 'post'],
     statusCodes: [408, 500, 502, 503, 504],
   },

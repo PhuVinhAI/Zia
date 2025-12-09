@@ -144,6 +144,8 @@ export const UserStoreConfigSchema = z.object({
 export const JikanConfigSchema = z.object({
   rateLimitDelayMs: z.coerce.number().min(100).default(350),
   timeoutMs: z.coerce.number().min(1000).default(15000),
+  retryLimit: z.coerce.number().min(1).max(10).default(3),
+  backoffLimitMs: z.coerce.number().min(500).default(3000),
 });
 
 // ElevenLabs config schema
@@ -157,11 +159,13 @@ export const GiphyConfigSchema = z.object({
   timeoutMs: z.coerce.number().min(1000).default(15000),
   defaultLimit: z.coerce.number().min(1).max(50).default(10),
   defaultRating: z.string().default('g'),
+  retryLimit: z.coerce.number().min(1).max(10).default(2),
 });
 
 // Nekos config schema
 export const NekosConfigSchema = z.object({
   timeoutMs: z.coerce.number().min(1000).default(15000),
+  retryLimit: z.coerce.number().min(1).max(10).default(2),
 });
 
 // Freepik config schema
@@ -169,6 +173,7 @@ export const FreepikConfigSchema = z.object({
   timeoutMs: z.coerce.number().min(1000).default(60000),
   pollMaxAttempts: z.coerce.number().min(1).default(30),
   pollIntervalMs: z.coerce.number().min(500).default(2000),
+  retryLimit: z.coerce.number().min(1).max(10).default(2),
 });
 
 // Message sender config schema
@@ -199,6 +204,7 @@ export const MemoryConfigSchema = z.object({
 // TVU config schema
 export const TvuConfigSchema = z.object({
   timeoutMs: z.coerce.number().min(1000).default(10000),
+  retryLimit: z.coerce.number().min(1).max(10).default(2),
 });
 
 // Groq config schema
@@ -249,8 +255,15 @@ export const GroqModelsConfigSchema = z.object({
   topP: z.coerce.number().min(0).max(1).default(0.95),
 });
 
+// Sandbox config schema
+export const SandboxConfigSchema = z.object({
+  installTimeoutMs: z.coerce.number().min(10000).default(60000),
+  executeTimeoutMs: z.coerce.number().min(5000).default(30000),
+});
+
 // Full settings schema
 export const SettingsSchema = z.object({
+  adminUserId: z.string().default(''),
   bot: BotConfigSchema.optional().default({
     name: 'Trợ lý AI Zalo',
     prefix: '#bot',
@@ -342,6 +355,8 @@ export const SettingsSchema = z.object({
   jikan: JikanConfigSchema.optional().default({
     rateLimitDelayMs: 350,
     timeoutMs: 15000,
+    retryLimit: 3,
+    backoffLimitMs: 3000,
   }),
   elevenlabs: ElevenLabsConfigSchema.optional().default({
     defaultVoiceId: 'fUjY9K2nAIwlALOwSiwc',
@@ -351,14 +366,17 @@ export const SettingsSchema = z.object({
     timeoutMs: 15000,
     defaultLimit: 10,
     defaultRating: 'g',
+    retryLimit: 2,
   }),
   nekos: NekosConfigSchema.optional().default({
     timeoutMs: 15000,
+    retryLimit: 2,
   }),
   freepik: FreepikConfigSchema.optional().default({
     timeoutMs: 60000,
     pollMaxAttempts: 30,
     pollIntervalMs: 2000,
+    retryLimit: 2,
   }),
   messageSender: MessageSenderConfigSchema.optional().default({
     mediaDelayMs: 300,
@@ -379,6 +397,7 @@ export const SettingsSchema = z.object({
   }),
   tvu: TvuConfigSchema.optional().default({
     timeoutMs: 10000,
+    retryLimit: 2,
   }),
   groq: GroqConfigSchema.optional().default({
     rateLimitCooldownMs: 60000,
@@ -418,6 +437,10 @@ export const SettingsSchema = z.object({
     temperature: 0.7,
     topP: 0.95,
   }),
+  sandbox: SandboxConfigSchema.optional().default({
+    installTimeoutMs: 60000,
+    executeTimeoutMs: 30000,
+  }),
 });
 
 // Type inference từ schema
@@ -450,6 +473,7 @@ export type ResponseHandlerConfig = z.infer<typeof ResponseHandlerConfigSchema>;
 export type GroupMembersFetchConfig = z.infer<typeof GroupMembersFetchConfigSchema>;
 export type GeminiConfig = z.infer<typeof GeminiConfigSchema>;
 export type GroqModelsConfig = z.infer<typeof GroqModelsConfigSchema>;
+export type SandboxConfig = z.infer<typeof SandboxConfigSchema>;
 export type Settings = z.infer<typeof SettingsSchema>;
 
 // MIME types (static, không cần validate)

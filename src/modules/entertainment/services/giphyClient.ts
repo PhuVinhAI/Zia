@@ -23,7 +23,7 @@ const giphyApi: KyInstance = ky.create({
   prefixUrl: BASE_URL,
   timeout: CONFIG.giphy?.timeoutMs ?? 15000,
   retry: {
-    limit: 2,
+    limit: CONFIG.giphy?.retryLimit ?? 2,
     methods: ['get'],
     statusCodes: [408, 500, 502, 503, 504],
   },

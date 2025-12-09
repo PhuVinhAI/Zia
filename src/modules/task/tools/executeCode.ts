@@ -5,6 +5,7 @@
 
 import { Sandbox } from '@e2b/code-interpreter';
 import { z } from 'zod';
+import { CONFIG } from '../../../core/config/config.js';
 import type { ITool, ToolResult } from '../../../core/types.js';
 import { validateParamsWithExample } from '../../../shared/schemas/tools.schema.js';
 
@@ -71,7 +72,8 @@ async function installPackages(
     const cmd = getCmd(pkg);
     if (!cmd) continue;
     try {
-      const _result = await sandbox.commands.run(cmd, { timeoutMs: 60000 });
+      const installTimeout = CONFIG.sandbox?.installTimeoutMs ?? 60000;
+      const _result = await sandbox.commands.run(cmd, { timeoutMs: installTimeout });
       logs.push(`✓ Installed ${pkg}`);
     } catch (err) {
       logs.push(`✗ Failed to install ${pkg}: ${err instanceof Error ? err.message : 'Unknown'}`);

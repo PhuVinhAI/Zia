@@ -53,6 +53,8 @@ export function reloadSettings() {
 // Build CONFIG object từ validated settings
 function buildConfig(settings: Settings) {
   return {
+    // Admin settings
+    adminUserId: settings.adminUserId,
     // Bot settings
     name: settings.bot.name,
     prefix: settings.bot.prefix,
@@ -106,6 +108,7 @@ function buildConfig(settings: Settings) {
     groupMembersFetch: settings.groupMembersFetch,
     gemini: settings.gemini,
     groqModels: settings.groqModels,
+    sandbox: settings.sandbox,
   };
 }
 

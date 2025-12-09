@@ -73,7 +73,7 @@ const tvuPublicApi: KyInstance = ky.create({
   prefixUrl: TVU_BASE_URL,
   timeout: getTvuTimeout(),
   retry: {
-    limit: 2,
+    limit: CONFIG.tvu?.retryLimit ?? 2,
     methods: ['post'],
     statusCodes: [408, 500, 502, 503, 504],
   },
@@ -99,7 +99,7 @@ function createAuthenticatedClient(): KyInstance {
     prefixUrl: TVU_BASE_URL,
     timeout: getTvuTimeout(),
     retry: {
-      limit: 2,
+      limit: CONFIG.tvu?.retryLimit ?? 2,
       methods: ['post'],
       statusCodes: [408, 500, 502, 503, 504],
     },

@@ -39,10 +39,10 @@ const jikanApi: KyInstance = ky.create({
   prefixUrl: BASE_URL,
   timeout: CONFIG.jikan?.timeoutMs ?? 15000,
   retry: {
-    limit: 3,
+    limit: CONFIG.jikan?.retryLimit ?? 3,
     methods: ['get'],
     statusCodes: [408, 500, 502, 503, 504],
-    backoffLimit: 3000,
+    backoffLimit: CONFIG.jikan?.backoffLimitMs ?? 3000,
   },
   hooks: {
     beforeRequest: [
