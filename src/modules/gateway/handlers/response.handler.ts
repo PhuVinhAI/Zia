@@ -279,6 +279,40 @@ function hasToolTags(text: string): boolean {
   return TOOL_TAG_REGEX.test(text);
 }
 
+/**
+ * Loại bỏ nội dung nhại lại - khi AI lặp lại tin nhắn gốc trong quote
+ * Ví dụ: "Tin nhắn gốc của user - Câu trả lời" → "Câu trả lời"
+ */
+function removeEchoedContent(quoteContent: string, originalText: string): string {
+  if (!originalText) return quoteContent;
+
+  // Normalize để so sánh
+  const normalize = (t: string) =>
+    t
+      .toLowerCase()
+      .replace(/[?!.,;:]+$/g, '')
+      .trim();
+
+  const normalizedOriginal = normalize(originalText);
+  const normalizedQuote = normalize(quoteContent);
+
+  // Nếu quote bắt đầu bằng tin nhắn gốc, loại bỏ phần đó
+  if (normalizedQuote.startsWith(normalizedOriginal)) {
+    const remaining = quoteContent.slice(originalText.length).trim();
+    // Loại bỏ các ký tự phân cách đầu tiên nếu có (: - → > etc.)
+    return remaining.replace(/^[:\-–—→>]+\s*/, '').trim() || quoteContent;
+  }
+
+  // Nếu quote chứa tin nhắn gốc ở đầu với dấu ngoặc kép
+  const escapedOriginal = originalText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const quotedPattern = new RegExp(`^["']?${escapedOriginal}["']?\\s*[:\\-–—→>]?\\s*`, 'i');
+  if (quotedPattern.test(quoteContent)) {
+    return quoteContent.replace(quotedPattern, '').trim() || quoteContent;
+  }
+
+  return quoteContent;
+}
+
 export function createStreamCallbacks(
   api: any,
   threadId: string,
@@ -329,7 +363,7 @@ export function createStreamCallbacks(
 
     onMessage: async (text: string, quoteIndex?: number) => {
       // Strip tool tags từ text trước khi gửi
-      const cleanText = stripToolTags(text);
+      let cleanText = stripToolTags(text);
 
       // Nếu text chỉ có tool tags (sau khi strip thì rỗng), không gửi
       if (!cleanText) {
@@ -337,6 +371,29 @@ export function createStreamCallbacks(
           toolDetected = true;
           debugLog('STREAM_CB', `Tool detected in message, skipping send`);
         }
+        return;
+      }
+
+      // Loại bỏ nội dung nhại lại nếu đang quote tin nhắn
+      if (quoteIndex !== undefined && quoteIndex >= 0 && messages && messages[quoteIndex]) {
+        const originalMsg = messages[quoteIndex];
+        const originalText = (
+          originalMsg?.data?.content ||
+          originalMsg?.content ||
+          ''
+        )
+          .toString()
+          .trim();
+
+        if (originalText) {
+          // Loại bỏ nếu AI lặp lại tin nhắn gốc ở đầu
+          cleanText = removeEchoedContent(cleanText, originalText);
+        }
+      }
+
+      // Nếu sau khi loại bỏ nhại lại mà rỗng, không gửi
+      if (!cleanText.trim()) {
+        debugLog('STREAM_CB', `Empty after removing echoed content, skipping`);
         return;
       }
 

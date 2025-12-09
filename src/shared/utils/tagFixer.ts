@@ -1,6 +1,6 @@
 /**
- * Tag Fixer - Fix tag bị dính vào text (AI quên thêm khoảng trắng)
- * 
+ * Tag Fixer - Fix tag bị dính vào text
+ *
  * Ví dụ:
  * - "[reaction:heart]text" → "[reaction:heart] text"
  * - "text[sticker:love]more" → "text [sticker:love] more"

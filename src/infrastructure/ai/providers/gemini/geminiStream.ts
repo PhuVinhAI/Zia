@@ -84,8 +84,11 @@ async function processInlineTags(
   state: ParserState,
   callbacks: StreamCallbacks,
 ): Promise<void> {
+  // Fix stuck tags trước khi parse
+  const text = fixStuckTags(rawText);
+
   // Extract stickers
-  for (const match of rawText.matchAll(/\[sticker:(\w+)\]/gi)) {
+  for (const match of text.matchAll(/\[sticker:(\w+)\]/gi)) {
     const keyword = match[1];
     const key = `sticker:${keyword}`;
     if (!state.sentStickers.has(key) && callbacks.onSticker) {
@@ -95,7 +98,7 @@ async function processInlineTags(
   }
 
   // Extract reactions (không có index vì đang trong msg block)
-  for (const match of rawText.matchAll(/\[reaction:(\d+:)?(\w+)\]/gi)) {
+  for (const match of text.matchAll(/\[reaction:(\d+:)?(\w+)\]/gi)) {
     const indexPart = match[1];
     const reaction = match[2].toLowerCase();
     const key = indexPart ? `reaction:${indexPart}${reaction}` : `reaction:${reaction}`;
@@ -108,7 +111,7 @@ async function processInlineTags(
   }
 
   // Extract cards
-  for (const match of rawText.matchAll(/\[card(?::(\d+))?\]/gi)) {
+  for (const match of text.matchAll(/\[card(?::(\d+))?\]/gi)) {
     const userId = match[1] || '';
     const key = `card:${userId}`;
     if (!state.sentCards.has(key) && callbacks.onCard) {
@@ -118,7 +121,7 @@ async function processInlineTags(
   }
 
   // Extract undos
-  for (const match of rawText.matchAll(/\[undo:(-?\d+)\]/gi)) {
+  for (const match of text.matchAll(/\[undo:(-?\d+)\]/gi)) {
     const index = parseInt(match[1], 10);
     const key = `undo:${index}`;
     if (!state.sentUndos.has(key) && callbacks.onUndo) {
@@ -157,11 +160,19 @@ async function processStreamChunk(state: ParserState, callbacks: StreamCallbacks
     }
   }
 
-  // Parse [quote:index]...[/quote]
-  for (const match of buffer.matchAll(/\[quote:(-?\d+)\]([\s\S]*?)\[\/quote\]/gi)) {
-    const quoteIndex = parseInt(match[1], 10);
-    const rawText = match[2].trim();
+  // Parse [quote:index]...[/quote] - bao gồm cả text ngay sau [/quote]
+  // AI hay viết: [quote:0]Tin gốc[/quote] Câu trả lời → cần gộp "Câu trả lời" vào quote
+  const quoteRegex = /\[quote:(-?\d+)\]([\s\S]*?)\[\/quote\]\s*([^\[]*?)(?=\[|$)/gi;
+  let quoteMatch;
+  while ((quoteMatch = quoteRegex.exec(buffer)) !== null) {
+    const quoteIndex = parseInt(quoteMatch[1], 10);
+    const insideQuote = quoteMatch[2].trim();
+    const afterQuote = quoteMatch[3].trim();
+
+    // Gộp nội dung trong quote và sau quote
+    const rawText = afterQuote ? `${insideQuote} ${afterQuote}`.trim() : insideQuote;
     const key = `quote:${quoteIndex}:${rawText}`;
+
     if (rawText && !state.sentMessages.has(key)) {
       state.sentMessages.add(key);
       await processInlineTags(rawText, state, callbacks);

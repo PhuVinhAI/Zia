@@ -71,14 +71,25 @@ export function parseAIResponse(text: string): AIResponse {
       });
     }
 
-    // Parse [quote:index]nội dung[/quote]
-    const quoteMatches = fixedText.matchAll(/\[quote:(\d+)\]([\s\S]*?)\[\/quote\]/gi);
-    for (const match of quoteMatches) {
-      result.messages.push({
-        text: match[2].trim(),
-        sticker: '',
-        quoteIndex: parseInt(match[1], 10),
-      });
+    // Parse [quote:index]nội dung[/quote] - bao gồm cả text ngay sau [/quote]
+    // AI hay viết: [quote:0]Tin gốc[/quote] Câu trả lời → cần gộp "Câu trả lời" vào quote
+    const quoteRegex = /\[quote:(-?\d+)\]([\s\S]*?)\[\/quote\]\s*([^\[]*?)(?=\[|$)/gi;
+    let quoteMatch;
+    while ((quoteMatch = quoteRegex.exec(fixedText)) !== null) {
+      const quoteIndex = parseInt(quoteMatch[1], 10);
+      const insideQuote = quoteMatch[2].trim();
+      const afterQuote = quoteMatch[3].trim();
+
+      // Gộp nội dung trong quote và sau quote
+      const fullText = afterQuote ? `${insideQuote} ${afterQuote}`.trim() : insideQuote;
+
+      if (fullText) {
+        result.messages.push({
+          text: fullText,
+          sticker: '',
+          quoteIndex,
+        });
+      }
     }
 
     // Parse [msg]nội dung[/msg] - nhiều tin nhắn riêng biệt
@@ -108,11 +119,11 @@ export function parseAIResponse(text: string): AIResponse {
       });
     }
 
-    // Lấy text thuần (loại bỏ các tag)
+    // Lấy text thuần (loại bỏ các tag và text ngay sau [/quote])
     const plainText = fixedText
       .replace(/\[reaction:(\d+:)?\w+\]/gi, '') // Hỗ trợ cả [reaction:heart] và [reaction:0:heart]
       .replace(/\[sticker:\w+\]/gi, '')
-      .replace(/\[quote:\d+\][\s\S]*?\[\/quote\]/gi, '')
+      .replace(/\[quote:-?\d+\][\s\S]*?\[\/quote\]\s*[^\[]*?(?=\[|$)/gi, '') // Bao gồm text sau [/quote]
       .replace(/\[msg\][\s\S]*?\[\/msg\]/gi, '')
       .replace(/\[undo:-?\d+\]/gi, '')
       .replace(/\[card(?::\d+)?\]/gi, '')
