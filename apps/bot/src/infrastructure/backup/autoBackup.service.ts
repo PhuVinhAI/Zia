@@ -1,14 +1,15 @@
 /**
  * Auto Backup Service - Tự động backup/restore khi deploy
  *
- * Strategy:
- * 1. Backup khi có database changes (debounced)
- * 2. Khi khởi động: restore từ cloud nếu cần
- * 3. Version tracking để tránh race condition
+ * Strategy: THROTTLE thay vì DEBOUNCE
+ * - Backup NGAY khi có thay đổi đầu tiên
+ * - Sau đó throttle: chỉ backup tối đa 1 lần mỗi X giây
+ * - Nếu có thay đổi trong khi đang chờ throttle → đánh dấu dirty, backup sau khi hết throttle
  *
- * Flow:
- * 1. Khi khởi động: Check version, chỉ restore nếu cloud version > local
- * 2. Khi có DB changes: Debounce và backup sau X giây không có thay đổi mới
+ * Điều này đảm bảo:
+ * - Data luôn được backup ngay khi có thể
+ * - Không spam backup quá nhiều
+ * - Không bị mất data vì debounce reset liên tục
  */
 
 import { existsSync } from 'node:fs';
@@ -22,10 +23,11 @@ import {
   getCloudBackupInfo,
 } from './cloudBackup.service.js';
 
-let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 let unsubscribeDbChange: (() => void) | null = null;
-let pendingBackup = false;
 let lastBackupTime = 0;
+let isDirty = false;
+let isBackingUp = false;
+let throttleTimer: ReturnType<typeof setTimeout> | null = null;
 
 /**
  * Lấy config từ CONFIG (settings.json)
@@ -34,8 +36,7 @@ function getBackupConfig() {
   const config = CONFIG as typeof CONFIG & {
     cloudBackup?: {
       enabled?: boolean;
-      debounceMs?: number;
-      minIntervalMs?: number;
+      throttleMs?: number;
       restoreDelayMs?: number;
       initialBackupDelayMs?: number;
     };
@@ -43,59 +44,78 @@ function getBackupConfig() {
 
   return {
     enabled: config.cloudBackup?.enabled ?? true,
-    debounceMs: config.cloudBackup?.debounceMs ?? 10000, // 10 giây debounce
-    minIntervalMs: config.cloudBackup?.minIntervalMs ?? 60000, // Tối thiểu 1 phút giữa các backup
-    restoreDelayMs: config.cloudBackup?.restoreDelayMs ?? 15000, // 15 giây
-    initialBackupDelayMs: config.cloudBackup?.initialBackupDelayMs ?? 30000, // 30 giây
+    throttleMs: config.cloudBackup?.throttleMs ?? 30000, // 30 giây throttle
+    restoreDelayMs: config.cloudBackup?.restoreDelayMs ?? 15000,
+    initialBackupDelayMs: config.cloudBackup?.initialBackupDelayMs ?? 30000,
   };
 }
 
 /**
- * Debounced backup - chỉ backup sau khi không có thay đổi trong X giây
+ * Thực hiện backup
  */
-function scheduleBackup(): void {
-  const backupConfig = getBackupConfig();
-
-  // Clear timer cũ nếu có
-  if (debounceTimer) {
-    clearTimeout(debounceTimer);
+async function doBackup(): Promise<void> {
+  if (isBackingUp) {
+    isDirty = true; // Đánh dấu cần backup lại sau
+    return;
   }
 
-  pendingBackup = true;
+  isBackingUp = true;
+  isDirty = false;
 
-  debounceTimer = setTimeout(async () => {
-    debounceTimer = null;
-
-    // Check minimum interval
-    const now = Date.now();
-    const timeSinceLastBackup = now - lastBackupTime;
-
-    if (timeSinceLastBackup < backupConfig.minIntervalMs) {
-      // Chưa đủ thời gian, schedule lại
-      const waitTime = backupConfig.minIntervalMs - timeSinceLastBackup;
-      debugLog('AUTO_BACKUP', `Waiting ${waitTime}ms before backup (min interval)`);
-      debounceTimer = setTimeout(() => scheduleBackup(), waitTime);
-      return;
-    }
-
-    if (!pendingBackup) return;
-    pendingBackup = false;
-
-    debugLog('AUTO_BACKUP', 'Database changed, backing up...');
+  try {
     const result = await uploadBackupToCloud();
-
     if (result.success) {
       lastBackupTime = Date.now();
       debugLog('AUTO_BACKUP', result.message);
     } else {
       debugLog('AUTO_BACKUP', `Backup failed: ${result.message}`);
+      isDirty = true; // Retry later
     }
-  }, backupConfig.debounceMs);
+  } catch (e) {
+    debugLog('AUTO_BACKUP', `Backup error: ${e}`);
+    isDirty = true;
+  } finally {
+    isBackingUp = false;
+
+    // Nếu có thay đổi trong khi đang backup → schedule backup tiếp
+    if (isDirty) {
+      scheduleBackup();
+    }
+  }
+}
+
+/**
+ * Schedule backup với throttle
+ */
+function scheduleBackup(): void {
+  const backupConfig = getBackupConfig();
+  const now = Date.now();
+  const timeSinceLastBackup = now - lastBackupTime;
+
+  // Nếu đã qua throttle time → backup ngay
+  if (timeSinceLastBackup >= backupConfig.throttleMs) {
+    doBackup();
+    return;
+  }
+
+  // Chưa đủ thời gian → schedule backup sau khi hết throttle
+  if (throttleTimer) return; // Đã có timer rồi
+
+  isDirty = true;
+  const waitTime = backupConfig.throttleMs - timeSinceLastBackup;
+
+  throttleTimer = setTimeout(() => {
+    throttleTimer = null;
+    if (isDirty) {
+      doBackup();
+    }
+  }, waitTime);
+
+  debugLog('AUTO_BACKUP', `Throttled, will backup in ${Math.round(waitTime / 1000)}s`);
 }
 
 /**
  * Khởi tạo auto backup service
- * Gọi hàm này trong main.ts TRƯỚC khi init database
  */
 export async function initAutoBackup(): Promise<void> {
   const backupConfig = getBackupConfig();
@@ -147,7 +167,7 @@ export async function initAutoBackup(): Promise<void> {
     }
   }
 
-  // Subscribe to database changes
+  // Start listening for changes
   startChangeListener();
 }
 
@@ -162,11 +182,8 @@ function startChangeListener(): void {
   // Initial backup sau khi bot ổn định
   setTimeout(async () => {
     debugLog('AUTO_BACKUP', 'Running initial backup...');
-    const result = await uploadBackupToCloud();
-    if (result.success) {
-      lastBackupTime = Date.now();
-      console.log(`☁️ Initial backup: ${result.message}`);
-    }
+    await doBackup();
+    console.log(`☁️ Initial backup completed`);
   }, backupConfig.initialBackupDelayMs);
 
   // Listen for database changes
@@ -174,16 +191,16 @@ function startChangeListener(): void {
     scheduleBackup();
   });
 
-  console.log(`☁️ Auto backup on DB changes (debounce: ${backupConfig.debounceMs / 1000}s, min interval: ${backupConfig.minIntervalMs / 1000}s)`);
+  console.log(`☁️ Auto backup on DB changes (throttle: ${backupConfig.throttleMs / 1000}s)`);
 }
 
 /**
- * Stop listening for changes
+ * Stop auto backup
  */
 export function stopAutoBackup(): void {
-  if (debounceTimer) {
-    clearTimeout(debounceTimer);
-    debounceTimer = null;
+  if (throttleTimer) {
+    clearTimeout(throttleTimer);
+    throttleTimer = null;
   }
   if (unsubscribeDbChange) {
     unsubscribeDbChange();
@@ -192,14 +209,14 @@ export function stopAutoBackup(): void {
 }
 
 /**
- * Manual trigger backup to cloud
+ * Manual trigger backup
  */
 export async function triggerCloudBackup(): Promise<{ success: boolean; message: string }> {
   return uploadBackupToCloud();
 }
 
 /**
- * Manual trigger restore from cloud
+ * Manual trigger restore
  */
 export async function triggerCloudRestore(): Promise<{ success: boolean; message: string }> {
   return downloadAndRestoreFromCloud(true);

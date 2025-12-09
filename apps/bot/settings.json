@@ -220,8 +220,7 @@
   },
   "cloudBackup": {
     "enabled": true,
-    "debounceMs": 10000,
-    "minIntervalMs": 60000,
+    "throttleMs": 30000,
     "restoreDelayMs": 15000,
     "initialBackupDelayMs": 30000
   }
