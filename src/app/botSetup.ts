@@ -153,16 +153,27 @@ export function processCloudMessage(message: any): any {
  */
 function isSystemMessage(message: any): boolean {
   const msgType = message.data?.msgType || '';
-  
+
   // Các loại tin nhắn hệ thống cần lưu
   const systemTypes = [
-    'group.join', 'group.leave', 'group.kick', 'group.block', 'group.unblock',
-    'group.add_admin', 'group.remove_admin', 'group.name_change', 'group.avatar_change',
-    'group.pin', 'group.unpin', 'group.link_change', 'group.setting_change',
-    'chat.undo', 'undo'
+    'group.join',
+    'group.leave',
+    'group.kick',
+    'group.block',
+    'group.unblock',
+    'group.add_admin',
+    'group.remove_admin',
+    'group.name_change',
+    'group.avatar_change',
+    'group.pin',
+    'group.unpin',
+    'group.link_change',
+    'group.setting_change',
+    'chat.undo',
+    'undo',
   ];
-  
-  return systemTypes.some(type => msgType.includes(type)) || msgType.includes('group.');
+
+  return systemTypes.some((type) => msgType.includes(type)) || msgType.includes('group.');
 }
 
 /**

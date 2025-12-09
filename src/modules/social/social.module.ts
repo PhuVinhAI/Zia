@@ -3,47 +3,47 @@
  */
 import { BaseModule, type ITool, type ModuleMetadata } from '../../core/index.js';
 import {
+  addGroupDeputyTool,
+  addMemberTool,
+  blockMemberTool,
+  changeGroupAvatarTool,
+  changeGroupNameTool,
+  changeGroupOwnerTool,
+  // Group Creation & Join
+  createGroupTool,
   createNoteTool,
   createPollTool,
   createReminderTool,
+  disableGroupLinkTool,
+  disperseGroupTool,
   editNoteTool,
+  enableGroupLinkTool,
+  // Friend Request Tools
+  findUserByPhoneTool,
   forwardMessageTool,
   getAllFriendsTool,
   getFriendOnlinesTool,
+  // Group Admin Tools
+  getGroupInfoTool,
+  getGroupLinkDetailTool,
+  getGroupLinkInfoTool,
   getGroupMembersTool,
   getListBoardTool,
+  getPendingMembersTool,
   getPollDetailTool,
   getReminderTool,
   getUserInfoTool,
-  lockPollTool,
-  removeReminderTool,
-  votePollTool,
-  // Group Admin Tools
-  getGroupInfoTool,
-  kickMemberTool,
-  blockMemberTool,
-  addMemberTool,
-  getPendingMembersTool,
-  reviewPendingMembersTool,
-  updateGroupSettingsTool,
-  changeGroupNameTool,
-  changeGroupAvatarTool,
-  addGroupDeputyTool,
-  removeGroupDeputyTool,
-  changeGroupOwnerTool,
-  getGroupLinkDetailTool,
-  enableGroupLinkTool,
-  disableGroupLinkTool,
-  getGroupLinkInfoTool,
-  // Group Creation & Join
-  createGroupTool,
   joinGroupLinkTool,
+  kickMemberTool,
   // Group Leave & Disperse (Destructive)
   leaveGroupTool,
-  disperseGroupTool,
-  // Friend Request Tools
-  findUserByPhoneTool,
+  lockPollTool,
+  removeGroupDeputyTool,
+  removeReminderTool,
+  reviewPendingMembersTool,
   sendFriendRequestTool,
+  updateGroupSettingsTool,
+  votePollTool,
 } from './tools/index.js';
 
 export class SocialModule extends BaseModule {

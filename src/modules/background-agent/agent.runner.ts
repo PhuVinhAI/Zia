@@ -3,6 +3,8 @@
  * Poll tasks từ DB, build context, gọi Groq để quyết định, execute actions
  * Sử dụng cơ chế tag [tool:xxx] giống Gemini để dễ mở rộng custom tools
  */
+
+import { CONFIG } from '../../core/config/config.js';
 import { debugLog } from '../../core/logger/logger.js';
 import {
   executeAllTools,
@@ -23,8 +25,6 @@ import {
   markTaskFailed,
   markTaskProcessing,
 } from './task.repository.js';
-
-import { CONFIG } from '../../core/config/config.js';
 
 // Agent state
 let isRunning = false;
@@ -229,7 +229,7 @@ async function callGroqWithTools(
   toolContext: ToolContext,
   options?: { temperature?: number },
 ): Promise<string> {
-  let currentMessages = [...messages];
+  const currentMessages = [...messages];
   let finalResponse = '';
 
   const maxToolIterations = CONFIG.backgroundAgent?.maxToolIterations ?? 5;

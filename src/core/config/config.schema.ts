@@ -228,8 +228,6 @@ export const GroqConfigSchema = z.object({
   rateLimitCooldownMs: z.coerce.number().min(1000).default(60000),
 });
 
-
-
 // Response handler config schema
 export const ResponseHandlerConfigSchema = z.object({
   reactionDelayMs: z.coerce.number().min(100).default(300),
@@ -255,11 +253,13 @@ export const GeminiConfigSchema = z.object({
   topP: z.coerce.number().min(0).max(1).default(0.95),
   maxOutputTokens: z.coerce.number().min(1000).default(65536),
   thinkingBudget: z.coerce.number().min(0).default(8192),
-  models: z.array(z.string()).default([
-    'models/gemini-flash-latest',
-    'models/gemini-flash-lite-latest',
-    'models/gemini-robotics-er-1.5-preview',
-  ]),
+  models: z
+    .array(z.string())
+    .default([
+      'models/gemini-flash-latest',
+      'models/gemini-flash-lite-latest',
+      'models/gemini-robotics-er-1.5-preview',
+    ]),
   rateLimitMinuteMs: z.coerce.number().min(60000).default(120000),
   rateLimitDayMs: z.coerce.number().min(3600000).default(86400000),
 });

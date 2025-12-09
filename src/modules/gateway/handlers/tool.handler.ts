@@ -207,7 +207,7 @@ export async function handleToolCalls(
 export function isToolOnlyResponse(response: string): boolean {
   // Fix stuck tags trước
   const fixedResponse = fixStuckTags(response);
-  
+
   const toolCalls = parseToolCalls(fixedResponse);
   if (toolCalls.length === 0) return false;
 

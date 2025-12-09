@@ -12,8 +12,6 @@ debugLog('GEMINI', 'Initializing Gemini API with Key Manager...');
 // Export getter để luôn lấy AI instance hiện tại (có thể đã rotate)
 export const getAI = () => keyManager.getCurrentAI();
 
-
-
 // Register AI service cho shared layer (dependency inversion)
 // Sử dụng getter để luôn dùng key hiện tại
 setAIService({

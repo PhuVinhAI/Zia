@@ -10,6 +10,7 @@ import {
   logError,
   logSystemPrompt,
 } from '../../../../core/logger/logger.js';
+import { fixStuckTags } from '../../../../shared/utils/tagFixer.js';
 import { checkInputTokens } from '../../../../shared/utils/tokenCounter.js';
 import {
   buildMessageParts,
@@ -19,7 +20,6 @@ import {
   sleep,
 } from './geminiChat.js';
 import { keyManager, type MediaPart } from './geminiConfig.js';
-import { fixStuckTags } from '../../../../shared/utils/tagFixer.js';
 import { isRateLimitError } from './keyManager.js';
 import { getSystemPrompt } from './prompts.js';
 
@@ -162,7 +162,7 @@ async function processStreamChunk(state: ParserState, callbacks: StreamCallbacks
 
   // Parse [quote:index]...[/quote] - bao gồm cả text ngay sau [/quote]
   // AI hay viết: [quote:0]Tin gốc[/quote] Câu trả lời → cần gộp "Câu trả lời" vào quote
-  const quoteRegex = /\[quote:(-?\d+)\]([\s\S]*?)\[\/quote\]\s*([^\[]*?)(?=\[|$)/gi;
+  const quoteRegex = /\[quote:(-?\d+)\]([\s\S]*?)\[\/quote\]\s*([^[]*?)(?=\[|$)/gi;
   let quoteMatch;
   while ((quoteMatch = quoteRegex.exec(buffer)) !== null) {
     const quoteIndex = parseInt(quoteMatch[1], 10);

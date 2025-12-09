@@ -84,7 +84,9 @@ function switchToFallback(): void {
     currentModel = 'fallback';
     const cooldownMs = getRateLimitCooldownMs();
     primaryCooldownUntil = Date.now() + cooldownMs;
-    console.log(`[Groq] ⚠️ Rate limit! Chuyển sang ${models.fallback}, cooldown ${cooldownMs / 1000}s`);
+    console.log(
+      `[Groq] ⚠️ Rate limit! Chuyển sang ${models.fallback}, cooldown ${cooldownMs / 1000}s`,
+    );
     debugLog('GROQ', `Switched to fallback model: ${models.fallback}`);
   }
 }
@@ -92,16 +94,19 @@ function switchToFallback(): void {
 /**
  * Lấy config phù hợp với model hiện tại
  */
-function getConfigForModel(model: string, options?: Partial<ReturnType<typeof getGroqConfig>>): any {
+function getConfigForModel(
+  model: string,
+  options?: Partial<ReturnType<typeof getGroqConfig>>,
+): any {
   const models = getGroqModels();
   const baseConfig = model === models.fallback ? getGroqFallbackConfig() : getGroqConfig();
   const merged = { ...baseConfig, ...options };
-  
+
   // Fallback model không hỗ trợ reasoning_effort
   if (model === models.fallback && 'reasoning_effort' in merged) {
     delete (merged as any).reasoning_effort;
   }
-  
+
   return merged;
 }
 
@@ -115,7 +120,7 @@ export async function generateGroqResponse(
 ): Promise<string> {
   const model = getCurrentModel();
   const config = getConfigForModel(model, options);
-  
+
   try {
     debugLog('GROQ', `Using model: ${model}`);
     const completion = await groq.chat.completions.create({
@@ -128,16 +133,16 @@ export async function generateGroqResponse(
     return completion.choices[0]?.message?.content || '';
   } catch (error: any) {
     debugLog('GROQ', `Error with ${model}: ${error?.message || error}`);
-    
+
     // Nếu bị rate limit và đang dùng primary, thử fallback
     if (isRateLimitError(error) && currentModel === 'primary') {
       switchToFallback();
-      
+
       // Retry với fallback model
       const models = getGroqModels();
       const fallbackModel = models.fallback;
       const fallbackConfig = getConfigForModel(fallbackModel, options);
-      
+
       debugLog('GROQ', `Retrying with fallback model: ${fallbackModel}`);
       const completion = await groq.chat.completions.create({
         messages,
@@ -148,7 +153,7 @@ export async function generateGroqResponse(
 
       return completion.choices[0]?.message?.content || '';
     }
-    
+
     throw error;
   }
 }
@@ -175,7 +180,7 @@ export async function* streamGroqResponse(
 ): AsyncGenerator<string> {
   const model = getCurrentModel();
   const config = getConfigForModel(model, options);
-  
+
   try {
     debugLog('GROQ', `Streaming with model: ${model}`);
     const stream = await createGroqStream(messages, model, config);
@@ -186,15 +191,15 @@ export async function* streamGroqResponse(
     }
   } catch (error: any) {
     debugLog('GROQ', `Stream error with ${model}: ${error?.message || error}`);
-    
+
     // Nếu bị rate limit và đang dùng primary, thử fallback
     if (isRateLimitError(error) && currentModel === 'primary') {
       switchToFallback();
-      
+
       const models = getGroqModels();
       const fallbackModel = models.fallback;
       const fallbackConfig = getConfigForModel(fallbackModel, options);
-      
+
       debugLog('GROQ', `Retrying stream with fallback model: ${fallbackModel}`);
       const stream = await createGroqStream(messages, fallbackModel, fallbackConfig);
 
@@ -204,7 +209,7 @@ export async function* streamGroqResponse(
       }
       return;
     }
-    
+
     throw error;
   }
 }
@@ -212,7 +217,12 @@ export async function* streamGroqResponse(
 /**
  * Lấy thông tin model hiện tại (để debug/logging)
  */
-export function getGroqModelInfo(): { current: string; primary: string; fallback: string; isFallback: boolean } {
+export function getGroqModelInfo(): {
+  current: string;
+  primary: string;
+  fallback: string;
+  isFallback: boolean;
+} {
   const models = getGroqModels();
   return {
     current: getCurrentModel(),

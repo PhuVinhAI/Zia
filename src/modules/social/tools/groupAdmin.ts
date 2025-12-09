@@ -4,12 +4,12 @@
  */
 
 import fs from 'node:fs';
-import path from 'node:path';
 import os from 'node:os';
+import path from 'node:path';
 import { debugLog, logZaloAPI } from '../../../core/logger/logger.js';
-import { getThreadType } from '../../../shared/utils/message/messageSender.js';
-import { fetchImageAsBuffer } from '../../../shared/utils/httpClient.js';
 import type { ToolContext, ToolDefinition, ToolResult } from '../../../shared/types/tools.types.js';
+import { fetchImageAsBuffer } from '../../../shared/utils/httpClient.js';
+import { getThreadType } from '../../../shared/utils/message/messageSender.js';
 
 // ═══════════════════════════════════════════════════
 // HELPER FUNCTIONS
@@ -203,7 +203,6 @@ export const blockMemberTool: ToolDefinition = {
   },
 };
 
-
 /**
  * Thêm/mời người vào nhóm
  */
@@ -379,7 +378,6 @@ export const reviewPendingMembersTool: ToolDefinition = {
   },
 };
 
-
 // ═══════════════════════════════════════════════════
 // GROUP SETTINGS
 // ═══════════════════════════════════════════════════
@@ -536,7 +534,8 @@ export const changeGroupAvatarTool: ToolDefinition = {
     {
       name: 'filePath',
       type: 'string',
-      description: 'Đường dẫn file ảnh (VD: "./avatar.jpg") hoặc URL ảnh (http://... hoặc https://...)',
+      description:
+        'Đường dẫn file ảnh (VD: "./avatar.jpg") hoặc URL ảnh (http://... hoặc https://...)',
       required: true,
     },
   ],
@@ -563,7 +562,10 @@ export const changeGroupAvatarTool: ToolDefinition = {
 
         const downloaded = await fetchImageAsBuffer(filePath);
         if (!downloaded) {
-          return { success: false, error: 'Không thể tải ảnh từ URL. URL có thể đã hết hạn hoặc không hợp lệ.' };
+          return {
+            success: false,
+            error: 'Không thể tải ảnh từ URL. URL có thể đã hết hạn hoặc không hợp lệ.',
+          };
         }
 
         // Xác định extension từ mimeType
@@ -572,7 +574,10 @@ export const changeGroupAvatarTool: ToolDefinition = {
 
         // Lưu buffer vào temp file
         fs.writeFileSync(tempFilePath, downloaded.buffer);
-        debugLog('TOOL:changeGroupAvatar', `Saved temp file: ${tempFilePath} (${downloaded.buffer.length} bytes)`);
+        debugLog(
+          'TOOL:changeGroupAvatar',
+          `Saved temp file: ${tempFilePath} (${downloaded.buffer.length} bytes)`,
+        );
 
         // Sử dụng temp file path
         filePath = tempFilePath;
@@ -610,7 +615,6 @@ export const changeGroupAvatarTool: ToolDefinition = {
   },
 };
 
-
 // ═══════════════════════════════════════════════════
 // ADMIN ROLES
 // ═══════════════════════════════════════════════════
@@ -620,8 +624,7 @@ export const changeGroupAvatarTool: ToolDefinition = {
  */
 export const addGroupDeputyTool: ToolDefinition = {
   name: 'addGroupDeputy',
-  description:
-    'Bổ nhiệm thành viên làm Phó nhóm (Admin). Bot phải là Trưởng nhóm (Owner).',
+  description: 'Bổ nhiệm thành viên làm Phó nhóm (Admin). Bot phải là Trưởng nhóm (Owner).',
   parameters: [
     {
       name: 'userId',
@@ -667,8 +670,7 @@ export const addGroupDeputyTool: ToolDefinition = {
  */
 export const removeGroupDeputyTool: ToolDefinition = {
   name: 'removeGroupDeputy',
-  description:
-    'Cách chức Phó nhóm (xuống làm thành viên thường). Bot phải là Trưởng nhóm (Owner).',
+  description: 'Cách chức Phó nhóm (xuống làm thành viên thường). Bot phải là Trưởng nhóm (Owner).',
   parameters: [
     {
       name: 'userId',
@@ -747,7 +749,6 @@ export const changeGroupOwnerTool: ToolDefinition = {
   },
 };
 
-
 // ═══════════════════════════════════════════════════
 // GROUP LINK MANAGEMENT
 // ═══════════════════════════════════════════════════
@@ -825,8 +826,7 @@ export const getGroupLinkDetailTool: ToolDefinition = {
  */
 export const enableGroupLinkTool: ToolDefinition = {
   name: 'enableGroupLink',
-  description:
-    'Bật link tham gia nhóm (để người lạ có thể join qua link). Bot phải là Admin.',
+  description: 'Bật link tham gia nhóm (để người lạ có thể join qua link). Bot phải là Admin.',
   parameters: [],
   execute: async (_params: Record<string, any>, context: ToolContext): Promise<ToolResult> => {
     try {
@@ -855,8 +855,7 @@ export const enableGroupLinkTool: ToolDefinition = {
  */
 export const disableGroupLinkTool: ToolDefinition = {
   name: 'disableGroupLink',
-  description:
-    'Tắt/vô hiệu hóa link tham gia nhóm (bảo mật). Bot phải là Admin.',
+  description: 'Tắt/vô hiệu hóa link tham gia nhóm (bảo mật). Bot phải là Admin.',
   parameters: [],
   execute: async (_params: Record<string, any>, context: ToolContext): Promise<ToolResult> => {
     try {
@@ -884,8 +883,7 @@ export const disableGroupLinkTool: ToolDefinition = {
  */
 export const getGroupLinkInfoTool: ToolDefinition = {
   name: 'getGroupLinkInfo',
-  description:
-    'Lấy thông tin nhóm từ đường link chia sẻ (zalo.me/g/...). Không cần quyền admin.',
+  description: 'Lấy thông tin nhóm từ đường link chia sẻ (zalo.me/g/...). Không cần quyền admin.',
   parameters: [
     {
       name: 'link',
@@ -960,7 +958,6 @@ export const getGroupLinkInfoTool: ToolDefinition = {
   },
 };
 
-
 // ═══════════════════════════════════════════════════
 // GROUP CREATION & JOIN
 // ═══════════════════════════════════════════════════
@@ -1012,10 +1009,7 @@ export const createGroupTool: ToolDefinition = {
       const memberList = members.map(String);
       if (context.senderId && !memberList.includes(context.senderId)) {
         memberList.push(context.senderId);
-        debugLog(
-          'TOOL:createGroup',
-          `Auto-added senderId ${context.senderId} to members list`,
-        );
+        debugLog('TOOL:createGroup', `Auto-added senderId ${context.senderId} to members list`);
       }
 
       debugLog(
@@ -1088,7 +1082,10 @@ export const joinGroupLinkTool: ToolDefinition = {
 
       // Validate link format
       if (!link.includes('zalo.me/g/')) {
-        return { success: false, error: 'Link không hợp lệ. Link phải có dạng https://zalo.me/g/...' };
+        return {
+          success: false,
+          error: 'Link không hợp lệ. Link phải có dạng https://zalo.me/g/...',
+        };
       }
 
       debugLog('TOOL:joinGroupLink', `Joining group via link: ${link}`);
@@ -1138,7 +1135,6 @@ export const joinGroupLinkTool: ToolDefinition = {
   },
 };
 
-
 // ═══════════════════════════════════════════════════
 // GROUP LEAVE & DISPERSE (DESTRUCTIVE ACTIONS)
 // ═══════════════════════════════════════════════════
@@ -1161,7 +1157,8 @@ Chỉ dùng khi Admin/Owner yêu cầu Bot rời đi.`,
     {
       name: 'silent',
       type: 'boolean',
-      description: 'true = Rời âm thầm (không hiện thông báo), false = Hiện thông báo rời nhóm. Mặc định: false',
+      description:
+        'true = Rời âm thầm (không hiện thông báo), false = Hiện thông báo rời nhóm. Mặc định: false',
       required: false,
     },
   ],
@@ -1232,7 +1229,8 @@ CHỈ DÙNG KHI OWNER YÊU CẦU VÀ XÁC NHẬN RÕ RÀNG.`,
       if (!confirm) {
         return {
           success: false,
-          error: 'Cần truyền confirm=true để xác nhận giải tán nhóm. Đây là hành động không thể hoàn tác!',
+          error:
+            'Cần truyền confirm=true để xác nhận giải tán nhóm. Đây là hành động không thể hoàn tác!',
         };
       }
 
@@ -1263,7 +1261,8 @@ CHỈ DÙNG KHI OWNER YÊU CẦU VÀ XÁC NHẬN RÕ RÀNG.`,
       if (error.message?.includes('permission') || error.message?.includes('quyền')) {
         return {
           success: false,
-          error: 'Bot không phải Trưởng nhóm nên không có quyền giải tán. Chỉ Owner mới có thể xóa nhóm.',
+          error:
+            'Bot không phải Trưởng nhóm nên không có quyền giải tán. Chỉ Owner mới có thể xóa nhóm.',
         };
       }
 

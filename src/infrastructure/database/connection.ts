@@ -25,7 +25,7 @@ export function initDatabase() {
   if (db) return db;
 
   const dbPath = getDbPath();
-  
+
   // Đảm bảo thư mục data tồn tại
   const fs = require('node:fs');
   const path = require('node:path');

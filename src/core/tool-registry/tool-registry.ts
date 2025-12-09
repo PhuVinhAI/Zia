@@ -49,7 +49,8 @@ function parseInlineParams(paramStr: string): Record<string, any> {
       // Giữ nguyên string cho phone number (bắt đầu bằng 0) và các field đặc biệt
       const isPhoneField = /phone/i.test(key);
       const startsWithZero = value.startsWith('0');
-      params[key] = isLargeNumber || isIdField || isPhoneField || startsWithZero ? value : Number(value);
+      params[key] =
+        isLargeNumber || isIdField || isPhoneField || startsWithZero ? value : Number(value);
     } else {
       params[key] = value;
     }
@@ -143,7 +144,7 @@ function findCloseTag(text: string): number {
 export function parseToolCalls(response: string): ToolCall[] {
   // Fix stuck tags trước khi parse
   const fixedResponse = fixStuckTags(response);
-  
+
   const calls: ToolCall[] = [];
   let match;
 
@@ -346,11 +347,12 @@ export function getRegisteredTools(): ITool[] {
  */
 export function generateToolsPromptFiltered(allowedToolNames: string[]): string {
   const allTools = moduleManager.getAllTools();
-  
+
   // Nếu không có filter → trả về tất cả (như generateToolsPrompt)
-  const tools = allowedToolNames.length > 0
-    ? allTools.filter((tool) => allowedToolNames.includes(tool.name))
-    : allTools;
+  const tools =
+    allowedToolNames.length > 0
+      ? allTools.filter((tool) => allowedToolNames.includes(tool.name))
+      : allTools;
 
   debugLog('TOOL', `Filtered tools: ${tools.length}/${allTools.length}`);
 

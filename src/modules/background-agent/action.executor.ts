@@ -121,12 +121,7 @@ async function executeSendMessage(
     // CHỈ lưu khi có msgId hợp lệ
     let msgIndex = -1;
     if (result.msgId) {
-      msgIndex = saveSentMessage(
-        threadId,
-        result.msgId,
-        '',
-        payload.message.substring(0, 200),
-      );
+      msgIndex = saveSentMessage(threadId, result.msgId, '', payload.message.substring(0, 200));
     } else {
       debugLog('EXECUTOR', `Skipped saveSentMessage: no msgId returned from API`);
     }
@@ -182,5 +177,3 @@ async function executeSendMessage(
     return { success: false, error: errorMsg };
   }
 }
-
-

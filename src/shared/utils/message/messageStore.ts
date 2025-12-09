@@ -179,7 +179,7 @@ export async function isBotMessage(msgId: string): Promise<boolean> {
  */
 export async function getBotMessageByMsgId(msgId: string): Promise<SentMessage | null> {
   const msgIdStr = String(msgId);
-  
+
   // Check cache trước
   for (const messages of messageCache.values()) {
     const found = messages.find((m) => String(m.msgId) === msgIdStr);
@@ -213,7 +213,7 @@ export async function getBotMessageByMsgId(msgId: string): Promise<SentMessage |
 export async function getLastBotMessageInThread(threadId: string): Promise<SentMessage | null> {
   const recentWindowMs = CONFIG.messageStore?.recentMessageWindowMs ?? 300000;
   const recentTime = Date.now() - recentWindowMs;
-  
+
   // Check cache trước
   const cache = messageCache.get(threadId);
   if (cache && cache.length > 0) {
@@ -239,6 +239,9 @@ export async function getLastBotMessageInThread(threadId: string): Promise<SentM
     };
   }
 
-  debugLog('MSG_STORE', `getLastBotMessageInThread: NOT found recent message in thread=${threadId}`);
+  debugLog(
+    'MSG_STORE',
+    `getLastBotMessageInThread: NOT found recent message in thread=${threadId}`,
+  );
   return null;
 }

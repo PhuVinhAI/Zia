@@ -91,7 +91,7 @@ export function parseMentions(inputText: string): { text: string; mentions: Ment
   const mentions: MentionInfo[] = [];
 
   // Fix stuck tags trước
-  const text = inputText.replace(/\]([^\s\[\]])/g, '] $1').replace(/([^\s\[\]])\[/g, '$1 [');
+  const text = inputText.replace(/\]([^\s[\]])/g, '] $1').replace(/([^\s[\]])\[/g, '$1 [');
 
   // Regex tìm [mention:ID] hoặc [mention:ID:Name]
   const regex = /\[mention:(\d+)(?::([^\]]+))?\]/g;
@@ -301,7 +301,7 @@ export async function sendSticker(api: any, keyword: string, threadId: string): 
 export function parseStickers(text: string): { text: string; stickers: string[] } {
   // Fix stuck tags trước
   const fixedText = fixStuckTags(text);
-  
+
   const stickers: string[] = [];
   const regex = /\[sticker:(\w+)\]/gi;
   let match;

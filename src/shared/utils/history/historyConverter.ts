@@ -16,7 +16,7 @@ const getGroupMediaSizeLimit = () => (CONFIG.markdown?.groupMediaSizeLimitMB ?? 
 const SYSTEM_MSG_TYPES = [
   // Format từ group_event listener (zca-js)
   'group.join',
-  'group.leave', 
+  'group.leave',
   'group.remove_member',
   'group.block_member',
   'group.add_admin',
@@ -112,19 +112,19 @@ function shouldSkipMediaForGroup(msg: any, msgType: string, content: any): boole
  */
 function parseSystemMessage(msg: any): string | null {
   const content = msg.data?.content;
-  
+
   // Nếu content đã là string (từ fake message của group_event listener)
   // và bắt đầu bằng [HỆ THỐNG], trả về trực tiếp
   if (typeof content === 'string' && content.startsWith('[HỆ THỐNG]')) {
     return content;
   }
-  
+
   // Fallback: tạo mô tả generic cho các msgType hệ thống khác
   const msgType = msg.data?.msgType || '';
   if (msgType.includes('group.') || msgType.includes('undo')) {
     return `[HỆ THỐNG] Sự kiện nhóm: ${msgType}`;
   }
-  
+
   return null;
 }
 
@@ -133,9 +133,11 @@ function parseSystemMessage(msg: any): string | null {
  */
 function isSystemMessage(msgType: string): boolean {
   if (!msgType) return false;
-  return SYSTEM_MSG_TYPES.some(type => msgType.includes(type)) ||
+  return (
+    SYSTEM_MSG_TYPES.some((type) => msgType.includes(type)) ||
     msgType.includes('group.') ||
-    msgType.includes('undo');
+    msgType.includes('undo')
+  );
 }
 
 /**

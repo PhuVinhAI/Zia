@@ -254,7 +254,9 @@ export async function sendResponse(
     if (i < response.messages.length - 1) {
       const msgDelayMin = CONFIG.responseHandler?.messageDelayMinMs ?? 500;
       const msgDelayMax = CONFIG.responseHandler?.messageDelayMaxMs ?? 1000;
-      await new Promise((r) => setTimeout(r, msgDelayMin + Math.random() * (msgDelayMax - msgDelayMin)));
+      await new Promise((r) =>
+        setTimeout(r, msgDelayMin + Math.random() * (msgDelayMax - msgDelayMin)),
+      );
     }
   }
 
@@ -377,11 +379,7 @@ export function createStreamCallbacks(
       // Loại bỏ nội dung nhại lại nếu đang quote tin nhắn
       if (quoteIndex !== undefined && quoteIndex >= 0 && messages && messages[quoteIndex]) {
         const originalMsg = messages[quoteIndex];
-        const originalText = (
-          originalMsg?.data?.content ||
-          originalMsg?.content ||
-          ''
-        )
+        const originalText = (originalMsg?.data?.content || originalMsg?.content || '')
           .toString()
           .trim();
 

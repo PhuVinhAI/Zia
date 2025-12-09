@@ -3,8 +3,8 @@
  * Sử dụng voice Yui và model Eleven v3 Alpha
  */
 
-import type { ITool, ToolResult } from '../../../core/types.js';
 import { CONFIG } from '../../../core/config/config.js';
+import type { ITool, ToolResult } from '../../../core/types.js';
 import {
   type TextToSpeechParams,
   TextToSpeechSchema,
@@ -82,7 +82,8 @@ Trả về file âm thanh MP3 có thể phát trực tiếp.`,
           model: DEFAULT_MODEL_ID,
           settings: {
             stability: data.stability ?? CONFIG.elevenlabs?.defaultStability ?? 0.5,
-            similarityBoost: data.similarityBoost ?? CONFIG.elevenlabs?.defaultSimilarityBoost ?? 0.75,
+            similarityBoost:
+              data.similarityBoost ?? CONFIG.elevenlabs?.defaultSimilarityBoost ?? 0.75,
             style: data.style ?? CONFIG.elevenlabs?.defaultStyle ?? 0.5,
           },
         },

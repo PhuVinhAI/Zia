@@ -18,6 +18,7 @@ import {
   saveToHistory,
   saveToolResultToHistory,
 } from '../../../shared/utils/history/history.js';
+import { setThreadType } from '../../../shared/utils/message/messageSender.js';
 import { markPendingToolExecution } from '../../../shared/utils/taskManager.js';
 // Import từ classifier
 import {
@@ -29,14 +30,11 @@ import {
 } from '../classifier.js';
 import { checkRateLimit, markApiCall } from '../guards/rate-limit.guard.js';
 import { createStreamCallbacks, sendResponse } from '../handlers/response.handler.js';
-import { setThreadType } from '../../../shared/utils/message/messageSender.js';
 import { handleToolCalls, isToolOnlyResponse } from '../handlers/tool.handler.js';
 import { startTypingWithRefresh } from '../services/message.buffer.js';
 import { buildPrompt, extractTextFromMessages, processPrefix } from '../services/prompt.builder.js';
 import { extractQuoteInfo } from '../services/quote.parser.js';
 import { addQuoteMedia, prepareMediaParts } from './media.processor.js';
-
-
 
 /**
  * Handler CHÍNH - xử lý TẤT CẢ loại tin nhắn trong 1 flow duy nhất

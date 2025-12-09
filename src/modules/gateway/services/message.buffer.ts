@@ -7,6 +7,7 @@ import { Subject, type Subscription } from 'rxjs';
 import { bufferWhen, debounceTime, filter, groupBy, mergeMap } from 'rxjs/operators';
 import { CONFIG } from '../../../core/config/config.js';
 import { debugLog, logError, logStep } from '../../../core/logger/logger.js';
+import { getThreadType } from '../../../shared/utils/message/messageSender.js';
 import {
   clearPendingToolExecution,
   getAndClearAbortedMessages,
@@ -16,7 +17,6 @@ import {
   startTask,
 } from '../../../shared/utils/taskManager.js';
 import { handleMixedContent } from '../gateway.module.js';
-import { getThreadType } from '../../../shared/utils/message/messageSender.js';
 
 // Buffer config từ settings.json
 const getBufferDelayMs = () => CONFIG.buffer?.delayMs ?? 2500;

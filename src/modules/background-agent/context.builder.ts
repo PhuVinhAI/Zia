@@ -93,7 +93,7 @@ export async function buildEnvironmentContext(
       const batchSize = CONFIG.backgroundAgent?.groupBatchSize ?? 10;
       const batchDelayMin = CONFIG.backgroundAgent?.batchDelayMinMs ?? 500;
       const batchDelayMax = CONFIG.backgroundAgent?.batchDelayMaxMs ?? 1500;
-      
+
       for (let i = 0; i < groupIds.length; i += batchSize) {
         const batch = groupIds.slice(i, i + batchSize);
         const infoRes = await api.getGroupInfo(batch);

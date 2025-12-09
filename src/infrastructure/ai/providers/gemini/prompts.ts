@@ -301,8 +301,6 @@ export function getSystemPrompt(useCharacter: boolean = true): string {
   return basePrompt + generateToolsPrompt() + silentPrompt + nsfwPrompt;
 }
 
-
-
 // ═══════════════════════════════════════════════════
 // MESSAGE PROMPTS - Các template prompt cho tin nhắn
 // ═══════════════════════════════════════════════════
@@ -406,7 +404,7 @@ export const PROMPTS = {
         case 'link':
           parts.push(`[${index}] Link: ${item.url}`);
           break;
-        case 'contact':
+        case 'contact': {
           // Bao gồm contactUserId để AI có thể gọi sendFriendRequest
           const contactInfo = [
             item.contactName || item.text || '(không rõ tên)',
@@ -417,6 +415,7 @@ export const PROMPTS = {
             .join(', ');
           parts.push(`[${index}] Danh thiếp: ${contactInfo}`);
           break;
+        }
       }
     });
 

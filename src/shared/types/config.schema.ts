@@ -30,7 +30,7 @@ import { fixStuckTags } from '../utils/tagFixer.js';
 // Parse AI response từ text với tag []
 export function parseAIResponse(text: string): AIResponse {
   debugLog('PARSE', `Input text length: ${text.length}`);
-  
+
   // Fix stuck tags trước khi parse
   const fixedText = fixStuckTags(text);
 
@@ -73,7 +73,7 @@ export function parseAIResponse(text: string): AIResponse {
 
     // Parse [quote:index]nội dung[/quote] - bao gồm cả text ngay sau [/quote]
     // AI hay viết: [quote:0]Tin gốc[/quote] Câu trả lời → cần gộp "Câu trả lời" vào quote
-    const quoteRegex = /\[quote:(-?\d+)\]([\s\S]*?)\[\/quote\]\s*([^\[]*?)(?=\[|$)/gi;
+    const quoteRegex = /\[quote:(-?\d+)\]([\s\S]*?)\[\/quote\]\s*([^[]*?)(?=\[|$)/gi;
     let quoteMatch;
     while ((quoteMatch = quoteRegex.exec(fixedText)) !== null) {
       const quoteIndex = parseInt(quoteMatch[1], 10);
@@ -123,7 +123,7 @@ export function parseAIResponse(text: string): AIResponse {
     const plainText = fixedText
       .replace(/\[reaction:(\d+:)?\w+\]/gi, '') // Hỗ trợ cả [reaction:heart] và [reaction:0:heart]
       .replace(/\[sticker:\w+\]/gi, '')
-      .replace(/\[quote:-?\d+\][\s\S]*?\[\/quote\]\s*[^\[]*?(?=\[|$)/gi, '') // Bao gồm text sau [/quote]
+      .replace(/\[quote:-?\d+\][\s\S]*?\[\/quote\]\s*[^[]*?(?=\[|$)/gi, '') // Bao gồm text sau [/quote]
       .replace(/\[msg\][\s\S]*?\[\/msg\]/gi, '')
       .replace(/\[undo:-?\d+\]/gi, '')
       .replace(/\[card(?::\d+)?\]/gi, '')

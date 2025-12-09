@@ -13,8 +13,8 @@
  */
 export function fixStuckTags(text: string): string {
   // Thêm space sau tag đóng ] nếu bị dính vào chữ/số (không phải [ hoặc space)
-  let result = text.replace(/\]([^\s\[\]])/g, '] $1');
+  let result = text.replace(/\]([^\s[\]])/g, '] $1');
   // Thêm space trước tag mở [ nếu bị dính vào chữ/số (không phải ] hoặc space)
-  result = result.replace(/([^\s\[\]])\[/g, '$1 [');
+  result = result.replace(/([^\s[\]])\[/g, '$1 [');
   return result;
 }

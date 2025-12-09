@@ -6,7 +6,10 @@
 import { CONFIG } from '../../core/config/config.js';
 import { debugLog, Events, eventBus, logMessage } from '../../core/index.js';
 import { initThreadHistory, isThreadInitialized } from '../../shared/utils/history/history.js';
-import { getBotMessageByMsgId, getLastBotMessageInThread } from '../../shared/utils/message/messageStore.js';
+import {
+  getBotMessageByMsgId,
+  getLastBotMessageInThread,
+} from '../../shared/utils/message/messageStore.js';
 import { abortTask } from '../../shared/utils/taskManager.js';
 import { isAllowedUser } from './guards/user.filter.js';
 import { addToBuffer } from './services/message.buffer.js';
@@ -101,7 +104,7 @@ export function registerMessageListener(api: any, options: MessageListenerOption
 
   // Đăng ký reaction listener
   registerReactionListener(api);
-  
+
   // Đăng ký group event listener để lưu sự kiện nhóm vào history
   registerGroupEventListener(api);
 }
@@ -184,7 +187,7 @@ function registerReactionListener(api: any): void {
   api.listener.on('reaction', async (reactionObj: any) => {
     // Log toàn bộ reaction object để debug
     debugLog('REACTION', `RAW event: ${JSON.stringify(reactionObj)}`);
-    
+
     const { data, threadId, isSelf } = reactionObj;
 
     // Bỏ qua reaction của chính bot
@@ -223,7 +226,7 @@ function registerReactionListener(api: any): void {
 
     let botMsg = null;
     let matchedId = null;
-    
+
     for (const id of possibleIds) {
       botMsg = await getBotMessageByMsgId(id);
       if (botMsg) {
@@ -232,7 +235,7 @@ function registerReactionListener(api: any): void {
         break;
       }
     }
-    
+
     // Nếu không tìm thấy theo ID, thử tìm tin nhắn gần nhất của bot trong thread
     if (!botMsg) {
       botMsg = await getLastBotMessageInThread(threadId);
@@ -240,7 +243,7 @@ function registerReactionListener(api: any): void {
         debugLog('REACTION', `Found recent bot message in thread: ${botMsg.msgId}`);
       }
     }
-    
+
     if (!botMsg) {
       debugLog('REACTION', `Not a bot message (tried IDs: ${possibleIds.join(', ')}), ignoring`);
       return;
@@ -248,36 +251,37 @@ function registerReactionListener(api: any): void {
 
     // Lấy tên reaction
     const reactionName = REACTION_NAMES[icon] || icon;
-    
+
     // Key để track reaction: threadId:reactorId:originalMsgId
     const reactionKey = `${threadId}:${reactorId}:${botMsg.msgId}`;
     const pending = pendingReactions.get(reactionKey);
-    
+
     // Nếu đã có pending reaction cho cùng tin nhắn, clear timeout cũ và thêm icon mới vào danh sách
     if (pending) {
       clearTimeout(pending.timeout);
       pending.icons.push(icon);
       debugLog('REACTION', `User added another reaction: ${icon} (total: ${pending.icons.length})`);
     }
-    
+
     // Lấy danh sách icons hiện tại hoặc tạo mới
     const icons = pending?.icons || [icon];
-    
+
     // Debounce: đợi trước khi xử lý để gom tất cả reactions (từ config)
     const reactionDebounceMs = CONFIG.reaction?.debounceMs ?? 2000;
     const newPending = {
       timeout: setTimeout(async () => {
         pendingReactions.delete(reactionKey);
-        
+
         // Chuyển danh sách icons thành tên reactions
-        const reactionNames = icons.map(i => REACTION_NAMES[i] || i);
+        const reactionNames = icons.map((i) => REACTION_NAMES[i] || i);
         const uniqueReactions = [...new Set(reactionNames)];
         const reactionList = reactionNames.join(', ');
-        
+
         // Tạo nội dung mô tả reaction để AI hiểu context
         // Nhấn mạnh đây là reaction LÊN TIN NHẮN chứ không phải cảm xúc cá nhân
         let reactionContent: string;
-        const msgPreview = botMsg.content.substring(0, 150) + (botMsg.content.length > 150 ? '...' : '');
+        const msgPreview =
+          botMsg.content.substring(0, 150) + (botMsg.content.length > 150 ? '...' : '');
         if (icons.length > 1) {
           reactionContent = `[REACTION] Người dùng vừa thả ${icons.length} reaction lên tin nhắn của bạn: [${reactionList}]. Tin nhắn được react: "${msgPreview}"`;
         } else {
@@ -302,14 +306,17 @@ function registerReactionListener(api: any): void {
           },
         };
 
-        debugLog('REACTION', `Processing ${icons.length} reactions after debounce: ${reactionList}`);
+        debugLog(
+          'REACTION',
+          `Processing ${icons.length} reactions after debounce: ${reactionList}`,
+        );
 
         // Đẩy vào buffer để AI xử lý như tin nhắn bình thường
         addToBuffer(api, threadId, fakeMessage);
       }, reactionDebounceMs),
       icons,
     };
-    
+
     pendingReactions.set(reactionKey, newPending);
     const debounceMs = CONFIG.reaction?.debounceMs ?? 2000;
     debugLog('REACTION', `Queued reaction (will process in ${debounceMs}ms): ${reactionName}`);
@@ -352,53 +359,64 @@ const GroupEventType = {
 export function registerGroupEventListener(api: any): void {
   api.listener.on('group_event', async (event: any) => {
     debugLog('GROUP_EVENT', `RAW event: ${JSON.stringify(event)}`);
-    
+
     const { type, data, threadId, isSelf } = event;
-    
+
     // Bỏ qua một số event không cần thiết
-    if (type === GroupEventType.JOIN_REQUEST || 
-        type === GroupEventType.UPDATE_SETTING ||
-        type === GroupEventType.UNKNOWN) {
+    if (
+      type === GroupEventType.JOIN_REQUEST ||
+      type === GroupEventType.UPDATE_SETTING ||
+      type === GroupEventType.UNKNOWN
+    ) {
       debugLog('GROUP_EVENT', `Skipping event type: ${type}`);
       return;
     }
-    
+
     // Tạo mô tả sự kiện để AI hiểu
     let eventDescription = '';
     const actorName = data?.updateMembers?.[0]?.dName || data?.creatorId || 'Ai đó';
     const groupName = data?.groupName || 'nhóm';
-    
+
     switch (type) {
-      case GroupEventType.JOIN:
+      case GroupEventType.JOIN: {
         const joinMembers = data?.updateMembers?.map((m: any) => m.dName).join(', ') || actorName;
         eventDescription = `[HỆ THỐNG] ${joinMembers} đã tham gia ${groupName}`;
         break;
-        
-      case GroupEventType.LEAVE:
+      }
+
+      case GroupEventType.LEAVE: {
         const leaveMembers = data?.updateMembers?.map((m: any) => m.dName).join(', ') || actorName;
         eventDescription = `[HỆ THỐNG] ${leaveMembers} đã rời khỏi ${groupName}`;
         break;
-        
-      case GroupEventType.REMOVE_MEMBER:
-        const removedMembers = data?.updateMembers?.map((m: any) => m.dName).join(', ') || 'Thành viên';
+      }
+
+      case GroupEventType.REMOVE_MEMBER: {
+        const removedMembers =
+          data?.updateMembers?.map((m: any) => m.dName).join(', ') || 'Thành viên';
         eventDescription = `[HỆ THỐNG] ${removedMembers} đã bị xóa khỏi ${groupName}`;
         break;
-        
-      case GroupEventType.BLOCK_MEMBER:
-        const blockedMembers = data?.updateMembers?.map((m: any) => m.dName).join(', ') || 'Thành viên';
+      }
+
+      case GroupEventType.BLOCK_MEMBER: {
+        const blockedMembers =
+          data?.updateMembers?.map((m: any) => m.dName).join(', ') || 'Thành viên';
         eventDescription = `[HỆ THỐNG] ${blockedMembers} đã bị chặn khỏi ${groupName}`;
         break;
-        
-      case GroupEventType.ADD_ADMIN:
+      }
+
+      case GroupEventType.ADD_ADMIN: {
         const newAdmins = data?.updateMembers?.map((m: any) => m.dName).join(', ') || 'Thành viên';
         eventDescription = `[HỆ THỐNG] ${newAdmins} đã được thêm làm quản trị viên ${groupName}`;
         break;
-        
-      case GroupEventType.REMOVE_ADMIN:
-        const removedAdmins = data?.updateMembers?.map((m: any) => m.dName).join(', ') || 'Thành viên';
+      }
+
+      case GroupEventType.REMOVE_ADMIN: {
+        const removedAdmins =
+          data?.updateMembers?.map((m: any) => m.dName).join(', ') || 'Thành viên';
         eventDescription = `[HỆ THỐNG] ${removedAdmins} đã bị xóa quyền quản trị viên ${groupName}`;
         break;
-        
+      }
+
       case GroupEventType.UPDATE:
         // Đổi tên nhóm hoặc cập nhật thông tin
         if (data?.groupName) {
@@ -407,34 +425,34 @@ export function registerGroupEventListener(api: any): void {
           eventDescription = `[HỆ THỐNG] Thông tin nhóm đã được cập nhật`;
         }
         break;
-        
+
       case GroupEventType.UPDATE_AVATAR:
         eventDescription = `[HỆ THỐNG] Ảnh đại diện nhóm đã được thay đổi`;
         break;
-        
+
       case GroupEventType.NEW_LINK:
         eventDescription = `[HỆ THỐNG] Link nhóm đã được tạo mới`;
         break;
-        
+
       case GroupEventType.NEW_PIN_TOPIC:
       case GroupEventType.UPDATE_PIN_TOPIC:
         eventDescription = `[HỆ THỐNG] Một tin nhắn đã được ghim trong nhóm`;
         break;
-        
+
       case GroupEventType.UNPIN_TOPIC:
         eventDescription = `[HỆ THỐNG] Một tin nhắn đã được bỏ ghim`;
         break;
-        
+
       default:
         debugLog('GROUP_EVENT', `Unhandled event type: ${type}`);
         return;
     }
-    
+
     if (!eventDescription) return;
-    
+
     console.log(`[Bot] 📢 ${eventDescription}`);
     debugLog('GROUP_EVENT', `Event description: ${eventDescription}`);
-    
+
     // Tạo fake message để lưu vào history
     const fakeMessage = {
       type: 1, // Group type
@@ -451,13 +469,13 @@ export function registerGroupEventListener(api: any): void {
         _eventData: data,
       },
     };
-    
+
     // Khởi tạo history nếu chưa có
     if (!isThreadInitialized(threadId)) {
       debugLog('GROUP_EVENT', `Initializing history for thread: ${threadId}`);
       await initThreadHistory(api, threadId, 1); // 1 = Group
     }
-    
+
     // Thêm vào buffer để lưu vào history (không cần AI trả lời)
     // Chỉ lưu vào history, không trigger AI response
     const { saveToHistory } = await import('../../shared/utils/history/history.js');

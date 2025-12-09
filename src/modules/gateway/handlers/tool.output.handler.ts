@@ -6,8 +6,8 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { debugLog } from '../../../core/index.js';
 import { CONFIG } from '../../../core/config/config.js';
+import { debugLog } from '../../../core/index.js';
 import type { ToolCall, ToolResult } from '../../../core/types.js';
 import { getThreadType } from '../../../shared/utils/message/messageSender.js';
 
