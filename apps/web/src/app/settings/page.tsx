@@ -3,15 +3,24 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { settingsApiClient, type BotSettings } from '@/lib/api';
 import { toast } from 'sonner';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-import { AlertTriangle, RefreshCw, Save } from 'lucide-react';
+import {
+  Settings,
+  AlertTriangle,
+  RefreshCw,
+  Save,
+  Bot,
+  Puzzle,
+  Wrench,
+  Zap,
+  Shield,
+  MessageSquare,
+} from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 export default function SettingsPage() {
@@ -84,223 +93,336 @@ export default function SettingsPage() {
 
   if (isLoading || !localSettings) {
     return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Cài đặt</h1>
-          <p className="text-muted-foreground">Cấu hình bot</p>
+      <div className="space-y-8 max-w-4xl mx-auto">
+        <div className="flex items-center gap-3">
+          <div className="h-12 w-12 bg-muted rounded-2xl animate-pulse" />
+          <div className="space-y-2">
+            <div className="h-8 w-32 bg-muted rounded-lg animate-pulse" />
+            <div className="h-4 w-24 bg-muted rounded-lg animate-pulse" />
+          </div>
         </div>
-        <Skeleton className="h-[400px] w-full" />
+        <div className="h-[500px] bg-muted rounded-2xl animate-pulse" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Cài đặt</h1>
-          <p className="text-muted-foreground">Cấu hình bot</p>
+    <div className="space-y-8 max-w-4xl mx-auto">
+      {/* Page Header */}
+      <div className="flex items-start justify-between">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-[#777777] text-white shadow-[0_4px_0_0_#5A5A5A]">
+            <Settings className="h-6 w-6" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Cài đặt</h1>
+            <p className="text-muted-foreground font-medium">Cấu hình bot</p>
+          </div>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => reloadMutation.mutate()} disabled={reloadMutation.isPending}>
-            <RefreshCw className="mr-2 h-4 w-4" />
+          <Button
+            variant="outline"
+            onClick={() => reloadMutation.mutate()}
+            disabled={reloadMutation.isPending}
+            className="h-11 px-4 rounded-xl border-2 font-semibold hover:bg-muted"
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${reloadMutation.isPending ? 'animate-spin' : ''}`} />
             Tải lại
           </Button>
-          <Button onClick={() => updateMutation.mutate(localSettings)} disabled={updateMutation.isPending}>
-            <Save className="mr-2 h-4 w-4" />
+          <Button
+            onClick={() => updateMutation.mutate(localSettings)}
+            disabled={updateMutation.isPending}
+            className="h-11 px-5 rounded-xl font-semibold bg-[#58CC02] hover:bg-[#4CAF00] text-white shadow-[0_4px_0_0_#46A302] hover:shadow-[0_2px_0_0_#46A302] hover:translate-y-[2px] transition-all"
+          >
+            <Save className="h-4 w-4 mr-2" />
             Lưu
           </Button>
         </div>
       </div>
 
-      <Tabs defaultValue="general">
-        <TabsList>
-          <TabsTrigger value="general">Chung</TabsTrigger>
-          <TabsTrigger value="modules">Mô-đun</TabsTrigger>
-          <TabsTrigger value="advanced">Nâng cao</TabsTrigger>
+      {/* Tabs */}
+      <Tabs defaultValue="general" className="space-y-6">
+        <TabsList className="h-12 p-1 rounded-xl bg-muted border-2 border-border">
+          <TabsTrigger
+            value="general"
+            className="h-10 px-4 rounded-lg font-semibold data-[state=active]:bg-card data-[state=active]:shadow-sm"
+          >
+            <Bot className="h-4 w-4 mr-2" />
+            Chung
+          </TabsTrigger>
+          <TabsTrigger
+            value="modules"
+            className="h-10 px-4 rounded-lg font-semibold data-[state=active]:bg-card data-[state=active]:shadow-sm"
+          >
+            <Puzzle className="h-4 w-4 mr-2" />
+            Mô-đun
+          </TabsTrigger>
+          <TabsTrigger
+            value="advanced"
+            className="h-10 px-4 rounded-lg font-semibold data-[state=active]:bg-card data-[state=active]:shadow-sm"
+          >
+            <Wrench className="h-4 w-4 mr-2" />
+            Nâng cao
+          </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="general" className="space-y-4">
-          {/* Maintenance Mode Card - Hiển thị nổi bật */}
-          <Card className={localSettings.bot.maintenanceMode?.enabled ? 'border-yellow-500 bg-yellow-50 dark:bg-yellow-950/20' : ''}>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <AlertTriangle className={`h-5 w-5 ${localSettings.bot.maintenanceMode?.enabled ? 'text-yellow-500' : 'text-muted-foreground'}`} />
-                Chế độ bảo trì
-              </CardTitle>
-              <CardDescription>Khi bật, bot sẽ chỉ phản hồi thông báo bảo trì</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label>Bật chế độ bảo trì</Label>
-                  <p className="text-sm text-muted-foreground">Bot sẽ không xử lý tin nhắn khi bật</p>
-                </div>
-                <Switch
-                  checked={localSettings.bot.maintenanceMode?.enabled ?? false}
-                  onCheckedChange={(v) => updateMaintenanceMode('enabled', v)}
-                />
+        {/* General Tab */}
+        <TabsContent value="general" className="space-y-6">
+          {/* Maintenance Mode Card */}
+          <div
+            className={`rounded-2xl border-2 p-6 transition-colors ${
+              localSettings.bot.maintenanceMode?.enabled
+                ? 'border-[#FF9600]/50 bg-[#FF9600]/5'
+                : 'border-border bg-card'
+            }`}
+          >
+            <div className="flex items-start gap-4 mb-6">
+              <div
+                className={`flex items-center justify-center w-12 h-12 rounded-xl ${
+                  localSettings.bot.maintenanceMode?.enabled
+                    ? 'bg-[#FF9600] text-white shadow-[0_4px_0_0_#E68600]'
+                    : 'bg-muted text-muted-foreground'
+                }`}
+              >
+                <AlertTriangle className="h-6 w-6" />
               </div>
-              <div className="space-y-2">
-                <Label>Thông báo bảo trì</Label>
-                <Textarea
-                  value={localSettings.bot.maintenanceMode?.message ?? '🔧 Bot đang trong chế độ bảo trì. Vui lòng thử lại sau!'}
-                  onChange={(e) => updateMaintenanceMode('message', e.target.value)}
-                  placeholder="Nhập thông báo hiển thị khi bot đang bảo trì..."
-                  rows={2}
-                />
+              <div className="flex-1">
+                <h3 className="text-lg font-bold">Chế độ bảo trì</h3>
+                <p className="text-sm text-muted-foreground">
+                  Khi bật, bot sẽ chỉ phản hồi thông báo bảo trì
+                </p>
               </div>
-            </CardContent>
-          </Card>
+              <Switch
+                checked={localSettings.bot.maintenanceMode?.enabled ?? false}
+                onCheckedChange={(v) => updateMaintenanceMode('enabled', v)}
+                className="data-[state=checked]:bg-[#FF9600]"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold">Thông báo bảo trì</Label>
+              <Textarea
+                value={
+                  localSettings.bot.maintenanceMode?.message ??
+                  '🔧 Bot đang trong chế độ bảo trì. Vui lòng thử lại sau!'
+                }
+                onChange={(e) => updateMaintenanceMode('message', e.target.value)}
+                placeholder="Nhập thông báo hiển thị khi bot đang bảo trì..."
+                rows={2}
+                className="rounded-xl border-2 resize-none"
+              />
+            </div>
+          </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Cài đặt Bot</CardTitle>
-              <CardDescription>Cấu hình cơ bản của bot</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          {/* Bot Settings Card */}
+          <div className="rounded-2xl border-2 border-border bg-card p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-[#58CC02] text-white shadow-[0_3px_0_0_#46A302]">
+                <Bot className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold">Cài đặt Bot</h3>
+                <p className="text-sm text-muted-foreground">Cấu hình cơ bản của bot</p>
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              {/* Name & Prefix */}
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Tên bot</Label>
+                  <Label className="text-sm font-semibold">Tên bot</Label>
                   <Input
-                    id="name"
                     value={localSettings.bot.name}
                     onChange={(e) => updateBotSetting('name', e.target.value)}
+                    className="h-11 rounded-xl border-2"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="prefix">Tiền tố</Label>
+                  <Label className="text-sm font-semibold">Tiền tố</Label>
                   <Input
-                    id="prefix"
                     value={localSettings.bot.prefix}
                     onChange={(e) => updateBotSetting('prefix', e.target.value)}
+                    className="h-11 rounded-xl border-2"
                   />
                 </div>
               </div>
 
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label>Yêu cầu tiền tố</Label>
-                  <p className="text-sm text-muted-foreground">Bắt buộc dùng tiền tố để gọi bot</p>
-                </div>
-                <Switch
+              {/* Toggle Settings */}
+              <div className="space-y-4">
+                <SettingToggle
+                  label="Yêu cầu tiền tố"
+                  description="Bắt buộc dùng tiền tố để gọi bot"
                   checked={localSettings.bot.requirePrefix}
                   onCheckedChange={(v) => updateBotSetting('requirePrefix', v)}
+                  icon={MessageSquare}
+                  color="#1CB0F6"
                 />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label>Phát trực tiếp</Label>
-                  <p className="text-sm text-muted-foreground">Gửi tin nhắn theo luồng</p>
-                </div>
-                <Switch
+                <SettingToggle
+                  label="Phát trực tiếp"
+                  description="Gửi tin nhắn theo luồng"
                   checked={localSettings.bot.useStreaming}
                   onCheckedChange={(v) => updateBotSetting('useStreaming', v)}
+                  icon={Zap}
+                  color="#FF9600"
                 />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label>Hiện lệnh gọi công cụ</Label>
-                  <p className="text-sm text-muted-foreground">Hiển thị khi bot gọi công cụ</p>
-                </div>
-                <Switch
+                <SettingToggle
+                  label="Hiện lệnh gọi công cụ"
+                  description="Hiển thị khi bot gọi công cụ"
                   checked={localSettings.bot.showToolCalls}
                   onCheckedChange={(v) => updateBotSetting('showToolCalls', v)}
+                  icon={Wrench}
+                  color="#CE82FF"
                 />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label>Ghi nhật ký</Label>
-                  <p className="text-sm text-muted-foreground">Ghi nhật ký hoạt động</p>
-                </div>
-                <Switch
+                <SettingToggle
+                  label="Ghi nhật ký"
+                  description="Ghi nhật ký hoạt động"
                   checked={localSettings.bot.logging}
                   onCheckedChange={(v) => updateBotSetting('logging', v)}
+                  icon={Settings}
+                  color="#777777"
                 />
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </TabsContent>
 
-        <TabsContent value="modules" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Mô-đun</CardTitle>
-              <CardDescription>Bật/tắt các mô-đun của bot</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+        {/* Modules Tab */}
+        <TabsContent value="modules" className="space-y-6">
+          <div className="rounded-2xl border-2 border-border bg-card p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-[#CE82FF] text-white shadow-[0_3px_0_0_#B86EE6]">
+                <Puzzle className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold">Mô-đun</h3>
+                <p className="text-sm text-muted-foreground">Bật/tắt các mô-đun của bot</p>
+              </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
               {Object.entries(localSettings.modules).map(([key, value]) => (
-                <div key={key} className="flex items-center justify-between">
-                  <Label className="capitalize">{key}</Label>
-                  <Switch checked={value} onCheckedChange={(v) => updateModule(key, v)} />
+                <div
+                  key={key}
+                  className="flex items-center justify-between p-4 rounded-xl bg-muted/50 border-2 border-transparent hover:border-[#CE82FF]/30 transition-colors"
+                >
+                  <span className="font-semibold capitalize">{key}</span>
+                  <Switch
+                    checked={value}
+                    onCheckedChange={(v) => updateModule(key, v)}
+                    className="data-[state=checked]:bg-[#CE82FF]"
+                  />
                 </div>
               ))}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </TabsContent>
 
-        <TabsContent value="advanced" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Cấu hình nâng cao</CardTitle>
-              <CardDescription>Các thiết lập nâng cao</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2">
+        {/* Advanced Tab */}
+        <TabsContent value="advanced" className="space-y-6">
+          <div className="rounded-2xl border-2 border-border bg-card p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-[#FF4B4B] text-white shadow-[0_3px_0_0_#E63E3E]">
+                <Wrench className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold">Cấu hình nâng cao</h3>
+                <p className="text-sm text-muted-foreground">Các thiết lập nâng cao</p>
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              {/* Number Inputs */}
+              <div className="grid gap-4 md:grid-cols-3">
                 <div className="space-y-2">
-                  <Label>Độ sâu công cụ tối đa</Label>
+                  <Label className="text-sm font-semibold">Độ sâu công cụ tối đa</Label>
                   <Input
                     type="number"
                     value={localSettings.bot.maxToolDepth}
                     onChange={(e) => updateBotSetting('maxToolDepth', Number(e.target.value))}
+                    className="h-11 rounded-xl border-2"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Giới hạn tốc độ (ms)</Label>
+                  <Label className="text-sm font-semibold">Giới hạn tốc độ (ms)</Label>
                   <Input
                     type="number"
                     value={localSettings.bot.rateLimitMs}
                     onChange={(e) => updateBotSetting('rateLimitMs', Number(e.target.value))}
+                    className="h-11 rounded-xl border-2"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Lịch sử token tối đa</Label>
+                  <Label className="text-sm font-semibold">Lịch sử token tối đa</Label>
                   <Input
                     type="number"
                     value={localSettings.bot.maxTokenHistory}
                     onChange={(e) => updateBotSetting('maxTokenHistory', Number(e.target.value))}
+                    className="h-11 rounded-xl border-2"
                   />
                 </div>
               </div>
 
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label>Cho phép NSFW</Label>
-                  <p className="text-sm text-muted-foreground">Cho phép nội dung người lớn</p>
-                </div>
-                <Switch
+              {/* Toggle Settings */}
+              <div className="space-y-4">
+                <SettingToggle
+                  label="Cho phép NSFW"
+                  description="Cho phép nội dung người lớn"
                   checked={localSettings.bot.allowNSFW}
                   onCheckedChange={(v) => updateBotSetting('allowNSFW', v)}
+                  icon={Shield}
+                  color="#FF4B4B"
                 />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label>Tự nghe</Label>
-                  <p className="text-sm text-muted-foreground">Bot nghe tin nhắn của chính mình</p>
-                </div>
-                <Switch
+                <SettingToggle
+                  label="Tự nghe"
+                  description="Bot nghe tin nhắn của chính mình"
                   checked={localSettings.bot.selfListen}
                   onCheckedChange={(v) => updateBotSetting('selfListen', v)}
+                  icon={MessageSquare}
+                  color="#1CB0F6"
                 />
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </TabsContent>
       </Tabs>
+    </div>
+  );
+}
+
+// Setting Toggle Component
+function SettingToggle({
+  label,
+  description,
+  checked,
+  onCheckedChange,
+  icon: Icon,
+  color,
+}: {
+  label: string;
+  description: string;
+  checked: boolean;
+  onCheckedChange: (checked: boolean) => void;
+  icon: React.ElementType;
+  color: string;
+}) {
+  return (
+    <div className="flex items-center justify-between p-4 rounded-xl bg-muted/50 border-2 border-transparent hover:border-border transition-colors">
+      <div className="flex items-center gap-3">
+        <div
+          className="flex items-center justify-center w-9 h-9 rounded-lg"
+          style={{ backgroundColor: `${color}15`, color }}
+        >
+          <Icon className="h-4 w-4" />
+        </div>
+        <div>
+          <p className="font-semibold">{label}</p>
+          <p className="text-sm text-muted-foreground">{description}</p>
+        </div>
+      </div>
+      <Switch
+        checked={checked}
+        onCheckedChange={onCheckedChange}
+        style={{ backgroundColor: checked ? color : undefined }}
+      />
     </div>
   );
 }

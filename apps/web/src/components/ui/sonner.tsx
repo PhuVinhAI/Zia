@@ -18,18 +18,29 @@ const Toaster = ({ ...props }: ToasterProps) => {
       theme={theme as ToasterProps["theme"]}
       className="toaster group"
       icons={{
-        success: <CircleCheckIcon className="size-4" />,
-        info: <InfoIcon className="size-4" />,
-        warning: <TriangleAlertIcon className="size-4" />,
-        error: <OctagonXIcon className="size-4" />,
-        loading: <Loader2Icon className="size-4 animate-spin" />,
+        success: <CircleCheckIcon className="size-5 text-[#58CC02]" />,
+        info: <InfoIcon className="size-5 text-[#1CB0F6]" />,
+        warning: <TriangleAlertIcon className="size-5 text-[#FF9600]" />,
+        error: <OctagonXIcon className="size-5 text-[#FF4B4B]" />,
+        loading: <Loader2Icon className="size-5 animate-spin text-[#1CB0F6]" />,
+      }}
+      toastOptions={{
+        classNames: {
+          toast: "rounded-xl border-2 border-border bg-card shadow-lg font-medium",
+          title: "font-semibold",
+          description: "text-muted-foreground",
+          success: "border-[#58CC02]/30 bg-[#58CC02]/5",
+          error: "border-[#FF4B4B]/30 bg-[#FF4B4B]/5",
+          warning: "border-[#FF9600]/30 bg-[#FF9600]/5",
+          info: "border-[#1CB0F6]/30 bg-[#1CB0F6]/5",
+        },
       }}
       style={
         {
-          "--normal-bg": "var(--popover)",
-          "--normal-text": "var(--popover-foreground)",
+          "--normal-bg": "var(--card)",
+          "--normal-text": "var(--foreground)",
           "--normal-border": "var(--border)",
-          "--border-radius": "var(--radius)",
+          "--border-radius": "12px",
         } as React.CSSProperties
       }
       {...props}
