@@ -63,9 +63,9 @@ export async function textToSpeech(options: TTSOptions): Promise<Buffer> {
     text: options.text,
     modelId,
     voiceSettings: {
-      stability: options.stability ?? 0.5,
-      similarityBoost: options.similarityBoost ?? 0.75,
-      style: options.style ?? 0.5,
+      stability: options.stability ?? CONFIG.elevenlabs?.defaultStability ?? 0.5,
+      similarityBoost: options.similarityBoost ?? CONFIG.elevenlabs?.defaultSimilarityBoost ?? 0.75,
+      style: options.style ?? CONFIG.elevenlabs?.defaultStyle ?? 0.5,
       useSpeakerBoost: options.useSpeakerBoost ?? true,
     },
     outputFormat: (options.outputFormat as any) || OUTPUT_FORMATS.MP3_44100_128,

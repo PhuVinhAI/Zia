@@ -4,6 +4,7 @@
  */
 
 import type { ITool, ToolResult } from '../../../core/types.js';
+import { CONFIG } from '../../../core/config/config.js';
 import {
   type TextToSpeechParams,
   TextToSpeechSchema,
@@ -80,9 +81,9 @@ Trả về file âm thanh MP3 có thể phát trực tiếp.`,
           voiceName: 'Yui',
           model: DEFAULT_MODEL_ID,
           settings: {
-            stability: data.stability ?? 0.5,
-            similarityBoost: data.similarityBoost ?? 0.75,
-            style: data.style ?? 0.5,
+            stability: data.stability ?? CONFIG.elevenlabs?.defaultStability ?? 0.5,
+            similarityBoost: data.similarityBoost ?? CONFIG.elevenlabs?.defaultSimilarityBoost ?? 0.75,
+            style: data.style ?? CONFIG.elevenlabs?.defaultStyle ?? 0.5,
           },
         },
       };

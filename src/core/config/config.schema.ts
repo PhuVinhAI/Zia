@@ -153,6 +153,9 @@ export const JikanConfigSchema = z.object({
 export const ElevenLabsConfigSchema = z.object({
   defaultVoiceId: z.string().default('fUjY9K2nAIwlALOwSiwc'),
   defaultModelId: z.string().default('eleven_v3'),
+  defaultStability: z.coerce.number().min(0).max(1).default(0.5),
+  defaultSimilarityBoost: z.coerce.number().min(0).max(1).default(0.75),
+  defaultStyle: z.coerce.number().min(0).max(1).default(0.5),
 });
 
 // Giphy config schema
@@ -208,6 +211,7 @@ export const DatabaseConfigSchema = z.object({
   path: z.string().default('data/bot.db'),
   cleanupIntervalMs: z.coerce.number().min(60000).default(3600000),
   embeddingDim: z.coerce.number().min(1).default(768),
+  cacheSize: z.coerce.number().min(1000).default(10000),
 });
 
 // TVU config schema
@@ -248,6 +252,13 @@ export const GeminiConfigSchema = z.object({
   topP: z.coerce.number().min(0).max(1).default(0.95),
   maxOutputTokens: z.coerce.number().min(1000).default(65536),
   thinkingBudget: z.coerce.number().min(0).default(8192),
+  models: z.array(z.string()).default([
+    'models/gemini-flash-latest',
+    'models/gemini-flash-lite-latest',
+    'models/gemini-robotics-er-1.5-preview',
+  ]),
+  rateLimitMinuteMs: z.coerce.number().min(60000).default(120000),
+  rateLimitDayMs: z.coerce.number().min(3600000).default(86400000),
 });
 
 // Groq models config schema
@@ -367,6 +378,9 @@ export const SettingsSchema = z.object({
   elevenlabs: ElevenLabsConfigSchema.optional().default({
     defaultVoiceId: 'fUjY9K2nAIwlALOwSiwc',
     defaultModelId: 'eleven_v3',
+    defaultStability: 0.5,
+    defaultSimilarityBoost: 0.75,
+    defaultStyle: 0.5,
   }),
   giphy: GiphyConfigSchema.optional().default({
     timeoutMs: 15000,
@@ -413,6 +427,7 @@ export const SettingsSchema = z.object({
     path: 'data/bot.db',
     cleanupIntervalMs: 3600000,
     embeddingDim: 768,
+    cacheSize: 10000,
   }),
   responseHandler: ResponseHandlerConfigSchema.optional().default({
     reactionDelayMs: 300,
@@ -436,6 +451,13 @@ export const SettingsSchema = z.object({
     topP: 0.95,
     maxOutputTokens: 65536,
     thinkingBudget: 8192,
+    models: [
+      'models/gemini-flash-latest',
+      'models/gemini-flash-lite-latest',
+      'models/gemini-robotics-er-1.5-preview',
+    ],
+    rateLimitMinuteMs: 120000,
+    rateLimitDayMs: 86400000,
   }),
   groqModels: GroqModelsConfigSchema.optional().default({
     primary: 'openai/gpt-oss-120b',

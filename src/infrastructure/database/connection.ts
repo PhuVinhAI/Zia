@@ -42,7 +42,7 @@ export function initDatabase() {
   // Bật WAL mode để tăng hiệu năng ghi đồng thời
   sqliteDb.exec('PRAGMA journal_mode = WAL;');
   sqliteDb.exec('PRAGMA synchronous = NORMAL;');
-  sqliteDb.exec('PRAGMA cache_size = 10000;');
+  sqliteDb.exec(`PRAGMA cache_size = ${CONFIG.database?.cacheSize ?? 10000};`);
   sqliteDb.exec('PRAGMA temp_store = MEMORY;');
 
   // Load sqlite-vec extension cho vector search

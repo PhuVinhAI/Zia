@@ -118,7 +118,10 @@
   },
   "elevenlabs": {
     "defaultVoiceId": "fUjY9K2nAIwlALOwSiwc",
-    "defaultModelId": "eleven_v3"
+    "defaultModelId": "eleven_v3",
+    "defaultStability": 0.5,
+    "defaultSimilarityBoost": 0.75,
+    "defaultStyle": 0.5
   },
   "giphy": {
     "timeoutMs": 15000,
@@ -164,7 +167,8 @@
   "database": {
     "path": "data/bot.db",
     "cleanupIntervalMs": 3600000,
-    "embeddingDim": 768
+    "embeddingDim": 768,
+    "cacheSize": 10000
   },
   "responseHandler": {
     "reactionDelayMs": 300,
@@ -187,7 +191,14 @@
     "temperature": 1,
     "topP": 0.95,
     "maxOutputTokens": 65536,
-    "thinkingBudget": 8192
+    "thinkingBudget": 8192,
+    "models": [
+      "models/gemini-flash-latest",
+      "models/gemini-flash-lite-latest",
+      "models/gemini-robotics-er-1.5-preview"
+    ],
+    "rateLimitMinuteMs": 120000,
+    "rateLimitDayMs": 86400000
   },
   "groqModels": {
     "primary": "openai/gpt-oss-120b",

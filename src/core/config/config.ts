@@ -137,3 +137,40 @@ export const CONFIG = buildConfig(settings);
 
 export type { AIMessage, AIResponse } from '../../shared/types/config.schema.js';
 export { DEFAULT_RESPONSE, parseAIResponse } from '../../shared/types/config.schema.js';
+
+// Re-export types từ config.schema
+export type {
+  Settings,
+  BotConfig,
+  RetryConfig,
+  HistoryLoaderConfig,
+  BufferConfig,
+  FetchConfig,
+  ModulesConfig,
+  LoggerConfig,
+  ReactionConfig,
+  FriendRequestConfig,
+  BackgroundAgentConfig,
+  MessageChunkerConfig,
+  MessageStoreConfig,
+  UserStoreConfig,
+  JikanConfig,
+  ElevenLabsConfig,
+  GiphyConfig,
+  NekosConfig,
+  FreepikConfig,
+  MessageSenderConfig,
+  MarkdownConfig,
+  HistoryConfig,
+  MemoryConfig,
+  TvuConfig,
+  GroqConfig,
+  DatabaseConfig,
+  ResponseHandlerConfig,
+  GroupMembersFetchConfig,
+  GeminiConfig,
+  GroqModelsConfig,
+  SandboxConfig,
+} from './config.schema.js';
+
+export { MIME_TYPES, SettingsSchema } from './config.schema.js';
