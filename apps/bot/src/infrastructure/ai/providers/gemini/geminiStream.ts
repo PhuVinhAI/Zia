@@ -252,7 +252,6 @@ export async function generateContentStream(
   media?: MediaPart[],
   threadId?: string,
   history?: Content[],
-  characterPrompt?: string,
 ): Promise<string> {
   const state: ParserState = {
     buffer: '',
@@ -314,13 +313,10 @@ export async function generateContentStream(
 
     try {
       deleteChatSession(sessionId);
-      const chat = getChatSession(sessionId, history, characterPrompt);
+      const chat = getChatSession(sessionId, history);
 
       // Log system prompt
-      const systemPrompt = characterPrompt 
-        ? characterPrompt + '\n\n' + getSystemPrompt(CONFIG.useCharacter)
-        : getSystemPrompt(CONFIG.useCharacter);
-      logSystemPrompt(sessionId, systemPrompt);
+      logSystemPrompt(sessionId, getSystemPrompt(CONFIG.useCharacter));
 
       if (history && history.length > 0) {
         logAIHistory(sessionId, history);
