@@ -217,5 +217,11 @@
   "sandbox": {
     "installTimeoutMs": 60000,
     "executeTimeoutMs": 30000
+  },
+  "cloudBackup": {
+    "enabled": true,
+    "autoBackupIntervalMs": 300000,
+    "restoreDelayMs": 15000,
+    "initialBackupDelayMs": 30000
   }
 }

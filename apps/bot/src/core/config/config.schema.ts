@@ -286,6 +286,14 @@ export const SandboxConfigSchema = z.object({
   executeTimeoutMs: z.coerce.number().min(5000).default(30000),
 });
 
+// Cloud Backup config schema
+export const CloudBackupConfigSchema = z.object({
+  enabled: z.boolean().default(true),
+  autoBackupIntervalMs: z.coerce.number().min(60000).default(300000), // 5 phút
+  restoreDelayMs: z.coerce.number().min(5000).default(15000), // 15 giây
+  initialBackupDelayMs: z.coerce.number().min(5000).default(30000), // 30 giây
+});
+
 // Full settings schema
 export const SettingsSchema = z.object({
   adminUserId: z.string().default(''),
@@ -480,6 +488,12 @@ export const SettingsSchema = z.object({
     installTimeoutMs: 60000,
     executeTimeoutMs: 30000,
   }),
+  cloudBackup: CloudBackupConfigSchema.optional().default({
+    enabled: true,
+    autoBackupIntervalMs: 300000,
+    restoreDelayMs: 15000,
+    initialBackupDelayMs: 30000,
+  }),
 });
 
 // Type inference từ schema
@@ -512,6 +526,7 @@ export type GroupMembersFetchConfig = z.infer<typeof GroupMembersFetchConfigSche
 export type GeminiConfig = z.infer<typeof GeminiConfigSchema>;
 export type GroqModelsConfig = z.infer<typeof GroqModelsConfigSchema>;
 export type SandboxConfig = z.infer<typeof SandboxConfigSchema>;
+export type CloudBackupConfig = z.infer<typeof CloudBackupConfigSchema>;
 export type Settings = z.infer<typeof SettingsSchema>;
 
 // MIME types (static, không cần validate)
