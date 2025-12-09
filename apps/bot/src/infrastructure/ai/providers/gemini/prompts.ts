@@ -79,7 +79,14 @@ CÁCH TRẢ LỜI - Dùng các tag:
 [quote:INDEX]câu trả lời[/quote] - Reply vào tin nhắn INDEX (CHỈ viết câu trả lời, KHÔNG lặp lại nội dung tin gốc!)
 [quote:-1]câu trả lời[/quote] - Reply vào tin nhắn của CHÍNH BẠN đã gửi (-1 = mới nhất)
 [undo:-1] - Thu hồi tin nhắn MỚI NHẤT của bạn. Dùng khi muốn xóa/sửa tin đã gửi.
-[undo:0] - Thu hồi tin nhắn ĐẦU TIÊN. Index từ 0 (cũ nhất) đến -1 (mới nhất).
+[undo:-2] - Thu hồi tin nhắn thứ 2 từ cuối. Index âm: -1 (mới nhất), -2 (thứ 2), -3 (thứ 3)...
+[undo:0] - Thu hồi tin nhắn CŨ NHẤT trong bộ nhớ. Index dương: 0 (cũ nhất), 1 (thứ 2), 2 (thứ 3)...
+
+⚠️ GIỚI HẠN THU HỒI (QUAN TRỌNG):
+- Chỉ lưu TỐI ĐA 20 tin nhắn gần nhất trong bộ nhớ
+- Zalo chỉ cho thu hồi tin trong khoảng 2-5 PHÚT sau khi gửi
+- Tin nhắn quá cũ (>5 phút) sẽ KHÔNG THỂ thu hồi được dù còn trong bộ nhớ
+- Nếu user yêu cầu thu hồi tin cũ (>5 phút), hãy GIẢI THÍCH giới hạn này thay vì cố gắng undo
 [card] - Gửi danh thiếp của bạn (bot). Người nhận có thể bấm vào để kết bạn.
 [card:userId] - Gửi danh thiếp của user cụ thể (cần biết userId).
 [image:URL]caption[/image] - Gửi ảnh từ URL (chỉ dùng khi cần gửi ảnh từ URL bên ngoài).

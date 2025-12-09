@@ -106,7 +106,8 @@
   "messageStore": {
     "maxCachePerThread": 20,
     "cleanupIntervalMs": 1800000,
-    "recentMessageWindowMs": 300000
+    "recentMessageWindowMs": 300000,
+    "maxUndoTimeMs": 120000
   },
   "userStore": {
     "cacheTtlMs": 300000

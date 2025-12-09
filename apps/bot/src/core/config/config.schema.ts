@@ -137,6 +137,7 @@ export const MessageStoreConfigSchema = z.object({
   maxCachePerThread: z.coerce.number().min(5).default(20),
   cleanupIntervalMs: z.coerce.number().min(60000).default(1800000),
   recentMessageWindowMs: z.coerce.number().min(60000).default(300000),
+  maxUndoTimeMs: z.coerce.number().min(30000).default(120000), // 2 phút - giới hạn thời gian thu hồi tin nhắn
 });
 
 // User store config schema
@@ -369,6 +370,7 @@ export const SettingsSchema = z.object({
     maxCachePerThread: 20,
     cleanupIntervalMs: 1800000,
     recentMessageWindowMs: 300000,
+    maxUndoTimeMs: 120000,
   }),
   userStore: UserStoreConfigSchema.optional().default({
     cacheTtlMs: 300000,

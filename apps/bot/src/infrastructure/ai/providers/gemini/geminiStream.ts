@@ -162,12 +162,15 @@ async function processStreamChunk(state: ParserState, callbacks: StreamCallbacks
 
   // Parse [quote:index]...[/quote] - bao gồm cả text ngay sau [/quote]
   // AI hay viết: [quote:0]Tin gốc[/quote] Câu trả lời → cần gộp "Câu trả lời" vào quote
-  const quoteRegex = /\[quote:(-?\d+)\]([\s\S]*?)\[\/quote\]\s*([^[]*?)(?=\[|$)/gi;
+  // Fix Bug 2: Sử dụng regex không greedy và xử lý đúng khi có tags khác đứng trước [quote]
+  // Ví dụ: [reaction:sad] [quote:0]Mình hiểu... → phải giữ nguyên "Mình hiểu..."
+  const quoteRegex = /\[quote:(-?\d+)\]([\s\S]*?)\[\/quote\](\s*)([^[]*?)(?=\[|$)/gi;
   let quoteMatch;
   while ((quoteMatch = quoteRegex.exec(buffer)) !== null) {
     const quoteIndex = parseInt(quoteMatch[1], 10);
     const insideQuote = quoteMatch[2].trim();
-    const afterQuote = quoteMatch[3].trim();
+    // match[3] là whitespace giữa [/quote] và text sau
+    const afterQuote = quoteMatch[4].trim();
 
     // Gộp nội dung trong quote và sau quote
     const rawText = afterQuote ? `${insideQuote} ${afterQuote}`.trim() : insideQuote;
