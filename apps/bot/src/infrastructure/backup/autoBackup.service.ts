@@ -28,6 +28,7 @@ let lastBackupTime = 0;
 let isDirty = false;
 let isBackingUp = false;
 let throttleTimer: ReturnType<typeof setTimeout> | null = null;
+let justRestored = false; // Flag để skip initial backup sau restore
 
 /**
  * Lấy config từ CONFIG (settings.json)
@@ -151,6 +152,7 @@ export async function initAutoBackup(): Promise<void> {
 
     if (result.success && !result.skipped) {
       console.log(`✅ ${result.message}`);
+      justRestored = true; // Đánh dấu vừa restore, skip initial backup
     } else if (result.skipped) {
       console.log(`⏭️ ${result.message}`);
     } else {
@@ -186,8 +188,13 @@ function startChangeListener(): void {
 
   const backupConfig = getBackupConfig();
 
-  // Initial backup sau khi bot ổn định
+  // Initial backup sau khi bot ổn định (skip nếu vừa restore)
   setTimeout(async () => {
+    if (justRestored) {
+      console.log(`☁️ Skipping initial backup (just restored from cloud)`);
+      justRestored = false;
+      return;
+    }
     debugLog('AUTO_BACKUP', 'Running initial backup...');
     await doBackup();
     console.log(`☁️ Initial backup completed`);
