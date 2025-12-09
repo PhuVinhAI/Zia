@@ -345,6 +345,12 @@ function removeEchoedContent(quoteContent: string, originalText: string): string
   const normalizedOriginal = normalize(originalText);
   const normalizedQuote = normalize(quoteContent);
 
+  // Fix Bug: Nếu originalText sau khi normalize là rỗng (chỉ có dấu câu như "." "?" "!")
+  // thì không cắt gì cả, trả về quoteContent nguyên vẹn
+  if (!normalizedOriginal) {
+    return quoteContent;
+  }
+
   // Nếu quote bắt đầu bằng tin nhắn gốc, loại bỏ phần đó
   if (normalizedQuote.startsWith(normalizedOriginal)) {
     const remaining = quoteContent.slice(originalText.length).trim();
