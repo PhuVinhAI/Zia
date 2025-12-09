@@ -6,7 +6,7 @@
 import { desc, eq, sql } from 'drizzle-orm';
 import { debugLog } from '../../core/logger/logger.js';
 import { isRateLimitError, keyManager } from '../ai/providers/gemini/keyManager.js';
-import { EMBEDDING_DIM, getDatabase, getSqliteDb } from '../database/connection.js';
+import { EMBEDDING_DIM, getDatabase, getSqliteDb, notifyDbChange } from '../database/connection.js';
 import { type Memory, memories, type NewMemory } from '../database/schema.js';
 
 // ═══════════════════════════════════════════════════
@@ -135,6 +135,7 @@ class MemoryStore {
       .run(memoryId, embedding);
 
     debugLog('MEMORY', `Added memory #${memoryId}: ${content.substring(0, 50)}...`);
+    notifyDbChange();
     return memoryId;
   }
 
@@ -246,6 +247,7 @@ class MemoryStore {
     await db.delete(memories).where(eq(memories.id, id));
 
     debugLog('MEMORY', `Deleted memory #${id}`);
+    notifyDbChange();
   }
 
   /**

@@ -6,7 +6,7 @@ import { asc, desc, eq } from 'drizzle-orm';
 import { CONFIG } from '../../../core/config/config.js';
 import { debugLog } from '../../../core/logger/logger.js';
 import { nowDate } from '../../../shared/utils/datetime.js';
-import { getDatabase } from '../connection.js';
+import { getDatabase, notifyDbChange } from '../connection.js';
 import { type History, history } from '../schema.js';
 
 // Giới hạn token từ config
@@ -40,6 +40,7 @@ export class HistoryRepository {
     await this.pruneIfNeeded(threadId);
 
     debugLog('HISTORY', `Added ${role} message for thread ${threadId}`);
+    notifyDbChange();
   }
 
   /**
@@ -101,6 +102,7 @@ export class HistoryRepository {
     const result = await this.db.delete(history).where(eq(history.threadId, threadId)).returning();
 
     debugLog('HISTORY', `Cleared ${result.length} messages for ${threadId}`);
+    if (result.length > 0) notifyDbChange();
     return result.length;
   }
 

@@ -11,7 +11,7 @@ export {
 
 export {
   initAutoBackup,
-  stopPeriodicBackup,
+  stopAutoBackup,
   triggerCloudBackup,
   triggerCloudRestore,
 } from './autoBackup.service.js';

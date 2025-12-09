@@ -289,9 +289,10 @@ export const SandboxConfigSchema = z.object({
 // Cloud Backup config schema
 export const CloudBackupConfigSchema = z.object({
   enabled: z.boolean().default(true),
-  autoBackupIntervalMs: z.coerce.number().min(60000).default(300000), // 5 phút
-  restoreDelayMs: z.coerce.number().min(5000).default(15000), // 15 giây
-  initialBackupDelayMs: z.coerce.number().min(5000).default(30000), // 30 giây
+  debounceMs: z.coerce.number().min(5000).default(10000), // 10 giây debounce sau khi có thay đổi
+  minIntervalMs: z.coerce.number().min(30000).default(60000), // Tối thiểu 1 phút giữa các backup
+  restoreDelayMs: z.coerce.number().min(5000).default(15000), // 15 giây delay trước restore
+  initialBackupDelayMs: z.coerce.number().min(5000).default(30000), // 30 giây sau start
 });
 
 // Full settings schema
@@ -490,7 +491,8 @@ export const SettingsSchema = z.object({
   }),
   cloudBackup: CloudBackupConfigSchema.optional().default({
     enabled: true,
-    autoBackupIntervalMs: 300000,
+    debounceMs: 10000,
+    minIntervalMs: 60000,
     restoreDelayMs: 15000,
     initialBackupDelayMs: 30000,
   }),
