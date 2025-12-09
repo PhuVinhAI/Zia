@@ -530,64 +530,123 @@ export function createStreamCallbacks(
       await new Promise((r) => setTimeout(r, chunkDelay));
     },
 
-    onUndo: async (index: number) => {
-      // Fix Bug Undo: Hỗ trợ cả index âm (mới nhất) và index dương (tin cũ hơn trong cache)
-      // index = -1: tin mới nhất, -2: tin thứ 2 từ cuối, ...
-      // index = 0: tin cũ nhất trong cache, 1: tin thứ 2 từ đầu, ...
-      const msg = getSentMessage(threadId, index);
-      if (!msg) {
-        console.log(`[Bot] ⚠️ Không tìm thấy tin nhắn index ${index} để thu hồi`);
-        debugLog('UNDO', `Message not found: index=${index}, threadId=${threadId}`);
-        
-        // Gửi thông báo cho user biết không thể thu hồi
-        try {
-          const threadType = getThreadType(threadId);
-          await api.sendMessage(
-            '⚠️ Mình không tìm thấy tin nhắn đó trong bộ nhớ. Có thể tin nhắn đã quá cũ (chỉ lưu 20 tin gần nhất) hoặc đã bị thu hồi trước đó rồi.',
-            threadId,
-            threadType
-          );
-        } catch {}
-        return;
-      }
+    onUndo: async (indexOrRange: number | 'all' | { start: number; end: number }) => {
+      // Hỗ trợ 3 loại undo:
+      // 1. Single index: number (-1 = mới nhất, 0 = cũ nhất)
+      // 2. Range: { start: -1, end: -3 } = undo từ -1 đến -3 (3 tin gần nhất)
+      // 3. All: 'all' = undo tất cả tin trong cache
       
-      // Kiểm tra thời gian - Zalo thường chỉ cho thu hồi trong 2-5 phút
-      const messageAge = Date.now() - msg.timestamp;
-      const maxUndoTimeMs = CONFIG.messageStore?.maxUndoTimeMs ?? 120000; // 2 phút mặc định
-      
-      if (messageAge > maxUndoTimeMs) {
-        console.log(`[Bot] ⚠️ Tin nhắn quá cũ (${Math.round(messageAge / 1000)}s), có thể không thu hồi được`);
-        debugLog('UNDO', `Message too old: age=${messageAge}ms, max=${maxUndoTimeMs}ms`);
-      }
-      
-      try {
-        const threadType = getThreadType(threadId);
-        const undoData = { msgId: msg.msgId, cliMsgId: msg.cliMsgId };
-        const result = await api.undo(undoData, threadId, threadType);
-        logZaloAPI('undo', { undoData, threadId }, result);
-        removeSentMessage(threadId, msg.msgId);
+      const undoSingleMessage = async (index: number): Promise<boolean> => {
+        const msg = getSentMessage(threadId, index);
+        if (!msg) {
+          debugLog('UNDO', `Message not found: index=${index}, threadId=${threadId}`);
+          return false;
+        }
         
-        // Log nội dung tin nhắn đã thu hồi để debug
-        const contentPreview = msg.content.substring(0, 50) + (msg.content.length > 50 ? '...' : '');
-        console.log(`[Bot] 🗑️ Đã thu hồi tin nhắn: "${contentPreview}"`);
-        logMessage('OUT', threadId, { type: 'undo', msgId: msg.msgId, content: contentPreview });
-      } catch (e: any) {
-        logError('onUndo', e);
+        // Kiểm tra thời gian - Zalo thường chỉ cho thu hồi trong 2-5 phút
+        const messageAge = Date.now() - msg.timestamp;
+        const maxUndoTimeMs = CONFIG.messageStore?.maxUndoTimeMs ?? 120000;
         
-        // Thông báo lỗi cụ thể cho user
-        const errorMsg = e.message || '';
-        let userMessage = '⚠️ Không thể thu hồi tin nhắn này.';
-        
-        if (errorMsg.includes('timeout') || errorMsg.includes('expired')) {
-          userMessage = '⚠️ Tin nhắn đã quá thời gian cho phép thu hồi (thường là 2 phút).';
-        } else if (errorMsg.includes('not found') || errorMsg.includes('404')) {
-          userMessage = '⚠️ Tin nhắn không tồn tại hoặc đã bị xóa trước đó.';
+        if (messageAge > maxUndoTimeMs) {
+          debugLog('UNDO', `Message too old: age=${messageAge}ms, max=${maxUndoTimeMs}ms`);
         }
         
         try {
           const threadType = getThreadType(threadId);
-          await api.sendMessage(userMessage, threadId, threadType);
-        } catch {}
+          const undoData = { msgId: msg.msgId, cliMsgId: msg.cliMsgId };
+          const result = await api.undo(undoData, threadId, threadType);
+          logZaloAPI('undo', { undoData, threadId }, result);
+          removeSentMessage(threadId, msg.msgId);
+          
+          const contentPreview = msg.content.substring(0, 50) + (msg.content.length > 50 ? '...' : '');
+          console.log(`[Bot] 🗑️ Đã thu hồi tin nhắn: "${contentPreview}"`);
+          logMessage('OUT', threadId, { type: 'undo', msgId: msg.msgId, content: contentPreview });
+          return true;
+        } catch (e: any) {
+          logError('onUndo', e);
+          return false;
+        }
+      };
+      
+      // Xử lý theo loại undo
+      if (indexOrRange === 'all') {
+        // Undo tất cả tin nhắn trong cache (tối đa 20 tin)
+        debugLog('UNDO', `Undo ALL messages in thread=${threadId}`);
+        let undoCount = 0;
+        let failCount = 0;
+        
+        // Undo từ tin mới nhất (-1) đến cũ nhất
+        for (let i = -1; i >= -20; i--) {
+          const success = await undoSingleMessage(i);
+          if (success) {
+            undoCount++;
+            // Delay nhỏ giữa các lần undo để tránh rate limit
+            await new Promise(r => setTimeout(r, 100));
+          } else {
+            // Nếu không tìm thấy tin nhắn, dừng lại
+            failCount++;
+            if (failCount >= 3) break; // Dừng sau 3 lần thất bại liên tiếp
+          }
+        }
+        
+        console.log(`[Bot] 🗑️ Đã thu hồi ${undoCount} tin nhắn (undo:all)`);
+        
+        if (undoCount === 0) {
+          try {
+            const threadType = getThreadType(threadId);
+            await api.sendMessage(
+              '⚠️ Không có tin nhắn nào để thu hồi trong bộ nhớ.',
+              threadId,
+              threadType
+            );
+          } catch {}
+        }
+      } else if (typeof indexOrRange === 'object' && 'start' in indexOrRange) {
+        // Undo range: { start: -1, end: -3 }
+        const { start, end } = indexOrRange;
+        debugLog('UNDO', `Undo range: start=${start}, end=${end}, thread=${threadId}`);
+        
+        // Xác định hướng và số lượng tin cần undo
+        const step = start > end ? -1 : 1;
+        let undoCount = 0;
+        
+        for (let i = start; step > 0 ? i <= end : i >= end; i += step) {
+          const success = await undoSingleMessage(i);
+          if (success) {
+            undoCount++;
+            await new Promise(r => setTimeout(r, 100));
+          }
+        }
+        
+        console.log(`[Bot] 🗑️ Đã thu hồi ${undoCount} tin nhắn (undo:${start}:${end})`);
+        
+        if (undoCount === 0) {
+          try {
+            const threadType = getThreadType(threadId);
+            await api.sendMessage(
+              '⚠️ Không tìm thấy tin nhắn nào trong phạm vi đó để thu hồi.',
+              threadId,
+              threadType
+            );
+          } catch {}
+        }
+      } else {
+        // Single index
+        const index = indexOrRange as number;
+        const success = await undoSingleMessage(index);
+        
+        if (!success) {
+          console.log(`[Bot] ⚠️ Không tìm thấy tin nhắn index ${index} để thu hồi`);
+          
+          try {
+            const threadType = getThreadType(threadId);
+            await api.sendMessage(
+              '⚠️ Mình không tìm thấy tin nhắn đó trong bộ nhớ. Có thể tin nhắn đã quá cũ (chỉ lưu 20 tin gần nhất) hoặc đã bị thu hồi trước đó rồi.',
+              threadId,
+              threadType
+            );
+          } catch {}
+        }
       }
     },
 

@@ -28,7 +28,7 @@ export interface StreamCallbacks {
   onSticker?: (keyword: string) => Promise<void>;
   onMessage?: (text: string, quoteIndex?: number) => Promise<void>;
   onCard?: (userId?: string) => Promise<void>;
-  onUndo?: (index: number) => Promise<void>;
+  onUndo?: (index: number | 'all' | { start: number; end: number }) => Promise<void>;
   onImage?: (url: string, caption?: string) => Promise<void>;
   onComplete?: () => void | Promise<void>;
   onError?: (error: Error) => void | Promise<void>;
@@ -91,7 +91,7 @@ const TAG_PATTERNS = [
   /\[sticker:\w+\]/gi,
   /\[quote:-?\d+\][\s\S]*?\[\/quote\]/gi,
   /\[msg\][\s\S]*?\[\/msg\]/gi,
-  /\[undo:-?\d+\]/gi,
+  /\[undo:(?:-?\d+:-?\d+|-?\d+|all)\]/gi, // Hỗ trợ [undo:-1], [undo:-1:-3], [undo:all]
   /\[card(?::\d+)?\]/gi,
   /\[tool:\w+(?:\s+[^\]]*?)?\](?:\s*\{[\s\S]*?\}\s*\[\/tool\])?/gi,
   /\[image:https?:\/\/[^\]]+\][\s\S]*?\[\/image\]/gi,
@@ -105,7 +105,7 @@ function getPlainText(buffer: string): string {
 const INLINE_TAG_PATTERNS = [
   /\[reaction:(\d+:)?\w+\]/gi,
   /\[sticker:\w+\]/gi,
-  /\[undo:-?\d+\]/gi,
+  /\[undo:(?:-?\d+:-?\d+|-?\d+|all)\]/gi, // Hỗ trợ [undo:-1], [undo:-1:-3], [undo:all]
   /\[card(?::\d+)?\]/gi,
 ];
 
@@ -158,13 +158,26 @@ async function processInlineTags(
     }
   }
 
-  // Extract undos
-  for (const match of text.matchAll(/\[undo:(-?\d+)\]/gi)) {
-    const index = parseInt(match[1], 10);
-    const key = `undo:${index}`;
+  // Extract undos - hỗ trợ [undo:-1], [undo:-1:-3], [undo:all]
+  for (const match of text.matchAll(/\[undo:(all|(-?\d+)(?::(-?\d+))?)\]/gi)) {
+    const fullMatch = match[1];
+    const key = `undo:${fullMatch}`;
+    
     if (!state.sentUndos.has(key) && callbacks.onUndo) {
       state.sentUndos.add(key);
-      await callbacks.onUndo(index);
+      
+      if (fullMatch === 'all') {
+        await callbacks.onUndo('all');
+      } else if (match[3] !== undefined) {
+        // Range: [undo:-1:-3]
+        const start = parseInt(match[2], 10);
+        const end = parseInt(match[3], 10);
+        await callbacks.onUndo({ start, end });
+      } else {
+        // Single: [undo:-1]
+        const index = parseInt(match[2], 10);
+        await callbacks.onUndo(index);
+      }
     }
   }
 }
@@ -267,13 +280,26 @@ async function processStreamChunk(state: ParserState, callbacks: StreamCallbacks
     }
   }
 
-  // Parse top-level [undo:index]
-  for (const match of buffer.matchAll(/\[undo:(-?\d+)\]/gi)) {
-    const index = parseInt(match[1], 10);
-    const key = `undo:${index}`;
+  // Parse top-level [undo:...] - hỗ trợ [undo:-1], [undo:-1:-3], [undo:all]
+  for (const match of buffer.matchAll(/\[undo:(all|(-?\d+)(?::(-?\d+))?)\]/gi)) {
+    const fullMatch = match[1];
+    const key = `undo:${fullMatch}`;
+    
     if (!state.sentUndos.has(key) && callbacks.onUndo) {
       state.sentUndos.add(key);
-      await callbacks.onUndo(index);
+      
+      if (fullMatch === 'all') {
+        await callbacks.onUndo('all');
+      } else if (match[3] !== undefined) {
+        // Range: [undo:-1:-3]
+        const start = parseInt(match[2], 10);
+        const end = parseInt(match[3], 10);
+        await callbacks.onUndo({ start, end });
+      } else {
+        // Single: [undo:-1]
+        const index = parseInt(match[2], 10);
+        await callbacks.onUndo(index);
+      }
     }
   }
 
