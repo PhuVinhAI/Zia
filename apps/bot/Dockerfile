@@ -7,9 +7,9 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
 
 # Copy package files
-COPY package.json bun.lock ./
+COPY package.json ./
 
-# Install production dependencies only
+# Install production dependencies only (without lockfile for standalone build)
 RUN bun install --production
 
 # Copy source code
