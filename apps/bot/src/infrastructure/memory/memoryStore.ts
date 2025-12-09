@@ -7,7 +7,7 @@ import { desc, eq, sql } from 'drizzle-orm';
 import { debugLog } from '../../core/logger/logger.js';
 import { isRateLimitError, keyManager } from '../ai/providers/gemini/keyManager.js';
 import { EMBEDDING_DIM, getDatabase, getSqliteDb } from '../database/connection.js';
-import { type Memory, type MemoryType, memories, type NewMemory } from '../database/schema.js';
+import { type Memory, memories, type NewMemory } from '../database/schema.js';
 
 // ═══════════════════════════════════════════════════
 // CONFIG
@@ -30,7 +30,7 @@ export interface SearchResult extends Memory {
 }
 
 // Re-export types
-export type { Memory, MemoryType };
+export type { Memory };
 
 // ═══════════════════════════════════════════════════
 // EMBEDDING SERVICE (dùng keyManager để xoay key khi rate limit)
@@ -107,7 +107,6 @@ class MemoryStore {
   async add(
     content: string,
     options?: {
-      type?: MemoryType;
       userId?: string;
       userName?: string;
       importance?: number;
@@ -120,7 +119,6 @@ class MemoryStore {
     // Insert vào bảng memories với Drizzle
     const newMemory: NewMemory = {
       content,
-      type: options?.type || 'note',
       userId: options?.userId || null,
       userName: options?.userName || null,
       importance: options?.importance || 5,
@@ -147,7 +145,6 @@ class MemoryStore {
     query: string,
     options?: {
       limit?: number;
-      type?: MemoryType;
       userId?: string;
       minImportance?: number;
     },
@@ -159,7 +156,7 @@ class MemoryStore {
     // KNN search với join (raw SQL vì virtual table)
     let sqlQuery = `
       SELECT
-        m.id, m.content, m.type, m.user_id as userId, m.user_name as userName,
+        m.id, m.content, m.user_id as userId, m.user_name as userName,
         m.importance, m.created_at as createdAt, m.last_accessed_at as lastAccessedAt,
         m.access_count as accessCount, m.metadata, v.distance
       FROM vec_memories v
@@ -168,10 +165,6 @@ class MemoryStore {
     `;
     const params: any[] = [queryEmb, limit * 3]; // Fetch more để filter sau khi apply decay
 
-    if (options?.type) {
-      sqlQuery += ' AND m.type = ?';
-      params.push(options.type);
-    }
     if (options?.userId) {
       sqlQuery += ' AND m.user_id = ?';
       params.push(options.userId);
@@ -237,18 +230,8 @@ class MemoryStore {
   /**
    * Lấy memories gần đây (dùng Drizzle)
    */
-  async getRecent(limit = 10, type?: MemoryType): Promise<Memory[]> {
+  async getRecent(limit = 10): Promise<Memory[]> {
     const db = getDatabase();
-
-    if (type) {
-      return db
-        .select()
-        .from(memories)
-        .where(eq(memories.type, type))
-        .orderBy(desc(memories.createdAt))
-        .limit(limit);
-    }
-
     return db.select().from(memories).orderBy(desc(memories.createdAt)).limit(limit);
   }
 
@@ -278,21 +261,12 @@ class MemoryStore {
    */
   async getStats(): Promise<{
     total: number;
-    byType: Record<string, number>;
     avgAccessCount: number;
     staleCount: number; // Memories không được access > 30 ngày
   }> {
     const db = getDatabase();
 
     const totalResult = await db.select({ count: sql<number>`count(*)` }).from(memories);
-
-    const byTypeResult = await db
-      .select({
-        type: memories.type,
-        count: sql<number>`count(*)`,
-      })
-      .from(memories)
-      .groupBy(memories.type);
 
     const accessStats = await db
       .select({
@@ -310,7 +284,6 @@ class MemoryStore {
 
     return {
       total: totalResult[0]?.count || 0,
-      byType: Object.fromEntries(byTypeResult.map((r) => [r.type, r.count])),
       avgAccessCount: Math.round((accessStats[0]?.avgAccess || 0) * 10) / 10,
       staleCount: staleResult[0]?.count || 0,
     };

@@ -3,7 +3,6 @@
  */
 
 import { debugLog } from '../../../core/logger/logger.js';
-import type { MemoryType } from '../../../infrastructure/database/schema.js';
 import { memoryStore } from '../../../infrastructure/memory/index.js';
 import {
   RecallMemorySchema,
@@ -31,13 +30,6 @@ export const saveMemoryTool: ToolDefinition = {
       required: true,
     },
     {
-      name: 'type',
-      type: 'string',
-      description:
-        'Loại memory: person (thông tin người), fact (sự kiện), preference (sở thích), task (công việc), note (ghi chú)',
-      required: false,
-    },
-    {
       name: 'importance',
       type: 'number',
       description: 'Độ quan trọng 1-10 (mặc định 5)',
@@ -51,7 +43,6 @@ export const saveMemoryTool: ToolDefinition = {
 
     try {
       const id = await memoryStore.add(data.content, {
-        type: data.type as MemoryType,
         userId: context.senderId,
         userName: context.senderName,
         importance: data.importance,
@@ -91,12 +82,6 @@ export const recallMemoryTool: ToolDefinition = {
       required: true,
     },
     {
-      name: 'type',
-      type: 'string',
-      description: 'Lọc theo loại: person, fact, preference, task, note',
-      required: false,
-    },
-    {
       name: 'limit',
       type: 'number',
       description: 'Số kết quả tối đa (mặc định 5)',
@@ -110,7 +95,6 @@ export const recallMemoryTool: ToolDefinition = {
 
     try {
       const results = await memoryStore.search(data.query, {
-        type: data.type as MemoryType,
         limit: data.limit,
       });
 
@@ -135,7 +119,6 @@ export const recallMemoryTool: ToolDefinition = {
           memories: results.map((m) => ({
             id: m.id,
             content: m.content,
-            type: m.type,
             relevance: `${Math.round(m.relevance * 100)}%`,
             effectiveScore: Math.round(m.effectiveScore * 10) / 10,
             accessCount: m.accessCount,

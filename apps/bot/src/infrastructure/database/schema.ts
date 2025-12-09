@@ -39,32 +39,13 @@ export const sentMessages = sqliteTable(
 );
 
 // ============================================
-// 3. Bảng users - Quản lý người dùng
-// ============================================
-export const users = sqliteTable('users', {
-  userId: text('user_id').primaryKey(),
-  name: text('name'),
-  role: text('role', { enum: ['admin', 'user', 'blocked'] })
-    .notNull()
-    .default('user'),
-  createdAt: integer('created_at', { mode: 'timestamp_ms' })
-    .notNull()
-    .$defaultFn(() => new Date()),
-});
-
-// ============================================
-// 4. Bảng memories - Long-term memory
+// 3. Bảng memories - Long-term memory (đơn giản, không phân loại)
 // ============================================
 export const memories = sqliteTable(
   'memories',
   {
     id: integer('id').primaryKey({ autoIncrement: true }),
     content: text('content').notNull(),
-    type: text('type', {
-      enum: ['conversation', 'fact', 'person', 'preference', 'task', 'note'],
-    })
-      .notNull()
-      .default('note'),
     userId: text('user_id'),
     userName: text('user_name'),
     importance: integer('importance').notNull().default(5),
@@ -76,10 +57,7 @@ export const memories = sqliteTable(
     accessCount: integer('access_count').notNull().default(0),
     metadata: text('metadata'), // JSON string
   },
-  (table) => [
-    index('idx_memories_type').on(table.type),
-    index('idx_memories_user').on(table.userId),
-  ],
+  (table) => [index('idx_memories_user').on(table.userId)],
 );
 
 // ============================================
@@ -139,14 +117,11 @@ export type History = typeof history.$inferSelect;
 export type NewHistory = typeof history.$inferInsert;
 export type SentMessage = typeof sentMessages.$inferSelect;
 export type NewSentMessage = typeof sentMessages.$inferInsert;
-export type User = typeof users.$inferSelect;
-export type NewUser = typeof users.$inferInsert;
 export type Memory = typeof memories.$inferSelect;
 export type NewMemory = typeof memories.$inferInsert;
 export type AgentTask = typeof agentTasks.$inferSelect;
 export type NewAgentTask = typeof agentTasks.$inferInsert;
 
-export type MemoryType = 'conversation' | 'fact' | 'person' | 'preference' | 'task' | 'note';
 // Note: accept_friend đã được xử lý tự động trong agent.runner, không cần task
 export type TaskType = 'send_message';
 export type TaskStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';

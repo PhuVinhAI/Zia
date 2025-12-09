@@ -94,7 +94,6 @@ export const TEST_SUITES = {
     messageChunker: 'Message Chunker',
     taskManager: 'Task Manager',
     tokenCounter: 'Token Counter',
-    userStore: 'User Store',
     messageStore: 'Message Store',
     historyConverter: 'History Converter',
     historyLoader: 'History Loader',

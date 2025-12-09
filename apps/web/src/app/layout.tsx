@@ -17,7 +17,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Zia Admin Dashboard',
+  title: 'Zia - Bảng điều khiển',
   description: 'UI Quản Trị Zia Bot',
 };
 

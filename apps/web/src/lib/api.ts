@@ -1,16 +1,16 @@
 /**
- * API Client - Kết nối với Bot API
+ * API Client - Kết nối với Bot API qua Next.js API Routes
+ * Credentials được giữ server-side, không expose ra client
  */
 import axios from 'axios';
 
-const API_URL = process.env.NEXT_PUBLIC_BOT_API_URL || 'http://localhost:10000/api';
-const API_KEY = process.env.NEXT_PUBLIC_BOT_API_KEY || '';
+// Gọi qua internal API route - credentials được xử lý server-side
+const API_URL = '/api';
 
 export const api = axios.create({
   baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
-    ...(API_KEY && { Authorization: `Bearer ${API_KEY}` }),
   },
 });
 
@@ -33,7 +33,6 @@ export interface PaginatedResponse<T> extends ApiResponse<T[]> {
 
 // Stats types
 export interface StatsOverview {
-  users: number;
   messages: number;
   memories: number;
   tasks: number;
@@ -53,14 +52,6 @@ export interface ActiveThread {
   thread_id: string;
   message_count: number;
   last_activity: number;
-}
-
-// User types
-export interface User {
-  userId: string;
-  name: string | null;
-  role: 'admin' | 'user' | 'blocked';
-  createdAt: Date;
 }
 
 // Task types
@@ -88,7 +79,6 @@ export interface Task {
 export interface Memory {
   id: number;
   content: string;
-  type: 'conversation' | 'fact' | 'person' | 'preference' | 'task' | 'note';
   userId: string | null;
   userName: string | null;
   importance: number;
@@ -135,6 +125,10 @@ export interface BotSettings {
       sleepHour: number;
       wakeHour: number;
     };
+    maintenanceMode?: {
+      enabled: boolean;
+      message: string;
+    };
   };
   modules: Record<string, boolean>;
   [key: string]: unknown;
@@ -146,15 +140,6 @@ export const statsApi = {
   getMessages: (days = 7) => api.get<ApiResponse<MessageStats[]>>(`/stats/messages?days=${days}`),
   getActiveThreads: (limit = 10) =>
     api.get<ApiResponse<ActiveThread[]>>(`/stats/active-threads?limit=${limit}`),
-};
-
-export const usersApiClient = {
-  list: (params?: { page?: number; limit?: number; search?: string; role?: string }) =>
-    api.get<PaginatedResponse<User>>('/users', { params }),
-  get: (id: string) => api.get<ApiResponse<User>>(`/users/${id}`),
-  update: (id: string, data: Partial<User>) => api.patch<ApiResponse<User>>(`/users/${id}`, data),
-  block: (id: string) => api.post<ApiResponse<void>>(`/users/${id}/block`),
-  unblock: (id: string) => api.post<ApiResponse<void>>(`/users/${id}/unblock`),
 };
 
 export const tasksApiClient = {
@@ -169,9 +154,8 @@ export const tasksApiClient = {
 };
 
 export const memoriesApiClient = {
-  list: (params?: { page?: number; limit?: number; type?: string; userId?: string; search?: string }) =>
+  list: (params?: { page?: number; limit?: number; userId?: string; search?: string }) =>
     api.get<PaginatedResponse<Memory>>('/memories', { params }),
-  getStats: () => api.get<ApiResponse<{ type: string; count: number }[]>>('/memories/stats'),
   get: (id: number) => api.get<ApiResponse<Memory>>(`/memories/${id}`),
   create: (data: Partial<Memory>) => api.post<ApiResponse<Memory>>('/memories', data),
   update: (id: number, data: Partial<Memory>) => api.patch<ApiResponse<Memory>>(`/memories/${id}`, data),
@@ -206,4 +190,35 @@ export const logsApiClient = {
     ),
   getUnauthorized: () => api.get<ApiResponse<unknown[]>>('/logs/file/unauthorized'),
   deleteFolder: (folder: string) => api.delete<ApiResponse<void>>(`/logs/${folder}`),
+};
+
+// Backup types
+export interface BackupFile {
+  name: string;
+  size: number;
+  createdAt: string;
+  modifiedAt: string;
+}
+
+export interface DatabaseInfo {
+  path: string;
+  size: number;
+  modifiedAt: string;
+  tables: Record<string, number>;
+}
+
+export const backupApiClient = {
+  list: () => api.get<ApiResponse<BackupFile[]>>('/backup'),
+  create: () => api.post<ApiResponse<BackupFile>>('/backup'),
+  restore: (name: string) => api.post<ApiResponse<{ restoredFrom: string; preRestoreBackup: string }>>(`/backup/restore/${name}`),
+  delete: (name: string) => api.delete<ApiResponse<{ deleted: string }>>(`/backup/${name}`),
+  getInfo: () => api.get<ApiResponse<DatabaseInfo>>('/backup/info'),
+  getDownloadUrl: (name: string) => `/api/backup/download/${name}`,
+  upload: (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post<ApiResponse<BackupFile>>('/backup/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
 };

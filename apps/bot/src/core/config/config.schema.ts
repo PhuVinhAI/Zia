@@ -17,6 +17,12 @@ export const SleepModeSchema = z.object({
   checkIntervalMs: z.coerce.number().min(60000).default(1800000), // Interval check (default 30 phút)
 });
 
+// Maintenance Mode schema - Chế độ bảo trì (mặc định BẬT để an toàn khi deploy)
+export const MaintenanceModeSchema = z.object({
+  enabled: z.boolean().default(true),
+  message: z.string().default('🔧 Bot đang trong chế độ bảo trì. Vui lòng thử lại sau!'),
+});
+
 // Bot config schema
 export const BotConfigSchema = z.object({
   name: z.string().default('Trợ lý AI Zalo'),
@@ -44,6 +50,10 @@ export const BotConfigSchema = z.object({
     sleepHour: 23,
     wakeHour: 6,
     checkIntervalMs: 1800000,
+  }),
+  maintenanceMode: MaintenanceModeSchema.optional().default({
+    enabled: false,
+    message: '🔧 Bot đang trong chế độ bảo trì. Vui lòng thử lại sau!',
   }),
 });
 
@@ -137,11 +147,7 @@ export const MessageStoreConfigSchema = z.object({
   maxCachePerThread: z.coerce.number().min(5).default(20),
   cleanupIntervalMs: z.coerce.number().min(60000).default(1800000),
   recentMessageWindowMs: z.coerce.number().min(60000).default(300000),
-});
-
-// User store config schema
-export const UserStoreConfigSchema = z.object({
-  cacheTtlMs: z.coerce.number().min(60000).default(300000),
+  maxUndoTimeMs: z.coerce.number().min(30000).default(120000), // 2 phút - giới hạn thời gian thu hồi tin nhắn
 });
 
 // Jikan API config schema
@@ -302,6 +308,7 @@ export const SettingsSchema = z.object({
     allowNSFW: false,
     cloudDebug: { enabled: false, prefix: '#bot' },
     sleepMode: { enabled: false, sleepHour: 23, wakeHour: 6, checkIntervalMs: 1800000 },
+    maintenanceMode: { enabled: true, message: '🔧 Bot đang trong chế độ bảo trì. Vui lòng thử lại sau!' },
   }),
   retry: RetryConfigSchema.optional().default({
     maxRetries: 3,
@@ -369,9 +376,7 @@ export const SettingsSchema = z.object({
     maxCachePerThread: 20,
     cleanupIntervalMs: 1800000,
     recentMessageWindowMs: 300000,
-  }),
-  userStore: UserStoreConfigSchema.optional().default({
-    cacheTtlMs: 300000,
+    maxUndoTimeMs: 120000,
   }),
   jikan: JikanConfigSchema.optional().default({
     rateLimitDelayMs: 350,
@@ -490,7 +495,6 @@ export type FriendRequestConfig = z.infer<typeof FriendRequestConfigSchema>;
 export type BackgroundAgentConfig = z.infer<typeof BackgroundAgentConfigSchema>;
 export type MessageChunkerConfig = z.infer<typeof MessageChunkerConfigSchema>;
 export type MessageStoreConfig = z.infer<typeof MessageStoreConfigSchema>;
-export type UserStoreConfig = z.infer<typeof UserStoreConfigSchema>;
 export type JikanConfig = z.infer<typeof JikanConfigSchema>;
 export type ElevenLabsConfig = z.infer<typeof ElevenLabsConfigSchema>;
 export type GiphyConfig = z.infer<typeof GiphyConfigSchema>;

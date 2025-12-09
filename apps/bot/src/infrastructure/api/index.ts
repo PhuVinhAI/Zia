@@ -7,14 +7,14 @@ import { cors } from 'hono/cors';
 import { bearerAuth } from 'hono/bearer-auth';
 import { settingsApi, onSettingsChange } from './settings.api.js';
 import { statsApi } from './stats.api.js';
-import { usersApi } from './users.api.js';
 import { tasksApi } from './tasks.api.js';
 import { memoriesApi } from './memories.api.js';
 import { historyApi } from './history.api.js';
 import { logsApi } from './logs.api.js';
+import { backupApi } from './backup.api.js';
 
-// API Key từ env
-const API_KEY = process.env.SETTINGS_API_KEY;
+// API Key từ env - dùng chung cho cả dự án
+const API_KEY = process.env.API_KEY;
 
 export const apiApp = new Hono();
 
@@ -26,7 +26,7 @@ if (API_KEY) {
   apiApp.use('*', bearerAuth({ token: API_KEY }));
   console.log('[API] 🔐 Authentication enabled for all endpoints');
 } else {
-  console.warn('[API] ⚠️ No SETTINGS_API_KEY set - API is PUBLIC (dev mode only!)');
+  console.warn('[API] ⚠️ No API_KEY set - API is PUBLIC (dev mode only!)');
 }
 
 // Health check (không cần auth)
@@ -37,11 +37,11 @@ apiApp.get('/health', (c) => {
 // Mount all API routes
 apiApp.route('/settings', settingsApi);
 apiApp.route('/stats', statsApi);
-apiApp.route('/users', usersApi);
 apiApp.route('/tasks', tasksApi);
 apiApp.route('/memories', memoriesApi);
 apiApp.route('/history', historyApi);
 apiApp.route('/logs', logsApi);
+apiApp.route('/backup', backupApi);
 
 // API documentation endpoint
 apiApp.get('/', (c) => {
@@ -52,11 +52,11 @@ apiApp.get('/', (c) => {
       '/health': 'Health check',
       '/settings': 'Bot settings management',
       '/stats': 'System statistics',
-      '/users': 'User management',
       '/tasks': 'Background tasks',
       '/memories': 'Long-term memory',
       '/history': 'Conversation history',
       '/logs': 'System logs',
+      '/backup': 'Database backup & restore',
     },
   });
 });

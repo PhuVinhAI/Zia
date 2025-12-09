@@ -22,10 +22,5 @@ export {
   SentMessagesRepository,
   sentMessagesRepository,
 } from './repositories/sent-messages.repository.js';
-export {
-  type UserRole,
-  UsersRepository,
-  usersRepository,
-} from './repositories/users.repository.js';
 // Schema
 export * from './schema.js';

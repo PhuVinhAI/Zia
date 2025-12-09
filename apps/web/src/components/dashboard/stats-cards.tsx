@@ -5,7 +5,7 @@ import { statsApi, type StatsOverview } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatNumber, formatUptime } from '@/lib/utils';
-import { Users, MessageSquare, Brain, Clock, Activity, ListTodo } from 'lucide-react';
+import { MessageSquare, Brain, Clock, ListTodo } from 'lucide-react';
 
 export function StatsCards() {
   const { data, isLoading, error } = useQuery({
@@ -48,22 +48,22 @@ export function StatsCards() {
 
   const stats = [
     {
-      title: 'Người dùng',
-      value: formatNumber(data.users),
-      icon: Users,
-      description: 'Tổng số người dùng',
-    },
-    {
       title: 'Tin nhắn',
       value: formatNumber(data.messages),
       icon: MessageSquare,
       description: `${formatNumber(data.messagesLast24h)} trong 24h qua`,
     },
     {
-      title: 'Memories',
+      title: 'Bộ nhớ',
       value: formatNumber(data.memories),
       icon: Brain,
-      description: 'Long-term memory',
+      description: 'Bộ nhớ dài hạn',
+    },
+    {
+      title: 'Tác vụ',
+      value: formatNumber(data.tasks),
+      icon: ListTodo,
+      description: 'Tổng số tác vụ',
     },
     {
       title: 'Uptime',

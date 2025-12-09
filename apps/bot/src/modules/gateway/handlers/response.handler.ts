@@ -105,12 +105,12 @@ export function setupSelfMessageListener(api: any) {
  *
  * Logic:
  * 1. Index >= 0: Quote tin nhắn user
- *    - CHỈ tìm trong batch messages (tin nhắn vừa gửi trong lượt này)
- *    - KHÔNG fallback ra history để tránh quote sai tin nhắn
+ *    - Ưu tiên tìm trong batch messages (tin nhắn vừa gửi trong lượt này)
+ *    - Fix Bug 3: Nếu không tìm thấy trong batch, fallback tìm trong rawHistory
  * 2. Index < 0: Quote tin bot đã gửi (từ messageStore)
  *
  * LƯU Ý: AI được prompt với index từ batch hiện tại (0, 1, 2...)
- * Nếu AI dùng index lớn hơn batch size → bỏ qua (AI nhầm lẫn)
+ * Nếu AI dùng index lớn hơn batch size → thử tìm trong history (tin cũ)
  */
 function resolveQuoteData(
   quoteIndex: number | undefined,
@@ -126,7 +126,7 @@ function resolveQuoteData(
   );
 
   if (quoteIndex >= 0) {
-    // Quote từ batch messages - CHỈ tìm trong batch, không fallback
+    // Quote từ batch messages - ưu tiên tìm trong batch trước
     if (batchMessages && quoteIndex < batchMessages.length) {
       const msg = batchMessages[quoteIndex];
       if (msg?.data?.msgId) {
@@ -138,13 +138,30 @@ function resolveQuoteData(
       }
     }
 
-    // Index vượt quá batch size → AI đang nhầm lẫn, bỏ qua quote
+    // Fix Bug 3: Index vượt quá batch size → thử tìm trong rawHistory (tin nhắn cũ)
     if (quoteIndex >= batchSize) {
+      const rawHistory = getRawHistory(threadId);
+      // rawHistory lưu theo thứ tự thời gian, index 0 = tin cũ nhất
+      // AI có thể muốn quote tin gần đây trong history
+      // Tính index từ cuối history: quoteIndex = 0 → tin mới nhất trong history
+      const historyIndex = rawHistory.length - 1 - (quoteIndex - batchSize);
+      
+      if (historyIndex >= 0 && historyIndex < rawHistory.length) {
+        const historyMsg = rawHistory[historyIndex];
+        if (historyMsg?.data?.msgId) {
+          const content = historyMsg?.data?.content || '(no content)';
+          const preview = typeof content === 'string' ? content.substring(0, 50) : String(content).substring(0, 50);
+          debugLog('QUOTE', `✅ Quote history #${quoteIndex} (historyIdx=${historyIndex}): msgId=${historyMsg.data.msgId}, content="${preview}..."`);
+          console.log(`[Bot] 📎 Quote tin cũ từ history #${quoteIndex}`);
+          return historyMsg.data;
+        }
+      }
+      
       debugLog(
         'QUOTE',
-        `⚠️ Index ${quoteIndex} vượt quá batch size ${batchSize}, bỏ qua quote (AI nhầm lẫn)`,
+        `⚠️ Index ${quoteIndex} không tìm thấy trong batch (${batchSize}) hoặc history (${rawHistory.length})`,
       );
-      console.log(`[Bot] ⚠️ Quote index ${quoteIndex} không hợp lệ (batch chỉ có ${batchSize} tin), bỏ qua`);
+      console.log(`[Bot] ⚠️ Quote index ${quoteIndex} không hợp lệ, bỏ qua`);
       return undefined;
     }
 
@@ -409,9 +426,10 @@ export function createStreamCallbacks(
       // Loại bỏ nội dung nhại lại nếu đang quote tin nhắn
       if (quoteIndex !== undefined && quoteIndex >= 0 && messages && messages[quoteIndex]) {
         const originalMsg = messages[quoteIndex];
-        const originalText = (originalMsg?.data?.content || originalMsg?.content || '')
-          .toString()
-          .trim();
+        // Fix Bug 1: Kiểm tra kiểu dữ liệu trước khi gọi toString() để tránh crash với reaction message
+        const rawContent = originalMsg?.data?.content || originalMsg?.content;
+        const originalText = (typeof rawContent === 'string' ? rawContent : 
+          (rawContent != null ? String(rawContent) : '')).trim();
 
         if (originalText) {
           // Loại bỏ nếu AI lặp lại tin nhắn gốc ở đầu
@@ -450,21 +468,63 @@ export function createStreamCallbacks(
     },
 
     onUndo: async (index: number) => {
+      // Fix Bug Undo: Hỗ trợ cả index âm (mới nhất) và index dương (tin cũ hơn trong cache)
+      // index = -1: tin mới nhất, -2: tin thứ 2 từ cuối, ...
+      // index = 0: tin cũ nhất trong cache, 1: tin thứ 2 từ đầu, ...
       const msg = getSentMessage(threadId, index);
       if (!msg) {
         console.log(`[Bot] ⚠️ Không tìm thấy tin nhắn index ${index} để thu hồi`);
+        debugLog('UNDO', `Message not found: index=${index}, threadId=${threadId}`);
+        
+        // Gửi thông báo cho user biết không thể thu hồi
+        try {
+          const threadType = getThreadType(threadId);
+          await api.sendMessage(
+            '⚠️ Mình không tìm thấy tin nhắn đó trong bộ nhớ. Có thể tin nhắn đã quá cũ (chỉ lưu 20 tin gần nhất) hoặc đã bị thu hồi trước đó rồi.',
+            threadId,
+            threadType
+          );
+        } catch {}
         return;
       }
+      
+      // Kiểm tra thời gian - Zalo thường chỉ cho thu hồi trong 2-5 phút
+      const messageAge = Date.now() - msg.timestamp;
+      const maxUndoTimeMs = CONFIG.messageStore?.maxUndoTimeMs ?? 120000; // 2 phút mặc định
+      
+      if (messageAge > maxUndoTimeMs) {
+        console.log(`[Bot] ⚠️ Tin nhắn quá cũ (${Math.round(messageAge / 1000)}s), có thể không thu hồi được`);
+        debugLog('UNDO', `Message too old: age=${messageAge}ms, max=${maxUndoTimeMs}ms`);
+      }
+      
       try {
         const threadType = getThreadType(threadId);
         const undoData = { msgId: msg.msgId, cliMsgId: msg.cliMsgId };
         const result = await api.undo(undoData, threadId, threadType);
         logZaloAPI('undo', { undoData, threadId }, result);
         removeSentMessage(threadId, msg.msgId);
-        console.log(`[Bot] 🗑️ Đã thu hồi tin nhắn`);
-        logMessage('OUT', threadId, { type: 'undo', msgId: msg.msgId });
+        
+        // Log nội dung tin nhắn đã thu hồi để debug
+        const contentPreview = msg.content.substring(0, 50) + (msg.content.length > 50 ? '...' : '');
+        console.log(`[Bot] 🗑️ Đã thu hồi tin nhắn: "${contentPreview}"`);
+        logMessage('OUT', threadId, { type: 'undo', msgId: msg.msgId, content: contentPreview });
       } catch (e: any) {
         logError('onUndo', e);
+        
+        // Thông báo lỗi cụ thể cho user
+        const errorMsg = e.message || '';
+        let userMessage = '⚠️ Không thể thu hồi tin nhắn này.';
+        
+        if (errorMsg.includes('timeout') || errorMsg.includes('expired')) {
+          userMessage = '⚠️ Tin nhắn đã quá thời gian cho phép thu hồi (thường là 2 phút).';
+        } else if (errorMsg.includes('not found') || errorMsg.includes('404')) {
+          userMessage = '⚠️ Tin nhắn không tồn tại hoặc đã bị xóa trước đó.';
+        }
+        
+        try {
+          const threadType = getThreadType(threadId);
+          await api.sendMessage(userMessage, threadId, threadType);
+        } catch {}
       }
     },
 

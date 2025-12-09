@@ -4,7 +4,7 @@
 import { Hono } from 'hono';
 import { getDatabase } from '../database/connection.js';
 import { memories } from '../database/schema.js';
-import { eq, desc, count, like, or } from 'drizzle-orm';
+import { eq, desc, count, like } from 'drizzle-orm';
 import { z } from 'zod';
 
 export const memoriesApi = new Hono();
@@ -12,7 +12,6 @@ export const memoriesApi = new Hono();
 // Schema validation
 const CreateMemorySchema = z.object({
   content: z.string().min(1),
-  type: z.enum(['conversation', 'fact', 'person', 'preference', 'task', 'note']).default('note'),
   userId: z.string().optional(),
   userName: z.string().optional(),
   importance: z.number().min(1).max(10).default(5),
@@ -27,22 +26,11 @@ memoriesApi.get('/', async (c) => {
     const db = getDatabase();
     const page = Number(c.req.query('page')) || 1;
     const limit = Math.min(Number(c.req.query('limit')) || 20, 100);
-    const type = c.req.query('type');
     const userId = c.req.query('userId');
     const search = c.req.query('search');
     const offset = (page - 1) * limit;
 
     let query = db.select().from(memories);
-
-    // Filter by type
-    if (
-      type &&
-      ['conversation', 'fact', 'person', 'preference', 'task', 'note'].includes(type)
-    ) {
-      query = query.where(
-        eq(memories.type, type as 'conversation' | 'fact' | 'person' | 'preference' | 'task' | 'note'),
-      ) as typeof query;
-    }
 
     // Filter by userId
     if (userId) {
@@ -69,25 +57,6 @@ memoriesApi.get('/', async (c) => {
         totalPages: Math.ceil(total.count / limit),
       },
     });
-  } catch (e) {
-    return c.json({ success: false, error: (e as Error).message }, 500);
-  }
-});
-
-// GET /memories/stats - Thống kê memories theo type
-memoriesApi.get('/stats', async (c) => {
-  try {
-    const db = getDatabase();
-
-    const stats = await db
-      .select({
-        type: memories.type,
-        count: count(),
-      })
-      .from(memories)
-      .groupBy(memories.type);
-
-    return c.json({ success: true, data: stats });
   } catch (e) {
     return c.json({ success: false, error: (e as Error).message }, 500);
   }
@@ -126,7 +95,6 @@ memoriesApi.post('/', async (c) => {
       .insert(memories)
       .values({
         content: parsed.data.content,
-        type: parsed.data.type,
         userId: parsed.data.userId,
         userName: parsed.data.userName,
         importance: parsed.data.importance,

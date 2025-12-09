@@ -52,63 +52,63 @@ export default function TasksPage() {
     mutationFn: (id: number) => tasksApiClient.cancel(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      toast.success('Đã hủy task');
+      toast.success('Đã hủy tác vụ');
     },
-    onError: () => toast.error('Lỗi khi hủy task'),
+    onError: () => toast.error('Lỗi khi hủy tác vụ'),
   });
 
   const retryMutation = useMutation({
     mutationFn: (id: number) => tasksApiClient.retry(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      toast.success('Đã đưa task vào hàng đợi retry');
+      toast.success('Đã đưa tác vụ vào hàng đợi thử lại');
     },
-    onError: () => toast.error('Lỗi khi retry task'),
+    onError: () => toast.error('Lỗi khi thử lại tác vụ'),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => tasksApiClient.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      toast.success('Đã xóa task');
+      toast.success('Đã xóa tác vụ');
     },
-    onError: () => toast.error('Lỗi khi xóa task'),
+    onError: () => toast.error('Lỗi khi xóa tác vụ'),
   });
 
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'completed':
-        return <Badge variant="default" className="bg-green-500">Completed</Badge>;
+        return <Badge variant="default" className="bg-green-500">Hoàn thành</Badge>;
       case 'failed':
-        return <Badge variant="destructive">Failed</Badge>;
+        return <Badge variant="destructive">Thất bại</Badge>;
       case 'processing':
-        return <Badge variant="secondary" className="bg-blue-500 text-white">Processing</Badge>;
+        return <Badge variant="secondary" className="bg-blue-500 text-white">Đang xử lý</Badge>;
       case 'cancelled':
-        return <Badge variant="outline">Cancelled</Badge>;
+        return <Badge variant="outline">Đã hủy</Badge>;
       default:
-        return <Badge variant="secondary">Pending</Badge>;
+        return <Badge variant="secondary">Chờ xử lý</Badge>;
     }
   };
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Tasks</h1>
-        <p className="text-muted-foreground">Quản lý background tasks</p>
+        <h1 className="text-3xl font-bold tracking-tight">Tác vụ</h1>
+        <p className="text-muted-foreground">Quản lý tác vụ nền</p>
       </div>
 
       <div className="flex items-center gap-4">
         <Select value={status} onValueChange={setStatus}>
           <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Lọc theo status" />
+            <SelectValue placeholder="Lọc theo trạng thái" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Tất cả</SelectItem>
-            <SelectItem value="pending">Pending</SelectItem>
-            <SelectItem value="processing">Processing</SelectItem>
-            <SelectItem value="completed">Completed</SelectItem>
-            <SelectItem value="failed">Failed</SelectItem>
-            <SelectItem value="cancelled">Cancelled</SelectItem>
+            <SelectItem value="pending">Chờ xử lý</SelectItem>
+            <SelectItem value="processing">Đang xử lý</SelectItem>
+            <SelectItem value="completed">Hoàn thành</SelectItem>
+            <SelectItem value="failed">Thất bại</SelectItem>
+            <SelectItem value="cancelled">Đã hủy</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -118,11 +118,11 @@ export default function TasksPage() {
           <TableHeader>
             <TableRow>
               <TableHead>ID</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Target</TableHead>
-              <TableHead>Scheduled</TableHead>
-              <TableHead>Retries</TableHead>
+              <TableHead>Loại</TableHead>
+              <TableHead>Trạng thái</TableHead>
+              <TableHead>Mục tiêu</TableHead>
+              <TableHead>Lên lịch</TableHead>
+              <TableHead>Thử lại</TableHead>
               <TableHead className="w-[70px]"></TableHead>
             </TableRow>
           </TableHeader>
@@ -138,7 +138,7 @@ export default function TasksPage() {
             ) : data?.data?.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="text-center text-muted-foreground">
-                  Không có task nào
+                  Không có tác vụ nào
                 </TableCell>
               </TableRow>
             ) : (
@@ -163,13 +163,13 @@ export default function TasksPage() {
                         {task.status === 'pending' && (
                           <DropdownMenuItem onClick={() => cancelMutation.mutate(task.id)}>
                             <XCircle className="mr-2 h-4 w-4" />
-                            Cancel
+                            Hủy
                           </DropdownMenuItem>
                         )}
                         {task.status === 'failed' && (
                           <DropdownMenuItem onClick={() => retryMutation.mutate(task.id)}>
                             <RefreshCw className="mr-2 h-4 w-4" />
-                            Retry
+                            Thử lại
                           </DropdownMenuItem>
                         )}
                         <DropdownMenuItem
@@ -177,7 +177,7 @@ export default function TasksPage() {
                           className="text-destructive"
                         >
                           <Trash2 className="mr-2 h-4 w-4" />
-                          Delete
+                          Xóa
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
