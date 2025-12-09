@@ -36,6 +36,10 @@
       "sleepHour": 23,
       "wakeHour": 6,
       "checkIntervalMs": 1800000
+    },
+    "maintenanceMode": {
+      "enabled": true,
+      "message": "🔧 Bot đang trong chế độ bảo trì. Vui lòng thử lại sau!"
     }
   },
   "historyLoader": {

@@ -10,7 +10,8 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { RefreshCw, Save } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { AlertTriangle, RefreshCw, Save } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 export default function SettingsPage() {
@@ -63,6 +64,24 @@ export default function SettingsPage() {
     });
   };
 
+  const updateMaintenanceMode = (key: 'enabled' | 'message', value: boolean | string) => {
+    if (!localSettings) return;
+    const currentMaintenance = localSettings.bot.maintenanceMode ?? {
+      enabled: true,
+      message: '🔧 Bot đang trong chế độ bảo trì. Vui lòng thử lại sau!',
+    };
+    setLocalSettings({
+      ...localSettings,
+      bot: {
+        ...localSettings.bot,
+        maintenanceMode: {
+          ...currentMaintenance,
+          [key]: value,
+        },
+      },
+    });
+  };
+
   if (isLoading || !localSettings) {
     return (
       <div className="space-y-6">
@@ -102,6 +121,38 @@ export default function SettingsPage() {
         </TabsList>
 
         <TabsContent value="general" className="space-y-4">
+          {/* Maintenance Mode Card - Hiển thị nổi bật */}
+          <Card className={localSettings.bot.maintenanceMode?.enabled ? 'border-yellow-500 bg-yellow-50 dark:bg-yellow-950/20' : ''}>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <AlertTriangle className={`h-5 w-5 ${localSettings.bot.maintenanceMode?.enabled ? 'text-yellow-500' : 'text-muted-foreground'}`} />
+                Chế độ bảo trì
+              </CardTitle>
+              <CardDescription>Khi bật, bot sẽ chỉ phản hồi thông báo bảo trì</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label>Bật chế độ bảo trì</Label>
+                  <p className="text-sm text-muted-foreground">Bot sẽ không xử lý tin nhắn khi bật</p>
+                </div>
+                <Switch
+                  checked={localSettings.bot.maintenanceMode?.enabled ?? false}
+                  onCheckedChange={(v) => updateMaintenanceMode('enabled', v)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Thông báo bảo trì</Label>
+                <Textarea
+                  value={localSettings.bot.maintenanceMode?.message ?? '🔧 Bot đang trong chế độ bảo trì. Vui lòng thử lại sau!'}
+                  onChange={(e) => updateMaintenanceMode('message', e.target.value)}
+                  placeholder="Nhập thông báo hiển thị khi bot đang bảo trì..."
+                  rows={2}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle>Cài đặt Bot</CardTitle>

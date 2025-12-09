@@ -91,6 +91,20 @@ async function processBatch(batch: BufferedMessage[]) {
   const api = batch[0].api;
   let messages = batch.map((b) => b.message);
 
+  // Check maintenance mode - trả lời thông báo bảo trì và return
+  if (CONFIG.maintenanceMode?.enabled) {
+    const maintenanceMessage = CONFIG.maintenanceMode.message || '🔧 Bot đang trong chế độ bảo trì. Vui lòng thử lại sau!';
+    debugLog('BUFFER', `Maintenance mode enabled, sending maintenance message to ${threadId}`);
+    try {
+      const threadType = getThreadType(threadId);
+      await api.sendMessage(maintenanceMessage, threadId, threadType);
+      console.log(`[Bot] 🔧 Maintenance mode: Đã gửi thông báo bảo trì đến ${threadId}`);
+    } catch (e: any) {
+      logError('processBatch:maintenance', e);
+    }
+    return;
+  }
+
   // Gom nhóm tin nhắn từ task bị abort trước đó
   if (hasAbortedMessages(threadId)) {
     const abortedMsgs = getAndClearAbortedMessages(threadId);

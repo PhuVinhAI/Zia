@@ -125,6 +125,10 @@ export interface BotSettings {
       sleepHour: number;
       wakeHour: number;
     };
+    maintenanceMode?: {
+      enabled: boolean;
+      message: string;
+    };
   };
   modules: Record<string, boolean>;
   [key: string]: unknown;
