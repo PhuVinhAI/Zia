@@ -1,4 +1,4 @@
-import { CONFIG } from '../../../core/config/config.js';
+﻿import { CONFIG } from '../../../core/config/config.js';
 import {
   debugLog,
   logError,
@@ -329,17 +329,45 @@ function hasToolTags(text: string): boolean {
 }
 
 /**
+ * Tính độ tương đồng giữa 2 chuỗi (character-based similarity)
+ * Trả về giá trị từ 0 đến 1 (1 = giống hoàn toàn)
+ */
+function calculateSimilarity(str1: string, str2: string): number {
+  if (str1 === str2) return 1;
+  if (!str1 || !str2) return 0;
+
+  const len1 = str1.length;
+  const len2 = str2.length;
+  const maxLen = Math.max(len1, len2);
+  if (maxLen === 0) return 1;
+
+  // Simple character-based similarity for performance
+  let matches = 0;
+  const minLen = Math.min(len1, len2);
+  for (let i = 0; i < minLen; i++) {
+    if (str1[i] === str2[i]) matches++;
+  }
+
+  return matches / maxLen;
+}
+
+/**
  * Loại bỏ nội dung nhại lại - khi AI lặp lại tin nhắn gốc trong quote
- * Ví dụ: "Tin nhắn gốc của user - Câu trả lời" → "Câu trả lời"
+ * Trả về '' (empty string) nếu phát hiện echo để skip gửi tin nhắn
+ * 
+ * Cases:
+ * 1. Exact match: AI chỉ lặp lại y nguyên tin nhắn -> return ''
+ * 2. High similarity (>80%): AI lặp lại với thay đổi nhỏ -> return ''
+ * 3. Starts with original: AI lặp lại ở đầu rồi thêm nội dung -> cắt phần lặp
  */
 function removeEchoedContent(quoteContent: string, originalText: string): string {
   if (!originalText) return quoteContent;
 
-  // Normalize để so sánh
+  // Normalize để so sánh - loại bỏ tất cả dấu câu và khoảng trắng
   const normalize = (t: string) =>
     t
       .toLowerCase()
-      .replace(/[?!.,;:]+$/g, '')
+      .replace(/[?!.,;:\s]+/g, '')
       .trim();
 
   const normalizedOriginal = normalize(originalText);
@@ -351,18 +379,47 @@ function removeEchoedContent(quoteContent: string, originalText: string): string
     return quoteContent;
   }
 
-  // Nếu quote bắt đầu bằng tin nhắn gốc, loại bỏ phần đó
-  if (normalizedQuote.startsWith(normalizedOriginal)) {
-    const remaining = quoteContent.slice(originalText.length).trim();
-    // Loại bỏ các ký tự phân cách đầu tiên nếu có (: - → > etc.)
-    return remaining.replace(/^[:\-–—→>]+\s*/, '').trim() || quoteContent;
+  // Case 1: Exact match sau khi normalize -> AI đang echo hoàn toàn
+  if (normalizedQuote === normalizedOriginal) {
+    debugLog('ECHO_FILTER', `Exact match detected, filtering out: "${quoteContent.substring(0, 50)}..."`);
+    return ''; // Return empty để skip gửi
   }
 
-  // Nếu quote chứa tin nhắn gốc ở đầu với dấu ngoặc kép
+  // Case 2: High similarity (>80%) -> likely echo với minor changes
+  const similarity = calculateSimilarity(normalizedQuote, normalizedOriginal);
+  if (similarity > 0.8) {
+    debugLog('ECHO_FILTER', `High similarity (${(similarity * 100).toFixed(1)}%) detected, filtering: "${quoteContent.substring(0, 50)}..."`);
+    return ''; // Return empty để skip gửi
+  }
+
+  // Case 3: Quote bắt đầu bằng tin nhắn gốc, loại bỏ phần đó và giữ phần còn lại
+  const quoteLower = quoteContent.toLowerCase().trim();
+  const originalLower = originalText.toLowerCase().trim();
+  
+  if (quoteLower.startsWith(originalLower)) {
+    const remaining = quoteContent.slice(originalText.length).trim();
+    // Loại bỏ các ký tự phân cách đầu tiên nếu có (: - -> > etc.)
+    const cleaned = remaining.replace(/^[:\-\->]+\s*/, '').trim();
+    
+    if (!cleaned) {
+      debugLog('ECHO_FILTER', `Starts with original but no additional content, filtering`);
+      return ''; // Không có nội dung mới, skip
+    }
+    
+    debugLog('ECHO_FILTER', `Removed echoed prefix, remaining: "${cleaned.substring(0, 50)}..."`);
+    return cleaned;
+  }
+
+  // Case 4: Quote chứa tin nhắn gốc ở đầu với dấu ngoặc kép
   const escapedOriginal = originalText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const quotedPattern = new RegExp(`^["']?${escapedOriginal}["']?\\s*[:\\-–—→>]?\\s*`, 'i');
   if (quotedPattern.test(quoteContent)) {
-    return quoteContent.replace(quotedPattern, '').trim() || quoteContent;
+    const cleaned = quoteContent.replace(quotedPattern, '').trim();
+    if (!cleaned) {
+      debugLog('ECHO_FILTER', `Quoted original but no additional content, filtering`);
+      return '';
+    }
+    return cleaned;
   }
 
   return quoteContent;
