@@ -3,6 +3,7 @@
  */
 
 import { jsonrepair } from 'jsonrepair';
+import { fixStuckTags } from '../../shared/utils/tagFixer.js';
 import { debugLog } from '../logger/logger.js';
 import { moduleManager } from '../plugin-manager/module-manager.js';
 import type { ITool, ToolCall, ToolContext, ToolResult } from '../types.js';
@@ -140,12 +141,15 @@ function findCloseTag(text: string): number {
  * Parse tất cả tool calls từ AI response
  */
 export function parseToolCalls(response: string): ToolCall[] {
+  // Fix stuck tags trước khi parse
+  const fixedResponse = fixStuckTags(response);
+  
   const calls: ToolCall[] = [];
   let match;
 
   TOOL_OPEN_REGEX.lastIndex = 0;
 
-  while ((match = TOOL_OPEN_REGEX.exec(response)) !== null) {
+  while ((match = TOOL_OPEN_REGEX.exec(fixedResponse)) !== null) {
     const toolName = match[1];
     const inlineParams = match[2] || '';
     const tagEnd = match.index + match[0].length;
@@ -154,7 +158,7 @@ export function parseToolCalls(response: string): ToolCall[] {
     let rawTag = match[0];
 
     // Kiểm tra xem có JSON body và [/tool] không
-    const afterTag = response.slice(tagEnd);
+    const afterTag = fixedResponse.slice(tagEnd);
     const closeTagIndex = findCloseTag(afterTag);
 
     // Luôn parse inline params trước
@@ -163,7 +167,7 @@ export function parseToolCalls(response: string): ToolCall[] {
     if (closeTagIndex !== -1) {
       // Có [/tool] -> extract JSON giữa tag mở và tag đóng
       const jsonSection = afterTag.slice(0, closeTagIndex).trim();
-      rawTag = response.slice(match.index, tagEnd + closeTagIndex + 7);
+      rawTag = fixedResponse.slice(match.index, tagEnd + closeTagIndex + 7);
 
       if (jsonSection.startsWith('{')) {
         const parsed = safeParseJson(jsonSection);

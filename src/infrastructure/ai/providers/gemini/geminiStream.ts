@@ -19,6 +19,7 @@ import {
   sleep,
 } from './geminiChat.js';
 import { keyManager, type MediaPart } from './geminiConfig.js';
+import { fixStuckTags } from '../../../../shared/utils/tagFixer.js';
 import { isRateLimitError } from './keyManager.js';
 import { getSystemPrompt } from './prompts.js';
 
@@ -130,7 +131,8 @@ async function processInlineTags(
 async function processStreamChunk(state: ParserState, callbacks: StreamCallbacks): Promise<void> {
   if (callbacks.signal?.aborted) throw new Error('Aborted');
 
-  const { buffer } = state;
+  // Fix stuck tags trước khi parse
+  const buffer = fixStuckTags(state.buffer);
 
   // Parse top-level [reaction:xxx] hoặc [reaction:INDEX:xxx]
   for (const match of buffer.matchAll(/\[reaction:(\d+:)?(\w+)\]/gi)) {

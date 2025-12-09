@@ -22,8 +22,7 @@ import {
   removeSentMessage,
   saveSentMessage,
 } from '../../../shared/utils/message/messageStore.js';
-
-
+import { fixStuckTags } from '../../../shared/utils/tagFixer.js';
 
 // ═══════════════════════════════════════════════════
 // SHARED HELPERS
@@ -270,7 +269,9 @@ export async function sendResponse(
 const TOOL_TAG_REGEX = /\[tool:\w+(?:\s+[^\]]*?)?\](?:\s*\{[\s\S]*?\}\s*\[\/tool\])?/gi;
 
 function stripToolTags(text: string): string {
-  return text.replace(TOOL_TAG_REGEX, '').trim();
+  // Fix stuck tags trước khi strip
+  const fixed = fixStuckTags(text);
+  return fixed.replace(TOOL_TAG_REGEX, '').trim();
 }
 
 function hasToolTags(text: string): boolean {

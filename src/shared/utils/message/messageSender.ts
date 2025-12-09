@@ -20,6 +20,7 @@ import {
   type MediaImage,
   parseMarkdownToZalo,
 } from '../markdown/markdownToZalo.js';
+import { fixStuckTags } from '../tagFixer.js';
 import { splitMessage } from './messageChunker.js';
 
 // ═══════════════════════════════════════════════════
@@ -86,8 +87,11 @@ export function getThreadType(threadId: string): number {
  * Input: "Chào [mention:123456:Nguyễn Văn A] nhé"
  * Output: { text: "Chào @Nguyễn Văn A nhé", mentions: [{ uid: '123456', len: 13, pos: 5 }] }
  */
-export function parseMentions(text: string): { text: string; mentions: MentionInfo[] } {
+export function parseMentions(inputText: string): { text: string; mentions: MentionInfo[] } {
   const mentions: MentionInfo[] = [];
+
+  // Fix stuck tags trước
+  const text = inputText.replace(/\]([^\s\[\]])/g, '] $1').replace(/([^\s\[\]])\[/g, '$1 [');
 
   // Regex tìm [mention:ID] hoặc [mention:ID:Name]
   const regex = /\[mention:(\d+)(?::([^\]]+))?\]/g;
@@ -295,16 +299,19 @@ export async function sendSticker(api: any, keyword: string, threadId: string): 
  * Trả về danh sách keywords và text đã loại bỏ sticker tags
  */
 export function parseStickers(text: string): { text: string; stickers: string[] } {
+  // Fix stuck tags trước
+  const fixedText = fixStuckTags(text);
+  
   const stickers: string[] = [];
   const regex = /\[sticker:(\w+)\]/gi;
   let match;
 
-  while ((match = regex.exec(text)) !== null) {
+  while ((match = regex.exec(fixedText)) !== null) {
     stickers.push(match[1]);
   }
 
   // Loại bỏ sticker tags khỏi text
-  const cleanText = text.replace(regex, '').trim();
+  const cleanText = fixedText.replace(regex, '').trim();
 
   return { text: cleanText, stickers };
 }
