@@ -19,6 +19,41 @@ let db: ReturnType<typeof drizzle<typeof schema>> | null = null;
 let sqliteDb: Database | null = null;
 
 /**
+ * Kiểm tra database integrity
+ */
+export function checkDatabaseIntegrity(dbPath: string): boolean {
+  try {
+    const fs = require('node:fs');
+    if (!fs.existsSync(dbPath)) return true; // Không có file = OK (sẽ tạo mới)
+
+    const testDb = new Database(dbPath, { readonly: true });
+    try {
+      const result = testDb.query('PRAGMA integrity_check').get() as { integrity_check: string };
+      testDb.close();
+      return result?.integrity_check === 'ok';
+    } catch {
+      testDb.close();
+      return false;
+    }
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Xóa database files (khi corrupt)
+ */
+export function removeDatabaseFiles(dbPath: string): void {
+  const fs = require('node:fs');
+  const files = [dbPath, `${dbPath}-wal`, `${dbPath}-shm`];
+  for (const file of files) {
+    try {
+      if (fs.existsSync(file)) fs.unlinkSync(file);
+    } catch {}
+  }
+}
+
+/**
  * Khởi tạo database connection
  */
 export function initDatabase() {
@@ -32,6 +67,12 @@ export function initDatabase() {
   const dir = path.dirname(dbPath);
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
+  }
+
+  // Kiểm tra integrity trước khi mở
+  if (fs.existsSync(dbPath) && !checkDatabaseIntegrity(dbPath)) {
+    console.log('⚠️ Database corrupt detected, removing...');
+    removeDatabaseFiles(dbPath);
   }
 
   debugLog('DATABASE', `Connecting to ${dbPath}...`);
