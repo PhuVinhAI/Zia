@@ -2,9 +2,9 @@
  * Gateway Handlers - Response và tool handling
  */
 
+export { getThreadType, setThreadType } from '../../../shared/utils/message/messageSender.js';
 export {
   createStreamCallbacks,
-  getThreadType,
   sendResponse,
   setupSelfMessageListener,
 } from './response.handler.js';

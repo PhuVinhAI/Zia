@@ -636,10 +636,10 @@ export const CreateGroupSchema = z.object({
 
 // Join Group Link params
 export const JoinGroupLinkSchema = z.object({
-  link: z.string().min(1, 'Thiếu link nhóm').refine(
-    (val) => val.includes('zalo.me/g/'),
-    'Link phải có dạng https://zalo.me/g/...'
-  ),
+  link: z
+    .string()
+    .min(1, 'Thiếu link nhóm')
+    .refine((val) => val.includes('zalo.me/g/'), 'Link phải có dạng https://zalo.me/g/...'),
 });
 
 // Leave Group params

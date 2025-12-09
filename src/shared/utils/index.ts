@@ -63,11 +63,7 @@ export {
 } from './markdown/markdownToZalo.js';
 
 // Message
-export {
-  getMaxMessageLength,
-  needsChunking,
-  splitMessage,
-} from './message/messageChunker.js';
+export { getMaxLength, needsChunking, splitMessage } from './message/messageChunker.js';
 
 export {
   cleanupOldMessages,

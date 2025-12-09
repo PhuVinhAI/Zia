@@ -13,9 +13,11 @@ import { type Memory, type MemoryType, memories, type NewMemory } from '../datab
 // CONFIG
 // ═══════════════════════════════════════════════════
 
-const EMBEDDING_MODEL = 'gemini-embedding-001';
-const DECAY_HALF_LIFE_DAYS = 30; // Memory giảm 50% importance sau 30 ngày không access
-const ACCESS_BOOST_FACTOR = 0.2; // Hệ số boost cho mỗi lần access
+import { CONFIG } from '../../core/config/config.js';
+
+const getEmbeddingModel = () => CONFIG.memory?.embeddingModel ?? 'gemini-embedding-001';
+const getDecayHalfLifeDays = () => CONFIG.memory?.decayHalfLifeDays ?? 30;
+const getAccessBoostFactor = () => CONFIG.memory?.accessBoostFactor ?? 0.2;
 
 // ═══════════════════════════════════════════════════
 // TYPES
@@ -44,7 +46,7 @@ class EmbeddingService {
       try {
         const ai = keyManager.getCurrentAI();
         const result = await ai.models.embedContent({
-          model: EMBEDDING_MODEL,
+          model: getEmbeddingModel(),
           contents: text,
           config: { taskType, outputDimensionality: EMBEDDING_DIM },
         });
@@ -90,11 +92,11 @@ class MemoryStore {
     const lastAccess = lastAccessedAt?.getTime() || now;
     const daysSinceAccess = (now - lastAccess) / (1000 * 60 * 60 * 24);
 
-    // Decay factor: e^(-t/halfLife), giảm 50% sau DECAY_HALF_LIFE_DAYS ngày
-    const decayFactor = Math.exp(-daysSinceAccess / DECAY_HALF_LIFE_DAYS);
+    // Decay factor: e^(-t/halfLife), giảm 50% sau decayHalfLifeDays ngày
+    const decayFactor = Math.exp(-daysSinceAccess / getDecayHalfLifeDays());
 
     // Access boost: 1 + log(accessCount + 1) * factor
-    const accessBoost = 1 + Math.log(accessCount + 1) * ACCESS_BOOST_FACTOR;
+    const accessBoost = 1 + Math.log(accessCount + 1) * getAccessBoostFactor();
 
     return importance * decayFactor * accessBoost;
   }
@@ -298,7 +300,7 @@ class MemoryStore {
       })
       .from(memories);
 
-    const staleThreshold = Math.floor(Date.now() / 1000) - DECAY_HALF_LIFE_DAYS * 24 * 60 * 60;
+    const staleThreshold = Math.floor(Date.now() / 1000) - getDecayHalfLifeDays() * 24 * 60 * 60;
     const staleResult = await db
       .select({ count: sql<number>`count(*)` })
       .from(memories)

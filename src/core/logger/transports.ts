@@ -33,7 +33,7 @@ export interface ILogTransport {
 
 let logCache: string[] = [];
 let logTransport: ILogTransport | null = null;
-const LOG_CACHE_THRESHOLD = 1000;
+let logCacheThreshold = 1000; // Default, can be updated via setLogCacheThreshold
 
 /**
  * Đăng ký log transport (gọi sau khi có API)
@@ -61,6 +61,13 @@ export function getLogCache(): string[] {
  */
 export function clearLogCache(): void {
   logCache = [];
+}
+
+/**
+ * Set log cache threshold (from config)
+ */
+export function setLogCacheThreshold(threshold: number): void {
+  logCacheThreshold = threshold;
 }
 
 /**
@@ -99,7 +106,7 @@ export class ProductionLogStream extends Writable {
       logCache.push(data);
 
       // Kiểm tra threshold và gửi
-      if (logCache.length >= LOG_CACHE_THRESHOLD) {
+      if (logCache.length >= logCacheThreshold) {
         flushLogs().catch(console.error);
       }
     }

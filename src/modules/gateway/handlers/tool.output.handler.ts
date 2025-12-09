@@ -6,9 +6,10 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { CONFIG } from '../../../core/config/config.js';
 import { debugLog } from '../../../core/index.js';
 import type { ToolCall, ToolResult } from '../../../core/types.js';
-import { getThreadType } from './response.handler.js';
+import { getThreadType } from '../../../shared/utils/message/messageSender.js';
 
 // ═══════════════════════════════════════════════════
 // MEDIA SENDERS
@@ -113,13 +114,14 @@ export async function sendImages(
   images: Array<{ buffer: Buffer; mimeType: string }>,
   prefix: string,
 ): Promise<void> {
+  const imageDelay = CONFIG.responseHandler?.imageDelayMs ?? 500;
   for (let i = 0; i < images.length; i++) {
     const img = images[i];
     const ext = img.mimeType.includes('png') ? 'png' : img.mimeType.includes('gif') ? 'gif' : 'jpg';
     const filename = `${prefix}_${Date.now()}_${i}.${ext}`;
     await sendImage(api, threadId, img.buffer, filename);
     if (i < images.length - 1) {
-      await new Promise((r) => setTimeout(r, 500)); // Delay giữa các ảnh
+      await new Promise((r) => setTimeout(r, imageDelay));
     }
   }
 }

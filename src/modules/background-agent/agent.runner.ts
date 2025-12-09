@@ -3,10 +3,12 @@
  * Poll tasks từ DB, build context, gọi Groq để quyết định, execute actions
  * Sử dụng cơ chế tag [tool:xxx] giống Gemini để dễ mở rộng custom tools
  */
+
+import { CONFIG } from '../../core/config/config.js';
 import { debugLog } from '../../core/logger/logger.js';
 import {
   executeAllTools,
-  generateToolsPrompt,
+  generateToolsPromptFiltered,
   hasToolCalls,
   parseToolCalls,
 } from '../../core/tool-registry/tool-registry.js';
@@ -29,10 +31,8 @@ let isRunning = false;
 let pollInterval: ReturnType<typeof setInterval> | null = null;
 let zaloApi: any = null;
 
-// Config
-const POLL_INTERVAL_MS = 90_000; // 1 phút 30 giây
-const GROQ_ENABLED = true; // Set false để skip Groq và execute trực tiếp
-const MAX_TOOL_ITERATIONS = 5; // Số lần tối đa gọi tools trong 1 session
+// Config from settings.json
+const getGroqEnabled = () => CONFIG.backgroundAgent?.groqEnabled ?? true;
 
 /**
  * Khởi động background agent
@@ -46,12 +46,13 @@ export function startBackgroundAgent(api: any): void {
   zaloApi = api;
   isRunning = true;
 
-  debugLog('AGENT', `Starting background agent (poll interval: ${POLL_INTERVAL_MS}ms)`);
+  const pollIntervalMs = CONFIG.backgroundAgent?.pollIntervalMs ?? 90000;
+  debugLog('AGENT', `Starting background agent (poll interval: ${pollIntervalMs}ms)`);
   console.log('🤖 Background Agent started');
 
   // Run immediately, then poll
   runAgentCycle();
-  pollInterval = setInterval(runAgentCycle, POLL_INTERVAL_MS);
+  pollInterval = setInterval(runAgentCycle, pollIntervalMs);
 }
 
 /**
@@ -108,7 +109,7 @@ async function processTasksInParallel(tasks: any[]): Promise<void> {
     { action: 'execute' | 'skip' | 'delay'; reason: string; adjustedPayload?: any }
   >;
 
-  if (GROQ_ENABLED && process.env.GROQ_API_KEY) {
+  if (getGroqEnabled() && process.env.GROQ_API_KEY) {
     decisions = await getBatchGroqDecisions(tasks, sharedContext);
   } else {
     // Fallback: execute tất cả
@@ -228,10 +229,11 @@ async function callGroqWithTools(
   toolContext: ToolContext,
   options?: { temperature?: number },
 ): Promise<string> {
-  let currentMessages = [...messages];
+  const currentMessages = [...messages];
   let finalResponse = '';
 
-  for (let iteration = 0; iteration < MAX_TOOL_ITERATIONS; iteration++) {
+  const maxToolIterations = CONFIG.backgroundAgent?.maxToolIterations ?? 5;
+  for (let iteration = 0; iteration < maxToolIterations; iteration++) {
     const response = await generateGroqResponse(currentMessages, options);
     finalResponse = response;
 
@@ -267,7 +269,8 @@ async function getBatchGroqDecisions(
   Map<number, { action: 'execute' | 'skip' | 'delay'; reason: string; adjustedPayload?: any }>
 > {
   const contextStr = formatContextForPrompt(context);
-  const toolsPrompt = generateToolsPrompt();
+  const allowedTools = CONFIG.backgroundAgent?.allowedTools ?? [];
+  const toolsPrompt = generateToolsPromptFiltered(allowedTools);
 
   // Format tất cả tasks vào 1 prompt
   const tasksDescription = tasks

@@ -4,30 +4,43 @@
  * Tự động fallback model: 2.5 pro → flash-latest → flash-lite-latest
  */
 import { GoogleGenAI } from '@google/genai';
+import { CONFIG } from '../../../../core/config/config.js';
 import { debugLog } from '../../../../core/logger/logger.js';
 
-// Danh sách models theo thứ tự ưu tiên
-export const GEMINI_MODELS = [
-  'models/gemini-flash-latest',
-  'models/gemini-flash-lite-latest',
-  'models/gemini-robotics-er-1.5-preview',
-] as const;
+// Danh sách models theo thứ tự ưu tiên (từ config)
+const getGeminiModels = () =>
+  CONFIG.gemini?.models ?? [
+    'models/gemini-flash-latest',
+    'models/gemini-flash-lite-latest',
+    'models/gemini-robotics-er-1.5-preview',
+  ];
 
-export type GeminiModel = (typeof GEMINI_MODELS)[number];
+export const GEMINI_MODELS = getGeminiModels();
 
-const MODEL_NAMES: Record<GeminiModel, string> = {
-  'models/gemini-flash-latest': 'Flash Latest',
-  'models/gemini-robotics-er-1.5-preview': 'Robotics ER 1.5',
-  'models/gemini-flash-lite-latest': 'Flash Lite Latest',
-};
+export type GeminiModel = string;
 
-// Thời gian block theo loại rate limit
-const RATE_LIMIT_DURATIONS = {
-  minute: 2 * 60 * 1000, // 2 phút cho RPM (requests per minute) - an toàn hơn
-  day: 24 * 60 * 60 * 1000, // 24 giờ cho RPD (requests per day)
-} as const;
+// Tạo tên model từ model path
+function getModelName(model: string): string {
+  const name = model.replace('models/', '').replace(/-/g, ' ');
+  return name.charAt(0).toUpperCase() + name.slice(1);
+}
+
+// Thời gian block theo loại rate limit (từ config)
+const getRateLimitDurations = () => ({
+  minute: CONFIG.gemini?.rateLimitMinuteMs ?? 120000, // 2 phút cho RPM
+  day: CONFIG.gemini?.rateLimitDayMs ?? 86400000, // 24 giờ cho RPD
+});
 
 type _RateLimitType = 'minute' | 'day' | 'default';
+
+// Cache MODEL_NAMES để tránh tính toán lại
+const MODEL_NAMES: Record<string, string> = {};
+function getModelDisplayName(model: string): string {
+  if (!MODEL_NAMES[model]) {
+    MODEL_NAMES[model] = getModelName(model);
+  }
+  return MODEL_NAMES[model];
+}
 
 // Parse keys từ env
 // Hỗ trợ 2 cách:
@@ -116,7 +129,7 @@ class GeminiKeyManager {
       if (blockedUntil && now >= blockedUntil) {
         this.blockedModels.delete(i);
         console.log(
-          `[KeyManager] ✅ Model ${MODEL_NAMES[GEMINI_MODELS[i]]} đã hết thời gian chờ, có thể sử dụng lại`,
+          `[KeyManager] ✅ Model ${getModelDisplayName(GEMINI_MODELS[i])} đã hết thời gian chờ, có thể sử dụng lại`,
         );
         debugLog('KEY_MANAGER', `Model ${GEMINI_MODELS[i]} unblocked`);
 
@@ -125,7 +138,7 @@ class GeminiKeyManager {
           this.currentModelIndex = i;
           this.currentKeyIndex = 0;
           this.rateLimitedKeys.clear(); // Reset keys khi đổi model
-          console.log(`[KeyManager] 🔄 Quay lại model ${MODEL_NAMES[GEMINI_MODELS[i]]}`);
+          console.log(`[KeyManager] 🔄 Quay lại model ${getModelDisplayName(GEMINI_MODELS[i])}`);
           unblocked = true;
         }
       }
@@ -163,7 +176,7 @@ class GeminiKeyManager {
    * Lấy tên model hiện tại (cho display)
    */
   getCurrentModelName(): string {
-    return MODEL_NAMES[this.getCurrentModel()];
+    return getModelDisplayName(this.getCurrentModel());
   }
 
   /**
@@ -199,7 +212,8 @@ class GeminiKeyManager {
 
     // Lần đầu: block 2 phút, lần 2+: block 24h
     const isDaily = retryCount > 1;
-    const duration = isDaily ? RATE_LIMIT_DURATIONS.day : RATE_LIMIT_DURATIONS.minute;
+    const rateLimits = getRateLimitDurations();
+    const duration = isDaily ? rateLimits.day : rateLimits.minute;
     const blockedUntil = Date.now() + duration;
 
     this.rateLimitedKeys.set(this.currentKeyIndex, { blockedUntil, retryCount });
@@ -218,14 +232,15 @@ class GeminiKeyManager {
    * @param isDaily - true nếu đã xác định là daily limit
    */
   private blockCurrentModel(isDaily: boolean): void {
-    const duration = isDaily ? RATE_LIMIT_DURATIONS.day : RATE_LIMIT_DURATIONS.minute;
+    const rateLimits = getRateLimitDurations();
+    const duration = isDaily ? rateLimits.day : rateLimits.minute;
     const blockedUntil = Date.now() + duration;
     this.blockedModels.set(this.currentModelIndex, blockedUntil);
     const model = GEMINI_MODELS[this.currentModelIndex];
 
     const durationText = isDaily ? '24h (daily limit)' : '2 phút';
     console.log(
-      `[KeyManager] 🚫 Model ${MODEL_NAMES[model]} bị block ${durationText} (tất cả keys đều rate limit)`,
+      `[KeyManager] 🚫 Model ${getModelDisplayName(model)} bị block ${durationText} (tất cả keys đều rate limit)`,
     );
     debugLog('KEY_MANAGER', `Model ${model} blocked until ${new Date(blockedUntil).toISOString()}`);
   }
@@ -244,7 +259,7 @@ class GeminiKeyManager {
         this.currentKeyIndex = 0;
 
         const model = GEMINI_MODELS[nextIndex];
-        console.log(`[KeyManager] 🔄 Chuyển sang model ${MODEL_NAMES[model]}`);
+        console.log(`[KeyManager] 🔄 Chuyển sang model ${getModelDisplayName(model)}`);
         debugLog('KEY_MANAGER', `Rotated to model ${model}`);
         return true;
       }
@@ -376,7 +391,7 @@ class GeminiKeyManager {
       const blockedUntil = this.blockedModels.get(index);
       return {
         model,
-        name: MODEL_NAMES[model],
+        name: getModelDisplayName(model),
         available: !blockedUntil || now >= blockedUntil,
         blockedUntil: blockedUntil ? new Date(blockedUntil) : undefined,
       };

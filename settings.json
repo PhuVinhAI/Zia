@@ -1,4 +1,5 @@
 {
+  "adminUserId": "7307295734920277074",
   "fetch": {
     "timeoutMs": 60000,
     "maxRetries": 3,
@@ -78,5 +79,138 @@
     "task": true,
     "academic": true,
     "entertainment": true
+  },
+  "logger": {
+    "maxLinesPerFile": 1000,
+    "logCacheThreshold": 1000
+  },
+  "reaction": {
+    "debounceMs": 2000
+  },
+  "friendRequest": {
+    "autoAcceptDelayMinMs": 2000,
+    "autoAcceptDelayMaxMs": 5000
+  },
+  "backgroundAgent": {
+    "pollIntervalMs": 90000,
+    "maxToolIterations": 5,
+    "groupBatchSize": 10,
+    "batchDelayMinMs": 500,
+    "batchDelayMaxMs": 1500,
+    "groqEnabled": true,
+    "allowedTools": ["googleSearch"]
+  },
+  "messageChunker": {
+    "maxMessageLength": 1800
+  },
+  "messageStore": {
+    "maxCachePerThread": 20,
+    "cleanupIntervalMs": 1800000,
+    "recentMessageWindowMs": 300000
+  },
+  "userStore": {
+    "cacheTtlMs": 300000
+  },
+  "jikan": {
+    "rateLimitDelayMs": 350,
+    "timeoutMs": 15000,
+    "retryLimit": 3,
+    "backoffLimitMs": 3000
+  },
+  "elevenlabs": {
+    "defaultVoiceId": "fUjY9K2nAIwlALOwSiwc",
+    "defaultModelId": "eleven_v3",
+    "defaultStability": 0.5,
+    "defaultSimilarityBoost": 0.75,
+    "defaultStyle": 0.5
+  },
+  "giphy": {
+    "timeoutMs": 15000,
+    "defaultLimit": 10,
+    "defaultRating": "g",
+    "retryLimit": 2
+  },
+  "nekos": {
+    "timeoutMs": 15000,
+    "retryLimit": 2
+  },
+  "freepik": {
+    "timeoutMs": 60000,
+    "pollMaxAttempts": 30,
+    "pollIntervalMs": 2000,
+    "retryLimit": 2
+  },
+  "messageSender": {
+    "mediaDelayMs": 300,
+    "chunkDelayMs": 400
+  },
+  "markdown": {
+    "mermaidTimeoutMs": 30000,
+    "groupMediaSizeLimitMB": 1
+  },
+  "history": {
+    "maxTrimAttempts": 50,
+    "maxContextTokens": 300000,
+    "estimatedCharsPerToken": 4
+  },
+  "memory": {
+    "decayHalfLifeDays": 30,
+    "accessBoostFactor": 0.2,
+    "embeddingModel": "gemini-embedding-001"
+  },
+  "tvu": {
+    "timeoutMs": 10000,
+    "retryLimit": 2
+  },
+  "groq": {
+    "rateLimitCooldownMs": 60000
+  },
+  "database": {
+    "path": "data/bot.db",
+    "cleanupIntervalMs": 3600000,
+    "embeddingDim": 768,
+    "cacheSize": 10000
+  },
+  "responseHandler": {
+    "reactionDelayMs": 300,
+    "chunkDelayMs": 300,
+    "stickerDelayMs": 800,
+    "cardDelayMs": 500,
+    "messageDelayMinMs": 500,
+    "messageDelayMaxMs": 1000,
+    "imageDelayMs": 500
+  },
+  "jikanRateLimitRetryMs": 2000,
+  "websocketConnectTimeoutMs": 2000,
+  "groupMembersFetch": {
+    "delayMinMs": 300,
+    "delayMaxMs": 800,
+    "errorDelayMinMs": 500,
+    "errorDelayMaxMs": 1000
+  },
+  "gemini": {
+    "temperature": 1,
+    "topP": 0.95,
+    "maxOutputTokens": 65536,
+    "thinkingBudget": 8192,
+    "models": [
+      "models/gemini-flash-latest",
+      "models/gemini-flash-lite-latest",
+      "models/gemini-robotics-er-1.5-preview"
+    ],
+    "rateLimitMinuteMs": 120000,
+    "rateLimitDayMs": 86400000
+  },
+  "groqModels": {
+    "primary": "openai/gpt-oss-120b",
+    "fallback": "moonshotai/kimi-k2-instruct-0905",
+    "primaryMaxTokens": 65536,
+    "fallbackMaxTokens": 16384,
+    "temperature": 0.7,
+    "topP": 0.95
+  },
+  "sandbox": {
+    "installTimeoutMs": 60000,
+    "executeTimeoutMs": 30000
   }
 }

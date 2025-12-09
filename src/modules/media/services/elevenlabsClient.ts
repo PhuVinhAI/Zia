@@ -36,11 +36,13 @@ export interface TTSOptions {
   outputFormat?: string;
 }
 
-/** Default voice - Yui */
-export const DEFAULT_VOICE_ID = 'fUjY9K2nAIwlALOwSiwc';
+import { CONFIG } from '../../../core/config/config.js';
 
-/** Default model - Eleven v3 */
-export const DEFAULT_MODEL_ID = 'eleven_v3';
+/** Default voice - Yui (from config) */
+export const DEFAULT_VOICE_ID = CONFIG.elevenlabs?.defaultVoiceId ?? 'fUjY9K2nAIwlALOwSiwc';
+
+/** Default model - Eleven v3 (from config) */
+export const DEFAULT_MODEL_ID = CONFIG.elevenlabs?.defaultModelId ?? 'eleven_v3';
 
 /** Output formats */
 export const OUTPUT_FORMATS = {
@@ -61,9 +63,9 @@ export async function textToSpeech(options: TTSOptions): Promise<Buffer> {
     text: options.text,
     modelId,
     voiceSettings: {
-      stability: options.stability ?? 0.5,
-      similarityBoost: options.similarityBoost ?? 0.75,
-      style: options.style ?? 0.5,
+      stability: options.stability ?? CONFIG.elevenlabs?.defaultStability ?? 0.5,
+      similarityBoost: options.similarityBoost ?? CONFIG.elevenlabs?.defaultSimilarityBoost ?? 0.75,
+      style: options.style ?? CONFIG.elevenlabs?.defaultStyle ?? 0.5,
       useSpeakerBoost: options.useSpeakerBoost ?? true,
     },
     outputFormat: (options.outputFormat as any) || OUTPUT_FORMATS.MP3_44100_128,

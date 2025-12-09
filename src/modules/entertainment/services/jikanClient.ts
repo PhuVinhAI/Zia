@@ -10,8 +10,10 @@ import { debugLog } from '../../../core/logger/logger.js';
 // CONFIG
 // ═══════════════════════════════════════════════════
 
+import { CONFIG } from '../../../core/config/config.js';
+
 const BASE_URL = 'https://api.jikan.moe/v4';
-const RATE_LIMIT_DELAY = 350; // 3 requests/giây
+const getRateLimitDelay = () => CONFIG.jikan?.rateLimitDelayMs ?? 350; // 3 requests/giây
 
 let lastRequestTime = 0;
 
@@ -20,10 +22,11 @@ let lastRequestTime = 0;
 // ═══════════════════════════════════════════════════
 
 async function rateLimitWait(): Promise<void> {
+  const rateLimitDelay = getRateLimitDelay();
   const now = Date.now();
   const elapsed = now - lastRequestTime;
-  if (elapsed < RATE_LIMIT_DELAY) {
-    await new Promise((r) => setTimeout(r, RATE_LIMIT_DELAY - elapsed));
+  if (elapsed < rateLimitDelay) {
+    await new Promise((r) => setTimeout(r, rateLimitDelay - elapsed));
   }
   lastRequestTime = Date.now();
 }
@@ -34,12 +37,12 @@ async function rateLimitWait(): Promise<void> {
 
 const jikanApi: KyInstance = ky.create({
   prefixUrl: BASE_URL,
-  timeout: 15000,
+  timeout: CONFIG.jikan?.timeoutMs ?? 15000,
   retry: {
-    limit: 3,
+    limit: CONFIG.jikan?.retryLimit ?? 3,
     methods: ['get'],
     statusCodes: [408, 500, 502, 503, 504],
-    backoffLimit: 3000,
+    backoffLimit: CONFIG.jikan?.backoffLimitMs ?? 3000,
   },
   hooks: {
     beforeRequest: [
@@ -52,8 +55,9 @@ const jikanApi: KyInstance = ky.create({
       async (_request, _options, response) => {
         // Handle 429 rate limit
         if (response.status === 429) {
-          debugLog('JIKAN', '⚠ Rate limited (429), waiting 2s...');
-          await new Promise((r) => setTimeout(r, 2000));
+          const retryDelay = CONFIG.jikanRateLimitRetryMs ?? 2000;
+          debugLog('JIKAN', `⚠ Rate limited (429), waiting ${retryDelay}ms...`);
+          await new Promise((r) => setTimeout(r, retryDelay));
           throw new Error('Rate limited');
         }
         debugLog('JIKAN', `← ${response.status}`);

@@ -19,7 +19,7 @@ export class BotContext implements IBotContext {
   }
 
   async send(text: string): Promise<void> {
-    const { getThreadType } = await import('../../modules/gateway/handlers/response.handler.js');
+    const { getThreadType } = await import('../../shared/utils/message/messageSender.js');
     const threadType = getThreadType(this.threadId);
     await this.api.sendMessage(text, this.threadId, threadType);
   }

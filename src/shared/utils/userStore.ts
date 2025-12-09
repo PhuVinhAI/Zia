@@ -2,12 +2,14 @@
  * User Store - Quản lý người dùng với database
  * Wrapper cho usersRepository với caching
  */
+
+import { CONFIG } from '../../core/config/config.js';
 import { debugLog } from '../../core/logger/logger.js';
 import { type UserRole, usersRepository } from '../../infrastructure/database/index.js';
 
 // Cache để tránh query DB liên tục
 const roleCache = new Map<string, UserRole>();
-const CACHE_TTL = 5 * 60 * 1000; // 5 phút
+const getCacheTtl = () => CONFIG.userStore?.cacheTtlMs ?? 300000; // 5 phút default
 const cacheTimestamps = new Map<string, number>();
 
 /**
@@ -18,7 +20,7 @@ export async function getUserRole(userId: string): Promise<UserRole | null> {
   const cached = roleCache.get(userId);
   const cacheTime = cacheTimestamps.get(userId) || 0;
 
-  if (cached && Date.now() - cacheTime < CACHE_TTL) {
+  if (cached && Date.now() - cacheTime < getCacheTtl()) {
     return cached;
   }
 

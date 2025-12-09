@@ -3,6 +3,7 @@
  * Dùng để AI biết ai đang ở trong nhóm và có thể tag (mention) họ
  */
 
+import { CONFIG } from '../../../core/config/config.js';
 import { debugLog, logZaloAPI } from '../../../core/logger/logger.js';
 import type { ToolContext, ToolDefinition, ToolResult } from '../../../shared/types/tools.types.js';
 
@@ -39,9 +40,11 @@ async function fetchUserDetails(
     const id = memberIds[i];
     let name = `User ${id.slice(-4)}`; // Tên mặc định nếu không lấy được
 
-    // Delay random từ 300ms - 800ms giữa các lần gọi (trừ lần đầu)
+    // Delay random giữa các lần gọi (trừ lần đầu)
+    const delayMin = CONFIG.groupMembersFetch?.delayMinMs ?? 300;
+    const delayMax = CONFIG.groupMembersFetch?.delayMaxMs ?? 800;
     if (i > 0) {
-      await randomDelay(300, 800);
+      await randomDelay(delayMin, delayMax);
     }
 
     try {
@@ -56,7 +59,9 @@ async function fetchUserDetails(
     } catch (e: any) {
       debugLog('TOOL:getGroupMembers', `Failed to get user info for ${id}: ${e.message}`);
       // Nếu bị lỗi (có thể rate limit), delay thêm một chút
-      await randomDelay(500, 1000);
+      const errorDelayMin = CONFIG.groupMembersFetch?.errorDelayMinMs ?? 500;
+      const errorDelayMax = CONFIG.groupMembersFetch?.errorDelayMaxMs ?? 1000;
+      await randomDelay(errorDelayMin, errorDelayMax);
     }
 
     // Xác định role

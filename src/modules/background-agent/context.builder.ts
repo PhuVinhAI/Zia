@@ -1,6 +1,7 @@
 /**
  * Context Builder - Thu thập ngữ cảnh môi trường cho background agent
  */
+import { CONFIG } from '../../core/config/config.js';
 import { debugLog } from '../../core/logger/logger.js';
 
 /**
@@ -89,9 +90,12 @@ export async function buildEnvironmentContext(
 
     // Lấy thông tin chi tiết TẤT CẢ nhóm theo batch với delay random
     if (groupIds.length > 0) {
-      const BATCH_SIZE = 10;
-      for (let i = 0; i < groupIds.length; i += BATCH_SIZE) {
-        const batch = groupIds.slice(i, i + BATCH_SIZE);
+      const batchSize = CONFIG.backgroundAgent?.groupBatchSize ?? 10;
+      const batchDelayMin = CONFIG.backgroundAgent?.batchDelayMinMs ?? 500;
+      const batchDelayMax = CONFIG.backgroundAgent?.batchDelayMaxMs ?? 1500;
+
+      for (let i = 0; i < groupIds.length; i += batchSize) {
+        const batch = groupIds.slice(i, i + batchSize);
         const infoRes = await api.getGroupInfo(batch);
 
         for (const gid of batch) {
@@ -105,9 +109,9 @@ export async function buildEnvironmentContext(
           }
         }
 
-        // Delay random 500-1500ms giữa các batch (giống người dùng)
-        if (i + BATCH_SIZE < groupIds.length) {
-          await randomDelay(500, 1500);
+        // Delay random giữa các batch (giống người dùng)
+        if (i + batchSize < groupIds.length) {
+          await randomDelay(batchDelayMin, batchDelayMax);
         }
       }
     }

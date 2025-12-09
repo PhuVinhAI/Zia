@@ -33,6 +33,7 @@ export * from './handlers/index.js';
 export {
   createMessageHandler,
   type MessageListenerOptions,
+  registerGroupEventListener,
   registerMessageListener,
 } from './message.listener.js';
 export * from './processors/index.js';

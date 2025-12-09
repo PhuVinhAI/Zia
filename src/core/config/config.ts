@@ -53,6 +53,8 @@ export function reloadSettings() {
 // Build CONFIG object từ validated settings
 function buildConfig(settings: Settings) {
   return {
+    // Admin settings
+    adminUserId: settings.adminUserId,
     // Bot settings
     name: settings.bot.name,
     prefix: settings.bot.prefix,
@@ -80,6 +82,33 @@ function buildConfig(settings: Settings) {
     fetch: settings.fetch,
     modules: settings.modules as Record<string, boolean>,
     mimeTypes: MIME_TYPES,
+    // New configs
+    logger: settings.logger,
+    reaction: settings.reaction,
+    friendRequest: settings.friendRequest,
+    backgroundAgent: settings.backgroundAgent,
+    messageChunker: settings.messageChunker,
+    messageStore: settings.messageStore,
+    userStore: settings.userStore,
+    jikan: settings.jikan,
+    elevenlabs: settings.elevenlabs,
+    giphy: settings.giphy,
+    nekos: settings.nekos,
+    freepik: settings.freepik,
+    messageSender: settings.messageSender,
+    markdown: settings.markdown,
+    history: settings.history,
+    memory: settings.memory,
+    tvu: settings.tvu,
+    groq: settings.groq,
+    database: settings.database,
+    responseHandler: settings.responseHandler,
+    jikanRateLimitRetryMs: settings.jikanRateLimitRetryMs,
+    websocketConnectTimeoutMs: settings.websocketConnectTimeoutMs,
+    groupMembersFetch: settings.groupMembersFetch,
+    gemini: settings.gemini,
+    groqModels: settings.groqModels,
+    sandbox: settings.sandbox,
   };
 }
 
@@ -108,3 +137,40 @@ export const CONFIG = buildConfig(settings);
 
 export type { AIMessage, AIResponse } from '../../shared/types/config.schema.js';
 export { DEFAULT_RESPONSE, parseAIResponse } from '../../shared/types/config.schema.js';
+
+// Re-export types từ config.schema
+export type {
+  BackgroundAgentConfig,
+  BotConfig,
+  BufferConfig,
+  DatabaseConfig,
+  ElevenLabsConfig,
+  FetchConfig,
+  FreepikConfig,
+  FriendRequestConfig,
+  GeminiConfig,
+  GiphyConfig,
+  GroqConfig,
+  GroqModelsConfig,
+  GroupMembersFetchConfig,
+  HistoryConfig,
+  HistoryLoaderConfig,
+  JikanConfig,
+  LoggerConfig,
+  MarkdownConfig,
+  MemoryConfig,
+  MessageChunkerConfig,
+  MessageSenderConfig,
+  MessageStoreConfig,
+  ModulesConfig,
+  NekosConfig,
+  ReactionConfig,
+  ResponseHandlerConfig,
+  RetryConfig,
+  SandboxConfig,
+  Settings,
+  TvuConfig,
+  UserStoreConfig,
+} from './config.schema.js';
+
+export { MIME_TYPES, SettingsSchema } from './config.schema.js';

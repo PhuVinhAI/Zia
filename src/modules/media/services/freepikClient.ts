@@ -17,11 +17,13 @@ const FREEPIK_API_KEY = process.env.FREEPIK_API_KEY || '';
 // KY INSTANCE
 // ═══════════════════════════════════════════════════
 
+import { CONFIG } from '../../../core/config/config.js';
+
 const freepikApi: KyInstance = ky.create({
   prefixUrl: BASE_URL,
-  timeout: 60000,
+  timeout: CONFIG.freepik?.timeoutMs ?? 60000,
   retry: {
-    limit: 2,
+    limit: CONFIG.freepik?.retryLimit ?? 2,
     methods: ['get', 'post'],
     statusCodes: [408, 500, 502, 503, 504],
   },
@@ -108,8 +110,8 @@ export async function getSeedreamTaskStatus(taskId: string): Promise<FreepikTask
  */
 export async function pollTaskUntilComplete(
   taskId: string,
-  maxAttempts = 30,
-  intervalMs = 2000,
+  maxAttempts = CONFIG.freepik?.pollMaxAttempts ?? 30,
+  intervalMs = CONFIG.freepik?.pollIntervalMs ?? 2000,
 ): Promise<FreepikTaskStatus> {
   debugLog('FREEPIK', `Polling task ${taskId}...`);
 

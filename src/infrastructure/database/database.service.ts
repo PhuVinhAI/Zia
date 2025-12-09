@@ -3,14 +3,15 @@
  * Cung cấp interface thống nhất cho các module sử dụng
  */
 
+import { CONFIG } from '../../core/config/config.js';
 import { debugLog } from '../../core/logger/logger.js';
 import { closeDatabase, initDatabase } from './connection.js';
 import { historyRepository } from './repositories/history.repository.js';
 import { sentMessagesRepository } from './repositories/sent-messages.repository.js';
 import { usersRepository } from './repositories/users.repository.js';
 
-// Cleanup interval (1 giờ)
-const CLEANUP_INTERVAL_MS = 60 * 60 * 1000;
+// Cleanup interval từ config
+const getCleanupIntervalMs = () => CONFIG.database?.cleanupIntervalMs ?? 3600000;
 let cleanupTimer: ReturnType<typeof setInterval> | null = null;
 
 /**
@@ -57,9 +58,9 @@ export class DatabaseService {
       } catch (error) {
         debugLog('DB_SERVICE', `Cleanup job error: ${error}`);
       }
-    }, CLEANUP_INTERVAL_MS);
+    }, getCleanupIntervalMs());
 
-    debugLog('DB_SERVICE', 'Cleanup job started (interval: 1 hour)');
+    debugLog('DB_SERVICE', `Cleanup job started (interval: ${getCleanupIntervalMs() / 1000}s)`);
   }
 
   /**

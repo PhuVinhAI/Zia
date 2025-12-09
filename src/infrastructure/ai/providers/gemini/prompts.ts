@@ -60,12 +60,12 @@ NGUYÊN TẮC TƯƠNG TÁC (QUAN TRỌNG):
    - Khi cần nhớ lại thông tin về user → HÃY TÌM TRONG MEMORY
 
 5. **Báo cáo lỗi cho Admin (Error Reporting):**
-   - ADMIN: Nguyễn Huỳnh Phú Vinh (userId: 7307295734920277074)
+   - ADMIN userId: ${CONFIG.adminUserId || '(chưa cấu hình)'}
    - Khi gặp BẤT KỲ LỖI NÀO, hãy TẠO TASK BÁO CÁO cho admin:
      + Lỗi từ tool (tool trả về error, thất bại, không hoạt động...)
      + User phản hồi có lỗi/bug (user nói "bị lỗi", "không hoạt động", "sai rồi"...)
      + Bất kỳ vấn đề kỹ thuật nào khác
-   - Cách báo cáo: [tool:scheduleTask]{"type":"send_message","targetUserId":"7307295734920277074","message":"🚨 BÁO CÁO: [mô tả chi tiết]"}[/tool]
+   - Cách báo cáo: [tool:scheduleTask]{"type":"send_message","targetUserId":"${CONFIG.adminUserId || 'ADMIN_USER_ID'}","message":"🚨 BÁO CÁO: [mô tả chi tiết]"}[/tool]
    - Nội dung báo cáo cần có: loại lỗi, mô tả, user gặp lỗi (tên/id), context
    - Vẫn trả lời user bình thường (xin lỗi, thử cách khác...)
 
@@ -138,7 +138,7 @@ VÍ DỤ TỰ NHIÊN:
 - Chỉ hoạt động trong NHÓM CHAT, không hoạt động trong chat 1-1
 - PHẢI dùng tool getGroupMembers để lấy danh sách ID thành viên TRƯỚC khi tag
 - Cú pháp: [mention:USER_ID:TÊN_HIỂN_THỊ]
-- VD: [msg]Ê [mention:7307295734920277074:Vinh] ơi, có việc nè![/msg]
+- VD: [msg]Ê [mention:USER_ID:Tên] ơi, có việc nè![/msg]
 
 LƯU Ý: KHÔNG cần JSON. Bạn có thể dùng markdown chuẩn (bold, italic, code, table, link...) - hệ thống sẽ tự động format.
 
@@ -301,9 +301,6 @@ export function getSystemPrompt(useCharacter: boolean = true): string {
   return basePrompt + generateToolsPrompt() + silentPrompt + nsfwPrompt;
 }
 
-// Default export (deprecated - dùng getSystemPrompt() thay thế)
-export const SYSTEM_PROMPT = CHARACTER_SYSTEM_PROMPT;
-
 // ═══════════════════════════════════════════════════
 // MESSAGE PROMPTS - Các template prompt cho tin nhắn
 // ═══════════════════════════════════════════════════
@@ -407,7 +404,7 @@ export const PROMPTS = {
         case 'link':
           parts.push(`[${index}] Link: ${item.url}`);
           break;
-        case 'contact':
+        case 'contact': {
           // Bao gồm contactUserId để AI có thể gọi sendFriendRequest
           const contactInfo = [
             item.contactName || item.text || '(không rõ tên)',
@@ -418,6 +415,7 @@ export const PROMPTS = {
             .join(', ');
           parts.push(`[${index}] Danh thiếp: ${contactInfo}`);
           break;
+        }
       }
     });
 

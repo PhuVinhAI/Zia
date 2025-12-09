@@ -74,8 +74,13 @@ export function startSleepMode(api: any): void {
   }
 
   const { sleepHour, wakeHour, checkIntervalMs } = CONFIG.sleepMode;
-  console.log(`[SleepMode] ✅ Enabled: Sleep ${sleepHour}h-${wakeHour}h, check every ${checkIntervalMs / 60000} min`);
-  debugLog('SLEEP_MODE', `Starting: sleepHour=${sleepHour}, wakeHour=${wakeHour}, interval=${checkIntervalMs}ms`);
+  console.log(
+    `[SleepMode] ✅ Enabled: Sleep ${sleepHour}h-${wakeHour}h, check every ${checkIntervalMs / 60000} min`,
+  );
+  debugLog(
+    'SLEEP_MODE',
+    `Starting: sleepHour=${sleepHour}, wakeHour=${wakeHour}, interval=${checkIntervalMs}ms`,
+  );
 
   // Check ngay lập tức
   checkAndUpdateStatus(api);
@@ -110,7 +115,11 @@ export async function forceStatus(api: any, online: boolean): Promise<void> {
 /**
  * Lấy trạng thái hiện tại
  */
-export function getCurrentStatus(): { enabled: boolean; isOnline: boolean | null; config: typeof CONFIG.sleepMode } {
+export function getCurrentStatus(): {
+  enabled: boolean;
+  isOnline: boolean | null;
+  config: typeof CONFIG.sleepMode;
+} {
   return {
     enabled: CONFIG.sleepMode.enabled,
     isOnline: currentStatus,

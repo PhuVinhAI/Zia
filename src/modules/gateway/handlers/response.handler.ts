@@ -1,3 +1,4 @@
+import { CONFIG } from '../../../core/config/config.js';
 import {
   debugLog,
   logError,
@@ -21,9 +22,7 @@ import {
   removeSentMessage,
   saveSentMessage,
 } from '../../../shared/utils/message/messageStore.js';
-
-// Re-export để các module khác có thể import từ đây (backward compatibility)
-export { getThreadType, setThreadType } from '../../../shared/utils/message/messageSender.js';
+import { fixStuckTags } from '../../../shared/utils/tagFixer.js';
 
 // ═══════════════════════════════════════════════════
 // SHARED HELPERS
@@ -206,9 +205,10 @@ export async function sendResponse(
   });
 
   // Thả reactions
+  const reactionDelay = CONFIG.responseHandler?.reactionDelayMs ?? 300;
   for (const r of response.reactions) {
     await handleReaction(api, r, threadId, originalMessage, allMessages);
-    await new Promise((r) => setTimeout(r, 300));
+    await new Promise((r) => setTimeout(r, reactionDelay));
   }
 
   // Gửi messages
@@ -221,6 +221,7 @@ export async function sendResponse(
     );
 
     if (msg.text) {
+      const chunkDelay = CONFIG.responseHandler?.chunkDelayMs ?? 300;
       try {
         // Sử dụng sendTextWithChunking để tự động chia nhỏ tin nhắn dài
         await sendTextWithChunking(api, msg.text, threadId, quoteData);
@@ -232,24 +233,30 @@ export async function sendResponse(
         for (const chunk of chunks) {
           try {
             await api.sendMessage(chunk, threadId, threadType);
-            await new Promise((r) => setTimeout(r, 300));
+            await new Promise((r) => setTimeout(r, chunkDelay));
           } catch {}
         }
       }
     }
 
     if (msg.sticker) {
-      if (msg.text) await new Promise((r) => setTimeout(r, 800));
+      const stickerDelay = CONFIG.responseHandler?.stickerDelayMs ?? 800;
+      if (msg.text) await new Promise((r) => setTimeout(r, stickerDelay));
       await sendSticker(api, msg.sticker, threadId);
     }
 
     if (msg.card !== undefined) {
-      if (msg.text || msg.sticker) await new Promise((r) => setTimeout(r, 500));
+      const cardDelay = CONFIG.responseHandler?.cardDelayMs ?? 500;
+      if (msg.text || msg.sticker) await new Promise((r) => setTimeout(r, cardDelay));
       await sendCard(api, msg.card || undefined, threadId);
     }
 
     if (i < response.messages.length - 1) {
-      await new Promise((r) => setTimeout(r, 500 + Math.random() * 500));
+      const msgDelayMin = CONFIG.responseHandler?.messageDelayMinMs ?? 500;
+      const msgDelayMax = CONFIG.responseHandler?.messageDelayMaxMs ?? 1000;
+      await new Promise((r) =>
+        setTimeout(r, msgDelayMin + Math.random() * (msgDelayMax - msgDelayMin)),
+      );
     }
   }
 
@@ -264,12 +271,48 @@ export async function sendResponse(
 const TOOL_TAG_REGEX = /\[tool:\w+(?:\s+[^\]]*?)?\](?:\s*\{[\s\S]*?\}\s*\[\/tool\])?/gi;
 
 function stripToolTags(text: string): string {
-  return text.replace(TOOL_TAG_REGEX, '').trim();
+  // Fix stuck tags trước khi strip
+  const fixed = fixStuckTags(text);
+  return fixed.replace(TOOL_TAG_REGEX, '').trim();
 }
 
 function hasToolTags(text: string): boolean {
   TOOL_TAG_REGEX.lastIndex = 0;
   return TOOL_TAG_REGEX.test(text);
+}
+
+/**
+ * Loại bỏ nội dung nhại lại - khi AI lặp lại tin nhắn gốc trong quote
+ * Ví dụ: "Tin nhắn gốc của user - Câu trả lời" → "Câu trả lời"
+ */
+function removeEchoedContent(quoteContent: string, originalText: string): string {
+  if (!originalText) return quoteContent;
+
+  // Normalize để so sánh
+  const normalize = (t: string) =>
+    t
+      .toLowerCase()
+      .replace(/[?!.,;:]+$/g, '')
+      .trim();
+
+  const normalizedOriginal = normalize(originalText);
+  const normalizedQuote = normalize(quoteContent);
+
+  // Nếu quote bắt đầu bằng tin nhắn gốc, loại bỏ phần đó
+  if (normalizedQuote.startsWith(normalizedOriginal)) {
+    const remaining = quoteContent.slice(originalText.length).trim();
+    // Loại bỏ các ký tự phân cách đầu tiên nếu có (: - → > etc.)
+    return remaining.replace(/^[:\-–—→>]+\s*/, '').trim() || quoteContent;
+  }
+
+  // Nếu quote chứa tin nhắn gốc ở đầu với dấu ngoặc kép
+  const escapedOriginal = originalText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const quotedPattern = new RegExp(`^["']?${escapedOriginal}["']?\\s*[:\\-–—→>]?\\s*`, 'i');
+  if (quotedPattern.test(quoteContent)) {
+    return quoteContent.replace(quotedPattern, '').trim() || quoteContent;
+  }
+
+  return quoteContent;
 }
 
 export function createStreamCallbacks(
@@ -309,18 +352,20 @@ export function createStreamCallbacks(
     onCard: async (userId?: string) => {
       messageCount++;
       await sendCard(api, userId, threadId);
-      await new Promise((r) => setTimeout(r, 300));
+      const cardDelay = CONFIG.responseHandler?.cardDelayMs ?? 500;
+      await new Promise((r) => setTimeout(r, cardDelay));
     },
 
     onImage: async (url: string, caption?: string) => {
       messageCount++;
       await sendImageFromUrl(api, url, caption, threadId);
-      await new Promise((r) => setTimeout(r, 500));
+      const imageDelay = CONFIG.responseHandler?.imageDelayMs ?? 500;
+      await new Promise((r) => setTimeout(r, imageDelay));
     },
 
     onMessage: async (text: string, quoteIndex?: number) => {
       // Strip tool tags từ text trước khi gửi
-      const cleanText = stripToolTags(text);
+      let cleanText = stripToolTags(text);
 
       // Nếu text chỉ có tool tags (sau khi strip thì rỗng), không gửi
       if (!cleanText) {
@@ -328,6 +373,25 @@ export function createStreamCallbacks(
           toolDetected = true;
           debugLog('STREAM_CB', `Tool detected in message, skipping send`);
         }
+        return;
+      }
+
+      // Loại bỏ nội dung nhại lại nếu đang quote tin nhắn
+      if (quoteIndex !== undefined && quoteIndex >= 0 && messages && messages[quoteIndex]) {
+        const originalMsg = messages[quoteIndex];
+        const originalText = (originalMsg?.data?.content || originalMsg?.content || '')
+          .toString()
+          .trim();
+
+        if (originalText) {
+          // Loại bỏ nếu AI lặp lại tin nhắn gốc ở đầu
+          cleanText = removeEchoedContent(cleanText, originalText);
+        }
+      }
+
+      // Nếu sau khi loại bỏ nhại lại mà rỗng, không gửi
+      if (!cleanText.trim()) {
+        debugLog('STREAM_CB', `Empty after removing echoed content, skipping`);
         return;
       }
 
@@ -342,15 +406,17 @@ export function createStreamCallbacks(
         logError('onMessage', e);
         // Fallback: gửi text thuần với chunking
         const chunks = splitMessage(cleanText);
+        const chunkDelayMs = CONFIG.responseHandler?.chunkDelayMs ?? 300;
         for (const chunk of chunks) {
           try {
             const threadType = getThreadType(threadId);
             await api.sendMessage(chunk, threadId, threadType);
-            await new Promise((r) => setTimeout(r, 300));
+            await new Promise((r) => setTimeout(r, chunkDelayMs));
           } catch {}
         }
       }
-      await new Promise((r) => setTimeout(r, 300));
+      const chunkDelay = CONFIG.responseHandler?.chunkDelayMs ?? 300;
+      await new Promise((r) => setTimeout(r, chunkDelay));
     },
 
     onUndo: async (index: number) => {

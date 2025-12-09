@@ -36,7 +36,6 @@ export { deleteChatSession, getChatSession } from './geminiChat.js';
 export type { MediaPart, MediaType } from './geminiConfig.js';
 // Re-exports
 export {
-  ai,
   extractYouTubeUrls,
   GEMINI_CONFIG,
   getAI,

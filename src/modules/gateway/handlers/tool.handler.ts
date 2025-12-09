@@ -19,6 +19,7 @@ import {
   type ToolContext,
   type ToolResult,
 } from '../../../core/index.js';
+import { fixStuckTags } from '../../../shared/utils/tagFixer.js';
 import { handleAllToolOutputs } from './tool.output.handler.js';
 
 // ═══════════════════════════════════════════════════
@@ -101,7 +102,7 @@ export async function notifyToolCall(
   const message = `🔧 Đang gọi tool: ${toolNames}...`;
 
   try {
-    const { getThreadType } = await import('./response.handler.js');
+    const { getThreadType } = await import('../../../shared/utils/message/messageSender.js');
     const threadType = getThreadType(threadId);
     await api.sendMessage(message, threadId, threadType);
     console.log(`[Tool] 🔧 Gọi tool: ${toolNames}`);
@@ -204,10 +205,13 @@ export async function handleToolCalls(
  * Check if AI response contains only tool calls (no other content)
  */
 export function isToolOnlyResponse(response: string): boolean {
-  const toolCalls = parseToolCalls(response);
+  // Fix stuck tags trước
+  const fixedResponse = fixStuckTags(response);
+
+  const toolCalls = parseToolCalls(fixedResponse);
   if (toolCalls.length === 0) return false;
 
-  let cleaned = response;
+  let cleaned = fixedResponse;
   for (const call of toolCalls) {
     cleaned = cleaned.replace(call.rawTag, '');
   }

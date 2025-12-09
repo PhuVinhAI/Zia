@@ -17,11 +17,13 @@ const API_KEY = process.env.GIPHY_API_KEY || '';
 // KY INSTANCE
 // ═══════════════════════════════════════════════════
 
+import { CONFIG } from '../../../core/config/config.js';
+
 const giphyApi: KyInstance = ky.create({
   prefixUrl: BASE_URL,
-  timeout: 15000,
+  timeout: CONFIG.giphy?.timeoutMs ?? 15000,
   retry: {
-    limit: 2,
+    limit: CONFIG.giphy?.retryLimit ?? 2,
     methods: ['get'],
     statusCodes: [408, 500, 502, 503, 504],
   },
@@ -56,12 +58,14 @@ export async function searchGifs(
     lang?: string;
   } = {},
 ): Promise<GiphySearchResponse> {
+  const defaultLimit = CONFIG.giphy?.defaultLimit ?? 10;
+  const defaultRating = CONFIG.giphy?.defaultRating ?? 'g';
   const searchParams = new URLSearchParams({
     api_key: API_KEY,
     q: query,
-    limit: String(options.limit || 10),
+    limit: String(options.limit || defaultLimit),
     offset: String(options.offset || 0),
-    rating: options.rating || 'g',
+    rating: options.rating || defaultRating,
     lang: options.lang || 'en',
   });
 

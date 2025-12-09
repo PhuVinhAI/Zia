@@ -13,9 +13,11 @@ interface SentMessage {
   timestamp: number;
 }
 
+import { CONFIG } from '../../../core/config/config.js';
+
 // In-memory cache để truy xuất nhanh theo index
 const messageCache = new Map<string, SentMessage[]>();
-const MAX_CACHE_PER_THREAD = 20;
+const getMaxCachePerThread = () => CONFIG.messageStore?.maxCachePerThread ?? 20;
 
 /**
  * Lưu tin nhắn đã gửi (vào cả DB và cache)
@@ -40,7 +42,7 @@ export function saveSentMessage(
   }
   const cache = messageCache.get(threadId)!;
   cache.push(msg);
-  if (cache.length > MAX_CACHE_PER_THREAD) {
+  if (cache.length > getMaxCachePerThread()) {
     cache.shift();
   }
 
@@ -152,8 +154,9 @@ export function cleanupOldMessages(): void {
   }
 }
 
-// Cleanup cache mỗi 30 phút (DB cleanup được xử lý bởi database.service)
-setInterval(cleanupOldMessages, 30 * 60 * 1000);
+// Cleanup cache theo interval từ config (DB cleanup được xử lý bởi database.service)
+const cleanupIntervalMs = CONFIG.messageStore?.cleanupIntervalMs ?? 1800000;
+setInterval(cleanupOldMessages, cleanupIntervalMs);
 
 /**
  * Kiểm tra xem msgId có phải tin nhắn của bot không
@@ -176,7 +179,7 @@ export async function isBotMessage(msgId: string): Promise<boolean> {
  */
 export async function getBotMessageByMsgId(msgId: string): Promise<SentMessage | null> {
   const msgIdStr = String(msgId);
-  
+
   // Check cache trước
   for (const messages of messageCache.values()) {
     const found = messages.find((m) => String(m.msgId) === msgIdStr);
@@ -208,14 +211,15 @@ export async function getBotMessageByMsgId(msgId: string): Promise<SentMessage |
  * Dùng cho trường hợp reaction event trả về msgId khác với msgId đã lưu
  */
 export async function getLastBotMessageInThread(threadId: string): Promise<SentMessage | null> {
-  const fiveMinutesAgo = Date.now() - 5 * 60 * 1000;
-  
+  const recentWindowMs = CONFIG.messageStore?.recentMessageWindowMs ?? 300000;
+  const recentTime = Date.now() - recentWindowMs;
+
   // Check cache trước
   const cache = messageCache.get(threadId);
   if (cache && cache.length > 0) {
     // Lấy tin nhắn gần nhất trong vòng 5 phút
     for (let i = cache.length - 1; i >= 0; i--) {
-      if (cache[i].timestamp > fiveMinutesAgo) {
+      if (cache[i].timestamp > recentTime) {
         debugLog('MSG_STORE', `getLastBotMessageInThread: found in cache msgId=${cache[i].msgId}`);
         return cache[i];
       }
@@ -224,7 +228,7 @@ export async function getLastBotMessageInThread(threadId: string): Promise<SentM
 
   // Fallback to DB
   const dbMsg = await sentMessagesRepository.getLastMessage(threadId);
-  if (dbMsg && dbMsg.timestamp.getTime() > fiveMinutesAgo) {
+  if (dbMsg && dbMsg.timestamp.getTime() > recentTime) {
     debugLog('MSG_STORE', `getLastBotMessageInThread: found in DB msgId=${dbMsg.msgId}`);
     return {
       msgId: dbMsg.msgId,
@@ -235,6 +239,9 @@ export async function getLastBotMessageInThread(threadId: string): Promise<SentM
     };
   }
 
-  debugLog('MSG_STORE', `getLastBotMessageInThread: NOT found recent message in thread=${threadId}`);
+  debugLog(
+    'MSG_STORE',
+    `getLastBotMessageInThread: NOT found recent message in thread=${threadId}`,
+  );
   return null;
 }
