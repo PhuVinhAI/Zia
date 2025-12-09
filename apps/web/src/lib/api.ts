@@ -33,7 +33,6 @@ export interface PaginatedResponse<T> extends ApiResponse<T[]> {
 
 // Stats types
 export interface StatsOverview {
-  users: number;
   messages: number;
   memories: number;
   tasks: number;
@@ -53,14 +52,6 @@ export interface ActiveThread {
   thread_id: string;
   message_count: number;
   last_activity: number;
-}
-
-// User types
-export interface User {
-  userId: string;
-  name: string | null;
-  role: 'admin' | 'user' | 'blocked';
-  createdAt: Date;
 }
 
 // Task types
@@ -88,7 +79,6 @@ export interface Task {
 export interface Memory {
   id: number;
   content: string;
-  type: 'conversation' | 'fact' | 'person' | 'preference' | 'task' | 'note';
   userId: string | null;
   userName: string | null;
   importance: number;
@@ -148,15 +138,6 @@ export const statsApi = {
     api.get<ApiResponse<ActiveThread[]>>(`/stats/active-threads?limit=${limit}`),
 };
 
-export const usersApiClient = {
-  list: (params?: { page?: number; limit?: number; search?: string; role?: string }) =>
-    api.get<PaginatedResponse<User>>('/users', { params }),
-  get: (id: string) => api.get<ApiResponse<User>>(`/users/${id}`),
-  update: (id: string, data: Partial<User>) => api.patch<ApiResponse<User>>(`/users/${id}`, data),
-  block: (id: string) => api.post<ApiResponse<void>>(`/users/${id}/block`),
-  unblock: (id: string) => api.post<ApiResponse<void>>(`/users/${id}/unblock`),
-};
-
 export const tasksApiClient = {
   list: (params?: { page?: number; limit?: number; status?: string; type?: string }) =>
     api.get<PaginatedResponse<Task>>('/tasks', { params }),
@@ -169,9 +150,8 @@ export const tasksApiClient = {
 };
 
 export const memoriesApiClient = {
-  list: (params?: { page?: number; limit?: number; type?: string; userId?: string; search?: string }) =>
+  list: (params?: { page?: number; limit?: number; userId?: string; search?: string }) =>
     api.get<PaginatedResponse<Memory>>('/memories', { params }),
-  getStats: () => api.get<ApiResponse<{ type: string; count: number }[]>>('/memories/stats'),
   get: (id: number) => api.get<ApiResponse<Memory>>(`/memories/${id}`),
   create: (data: Partial<Memory>) => api.post<ApiResponse<Memory>>('/memories', data),
   update: (id: number, data: Partial<Memory>) => api.patch<ApiResponse<Memory>>(`/memories/${id}`, data),

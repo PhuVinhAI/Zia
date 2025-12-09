@@ -6,7 +6,7 @@
  * Commands:
  *   list [limit]           - Liệt kê memories
  *   search <query>         - Tìm kiếm semantic
- *   add <content> [type]   - Thêm memory mới
+ *   add <content>          - Thêm memory mới
  *   delete <id>            - Xóa memory
  *   stats                  - Thống kê
  *   export [file]          - Export ra JSON
@@ -29,15 +29,6 @@ const c = {
   magenta: '\x1b[35m',
 };
 
-const TYPE_COLORS: Record<string, string> = {
-  person: c.blue,
-  fact: c.green,
-  preference: c.magenta,
-  task: c.yellow,
-  note: c.dim,
-  conversation: c.cyan,
-};
-
 function formatDate(d: Date | number): string {
   const date = d instanceof Date ? d : new Date(d);
   return date.toLocaleString('vi-VN');
@@ -58,10 +49,9 @@ async function cmdList(limit = 20) {
   }
 
   memories.forEach((m) => {
-    const typeColor = TYPE_COLORS[m.type] || c.dim;
     const imp = '★'.repeat(Math.min(m.importance, 5)) + '☆'.repeat(Math.max(0, 5 - m.importance));
 
-    console.log(`${c.bold}#${m.id}${c.reset} ${typeColor}[${m.type}]${c.reset} ${imp}`);
+    console.log(`${c.bold}#${m.id}${c.reset} ${imp}`);
     console.log(`   ${m.content}`);
     console.log(
       `   ${c.dim}by ${m.userName || 'unknown'} • ${formatDate(m.createdAt)}${c.reset}\n`,
@@ -80,28 +70,25 @@ async function cmdSearch(query: string, limit = 5) {
   }
 
   results.forEach((m, i) => {
-    const typeColor = TYPE_COLORS[m.type] || c.dim;
     const relevance = Math.round(m.relevance * 100);
     const bar = '█'.repeat(Math.round(relevance / 10)) + '░'.repeat(10 - Math.round(relevance / 10));
 
     console.log(
-      `${c.bold}${i + 1}.${c.reset} ${c.green}${relevance}%${c.reset} ${bar} ${typeColor}[${m.type}]${c.reset}`,
+      `${c.bold}${i + 1}.${c.reset} ${c.green}${relevance}%${c.reset} ${bar}`,
     );
     console.log(`   ${m.content}`);
     console.log(`   ${c.dim}#${m.id} • ${m.userName || 'unknown'}${c.reset}\n`);
   });
 }
 
-async function cmdAdd(content: string, type = 'note', importance = 5) {
+async function cmdAdd(content: string, importance = 5) {
   console.log(`\n${c.bold}${c.cyan}➕ Add Memory${c.reset}\n`);
 
   const id = await memoryStore.add(content, {
-    type: type as any,
     importance,
   });
 
   console.log(`${c.green}✓${c.reset} Created memory #${id}`);
-  console.log(`  Type: ${type}`);
   console.log(`  Content: ${content.substring(0, 100)}${content.length > 100 ? '...' : ''}`);
 }
 
@@ -121,14 +108,9 @@ async function cmdStats() {
 
   const stats = await memoryStore.getStats();
 
-  console.log(`  Total: ${c.bold}${stats.total}${c.reset} memories\n`);
-  console.log(`  By type:`);
-
-  Object.entries(stats.byType).forEach(([type, count]) => {
-    const color = TYPE_COLORS[type] || c.dim;
-    const bar = '█'.repeat(Math.min(count, 20));
-    console.log(`    ${color}${type.padEnd(12)}${c.reset} ${bar} ${count}`);
-  });
+  console.log(`  Total: ${c.bold}${stats.total}${c.reset} memories`);
+  console.log(`  Avg Access Count: ${stats.avgAccessCount}`);
+  console.log(`  Stale (>30 days): ${stats.staleCount}`);
 }
 
 async function cmdExport(file = 'memories_export.json') {
@@ -141,7 +123,6 @@ async function cmdExport(file = 'memories_export.json') {
     count: memories.length,
     memories: memories.map((m) => ({
       content: m.content,
-      type: m.type,
       userId: m.userId,
       userName: m.userName,
       importance: m.importance,
@@ -169,7 +150,6 @@ async function cmdImport(file: string) {
   for (const m of data.memories) {
     try {
       await memoryStore.add(m.content, {
-        type: m.type,
         userId: m.userId,
         userName: m.userName,
         importance: m.importance,
@@ -197,7 +177,7 @@ ${c.cyan}Usage:${c.reset} bun scripts/memory.ts <command> [options]
 ${c.cyan}Commands:${c.reset}
   list [limit]              Liệt kê memories (default: 20)
   search <query> [limit]    Tìm kiếm semantic (default: 5)
-  add <content> [type]      Thêm memory (types: person, fact, preference, task, note)
+  add <content> [importance] Thêm memory (importance: 1-10, default: 5)
   delete <id>               Xóa memory theo ID
   stats                     Thống kê memories
   export [file]             Export ra JSON (default: memories_export.json)
@@ -206,7 +186,7 @@ ${c.cyan}Commands:${c.reset}
 ${c.cyan}Examples:${c.reset}
   bun scripts/memory.ts list 50
   bun scripts/memory.ts search "sở thích"
-  bun scripts/memory.ts add "User Minh thích lập trình" person
+  bun scripts/memory.ts add "User Minh thích lập trình" 7
   bun scripts/memory.ts delete 5
   bun scripts/memory.ts export backup.json
 `);
@@ -241,7 +221,7 @@ async function main() {
           console.log(`${c.red}Error: Missing content${c.reset}`);
           return;
         }
-        await cmdAdd(args[1], args[2] || 'note', parseInt(args[3]) || 5);
+        await cmdAdd(args[1], parseInt(args[2]) || 5);
         break;
       case 'delete':
         if (!args[1]) {

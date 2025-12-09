@@ -23,18 +23,6 @@ export {
   isSupportedMime,
   type TokenCheckResult,
 } from '../tokenCounter.js';
-// User store (database-backed)
-export {
-  blockUser,
-  getAdmins,
-  getBlockedUsers,
-  getUserRole,
-  isAdmin,
-  isBlocked,
-  registerUser,
-  setAdmin,
-  unblockUser,
-} from '../userStore.js';
 // History converter
 export {
   getMediaUrl,

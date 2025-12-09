@@ -17,30 +17,19 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Search, Trash2 } from 'lucide-react';
-
-const memoryTypes = ['conversation', 'fact', 'person', 'preference', 'task', 'note'] as const;
 
 export default function MemoriesPage() {
   const [search, setSearch] = useState('');
-  const [type, setType] = useState<string>('all');
   const [page, setPage] = useState(1);
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
-    queryKey: ['memories', page, type, search],
+    queryKey: ['memories', page, search],
     queryFn: async () => {
       const res = await memoriesApiClient.list({
         page,
         limit: 20,
-        type: type === 'all' ? undefined : type,
         search: search || undefined,
       });
       return res.data;
@@ -55,22 +44,6 @@ export default function MemoriesPage() {
     },
     onError: () => toast.error('Lỗi khi xóa memory'),
   });
-
-  const getTypeBadge = (type: string) => {
-    const colors: Record<string, string> = {
-      conversation: 'bg-blue-500',
-      fact: 'bg-green-500',
-      person: 'bg-purple-500',
-      preference: 'bg-yellow-500',
-      task: 'bg-orange-500',
-      note: 'bg-gray-500',
-    };
-    return (
-      <Badge variant="secondary" className={`${colors[type] || ''} text-white`}>
-        {type}
-      </Badge>
-    );
-  };
 
   return (
     <div className="space-y-6">
@@ -89,19 +62,6 @@ export default function MemoriesPage() {
             className="pl-9"
           />
         </div>
-        <Select value={type} onValueChange={setType}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Lọc theo loại" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tất cả</SelectItem>
-            {memoryTypes.map((t) => (
-              <SelectItem key={t} value={t} className="capitalize">
-                {t}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
       </div>
 
       <div className="rounded-md border">
@@ -109,8 +69,7 @@ export default function MemoriesPage() {
           <TableHeader>
             <TableRow>
               <TableHead>ID</TableHead>
-              <TableHead>Loại</TableHead>
-              <TableHead className="max-w-[300px]">Nội dung</TableHead>
+              <TableHead className="max-w-[400px]">Nội dung</TableHead>
               <TableHead>Người dùng</TableHead>
               <TableHead>Độ quan trọng</TableHead>
               <TableHead>Ngày tạo</TableHead>
@@ -121,14 +80,14 @@ export default function MemoriesPage() {
             {isLoading ? (
               [...Array(5)].map((_, i) => (
                 <TableRow key={i}>
-                  {[...Array(7)].map((_, j) => (
+                  {[...Array(6)].map((_, j) => (
                     <TableCell key={j}><Skeleton className="h-4 w-16" /></TableCell>
                   ))}
                 </TableRow>
               ))
             ) : data?.data?.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center text-muted-foreground">
+                <TableCell colSpan={6} className="text-center text-muted-foreground">
                   Không có bộ nhớ nào
                 </TableCell>
               </TableRow>
@@ -136,10 +95,9 @@ export default function MemoriesPage() {
               data?.data?.map((memory) => (
                 <TableRow key={memory.id}>
                   <TableCell className="font-mono">{memory.id}</TableCell>
-                  <TableCell>{getTypeBadge(memory.type)}</TableCell>
-                  <TableCell className="max-w-[300px]">
+                  <TableCell className="max-w-[400px]">
                     <p className="truncate" title={memory.content}>
-                      {truncate(memory.content, 50)}
+                      {truncate(memory.content, 80)}
                     </p>
                   </TableCell>
                   <TableCell>{memory.userName || memory.userId || '-'}</TableCell>

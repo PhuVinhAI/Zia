@@ -3,8 +3,8 @@
  */
 import { Hono } from 'hono';
 import { getDatabase, getSqliteDb } from '../database/connection.js';
-import { history, users, memories, agentTasks, sentMessages } from '../database/schema.js';
-import { count, sql, desc, eq } from 'drizzle-orm';
+import { history, memories, agentTasks } from '../database/schema.js';
+import { count, sql } from 'drizzle-orm';
 
 export const statsApi = new Hono();
 
@@ -14,10 +14,8 @@ statsApi.get('/overview', async (c) => {
     const db = getDatabase();
     const now = Date.now();
     const oneDayAgo = now - 24 * 60 * 60 * 1000;
-    const oneWeekAgo = now - 7 * 24 * 60 * 60 * 1000;
 
     // Đếm tổng số
-    const [totalUsers] = await db.select({ count: count() }).from(users);
     const [totalMessages] = await db.select({ count: count() }).from(history);
     const [totalMemories] = await db.select({ count: count() }).from(memories);
     const [totalTasks] = await db.select({ count: count() }).from(agentTasks);
@@ -43,7 +41,6 @@ statsApi.get('/overview', async (c) => {
     return c.json({
       success: true,
       data: {
-        users: totalUsers.count,
         messages: totalMessages.count,
         memories: totalMemories.count,
         tasks: totalTasks.count,

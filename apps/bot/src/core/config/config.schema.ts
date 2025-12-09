@@ -140,11 +140,6 @@ export const MessageStoreConfigSchema = z.object({
   maxUndoTimeMs: z.coerce.number().min(30000).default(120000), // 2 phút - giới hạn thời gian thu hồi tin nhắn
 });
 
-// User store config schema
-export const UserStoreConfigSchema = z.object({
-  cacheTtlMs: z.coerce.number().min(60000).default(300000),
-});
-
 // Jikan API config schema
 export const JikanConfigSchema = z.object({
   rateLimitDelayMs: z.coerce.number().min(100).default(350),
@@ -372,9 +367,6 @@ export const SettingsSchema = z.object({
     recentMessageWindowMs: 300000,
     maxUndoTimeMs: 120000,
   }),
-  userStore: UserStoreConfigSchema.optional().default({
-    cacheTtlMs: 300000,
-  }),
   jikan: JikanConfigSchema.optional().default({
     rateLimitDelayMs: 350,
     timeoutMs: 15000,
@@ -492,7 +484,6 @@ export type FriendRequestConfig = z.infer<typeof FriendRequestConfigSchema>;
 export type BackgroundAgentConfig = z.infer<typeof BackgroundAgentConfigSchema>;
 export type MessageChunkerConfig = z.infer<typeof MessageChunkerConfigSchema>;
 export type MessageStoreConfig = z.infer<typeof MessageStoreConfigSchema>;
-export type UserStoreConfig = z.infer<typeof UserStoreConfigSchema>;
 export type JikanConfig = z.infer<typeof JikanConfigSchema>;
 export type ElevenLabsConfig = z.infer<typeof ElevenLabsConfigSchema>;
 export type GiphyConfig = z.infer<typeof GiphyConfigSchema>;

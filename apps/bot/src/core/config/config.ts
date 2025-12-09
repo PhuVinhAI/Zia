@@ -110,7 +110,6 @@ function buildConfig(settings: Settings) {
     backgroundAgent: settings.backgroundAgent,
     messageChunker: settings.messageChunker,
     messageStore: settings.messageStore,
-    userStore: settings.userStore,
     jikan: settings.jikan,
     elevenlabs: settings.elevenlabs,
     giphy: settings.giphy,
@@ -176,7 +175,6 @@ export type {
   SandboxConfig,
   Settings,
   TvuConfig,
-  UserStoreConfig,
 } from './config.schema.js';
 
 export { MIME_TYPES, SettingsSchema } from './config.schema.js';

@@ -5,7 +5,6 @@ import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import {
   LayoutDashboard,
-  Users,
   MessageSquare,
   Brain,
   ListTodo,
@@ -30,11 +29,6 @@ const navItems = [
     title: 'Tổng quan',
     href: '/',
     icon: LayoutDashboard,
-  },
-  {
-    title: 'Người dùng',
-    href: '/users',
-    icon: Users,
   },
   {
     title: 'Lịch sử',

@@ -318,20 +318,15 @@ export const GoogleSearchSchema = z
 
 // ============ MEMORY TOOLS ============
 
-// Memory types
-const MEMORY_TYPES = ['conversation', 'fact', 'person', 'preference', 'task', 'note'] as const;
-
 // Save Memory params
 export const SaveMemorySchema = z.object({
   content: z.string().min(5, 'Nội dung quá ngắn (tối thiểu 5 ký tự)').max(2000, 'Nội dung quá dài'),
-  type: z.enum(MEMORY_TYPES).default('note'),
   importance: z.coerce.number().min(1).max(10).default(5),
 });
 
 // Recall Memory params
 export const RecallMemorySchema = z.object({
   query: z.string().min(2, 'Query quá ngắn (tối thiểu 2 ký tự)').max(500, 'Query quá dài'),
-  type: z.enum(MEMORY_TYPES).optional(),
   limit: z.coerce.number().min(1).max(10).default(5),
 });
 

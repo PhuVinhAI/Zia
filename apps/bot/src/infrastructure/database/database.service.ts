@@ -8,7 +8,6 @@ import { debugLog } from '../../core/logger/logger.js';
 import { closeDatabase, initDatabase } from './connection.js';
 import { historyRepository } from './repositories/history.repository.js';
 import { sentMessagesRepository } from './repositories/sent-messages.repository.js';
-import { usersRepository } from './repositories/users.repository.js';
 
 // Cleanup interval từ config
 const getCleanupIntervalMs = () => CONFIG.database?.cleanupIntervalMs ?? 3600000;
@@ -88,14 +87,6 @@ export class DatabaseService {
 
   get sentMessages() {
     return sentMessagesRepository;
-  }
-
-  // ============================================
-  // Users Operations
-  // ============================================
-
-  get users() {
-    return usersRepository;
   }
 }
 
