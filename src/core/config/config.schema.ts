@@ -97,6 +97,121 @@ export const StickersConfigSchema = z.object({
   keywords: z.array(z.string()).default([]),
 });
 
+// Logger config schema
+export const LoggerConfigSchema = z.object({
+  maxLinesPerFile: z.coerce.number().min(100).default(1000),
+  logCacheThreshold: z.coerce.number().min(100).default(1000),
+});
+
+// Reaction config schema
+export const ReactionConfigSchema = z.object({
+  debounceMs: z.coerce.number().min(500).default(2000),
+});
+
+// Friend request config schema
+export const FriendRequestConfigSchema = z.object({
+  autoAcceptDelayMinMs: z.coerce.number().min(1000).default(2000),
+  autoAcceptDelayMaxMs: z.coerce.number().min(1000).default(5000),
+});
+
+// Background agent config schema
+export const BackgroundAgentConfigSchema = z.object({
+  pollIntervalMs: z.coerce.number().min(10000).default(90000),
+  maxToolIterations: z.coerce.number().min(1).max(20).default(5),
+  groupBatchSize: z.coerce.number().min(1).default(10),
+  batchDelayMinMs: z.coerce.number().min(100).default(500),
+  batchDelayMaxMs: z.coerce.number().min(100).default(1500),
+});
+
+// Message chunker config schema
+export const MessageChunkerConfigSchema = z.object({
+  maxMessageLength: z.coerce.number().min(500).default(1800),
+});
+
+// Message store config schema
+export const MessageStoreConfigSchema = z.object({
+  maxCachePerThread: z.coerce.number().min(5).default(20),
+  cleanupIntervalMs: z.coerce.number().min(60000).default(1800000),
+  recentMessageWindowMs: z.coerce.number().min(60000).default(300000),
+});
+
+// User store config schema
+export const UserStoreConfigSchema = z.object({
+  cacheTtlMs: z.coerce.number().min(60000).default(300000),
+});
+
+// Jikan API config schema
+export const JikanConfigSchema = z.object({
+  rateLimitDelayMs: z.coerce.number().min(100).default(350),
+  timeoutMs: z.coerce.number().min(1000).default(15000),
+});
+
+// ElevenLabs config schema
+export const ElevenLabsConfigSchema = z.object({
+  defaultVoiceId: z.string().default('fUjY9K2nAIwlALOwSiwc'),
+  defaultModelId: z.string().default('eleven_v3'),
+});
+
+// Giphy config schema
+export const GiphyConfigSchema = z.object({
+  timeoutMs: z.coerce.number().min(1000).default(15000),
+  defaultLimit: z.coerce.number().min(1).max(50).default(10),
+  defaultRating: z.string().default('g'),
+});
+
+// Nekos config schema
+export const NekosConfigSchema = z.object({
+  timeoutMs: z.coerce.number().min(1000).default(15000),
+});
+
+// Freepik config schema
+export const FreepikConfigSchema = z.object({
+  timeoutMs: z.coerce.number().min(1000).default(60000),
+  pollMaxAttempts: z.coerce.number().min(1).default(30),
+  pollIntervalMs: z.coerce.number().min(500).default(2000),
+});
+
+// Message sender config schema
+export const MessageSenderConfigSchema = z.object({
+  mediaDelayMs: z.coerce.number().min(100).default(300),
+  chunkDelayMs: z.coerce.number().min(100).default(400),
+});
+
+// Markdown config schema
+export const MarkdownConfigSchema = z.object({
+  mermaidTimeoutMs: z.coerce.number().min(1000).default(30000),
+  groupMediaSizeLimitMB: z.coerce.number().min(1).default(1),
+});
+
+// History config schema
+export const HistoryConfigSchema = z.object({
+  maxTrimAttempts: z.coerce.number().min(10).default(50),
+  maxContextTokens: z.coerce.number().min(10000).default(300000),
+  estimatedCharsPerToken: z.coerce.number().min(1).default(4),
+});
+
+// Memory config schema
+export const MemoryConfigSchema = z.object({
+  decayHalfLifeDays: z.coerce.number().min(1).default(30),
+  accessBoostFactor: z.coerce.number().min(0).default(0.2),
+});
+
+// TVU config schema
+export const TvuConfigSchema = z.object({
+  timeoutMs: z.coerce.number().min(1000).default(10000),
+});
+
+// Groq config schema
+export const GroqConfigSchema = z.object({
+  rateLimitCooldownMs: z.coerce.number().min(1000).default(60000),
+});
+
+// Database config schema
+export const DatabaseConfigSchema = z.object({
+  cleanupIntervalMs: z.coerce.number().min(60000).default(3600000),
+  embeddingDim: z.coerce.number().min(1).default(768),
+});
+
 // Full settings schema
 export const SettingsSchema = z.object({
   bot: BotConfigSchema.optional().default({
@@ -158,6 +273,83 @@ export const SettingsSchema = z.object({
     keywords: [],
   }),
   allowedUserIds: z.array(z.string()).default([]),
+  logger: LoggerConfigSchema.optional().default({
+    maxLinesPerFile: 1000,
+    logCacheThreshold: 1000,
+  }),
+  reaction: ReactionConfigSchema.optional().default({
+    debounceMs: 2000,
+  }),
+  friendRequest: FriendRequestConfigSchema.optional().default({
+    autoAcceptDelayMinMs: 2000,
+    autoAcceptDelayMaxMs: 5000,
+  }),
+  backgroundAgent: BackgroundAgentConfigSchema.optional().default({
+    pollIntervalMs: 90000,
+    maxToolIterations: 5,
+    groupBatchSize: 10,
+    batchDelayMinMs: 500,
+    batchDelayMaxMs: 1500,
+  }),
+  messageChunker: MessageChunkerConfigSchema.optional().default({
+    maxMessageLength: 1800,
+  }),
+  messageStore: MessageStoreConfigSchema.optional().default({
+    maxCachePerThread: 20,
+    cleanupIntervalMs: 1800000,
+    recentMessageWindowMs: 300000,
+  }),
+  userStore: UserStoreConfigSchema.optional().default({
+    cacheTtlMs: 300000,
+  }),
+  jikan: JikanConfigSchema.optional().default({
+    rateLimitDelayMs: 350,
+    timeoutMs: 15000,
+  }),
+  elevenlabs: ElevenLabsConfigSchema.optional().default({
+    defaultVoiceId: 'fUjY9K2nAIwlALOwSiwc',
+    defaultModelId: 'eleven_v3',
+  }),
+  giphy: GiphyConfigSchema.optional().default({
+    timeoutMs: 15000,
+    defaultLimit: 10,
+    defaultRating: 'g',
+  }),
+  nekos: NekosConfigSchema.optional().default({
+    timeoutMs: 15000,
+  }),
+  freepik: FreepikConfigSchema.optional().default({
+    timeoutMs: 60000,
+    pollMaxAttempts: 30,
+    pollIntervalMs: 2000,
+  }),
+  messageSender: MessageSenderConfigSchema.optional().default({
+    mediaDelayMs: 300,
+    chunkDelayMs: 400,
+  }),
+  markdown: MarkdownConfigSchema.optional().default({
+    mermaidTimeoutMs: 30000,
+    groupMediaSizeLimitMB: 1,
+  }),
+  history: HistoryConfigSchema.optional().default({
+    maxTrimAttempts: 50,
+    maxContextTokens: 300000,
+    estimatedCharsPerToken: 4,
+  }),
+  memory: MemoryConfigSchema.optional().default({
+    decayHalfLifeDays: 30,
+    accessBoostFactor: 0.2,
+  }),
+  tvu: TvuConfigSchema.optional().default({
+    timeoutMs: 10000,
+  }),
+  groq: GroqConfigSchema.optional().default({
+    rateLimitCooldownMs: 60000,
+  }),
+  database: DatabaseConfigSchema.optional().default({
+    cleanupIntervalMs: 3600000,
+    embeddingDim: 768,
+  }),
 });
 
 // Type inference từ schema
@@ -167,6 +359,25 @@ export type HistoryLoaderConfig = z.infer<typeof HistoryLoaderSchema>;
 export type BufferConfig = z.infer<typeof BufferConfigSchema>;
 export type FetchConfig = z.infer<typeof FetchConfigSchema>;
 export type ModulesConfig = z.infer<typeof ModulesConfigSchema>;
+export type LoggerConfig = z.infer<typeof LoggerConfigSchema>;
+export type ReactionConfig = z.infer<typeof ReactionConfigSchema>;
+export type FriendRequestConfig = z.infer<typeof FriendRequestConfigSchema>;
+export type BackgroundAgentConfig = z.infer<typeof BackgroundAgentConfigSchema>;
+export type MessageChunkerConfig = z.infer<typeof MessageChunkerConfigSchema>;
+export type MessageStoreConfig = z.infer<typeof MessageStoreConfigSchema>;
+export type UserStoreConfig = z.infer<typeof UserStoreConfigSchema>;
+export type JikanConfig = z.infer<typeof JikanConfigSchema>;
+export type ElevenLabsConfig = z.infer<typeof ElevenLabsConfigSchema>;
+export type GiphyConfig = z.infer<typeof GiphyConfigSchema>;
+export type NekosConfig = z.infer<typeof NekosConfigSchema>;
+export type FreepikConfig = z.infer<typeof FreepikConfigSchema>;
+export type MessageSenderConfig = z.infer<typeof MessageSenderConfigSchema>;
+export type MarkdownConfig = z.infer<typeof MarkdownConfigSchema>;
+export type HistoryConfig = z.infer<typeof HistoryConfigSchema>;
+export type MemoryConfig = z.infer<typeof MemoryConfigSchema>;
+export type TvuConfig = z.infer<typeof TvuConfigSchema>;
+export type GroqConfig = z.infer<typeof GroqConfigSchema>;
+export type DatabaseConfig = z.infer<typeof DatabaseConfigSchema>;
 export type Settings = z.infer<typeof SettingsSchema>;
 
 // MIME types (static, không cần validate)

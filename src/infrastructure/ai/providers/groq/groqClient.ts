@@ -3,6 +3,7 @@
  * Hỗ trợ fallback model khi bị rate limit
  */
 import { Groq } from 'groq-sdk';
+import { CONFIG } from '../../../../core/config/config.js';
 import { debugLog } from '../../../../core/logger/logger.js';
 
 debugLog('GROQ', 'Initializing Groq API...');
@@ -20,7 +21,7 @@ const GROQ_MODELS = {
 // Track model hiện tại và thời gian cooldown
 let currentModel: keyof typeof GROQ_MODELS = 'primary';
 let primaryCooldownUntil: number | null = null;
-const RATE_LIMIT_COOLDOWN_MS = 60 * 1000; // 1 phút cooldown
+const getRateLimitCooldownMs = () => CONFIG.groq?.rateLimitCooldownMs ?? 60000;
 
 // Model với reasoning capability
 export const GROQ_MODEL = GROQ_MODELS.primary;
@@ -78,8 +79,9 @@ function getCurrentModel(): string {
 function switchToFallback(): void {
   if (currentModel === 'primary') {
     currentModel = 'fallback';
-    primaryCooldownUntil = Date.now() + RATE_LIMIT_COOLDOWN_MS;
-    console.log(`[Groq] ⚠️ Rate limit! Chuyển sang ${GROQ_MODELS.fallback}, cooldown ${RATE_LIMIT_COOLDOWN_MS / 1000}s`);
+    const cooldownMs = getRateLimitCooldownMs();
+    primaryCooldownUntil = Date.now() + cooldownMs;
+    console.log(`[Groq] ⚠️ Rate limit! Chuyển sang ${GROQ_MODELS.fallback}, cooldown ${cooldownMs / 1000}s`);
     debugLog('GROQ', `Switched to fallback model: ${GROQ_MODELS.fallback}`);
   }
 }

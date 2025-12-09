@@ -56,7 +56,7 @@ async function trimHistoryByTokens(threadId: string): Promise<void> {
 
   const rawHistory = rawMessageHistory.get(threadId) || [];
   let trimCount = 0;
-  const maxTrimAttempts = 50;
+  const maxTrimAttempts = CONFIG.history?.maxTrimAttempts ?? 50;
 
   while (currentTokens > maxTokens && history.length > 2 && trimCount < maxTrimAttempts) {
     history.shift();

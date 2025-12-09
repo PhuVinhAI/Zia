@@ -78,5 +78,82 @@
     "task": true,
     "academic": true,
     "entertainment": true
+  },
+  "logger": {
+    "maxLinesPerFile": 1000,
+    "logCacheThreshold": 1000
+  },
+  "reaction": {
+    "debounceMs": 2000
+  },
+  "friendRequest": {
+    "autoAcceptDelayMinMs": 2000,
+    "autoAcceptDelayMaxMs": 5000
+  },
+  "backgroundAgent": {
+    "pollIntervalMs": 90000,
+    "maxToolIterations": 5,
+    "groupBatchSize": 10,
+    "batchDelayMinMs": 500,
+    "batchDelayMaxMs": 1500
+  },
+  "messageChunker": {
+    "maxMessageLength": 1800
+  },
+  "messageStore": {
+    "maxCachePerThread": 20,
+    "cleanupIntervalMs": 1800000,
+    "recentMessageWindowMs": 300000
+  },
+  "userStore": {
+    "cacheTtlMs": 300000
+  },
+  "jikan": {
+    "rateLimitDelayMs": 350,
+    "timeoutMs": 15000
+  },
+  "elevenlabs": {
+    "defaultVoiceId": "fUjY9K2nAIwlALOwSiwc",
+    "defaultModelId": "eleven_v3"
+  },
+  "giphy": {
+    "timeoutMs": 15000,
+    "defaultLimit": 10,
+    "defaultRating": "g"
+  },
+  "nekos": {
+    "timeoutMs": 15000
+  },
+  "freepik": {
+    "timeoutMs": 60000,
+    "pollMaxAttempts": 30,
+    "pollIntervalMs": 2000
+  },
+  "messageSender": {
+    "mediaDelayMs": 300,
+    "chunkDelayMs": 400
+  },
+  "markdown": {
+    "mermaidTimeoutMs": 30000,
+    "groupMediaSizeLimitMB": 1
+  },
+  "history": {
+    "maxTrimAttempts": 50,
+    "maxContextTokens": 300000,
+    "estimatedCharsPerToken": 4
+  },
+  "memory": {
+    "decayHalfLifeDays": 30,
+    "accessBoostFactor": 0.2
+  },
+  "tvu": {
+    "timeoutMs": 10000
+  },
+  "groq": {
+    "rateLimitCooldownMs": 60000
+  },
+  "database": {
+    "cleanupIntervalMs": 3600000,
+    "embeddingDim": 768
   }
 }

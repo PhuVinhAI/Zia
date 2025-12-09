@@ -20,7 +20,7 @@ import {
 let logger: pino.Logger;
 let sessionDir: string = '';
 let fileLoggingEnabled = false;
-const MAX_LINES_PER_FILE = 1000;
+let maxLinesPerFile = 1000; // Default, will be updated from config
 
 // Re-export transport functions
 export { registerLogTransport, type ILogTransport };
@@ -62,7 +62,7 @@ class RotatingFileStream extends Writable {
       const content = fs.readFileSync(this.currentFile, 'utf-8');
       this.lineCount = content.split('\n').filter((line) => line.trim()).length;
 
-      while (this.lineCount >= MAX_LINES_PER_FILE) {
+      while (this.lineCount >= maxLinesPerFile) {
         this.fileIndex++;
         this.currentFile = this.getFileName(this.fileIndex);
         if (fs.existsSync(this.currentFile)) {
@@ -91,7 +91,7 @@ class RotatingFileStream extends Writable {
     const data = chunk.toString();
     const lines = data.split('\n').filter((line) => line.trim()).length;
 
-    if (this.lineCount + lines > MAX_LINES_PER_FILE) {
+    if (this.lineCount + lines > maxLinesPerFile) {
       this.rotate();
     }
 
@@ -189,6 +189,15 @@ export function enableFileLogging(): void {
 
 export function isFileLoggingEnabled(): boolean {
   return fileLoggingEnabled;
+}
+
+/**
+ * Set logger config from settings.json
+ */
+export function setLoggerConfig(config: { maxLinesPerFile?: number }): void {
+  if (config.maxLinesPerFile) {
+    maxLinesPerFile = config.maxLinesPerFile;
+  }
 }
 
 /**

@@ -10,6 +10,7 @@
  */
 
 import sharp from 'sharp';
+import { CONFIG } from '../../../core/config/config.js';
 import { debugLog, logError, logMessage, logZaloAPI } from '../../../core/logger/logger.js';
 import { ThreadType } from '../../../infrastructure/messaging/zalo/zalo.service.js';
 import { http } from '../httpClient.js';
@@ -531,9 +532,10 @@ export async function sendTextMessage(
         chunkOffset += chunk.length;
 
         // Gửi media images ở chunk cuối
+        const mediaDelayMs = CONFIG.messageSender?.mediaDelayMs ?? 300;
         if (isLastChunk && sendMediaImages) {
           for (const img of parsed.images) {
-            await new Promise((r) => setTimeout(r, 300));
+            await new Promise((r) => setTimeout(r, mediaDelayMs));
             await sendMediaImage(api, img, threadId);
           }
         }
@@ -541,7 +543,7 @@ export async function sendTextMessage(
         // Gửi code files ở chunk cuối
         if (isLastChunk && sendCodeFiles) {
           for (const codeBlock of parsed.codeBlocks) {
-            await new Promise((r) => setTimeout(r, 300));
+            await new Promise((r) => setTimeout(r, mediaDelayMs));
             await sendCodeFile(api, codeBlock, threadId);
           }
         }
@@ -549,7 +551,7 @@ export async function sendTextMessage(
         // Gửi links ở chunk cuối
         if (isLastChunk && sendLinks) {
           for (const link of parsed.links) {
-            await new Promise((r) => setTimeout(r, 300));
+            await new Promise((r) => setTimeout(r, mediaDelayMs));
             await sendLink(api, link.url, link.text, threadId);
           }
         }
@@ -557,14 +559,15 @@ export async function sendTextMessage(
         // Gửi stickers ở chunk cuối
         if (isLastChunk && sendStickers && stickers.length > 0) {
           for (const keyword of stickers) {
-            await new Promise((r) => setTimeout(r, 300));
+            await new Promise((r) => setTimeout(r, mediaDelayMs));
             await sendSticker(api, keyword, threadId);
           }
         }
 
         // Delay giữa các chunks
+        const chunkDelayMs = CONFIG.messageSender?.chunkDelayMs ?? 400;
         if (!isLastChunk) {
-          await new Promise((r) => setTimeout(r, 400));
+          await new Promise((r) => setTimeout(r, chunkDelayMs));
         }
       } catch (e: any) {
         logError(`sendTextMessage:chunk[${source}]`, e);

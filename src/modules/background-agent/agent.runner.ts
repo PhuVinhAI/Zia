@@ -24,15 +24,15 @@ import {
   markTaskProcessing,
 } from './task.repository.js';
 
+import { CONFIG } from '../../core/config/config.js';
+
 // Agent state
 let isRunning = false;
 let pollInterval: ReturnType<typeof setInterval> | null = null;
 let zaloApi: any = null;
 
-// Config
-const POLL_INTERVAL_MS = 90_000; // 1 phút 30 giây
+// Config from settings.json
 const GROQ_ENABLED = true; // Set false để skip Groq và execute trực tiếp
-const MAX_TOOL_ITERATIONS = 5; // Số lần tối đa gọi tools trong 1 session
 
 /**
  * Khởi động background agent
@@ -46,12 +46,13 @@ export function startBackgroundAgent(api: any): void {
   zaloApi = api;
   isRunning = true;
 
-  debugLog('AGENT', `Starting background agent (poll interval: ${POLL_INTERVAL_MS}ms)`);
+  const pollIntervalMs = CONFIG.backgroundAgent?.pollIntervalMs ?? 90000;
+  debugLog('AGENT', `Starting background agent (poll interval: ${pollIntervalMs}ms)`);
   console.log('🤖 Background Agent started');
 
   // Run immediately, then poll
   runAgentCycle();
-  pollInterval = setInterval(runAgentCycle, POLL_INTERVAL_MS);
+  pollInterval = setInterval(runAgentCycle, pollIntervalMs);
 }
 
 /**
@@ -231,7 +232,8 @@ async function callGroqWithTools(
   let currentMessages = [...messages];
   let finalResponse = '';
 
-  for (let iteration = 0; iteration < MAX_TOOL_ITERATIONS; iteration++) {
+  const maxToolIterations = CONFIG.backgroundAgent?.maxToolIterations ?? 5;
+  for (let iteration = 0; iteration < maxToolIterations; iteration++) {
     const response = await generateGroqResponse(currentMessages, options);
     finalResponse = response;
 

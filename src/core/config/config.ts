@@ -80,6 +80,26 @@ function buildConfig(settings: Settings) {
     fetch: settings.fetch,
     modules: settings.modules as Record<string, boolean>,
     mimeTypes: MIME_TYPES,
+    // New configs
+    logger: settings.logger,
+    reaction: settings.reaction,
+    friendRequest: settings.friendRequest,
+    backgroundAgent: settings.backgroundAgent,
+    messageChunker: settings.messageChunker,
+    messageStore: settings.messageStore,
+    userStore: settings.userStore,
+    jikan: settings.jikan,
+    elevenlabs: settings.elevenlabs,
+    giphy: settings.giphy,
+    nekos: settings.nekos,
+    freepik: settings.freepik,
+    messageSender: settings.messageSender,
+    markdown: settings.markdown,
+    history: settings.history,
+    memory: settings.memory,
+    tvu: settings.tvu,
+    groq: settings.groq,
+    database: settings.database,
   };
 }
 

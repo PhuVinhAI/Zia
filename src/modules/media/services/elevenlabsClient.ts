@@ -36,11 +36,13 @@ export interface TTSOptions {
   outputFormat?: string;
 }
 
-/** Default voice - Yui */
-export const DEFAULT_VOICE_ID = 'fUjY9K2nAIwlALOwSiwc';
+import { CONFIG } from '../../../core/config/config.js';
 
-/** Default model - Eleven v3 */
-export const DEFAULT_MODEL_ID = 'eleven_v3';
+/** Default voice - Yui (from config) */
+export const DEFAULT_VOICE_ID = CONFIG.elevenlabs?.defaultVoiceId ?? 'fUjY9K2nAIwlALOwSiwc';
+
+/** Default model - Eleven v3 (from config) */
+export const DEFAULT_MODEL_ID = CONFIG.elevenlabs?.defaultModelId ?? 'eleven_v3';
 
 /** Output formats */
 export const OUTPUT_FORMATS = {

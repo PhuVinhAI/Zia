@@ -64,7 +64,7 @@ export {
 
 // Message
 export {
-  getMaxMessageLength,
+  getMaxLength as getMaxMessageLength, // Alias for backward compatibility
   needsChunking,
   splitMessage,
 } from './message/messageChunker.js';

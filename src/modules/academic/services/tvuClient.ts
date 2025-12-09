@@ -3,6 +3,7 @@
  */
 
 import ky, { type KyInstance } from 'ky';
+import { CONFIG } from '../../../core/config/config.js';
 import { debugLog, logError } from '../../../core/logger/logger.js';
 
 // ═══════════════════════════════════════════════════
@@ -10,7 +11,7 @@ import { debugLog, logError } from '../../../core/logger/logger.js';
 // ═══════════════════════════════════════════════════
 
 const TVU_BASE_URL = 'https://ttsv.tvu.edu.vn';
-const TVU_TIMEOUT = 10000;
+const getTvuTimeout = () => CONFIG.tvu?.timeoutMs ?? 10000;
 
 // ═══════════════════════════════════════════════════
 // TYPES
@@ -70,7 +71,7 @@ const tvuHeaders = {
 // Public client (for login)
 const tvuPublicApi: KyInstance = ky.create({
   prefixUrl: TVU_BASE_URL,
-  timeout: TVU_TIMEOUT,
+  timeout: getTvuTimeout(),
   retry: {
     limit: 2,
     methods: ['post'],
@@ -96,7 +97,7 @@ const tvuPublicApi: KyInstance = ky.create({
 function createAuthenticatedClient(): KyInstance {
   return ky.create({
     prefixUrl: TVU_BASE_URL,
-    timeout: TVU_TIMEOUT,
+    timeout: getTvuTimeout(),
     retry: {
       limit: 2,
       methods: ['post'],

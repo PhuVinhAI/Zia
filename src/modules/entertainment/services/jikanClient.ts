@@ -10,8 +10,10 @@ import { debugLog } from '../../../core/logger/logger.js';
 // CONFIG
 // ═══════════════════════════════════════════════════
 
+import { CONFIG } from '../../../core/config/config.js';
+
 const BASE_URL = 'https://api.jikan.moe/v4';
-const RATE_LIMIT_DELAY = 350; // 3 requests/giây
+const getRateLimitDelay = () => CONFIG.jikan?.rateLimitDelayMs ?? 350; // 3 requests/giây
 
 let lastRequestTime = 0;
 
@@ -20,10 +22,11 @@ let lastRequestTime = 0;
 // ═══════════════════════════════════════════════════
 
 async function rateLimitWait(): Promise<void> {
+  const rateLimitDelay = getRateLimitDelay();
   const now = Date.now();
   const elapsed = now - lastRequestTime;
-  if (elapsed < RATE_LIMIT_DELAY) {
-    await new Promise((r) => setTimeout(r, RATE_LIMIT_DELAY - elapsed));
+  if (elapsed < rateLimitDelay) {
+    await new Promise((r) => setTimeout(r, rateLimitDelay - elapsed));
   }
   lastRequestTime = Date.now();
 }
@@ -34,7 +37,7 @@ async function rateLimitWait(): Promise<void> {
 
 const jikanApi: KyInstance = ky.create({
   prefixUrl: BASE_URL,
-  timeout: 15000,
+  timeout: CONFIG.jikan?.timeoutMs ?? 15000,
   retry: {
     limit: 3,
     methods: ['get'],

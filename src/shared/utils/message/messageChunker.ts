@@ -7,8 +7,10 @@
  * để tránh bị hiển thị raw markdown khi chia tin nhắn
  */
 
-// Giới hạn ký tự của Zalo (để an toàn, dùng 1800 thay vì 2000)
-const MAX_MESSAGE_LENGTH = 1800;
+import { CONFIG } from '../../../core/config/config.js';
+
+// Giới hạn ký tự của Zalo (từ config, default 1800)
+const getMaxMessageLength = () => CONFIG.messageChunker?.maxMessageLength ?? 1800;
 
 // ═══════════════════════════════════════════════════
 // MARKDOWN BLOCK DETECTION
@@ -110,6 +112,7 @@ function findPlaceholders(text: string): MarkdownBlock[] {
  * Tìm điểm cắt an toàn (không cắt giữa markdown block hoặc placeholder)
  */
 function findSafeCutPoint(text: string, preferredCut: number, blocks: MarkdownBlock[]): number {
+  const maxLength = getMaxMessageLength();
   // Thêm placeholders vào danh sách blocks cần bảo vệ
   const placeholders = findPlaceholders(text);
   const allBlocks = [...blocks, ...placeholders].sort((a, b) => a.start - b.start);
@@ -123,12 +126,12 @@ function findSafeCutPoint(text: string, preferredCut: number, blocks: MarkdownBl
 
   // Đang nằm trong block, cần tìm điểm cắt khác
   // Ưu tiên 1: Cắt trước block (nếu block không quá gần đầu)
-  if (insideBlock.start > MAX_MESSAGE_LENGTH * 0.2) {
+  if (insideBlock.start > maxLength * 0.2) {
     return insideBlock.start;
   }
 
   // Ưu tiên 2: Cắt sau block (nếu block không quá dài)
-  if (insideBlock.end <= MAX_MESSAGE_LENGTH * 1.5) {
+  if (insideBlock.end <= maxLength * 1.5) {
     return insideBlock.end;
   }
 
@@ -145,7 +148,7 @@ function findSafeCutPoint(text: string, preferredCut: number, blocks: MarkdownBl
  * Ưu tiên cắt theo: đoạn văn > câu > từ
  * ĐẶC BIỆT: Không cắt giữa code blocks, tables, mermaid diagrams
  */
-export function splitMessage(text: string, maxLength: number = MAX_MESSAGE_LENGTH): string[] {
+export function splitMessage(text: string, maxLength: number = getMaxMessageLength()): string[] {
   if (!text || text.length <= maxLength) {
     return [text];
   }
@@ -260,13 +263,13 @@ function findBestCutPoint(text: string, maxLength: number): number {
 /**
  * Kiểm tra xem tin nhắn có cần chia nhỏ không
  */
-export function needsChunking(text: string, maxLength: number = MAX_MESSAGE_LENGTH): boolean {
+export function needsChunking(text: string, maxLength: number = getMaxMessageLength()): boolean {
   return text.length > maxLength;
 }
 
 /**
  * Lấy giới hạn ký tự mặc định
  */
-export function getMaxMessageLength(): number {
-  return MAX_MESSAGE_LENGTH;
+export function getMaxLength(): number {
+  return getMaxMessageLength();
 }

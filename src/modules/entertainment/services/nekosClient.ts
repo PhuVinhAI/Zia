@@ -16,9 +16,11 @@ const BASE_URL = 'https://api.nekosapi.com/v4';
 // KY INSTANCE
 // ═══════════════════════════════════════════════════
 
+import { CONFIG } from '../../../core/config/config.js';
+
 const nekosApi: KyInstance = ky.create({
   prefixUrl: BASE_URL,
-  timeout: 15000,
+  timeout: CONFIG.nekos?.timeoutMs ?? 15000,
   retry: {
     limit: 2,
     methods: ['get'],

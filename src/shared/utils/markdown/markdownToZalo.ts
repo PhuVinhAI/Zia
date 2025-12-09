@@ -15,6 +15,7 @@
  */
 
 import { ChartJSNodeCanvas } from 'chartjs-node-canvas';
+import { CONFIG } from '../../../core/config/config.js';
 import { TextStyle } from '../../types/zalo.types.js';
 
 // ═══════════════════════════════════════════════════
@@ -656,7 +657,7 @@ async function renderMermaidToPng(code: string): Promise<Buffer | null> {
     const url = `https://mermaid.ink/img/${encoded}?bgColor=white`;
 
     const response = await http.get(url, {
-      timeout: 30000,
+      timeout: CONFIG.markdown?.mermaidTimeoutMs ?? 30000,
       headers: { Accept: 'image/png' },
     });
 

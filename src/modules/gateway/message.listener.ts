@@ -132,8 +132,10 @@ function registerFriendEventListener(api: any): void {
     debugLog('FRIEND_EVENT', `💌 Nhận lời mời kết bạn từ: ${displayName} (${fromUid})`);
 
     try {
-      // Delay ngẫu nhiên 2-5s cho giống người
-      const delay = Math.floor(Math.random() * 3000) + 2000;
+      // Delay ngẫu nhiên cho giống người (từ config)
+      const minDelay = CONFIG.friendRequest?.autoAcceptDelayMinMs ?? 2000;
+      const maxDelay = CONFIG.friendRequest?.autoAcceptDelayMaxMs ?? 5000;
+      const delay = Math.floor(Math.random() * (maxDelay - minDelay)) + minDelay;
       await new Promise((resolve) => setTimeout(resolve, delay));
 
       // Auto accept
@@ -170,7 +172,6 @@ const REACTION_NAMES: Record<string, string> = {
 // Track pending reactions để debounce khi user thả nhiều reaction liên tục
 // Key: `${threadId}:${reactorId}:${originalMsgId}`, Value: { timeout, icons: string[] }
 const pendingReactions = new Map<string, { timeout: NodeJS.Timeout; icons: string[] }>();
-const REACTION_DEBOUNCE_MS = 2000; // Đợi 2s trước khi xử lý reaction
 
 /**
  * Xử lý reaction event - tạo fake message để AI tự suy nghĩ phản hồi
@@ -259,7 +260,8 @@ function registerReactionListener(api: any): void {
     // Lấy danh sách icons hiện tại hoặc tạo mới
     const icons = pending?.icons || [icon];
     
-    // Debounce: đợi 2s trước khi xử lý để gom tất cả reactions
+    // Debounce: đợi trước khi xử lý để gom tất cả reactions (từ config)
+    const reactionDebounceMs = CONFIG.reaction?.debounceMs ?? 2000;
     const newPending = {
       timeout: setTimeout(async () => {
         pendingReactions.delete(reactionKey);
@@ -301,12 +303,13 @@ function registerReactionListener(api: any): void {
 
         // Đẩy vào buffer để AI xử lý như tin nhắn bình thường
         addToBuffer(api, threadId, fakeMessage);
-      }, REACTION_DEBOUNCE_MS),
+      }, reactionDebounceMs),
       icons,
     };
     
     pendingReactions.set(reactionKey, newPending);
-    debugLog('REACTION', `Queued reaction (will process in ${REACTION_DEBOUNCE_MS}ms): ${reactionName}`);
+    const debounceMs = CONFIG.reaction?.debounceMs ?? 2000;
+    debugLog('REACTION', `Queued reaction (will process in ${debounceMs}ms): ${reactionName}`);
   });
 
   console.log('[Gateway] 💝 Reaction listener registered');

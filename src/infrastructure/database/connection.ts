@@ -6,11 +6,12 @@
 import { Database } from 'bun:sqlite';
 import { drizzle } from 'drizzle-orm/bun-sqlite';
 import * as sqliteVec from 'sqlite-vec';
+import { CONFIG } from '../../core/config/config.js';
 import { debugLog } from '../../core/logger/logger.js';
 import * as schema from './schema.js';
 
-// Embedding dimensions cho vector search
-export const EMBEDDING_DIM = 768;
+// Embedding dimensions cho vector search (từ config)
+export const EMBEDDING_DIM = CONFIG.database?.embeddingDim ?? 768;
 
 const DB_PATH = 'data/bot.db';
 

@@ -3,14 +3,15 @@
  * Hỗ trợ context window cho AI với cơ chế pruning
  */
 import { asc, desc, eq } from 'drizzle-orm';
+import { CONFIG } from '../../../core/config/config.js';
 import { debugLog } from '../../../core/logger/logger.js';
 import { nowDate } from '../../../shared/utils/datetime.js';
 import { getDatabase } from '../connection.js';
 import { type History, history } from '../schema.js';
 
-// Giới hạn token mặc định (có thể config)
-const MAX_CONTEXT_TOKENS = 300_000;
-const ESTIMATED_CHARS_PER_TOKEN = 4;
+// Giới hạn token từ config
+const getMaxContextTokens = () => CONFIG.history?.maxContextTokens ?? 300000;
+const getEstimatedCharsPerToken = () => CONFIG.history?.estimatedCharsPerToken ?? 4;
 
 export class HistoryRepository {
   private get db() {
@@ -111,9 +112,9 @@ export class HistoryRepository {
 
     // Ước tính tổng token
     const totalChars = records.reduce((sum, r) => sum + r.content.length, 0);
-    const estimatedTokens = Math.ceil(totalChars / ESTIMATED_CHARS_PER_TOKEN);
+    const estimatedTokens = Math.ceil(totalChars / getEstimatedCharsPerToken());
 
-    if (estimatedTokens > MAX_CONTEXT_TOKENS) {
+    if (estimatedTokens > getMaxContextTokens()) {
       // Xóa 20% tin nhắn cũ nhất
       const deleteCount = Math.ceil(records.length * 0.2);
       const oldestIds = records.slice(0, deleteCount).map((r) => r.id);

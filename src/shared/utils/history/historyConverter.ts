@@ -7,8 +7,8 @@ import { ThreadType } from '../../../infrastructure/messaging/zalo/zalo.service.
 import { fetchAsBase64 } from '../httpClient.js';
 import { isSupportedMime } from '../tokenCounter.js';
 
-// Size limit cho media trong tin nhắn nhóm (1MB)
-const GROUP_MEDIA_SIZE_LIMIT = 1 * 1024 * 1024;
+// Size limit cho media trong tin nhắn nhóm (từ config)
+const getGroupMediaSizeLimit = () => (CONFIG.markdown?.groupMediaSizeLimitMB ?? 1) * 1024 * 1024;
 
 /** Lấy URL media từ message content */
 export function getMediaUrl(content: any, msgType?: string): string | null {
@@ -70,7 +70,7 @@ function shouldSkipMediaForGroup(msg: any, msgType: string, content: any): boole
   if (!isFileOrVideo) return false;
 
   const fileSize = getFileSize(content);
-  return fileSize > GROUP_MEDIA_SIZE_LIMIT;
+  return fileSize > getGroupMediaSizeLimit();
 }
 
 /**

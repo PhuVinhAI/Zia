@@ -9,7 +9,9 @@ import {
   getSessionDir,
   initFileLogger,
   logStep,
+  setLoggerConfig,
 } from '../core/logger/logger.js';
+import { setLogCacheThreshold } from '../core/logger/transports.js';
 import { loginWithQR } from '../infrastructure/messaging/zalo/zalo.service.js';
 import { setupSelfMessageListener } from '../modules/gateway/gateway.module.js';
 import { preloadAllHistory } from '../shared/utils/history/history.js';
@@ -18,6 +20,12 @@ import { preloadAllHistory } from '../shared/utils/history/history.js';
  * Khởi tạo file logging
  */
 export function initLogging() {
+  // Set logger config from settings.json
+  if (CONFIG.logger) {
+    setLoggerConfig({ maxLinesPerFile: CONFIG.logger.maxLinesPerFile });
+    setLogCacheThreshold(CONFIG.logger.logCacheThreshold);
+  }
+
   if (CONFIG.fileLogging) {
     initFileLogger(CONFIG.logFile);
     enableFileLogging();
