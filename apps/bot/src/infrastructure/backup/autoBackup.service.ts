@@ -15,7 +15,7 @@
 import { existsSync } from 'node:fs';
 import { debugLog } from '../../core/logger/logger.js';
 import { CONFIG } from '../../core/config/config.js';
-import { onDbChange } from '../database/connection.js';
+import { onDbChange, checkDatabaseIntegrity, removeDatabaseFiles } from '../database/connection.js';
 import {
   uploadBackupToCloud,
   downloadAndRestoreFromCloud,
@@ -134,9 +134,16 @@ export async function initAutoBackup(): Promise<void> {
 
   const dbPath = CONFIG.database?.path ?? 'data/bot.db';
   const dbExists = existsSync(dbPath);
+  const dbHealthy = dbExists && checkDatabaseIntegrity(dbPath);
 
-  if (!dbExists) {
-    console.log(`📥 Database not found, waiting ${backupConfig.restoreDelayMs / 1000}s before restore...`);
+  // Nếu DB corrupt → xóa và restore
+  if (dbExists && !dbHealthy) {
+    console.log('⚠️ Database corrupt detected, removing for cloud restore...');
+    removeDatabaseFiles(dbPath);
+  }
+
+  if (!dbExists || !dbHealthy) {
+    console.log(`📥 Database not found/corrupt, waiting ${backupConfig.restoreDelayMs / 1000}s before restore...`);
     await new Promise((r) => setTimeout(r, backupConfig.restoreDelayMs));
 
     console.log('📥 Attempting to restore from cloud...');
