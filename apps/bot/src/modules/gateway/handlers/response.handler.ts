@@ -486,23 +486,21 @@ export function createStreamCallbacks(
         return;
       }
 
-      // Loại bỏ nội dung nhại lại nếu đang quote tin nhắn
-      if (quoteIndex !== undefined && quoteIndex >= 0 && messages && messages[quoteIndex]) {
-        const originalMsg = messages[quoteIndex];
-        // Fix Bug 1: Kiểm tra kiểu dữ liệu trước khi gọi toString() để tránh crash với reaction message
-        const rawContent = originalMsg?.data?.content || originalMsg?.content;
-        const originalText = (typeof rawContent === 'string' ? rawContent : 
-          (rawContent != null ? String(rawContent) : '')).trim();
+      // [DISABLED] Bỏ check echo content - để AI có thể lặp lại nội dung nếu muốn
+      // Lý do: User yêu cầu bỏ quota check để AI luôn hiện dù có nhại hay không
+      // if (quoteIndex !== undefined && quoteIndex >= 0 && messages && messages[quoteIndex]) {
+      //   const originalMsg = messages[quoteIndex];
+      //   const rawContent = originalMsg?.data?.content || originalMsg?.content;
+      //   const originalText = (typeof rawContent === 'string' ? rawContent : 
+      //     (rawContent != null ? String(rawContent) : '')).trim();
+      //   if (originalText) {
+      //     cleanText = removeEchoedContent(cleanText, originalText);
+      //   }
+      // }
 
-        if (originalText) {
-          // Loại bỏ nếu AI lặp lại tin nhắn gốc ở đầu
-          cleanText = removeEchoedContent(cleanText, originalText);
-        }
-      }
-
-      // Nếu sau khi loại bỏ nhại lại mà rỗng, không gửi
+      // Nếu text rỗng sau khi strip tool tags, không gửi
       if (!cleanText.trim()) {
-        debugLog('STREAM_CB', `Empty after removing echoed content, skipping`);
+        debugLog('STREAM_CB', `Empty text after stripping tool tags, skipping`);
         return;
       }
 
