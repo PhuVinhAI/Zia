@@ -39,7 +39,16 @@ export default function LogsPage() {
     queryFn: async () => {
       if (!selectedFolder) return [];
       const res = await logsApiClient.listFiles(selectedFolder);
-      return res.data.data;
+      const data = res.data.data || [];
+      // Sắp xếp theo thứ tự bot log: bot.txt, bot_1.txt, bot_2.txt, ...
+      return data.sort((a: { name: string }, b: { name: string }) => {
+        const extractNumber = (name: string) => {
+          const match = name.match(/^bot_?(\d+)?\.txt$/i);
+          if (!match) return Number.MAX_SAFE_INTEGER;
+          return match[1] ? parseInt(match[1], 10) : 0;
+        };
+        return extractNumber(a.name) - extractNumber(b.name);
+      });
     },
     enabled: !!selectedFolder && !selectedFile,
   });
