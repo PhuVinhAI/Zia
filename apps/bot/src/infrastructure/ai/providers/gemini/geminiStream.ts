@@ -213,34 +213,23 @@ async function processStreamChunk(state: ParserState, callbacks: StreamCallbacks
 
   // Parse [quote:index]...[/quote] - xử lý quote reply
   // CHỈ parse quote tags ở TOP-LEVEL (không nằm trong [msg]...[/msg])
-  // AI hay viết: [quote:0]Tin gốc[/quote] Câu trả lời
-  // Logic:
-  // - Nếu có text SAU [/quote] → đó là câu trả lời thực, gửi kèm quote
-  // - Nếu KHÔNG có text sau → AI chỉ echo tin gốc, bỏ qua không gửi
+  // AI viết: [quote:0]Câu trả lời[/quote] - nội dung BÊN TRONG quote là câu trả lời
   
   // Tạo buffer không chứa [msg]...[/msg] để chỉ parse quote ở top-level
   const bufferWithoutMsg = buffer.replace(/\[msg\][\s\S]*?\[\/msg\]/gi, '');
   
-  const quoteRegex = /\[quote:(-?\d+)\]([\s\S]*?)\[\/quote\](\s*)([^[]*?)(?=\[|$)/gi;
+  const quoteRegex = /\[quote:(-?\d+)\]([\s\S]*?)\[\/quote\]/gi;
   let quoteMatch;
   while ((quoteMatch = quoteRegex.exec(bufferWithoutMsg)) !== null) {
     const quoteIndex = parseInt(quoteMatch[1], 10);
     const insideQuote = quoteMatch[2].trim();
-    // match[3] là whitespace giữa [/quote] và text sau
-    const afterQuote = quoteMatch[4].trim();
 
-    // CHỈ gửi nếu có text SAU quote (câu trả lời thực)
-    // Nếu không có afterQuote → AI chỉ echo tin gốc, skip
-    if (!afterQuote) {
-      // Log để debug
-      if (insideQuote) {
-        console.log(`[Bot] ⚠️ Quote without reply detected, skipping echo: "${insideQuote.substring(0, 30)}..."`);
-      }
+    // Nội dung BÊN TRONG quote tag là câu trả lời
+    if (!insideQuote) {
       continue;
     }
 
-    // Chỉ gửi afterQuote (câu trả lời), không gửi insideQuote (echo)
-    const rawText = afterQuote;
+    const rawText = insideQuote;
     const key = `quote:${quoteIndex}:${rawText}`;
 
     if (rawText && !state.sentMessages.has(key)) {
