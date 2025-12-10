@@ -232,28 +232,6 @@ backupApi.post('/upload', async (c) => {
 });
 
 /**
- * DELETE /backup/:name - Xóa backup
- */
-backupApi.delete('/:name', (c) => {
-  try {
-    const { name } = c.req.param();
-    const backupPath = join(BACKUP_DIR, name);
-
-    if (!existsSync(backupPath)) {
-      return c.json({ success: false, error: 'Backup not found' }, 404);
-    }
-
-    unlinkSync(backupPath);
-    debugLog('BACKUP_API', `Backup deleted: ${name}`);
-
-    return c.json({ success: true, data: { deleted: name } });
-  } catch (error) {
-    debugLog('BACKUP_API', `Delete error: ${error}`);
-    return c.json({ success: false, error: 'Failed to delete backup' }, 500);
-  }
-});
-
-/**
  * GET /backup/info - Thông tin database hiện tại
  */
 backupApi.get('/info', (c) => {
@@ -429,5 +407,28 @@ backupApi.delete('/database', async (c) => {
       debugLog('BACKUP_API', `Failed to reinit database: ${e}`);
     }
     return c.json({ success: false, error: 'Failed to reset database' }, 500);
+  }
+});
+
+/**
+ * DELETE /backup/:name - Xóa backup
+ * NOTE: Phải đặt SAU /backup/database để tránh conflict
+ */
+backupApi.delete('/:name', (c) => {
+  try {
+    const { name } = c.req.param();
+    const backupPath = join(BACKUP_DIR, name);
+
+    if (!existsSync(backupPath)) {
+      return c.json({ success: false, error: 'Backup not found' }, 404);
+    }
+
+    unlinkSync(backupPath);
+    debugLog('BACKUP_API', `Backup deleted: ${name}`);
+
+    return c.json({ success: true, data: { deleted: name } });
+  } catch (error) {
+    debugLog('BACKUP_API', `Delete error: ${error}`);
+    return c.json({ success: false, error: 'Failed to delete backup' }, 500);
   }
 });
