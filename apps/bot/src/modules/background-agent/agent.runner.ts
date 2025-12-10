@@ -19,11 +19,13 @@ import {
 } from '../../infrastructure/ai/providers/groq/groqClient.js';
 import { executeTask } from './action.executor.js';
 import { buildEnvironmentContext, formatContextForPrompt } from './context.builder.js';
+import { getNextCronTime } from './cron.utils.js';
 import {
   getPendingTasks,
   markTaskCompleted,
   markTaskFailed,
   markTaskProcessing,
+  rescheduleTask,
 } from './task.repository.js';
 
 // Agent state
@@ -166,8 +168,23 @@ async function processTaskWithDecision(
     const result = await executeTask(zaloApi, { ...task, payload: JSON.stringify(finalPayload) });
 
     if (result.success) {
-      await markTaskCompleted(task.id, result.data);
-      debugLog('AGENT', `Task #${task.id} completed`);
+      // Kiểm tra xem task có cron expression không
+      if (task.cronExpression) {
+        // Task có cron → reschedule cho lần chạy tiếp theo
+        const nextRun = getNextCronTime(task.cronExpression);
+        if (nextRun) {
+          await rescheduleTask(task.id, nextRun);
+          debugLog('AGENT', `Task #${task.id} completed, rescheduled for ${nextRun.toISOString()} (cron: ${task.cronExpression})`);
+        } else {
+          // Không tính được lần chạy tiếp theo → mark completed
+          await markTaskCompleted(task.id, { ...result.data, cronEnded: true });
+          debugLog('AGENT', `Task #${task.id} completed, cron ended (no next run)`);
+        }
+      } else {
+        // Task không có cron → mark completed bình thường
+        await markTaskCompleted(task.id, result.data);
+        debugLog('AGENT', `Task #${task.id} completed`);
+      }
     } else {
       await markTaskFailed(
         task.id,
@@ -276,11 +293,14 @@ async function getBatchGroqDecisions(
   const tasksDescription = tasks
     .map((task, index) => {
       const payload = JSON.parse(task.payload);
+      const cronInfo = task.cronExpression
+        ? `\n- Cron: ${task.cronExpression} (task lặp lại)`
+        : '';
       return `### Task ${index + 1} (ID: ${task.id})
 - Loại: ${task.type}
 - Target User: ${task.targetUserId || 'N/A'}
 - Target Thread: ${task.targetThreadId || 'N/A'}
-- Payload: ${JSON.stringify(payload)}
+- Payload: ${JSON.stringify(payload)}${cronInfo}
 - Context: ${task.context || 'Không có'}`;
     })
     .join('\n\n');

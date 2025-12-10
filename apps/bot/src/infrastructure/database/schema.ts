@@ -88,6 +88,10 @@ export const agentTasks = sqliteTable(
     scheduledAt: integer('scheduled_at', { mode: 'timestamp_ms' })
       .notNull()
       .$defaultFn(() => new Date()),
+    // Cron expression cho task lặp lại (VD: "0 8 * * *" = 8h sáng mỗi ngày)
+    // Format: "phút giờ ngày tháng thứ" (standard cron)
+    // Nếu có cronExpression, task sẽ được reschedule sau khi hoàn thành
+    cronExpression: text('cron_expression'),
     // Execution tracking
     startedAt: integer('started_at', { mode: 'timestamp_ms' }),
     completedAt: integer('completed_at', { mode: 'timestamp_ms' }),
@@ -110,6 +114,7 @@ export const agentTasks = sqliteTable(
     index('idx_tasks_status').on(table.status),
     index('idx_tasks_scheduled').on(table.scheduledAt),
     index('idx_tasks_type').on(table.type),
+    index('idx_tasks_cron').on(table.cronExpression),
   ],
 );
 

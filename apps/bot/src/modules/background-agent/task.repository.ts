@@ -9,6 +9,7 @@ import {
   type TaskStatus,
   type TaskType,
 } from '../../infrastructure/database/schema.js';
+import { matchesCron } from './cron.utils.js';
 
 const db = () => getDatabase();
 
@@ -22,6 +23,7 @@ export async function createTask(task: {
   payload: Record<string, any>;
   context?: string;
   scheduledAt?: Date;
+  cronExpression?: string;
   createdBy?: string;
 }): Promise<AgentTask> {
   const now = new Date();
@@ -34,6 +36,7 @@ export async function createTask(task: {
       payload: JSON.stringify(task.payload),
       context: task.context,
       scheduledAt: task.scheduledAt || now,
+      cronExpression: task.cronExpression,
       createdBy: task.createdBy,
       createdAt: now,
       updatedAt: now,
@@ -46,15 +49,38 @@ export async function createTask(task: {
 
 /**
  * Lấy các tasks pending và đã đến giờ execute
+ * 
+ * Logic:
+ * - Task KHÔNG có cron: scheduledAt <= now
+ * - Task CÓ cron: scheduledAt <= now VÀ thời điểm hiện tại match với cron expression
+ * 
+ * Điều này đảm bảo task cron chỉ được xử lý khi đúng giờ cron,
+ * không phải mỗi lần poll
  */
 export async function getPendingTasks(limit = 10): Promise<AgentTask[]> {
   const now = new Date();
-  return db()
+  
+  // Lấy tất cả tasks pending đã đến giờ
+  const tasks = await db()
     .select()
     .from(agentTasks)
     .where(and(eq(agentTasks.status, 'pending'), lte(agentTasks.scheduledAt, now)))
     .orderBy(agentTasks.scheduledAt)
-    .limit(limit);
+    .limit(limit * 2); // Lấy nhiều hơn để filter cron
+  
+  // Filter tasks có cron: chỉ lấy nếu thời điểm hiện tại match cron
+  const filteredTasks = tasks.filter((task) => {
+    // Task không có cron → luôn lấy (đã check scheduledAt)
+    if (!task.cronExpression) {
+      return true;
+    }
+    
+    // Task có cron → chỉ lấy nếu thời điểm hiện tại match cron expression
+    // Điều này đảm bảo task cron chỉ chạy đúng giờ, không chạy liên tục
+    return matchesCron(task.cronExpression, now);
+  });
+  
+  return filteredTasks.slice(0, limit);
 }
 
 /**
@@ -155,4 +181,25 @@ export async function countTasksByStatus(): Promise<Record<TaskStatus, number>> 
   }
 
   return counts;
+}
+
+/**
+ * Reschedule task có cron expression
+ * Reset status về pending và cập nhật scheduledAt cho lần chạy tiếp theo
+ */
+export async function rescheduleTask(taskId: number, nextScheduledAt: Date): Promise<void> {
+  await db()
+    .update(agentTasks)
+    .set({
+      status: 'pending',
+      scheduledAt: nextScheduledAt,
+      retryCount: 0,
+      lastError: null,
+      startedAt: null,
+      completedAt: null,
+      result: null,
+      updatedAt: new Date(),
+    })
+    .where(eq(agentTasks.id, taskId));
+  notifyDbChange();
 }

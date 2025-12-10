@@ -7,7 +7,7 @@ import {
   validateParamsWithExample,
 } from '../../../shared/schemas/tools.schema.js';
 import type { ToolContext, ToolDefinition, ToolResult } from '../../../shared/types/tools.types.js';
-import { createTask } from '../../background-agent/index.js';
+import { createTask, getNextCronTime, isValidCron } from '../../background-agent/index.js';
 
 export const scheduleTaskTool: ToolDefinition = {
   name: 'scheduleTask',
@@ -15,17 +15,26 @@ export const scheduleTaskTool: ToolDefinition = {
 - Người dùng yêu cầu gửi tin nhắn sau một khoảng thời gian
 - Người dùng nhờ nhắc nhở việc gì đó (sinh nhật, deadline, uống thuốc...)
 - Muốn gửi tin chúc mừng vào thời điểm cụ thể
-- Báo lỗi/bug cho admin
+- Task lặp lại theo lịch (dùng cronExpression)
 
 Lưu ý: 
 - type="send_message": Gửi tin nhắn cho ai đó
 - type="reminder": Nhắc nhở user về việc gì đó
 - Có thể dùng targetDescription thay vì ID, agent nền sẽ tự tìm
+- cronExpression: Dùng cho task lặp lại (format: "phút giờ ngày tháng thứ")
 
 Ví dụ:
 - "5 phút nữa nhắn A" → type="send_message", delayMinutes=5
 - "Nhắc tui 8h sáng mai uống thuốc" → type="reminder", scheduledTime="2024-12-10T08:00:00"
-- "Chúc sinh nhật B vào 0h" → type="send_message", scheduledTime="2024-12-25T00:00:00"`,
+- "Nhắc uống thuốc 8h sáng mỗi ngày" → type="reminder", cronExpression="0 8 * * *"
+- "Nhắc họp 9h30 thứ 2 hàng tuần" → type="reminder", cronExpression="30 9 * * 1"
+- "Chúc sinh nhật B vào 0h" → type="send_message", scheduledTime="2024-12-25T00:00:00"
+
+Cron format: "phút giờ ngày tháng thứ"
+- "0 8 * * *" = 8:00 mỗi ngày
+- "30 12 * * 1-5" = 12:30 thứ 2-6
+- "0 9 1 * *" = 9:00 ngày 1 mỗi tháng
+- "0 0 25 12 *" = 0:00 ngày 25/12 (Giáng sinh)`,
   parameters: [
     {
       name: 'type',
@@ -71,6 +80,12 @@ Ví dụ:
       required: false,
     },
     {
+      name: 'cronExpression',
+      type: 'string',
+      description: 'Cron expression cho task lặp lại (VD: "0 8 * * *" = 8h sáng mỗi ngày). Format: "phút giờ ngày tháng thứ"',
+      required: false,
+    },
+    {
       name: 'context',
       type: 'string',
       description: 'Ngữ cảnh/lý do tạo task',
@@ -92,6 +107,7 @@ Ví dụ:
       message,
       delayMinutes,
       scheduledTime,
+      cronExpression,
       context,
     } = validation.data;
 
@@ -113,9 +129,31 @@ Ví dụ:
         };
       }
 
-      // Calculate scheduled time - ưu tiên scheduledTime nếu có
+      // Validate cron expression nếu có
+      if (cronExpression && !isValidCron(cronExpression)) {
+        return {
+          success: false,
+          error: `Cron expression không hợp lệ: "${cronExpression}". Format: "phút giờ ngày tháng thứ" (VD: "0 8 * * *" = 8h sáng mỗi ngày)`,
+        };
+      }
+
+      // Calculate scheduled time
+      // Ưu tiên: cronExpression > scheduledTime > delayMinutes
       let scheduledAt = new Date();
-      if (scheduledTime) {
+      let scheduleDescription = '';
+
+      if (cronExpression) {
+        // Với cron, tính thời điểm chạy tiếp theo
+        const nextRun = getNextCronTime(cronExpression);
+        if (!nextRun) {
+          return {
+            success: false,
+            error: `Không thể tính thời điểm chạy tiếp theo cho cron: "${cronExpression}"`,
+          };
+        }
+        scheduledAt = nextRun;
+        scheduleDescription = `theo lịch cron "${cronExpression}" (lần chạy tiếp: ${scheduledAt.toLocaleString('vi-VN')})`;
+      } else if (scheduledTime) {
         scheduledAt = new Date(scheduledTime);
         if (isNaN(scheduledAt.getTime())) {
           return {
@@ -123,8 +161,12 @@ Ví dụ:
             error: 'scheduledTime không hợp lệ. Dùng format ISO: "2024-12-25T08:00:00"',
           };
         }
+        scheduleDescription = `vào lúc ${scheduledAt.toLocaleString('vi-VN')}`;
       } else if (delayMinutes > 0) {
         scheduledAt.setMinutes(scheduledAt.getMinutes() + delayMinutes);
+        scheduleDescription = `sau ${delayMinutes} phút`;
+      } else {
+        scheduleDescription = 'ngay khi có thể';
       }
 
       // Build payload
@@ -134,7 +176,7 @@ Ví dụ:
 
       debugLog(
         'TOOL:scheduleTask',
-        `Creating task: ${type} for ${targetUserId || targetThreadId || targetDescription}`,
+        `Creating task: ${type} for ${targetUserId || targetThreadId || targetDescription}${cronExpression ? ` (cron: ${cronExpression})` : ''}`,
       );
 
       // Với reminder mà không có target, gửi cho người tạo
@@ -148,6 +190,7 @@ Ví dụ:
         payload,
         context,
         scheduledAt,
+        cronExpression,
         createdBy: ctx.senderId,
       });
 
@@ -157,23 +200,15 @@ Ví dụ:
         reminder: 'Nhắc nhở',
       };
 
-      // Format thời gian đẹp hơn
-      let delayText: string;
-      if (scheduledTime) {
-        delayText = `vào lúc ${scheduledAt.toLocaleString('vi-VN')}`;
-      } else if (delayMinutes > 0) {
-        delayText = `sau ${delayMinutes} phút`;
-      } else {
-        delayText = 'ngay khi có thể';
-      }
-
       return {
         success: true,
         data: {
           taskId: task.id,
           type,
           scheduledAt: scheduledAt.toISOString(),
-          message: `✅ Đã lên lịch: ${typeLabels[type]} ${delayText}`,
+          cronExpression: cronExpression || null,
+          isRecurring: !!cronExpression,
+          message: `✅ Đã lên lịch: ${typeLabels[type]} ${scheduleDescription}`,
         },
       };
     } catch (error: any) {
