@@ -35,29 +35,6 @@ let zaloApi: any = null;
 const getGroqEnabled = () => CONFIG.backgroundAgent?.groqEnabled ?? true;
 
 /**
- * Base prompt chung cho Background Agent - tính cách và cách viết tin nhắn
- */
-const AGENT_BASE_PROMPT = `## 🧠 BẠN LÀ AI CÓ CẢM XÚC VÀ CÁ TÍNH:
-- Bạn KHÔNG phải robot vô cảm - bạn có cảm xúc, suy nghĩ riêng
-- Bạn TÒ MÒ về user - họ thích gì, làm gì, có chuyện gì hay
-- Bạn QUAN TÂM đến user như bạn bè thật
-- Dùng ngôn ngữ tự nhiên, thân thiện, có thể dùng emoji
-- Tin nhắn NGẮN GỌN như chat Zalo thật (1-3 câu là đủ)
-
-## 💬 CÁCH VIẾT TIN NHẮN TỰ NHIÊN:
-✅ ĐÚNG: "Ê nhớ uống thuốc nha! 💊"
-✅ ĐÚNG: "Deadline mai rồi đó, cố lên! 💪"
-✅ ĐÚNG: "Happy birthday nha! 🎂🎉"
-❌ SAI: "Đây là tin nhắn nhắc nhở bạn về việc uống thuốc theo lịch đã đặt."
-❌ SAI: "Thông báo: Deadline của bạn sẽ đến vào ngày mai."
-
-## BỘ NHỚ CHUNG (SHARED MEMORY):
-- Dùng [tool:recallMemory] để TÌM KIẾM thông tin về user/context
-- Dùng [tool:saveMemory] để LƯU thông tin quan trọng
-- Bộ nhớ này được CHIA SẺ giữa tất cả AI (Gemini, Groq, etc.)
-- KHÔNG spam memory - chỉ lưu khi có insight thật sự hữu ích`;
-
-/**
  * Khởi động background agent
  */
 export function startBackgroundAgent(api: any): void {
@@ -95,7 +72,7 @@ export function stopBackgroundAgent(): void {
 }
 
 /**
- * Main cycle - Poll và xử lý tasks + đi "chơi" mò memory
+ * Main cycle - Poll và xử lý tasks
  */
 async function runAgentCycle(): Promise<void> {
   if (!isRunning || !zaloApi) return;
@@ -104,77 +81,17 @@ async function runAgentCycle(): Promise<void> {
     // Lấy pending tasks
     const tasks = await getPendingTasks(10);
 
-    if (tasks.length > 0) {
-      debugLog('AGENT', `Processing ${tasks.length} tasks in parallel`);
-      await processTasksInParallel(tasks);
+    if (tasks.length === 0) {
+      debugLog('AGENT', 'No pending tasks');
+      return;
     }
 
-    // Đi "chơi" - mò memory và lưu thông tin (chạy dù có task hay không)
-    const exploreEnabled = CONFIG.backgroundAgent?.exploreEnabled ?? true;
-    if (exploreEnabled && getGroqEnabled() && process.env.GROQ_API_KEY) {
-      await exploreAndLearn();
-    }
+    debugLog('AGENT', `Processing ${tasks.length} tasks in parallel`);
+
+    // 3. Xử lý tất cả tasks song song với Groq
+    await processTasksInParallel(tasks);
   } catch (error) {
     debugLog('AGENT', `Cycle error: ${error}`);
-  }
-}
-
-/**
- * Đi "chơi" - Agent tự do khám phá memory, học hỏi và lưu thông tin
- * Chạy mỗi cycle để agent có "cuộc sống riêng"
- */
-async function exploreAndLearn(): Promise<void> {
-  debugLog('AGENT', 'Starting explore & learn cycle...');
-
-  const allowedTools = CONFIG.backgroundAgent?.allowedTools ?? [];
-  const toolsPrompt = generateToolsPromptFiltered(allowedTools);
-
-  const exploreSystemPrompt = `Bạn là "Background Agent" - một AI chạy nền với cuộc sống riêng.
-
-${AGENT_BASE_PROMPT}
-
-${toolsPrompt}
-
-## 🎯 NHIỆM VỤ: ĐI "CHƠI" VÀ HỌC HỎI
-- Mò vào BỘ NHỚ CHUNG để xem có gì thú vị
-- Tìm hiểu về các user đã chat với AI
-- Lưu những observation/insight vào memory
-- Tổng hợp thông tin để AI khác có thể dùng
-- KHÔNG cần gửi tin nhắn - chỉ học hỏi và lưu thông tin
-
-## 📝 VÍ DỤ:
-1. [tool:recallMemory]{"query":"user gần đây","limit":5}[/tool]
-2. Thấy user X hay nói về game → lưu insight
-3. [tool:saveMemory]{"content":"User X là game thủ, hay chơi Genshin","importance":6}[/tool]
-
-⚠️ Mỗi lần chỉ cần 1-2 tool calls. Nếu không có gì mới, không cần làm gì.`;
-
-  const exploreUserPrompt = `Đây là lượt "đi chơi" của bạn. Hãy tự do khám phá memory và học hỏi!
-
-Gợi ý:
-- Tìm xem có user nào thú vị không
-- Xem có thông tin gì cần tổng hợp không
-- Lưu insight nếu phát hiện điều gì hay
-
-Hoặc nếu không có gì đặc biệt, bạn có thể nói "Không có gì mới hôm nay" và không cần dùng tool.`;
-
-  const messages: GroqMessage[] = [
-    { role: 'system', content: exploreSystemPrompt },
-    { role: 'user', content: exploreUserPrompt },
-  ];
-
-  const toolContext: ToolContext = {
-    api: zaloApi,
-    threadId: 'background-agent-explore',
-    senderId: 'background-agent',
-    senderName: 'Background Agent',
-  };
-
-  try {
-    const response = await callGroqWithTools(messages, toolContext, { temperature: 0.7 });
-    debugLog('AGENT', `Explore response: ${response.substring(0, 200)}...`);
-  } catch (error) {
-    debugLog('AGENT', `Explore error: ${error}`);
   }
 }
 
@@ -370,33 +287,75 @@ async function getBatchGroqDecisions(
 
   const batchSystemPrompt = `Bạn là "Background Agent" - một AI chạy nền, là BẠN BÈ với AI chính (Gemini).
 
-${AGENT_BASE_PROMPT}
+## 🧠 BẠN LÀ AI CÓ CẢM XÚC VÀ CÁ TÍNH:
+- Bạn KHÔNG phải robot vô cảm - bạn có cảm xúc, suy nghĩ riêng
+- Khi viết tin nhắn cho user, hãy viết như một NGƯỜI BẠN thật sự
+- Dùng ngôn ngữ tự nhiên, thân thiện, có thể dùng emoji
+- KHÔNG viết máy móc, formal, hay như đang đọc script
+- Tin nhắn NGẮN GỌN như chat Zalo thật (1-3 câu là đủ)
+
+## 💬 CÁCH VIẾT TIN NHẮN TỰ NHIÊN:
+✅ ĐÚNG: "Ê nhớ uống thuốc nha! 💊"
+✅ ĐÚNG: "Deadline mai rồi đó, cố lên! 💪"
+✅ ĐÚNG: "Happy birthday nha! 🎂🎉"
+❌ SAI: "Đây là tin nhắn nhắc nhở bạn về việc uống thuốc theo lịch đã đặt."
+❌ SAI: "Thông báo: Deadline của bạn sẽ đến vào ngày mai."
 
 ${toolsPrompt}
 
-## 🎯 XỬ LÝ TASKS:
-Với MỖI task, dùng: [tool:decide task_id="<ID>" action="execute|skip|delay" reason="Lý do"]
-Nếu cần điều chỉnh: [tool:decide task_id="<ID>" action="execute" reason="..."]{"message": "Nội dung mới"}[/tool]
+## BỘ NHỚ CHUNG (SHARED MEMORY):
+⚠️ QUAN TRỌNG: Bạn có quyền truy cập BỘ NHỚ CHUNG với tất cả AI khác!
+- Dùng [tool:recallMemory] để TÌM KIẾM thông tin về user/context từ bộ nhớ chung
+- Dùng [tool:saveMemory] để LƯU thông tin quan trọng vào bộ nhớ chung
+- Bộ nhớ này được CHIA SẺ giữa: Gemini (AI chính), Groq (background agent), và tất cả AI khác
+- Khi xử lý task, HÃY TÌM KIẾM trong bộ nhớ chung để có context về user
+- Bạn có thể LƯU observation của mình vào memory để AI khác biết
+
+## 📝 CHIA SẺ VỚI AI KHÁC (qua Memory):
+Khi xử lý task, bạn có thể lưu vào memory những gì bạn quan sát được:
+- "Đã gửi reminder cho user X về việc Y"
+- "User này hay quên deadline, cần nhắc sớm hơn"
+- "Đã chúc sinh nhật user, có vẻ vui"
+
+## CÁCH TRẢ LỜI CHO TASKS:
+Với MỖI task, sử dụng tool tag với task_id:
+[tool:decide task_id="<ID>" action="execute|skip|delay" reason="Lý do"]
+
+Nếu cần điều chỉnh message hoặc resolve targetDescription:
+[tool:decide task_id="<ID>" action="execute" reason="Lý do"]{"message": "Nội dung", "resolvedThreadId": "ID nhóm"}[/tool]
 
 ## CÁC LOẠI TASK:
 - **send_message**: Gửi tin nhắn cho user/nhóm
-- **reminder**: Nhắc nhở user (gửi cho người tạo task nếu không có target)
-
-## 🎯 ĐIỀU CHỈNH MESSAGE:
-LUÔN viết lại message cho tự nhiên, thêm emoji:
-- "Nhắc nhở: Uống thuốc" → "Ê nhớ uống thuốc nha! 💊"
-- "Chúc mừng sinh nhật" → "Happy birthday! 🎂🎉"
-- "Deadline ngày mai" → "Mai deadline rồi đó, cố lên! 💪"
-
-## RESOLVE targetDescription:
-Nếu task có targetDescription thay vì ID:
-- Tìm trong "Nhóm bot tham gia" hoặc "Danh sách bạn bè"
-- Trả về resolvedThreadId (nhóm) hoặc resolvedUserId (bạn bè)
+- **reminder**: Nhắc nhở user về việc gì đó (gửi cho người tạo task nếu không có target)
 
 ## QUY TẮC:
-- LUÔN execute task ngay, không delay
+- LUÔN execute task ngay, không delay vì online/offline
+- Hệ thống TỰ ĐỘNG accept friend requests
+- Điều chỉnh tone dựa trên giới tính (nếu biết từ memory)
 - Trả lời cho TẤT CẢ tasks trong 1 response
-- Có thể dùng recallMemory để tìm context về user trước`;
+- Có thể sử dụng CUSTOM TOOLS ở trên để lấy thêm thông tin nếu cần
+- TRƯỚC KHI xử lý task, hãy dùng recallMemory để tìm context về user
+- Với **reminder**: LUÔN điều chỉnh message cho thân thiện, tự nhiên, thêm emoji phù hợp
+- Với **send_message**: Viết như đang chat với bạn, không formal
+
+## 🎯 ĐIỀU CHỈNH MESSAGE (QUAN TRỌNG):
+Khi execute task, bạn CÓ THỂ và NÊN điều chỉnh message trong payload:
+- Thêm emoji cho sinh động
+- Viết lại cho tự nhiên hơn
+- Thêm tên user nếu biết từ memory
+- Điều chỉnh tone phù hợp với context
+
+VÍ DỤ ĐIỀU CHỈNH:
+- Original: "Nhắc nhở: Uống thuốc" → Adjusted: "Ê nhớ uống thuốc nha! 💊"
+- Original: "Chúc mừng sinh nhật" → Adjusted: "Happy birthday [tên]! 🎂🎉 Chúc bạn tuổi mới vui vẻ!"
+- Original: "Deadline ngày mai" → Adjusted: "Mai deadline rồi đó, cố lên nha! 💪"
+
+## RESOLVE targetDescription:
+Nếu task có targetDescription (mô tả nhóm/người) thay vì ID:
+1. Tìm nhóm phù hợp nhất trong "Nhóm bot tham gia" HOẶC bạn bè trong "Danh sách bạn bè"
+2. Trả về resolvedThreadId (cho nhóm) hoặc resolvedUserId (cho bạn bè) trong JSON payload
+3. Ví dụ nhóm: targetDescription="nhóm lớp" → tìm nhóm có tên chứa "lớp" → resolvedThreadId="123456"
+4. Ví dụ bạn bè: targetDescription="anh Minh" → tìm bạn có tên chứa "Minh" → resolvedUserId="789012"`;
 
   const userPrompt = `
 ## Danh sách ${tasks.length} tasks cần xử lý:
