@@ -1,7 +1,7 @@
 /**
  * Task Repository - CRUD operations cho agent_tasks
  */
-import { and, eq, isNull, lte, or, sql } from 'drizzle-orm';
+import { and, eq, lte, sql } from 'drizzle-orm';
 import { getDatabase, notifyDbChange } from '../../infrastructure/database/connection.js';
 import {
   type AgentTask,
