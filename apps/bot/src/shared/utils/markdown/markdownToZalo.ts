@@ -858,8 +858,9 @@ function parseInlineStyles(text: string): { text: string; styles: StyleItem[]; l
 
   // Handle markdown links [text](url) - extract và replace bằng text có style
   // Dedupe: chỉ gửi mỗi URL một lần
+  // Note: Cho phép khoảng trắng tùy chọn giữa ] và ( vì AI đôi khi gửi "] ("
   const seenUrls = new Set<string>();
-  const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+  const linkRegex = /\[([^\]]+)\]\s*\(([^)]+)\)/g;
   let linkMatch: RegExpExecArray | null;
   linkRegex.lastIndex = 0;
 

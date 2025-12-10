@@ -178,13 +178,14 @@ function runMigrations(sqlite: Database) {
   sqlite.exec(`
     CREATE TABLE IF NOT EXISTS agent_tasks (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      type TEXT NOT NULL CHECK(type IN ('send_message')),
+      type TEXT NOT NULL CHECK(type IN ('send_message', 'reminder')),
       status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'processing', 'completed', 'failed', 'cancelled')),
       target_user_id TEXT,
       target_thread_id TEXT,
       payload TEXT NOT NULL,
       context TEXT,
       scheduled_at INTEGER NOT NULL,
+      cron_expression TEXT,
       started_at INTEGER,
       completed_at INTEGER,
       retry_count INTEGER NOT NULL DEFAULT 0,
@@ -198,7 +199,22 @@ function runMigrations(sqlite: Database) {
     CREATE INDEX IF NOT EXISTS idx_tasks_status ON agent_tasks(status);
     CREATE INDEX IF NOT EXISTS idx_tasks_scheduled ON agent_tasks(scheduled_at);
     CREATE INDEX IF NOT EXISTS idx_tasks_type ON agent_tasks(type);
+    CREATE INDEX IF NOT EXISTS idx_tasks_cron ON agent_tasks(cron_expression);
   `);
+
+  // Migration: Thêm cron_expression column nếu bảng đã tồn tại nhưng chưa có column
+  try {
+    const tableInfo = sqlite.query('PRAGMA table_info(agent_tasks)').all() as { name: string }[];
+    const hasCronColumn = tableInfo.some(col => col.name === 'cron_expression');
+    if (!hasCronColumn) {
+      debugLog('DATABASE', 'Adding cron_expression column to agent_tasks...');
+      sqlite.exec('ALTER TABLE agent_tasks ADD COLUMN cron_expression TEXT;');
+      sqlite.exec('CREATE INDEX IF NOT EXISTS idx_tasks_cron ON agent_tasks(cron_expression);');
+      debugLog('DATABASE', '✅ Added cron_expression column');
+    }
+  } catch (e) {
+    debugLog('DATABASE', `Migration check error (safe to ignore): ${e}`);
+  }
 
   debugLog('DATABASE', '✅ Migrations completed (including vector tables and agent_tasks)');
 }

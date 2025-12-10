@@ -130,8 +130,9 @@ function resolveQuoteData(
     if (batchMessages && quoteIndex < batchMessages.length) {
       const msg = batchMessages[quoteIndex];
       if (msg?.data?.msgId) {
-        const content = msg?.data?.content || '(no content)';
-        const preview = typeof content === 'string' ? content.substring(0, 50) : JSON.stringify(content).substring(0, 50);
+        const content = msg?.data?.content ?? '(no content)';
+        const contentStr = typeof content === 'string' ? content : (content != null ? JSON.stringify(content) : '(no content)');
+        const preview = contentStr.substring(0, 50);
         debugLog('QUOTE', `✅ Quote batch #${quoteIndex}: msgId=${msg.data.msgId}, content="${preview}..."`);
         console.log(`[Bot] 📎 Quote tin batch #${quoteIndex}`);
         return msg.data;
@@ -149,8 +150,9 @@ function resolveQuoteData(
       if (historyIndex >= 0 && historyIndex < rawHistory.length) {
         const historyMsg = rawHistory[historyIndex];
         if (historyMsg?.data?.msgId) {
-          const content = historyMsg?.data?.content || '(no content)';
-          const preview = typeof content === 'string' ? content.substring(0, 50) : String(content).substring(0, 50);
+          const content = historyMsg?.data?.content ?? '(no content)';
+          const contentStr = typeof content === 'string' ? content : (content != null ? JSON.stringify(content) : '(no content)');
+          const preview = contentStr.substring(0, 50);
           debugLog('QUOTE', `✅ Quote history #${quoteIndex} (historyIdx=${historyIndex}): msgId=${historyMsg.data.msgId}, content="${preview}..."`);
           console.log(`[Bot] 📎 Quote tin cũ từ history #${quoteIndex}`);
           return historyMsg.data;
