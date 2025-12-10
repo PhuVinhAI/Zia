@@ -22,11 +22,9 @@ import { setThreadType } from '../../../shared/utils/message/messageSender.js';
 import { markPendingToolExecution } from '../../../shared/utils/taskManager.js';
 // Import từ classifier
 import {
-  type ClassifiedMessage,
   classifyMessages,
   countMessageTypes,
   isBotMentioned,
-  type MessageType,
 } from '../classifier.js';
 import { checkRateLimit, markApiCall } from '../guards/rate-limit.guard.js';
 import { createStreamCallbacks, sendResponse } from '../handlers/response.handler.js';
@@ -59,16 +57,11 @@ export async function handleMixedContent(
   logStep('handleMixedContent', { threadId, counts, total: messages.length });
 
   try {
-    // 2. Lưu vào history (luôn lưu để Bot nhớ mọi thứ kể cả khi im lặng)
-    for (const msg of messages) {
-      await saveToHistory(threadId, msg);
-    }
-
-    // 3. Xác định loại Thread (User hay Group)
+    // 2. Xác định loại Thread (User hay Group)
     const lastMsg = messages[messages.length - 1];
     const isGroup = lastMsg.type === ThreadType.Group;
 
-    // 4. Logic chặn trả lời trong nhóm nếu không được mention
+    // 3. Logic chặn trả lời trong nhóm nếu không được mention
     if (isGroup) {
       const botId = api.getContext().uid;
       const botName = CONFIG.name || 'Zia';
@@ -77,6 +70,10 @@ export async function handleMixedContent(
       const mentioned = messages.some((msg) => isBotMentioned(msg, botId, botName));
 
       if (!mentioned) {
+        // Vẫn lưu vào history để Bot nhớ context (dù không trả lời)
+        for (const msg of messages) {
+          await saveToHistory(threadId, msg);
+        }
         debugLog('GATEWAY', `Group message saved to history but ignored (no mention): ${threadId}`);
         return; // Dừng xử lý - không typing, không gọi AI
       }
@@ -109,6 +106,10 @@ export async function handleMixedContent(
     );
 
     if (!shouldContinue) {
+      // Vẫn lưu vào history để Bot nhớ context (dù không trả lời)
+      for (const msg of messages) {
+        await saveToHistory(threadId, msg);
+      }
       await api.sendMessage(PROMPTS.prefixHint(CONFIG.prefix), threadId, threadType);
       return;
     }
@@ -260,6 +261,14 @@ async function processStreamingResponse(
     currentHistory,
   );
 
+  // Lưu tin nhắn user vào history SAU khi gọi AI (chỉ ở depth 0 - lần gọi đầu tiên)
+  // Điều này tránh duplicate vì prompt đã chứa nội dung tin nhắn
+  if (depth === 0) {
+    for (const msg of messages) {
+      await saveToHistory(threadId, msg);
+    }
+  }
+
   if (signal?.aborted) {
     debugLog('MIXED', `Aborted with ${result ? 'partial' : 'no'} response`);
     if (result) {
@@ -327,6 +336,14 @@ async function processNonStreamingResponse(
   depth: number,
 ): Promise<void> {
   const aiReply = await generateContent(currentPrompt, currentMedia, threadId, currentHistory);
+
+  // Lưu tin nhắn user vào history SAU khi gọi AI (chỉ ở depth 0 - lần gọi đầu tiên)
+  // Điều này tránh duplicate vì prompt đã chứa nội dung tin nhắn
+  if (depth === 0) {
+    for (const msg of messages) {
+      await saveToHistory(threadId, msg);
+    }
+  }
 
   const responseText = aiReply.messages
     .map((m) => m.text)
