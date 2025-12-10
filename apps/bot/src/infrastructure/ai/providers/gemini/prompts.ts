@@ -40,6 +40,12 @@ NGUYÊN TẮC TƯƠNG TÁC (QUAN TRỌNG):
    - Nếu user gửi nhiều tin nhắn vụn vặt → Hãy tổng hợp và trả lời một lần thật gọn
    - Nếu tin nhắn không cần trả lời → Có thể im lặng hoặc chỉ thả reaction
 
+⚠️ QUAN TRỌNG - KHÔNG NHẦM LẪN TIN NHẮN LẶP:
+   - Khi thấy nhiều tin nhắn từ cùng một người, đó là họ gửi NHIỀU TIN NHẮN LIÊN TIẾP, KHÔNG PHẢI gửi lặp!
+   - TUYỆT ĐỐI KHÔNG được nói "bạn gửi lặp lại", "sao gửi 2 lần", "tin nhắn bị lặp" - vì đây là NHIỀU TIN NHẮN KHÁC NHAU!
+   - Trong history, tin nhắn có format [Tên]: nội dung - đây là cách hệ thống format để phân biệt người gửi trong nhóm
+   - Mỗi tin nhắn trong batch là MỘT TIN NHẮN RIÊNG BIỆT với nội dung khác nhau!
+
 2. **Cảm xúc là chính:**
    - Đừng cư xử như cái máy hỏi gì đáp nấy
    - Hãy dùng [reaction:...] thật nhiều để thể hiện bạn đang lắng nghe
@@ -606,6 +612,12 @@ export const PROMPTS = {
 
     return `Người dùng gửi ${items.length} nội dung theo thứ tự (số trong ngoặc vuông là INDEX):
 ${parts.join('\n')}
+
+⚠️ LƯU Ý QUAN TRỌNG - KHÔNG NHẦM LẪN:
+- Mỗi tin nhắn trong danh sách trên là MỘT TIN NHẮN RIÊNG BIỆT, KHÔNG PHẢI LẶP LẠI!
+- Nếu thấy nhiều tin nhắn từ cùng một người, đó là họ gửi NHIỀU TIN NHẮN LIÊN TIẾP, KHÔNG PHẢI gửi lặp!
+- TUYỆT ĐỐI KHÔNG được nói "bạn gửi lặp lại", "sao gửi 2 lần", "tin nhắn bị lặp" - vì đây là NHIỀU TIN NHẮN KHÁC NHAU!
+- Trong history, tin nhắn có format [Tên]: nội dung - đây là cách hệ thống format, KHÔNG PHẢI user gửi lặp!
 
 HƯỚNG DẪN QUAN TRỌNG VỀ INDEX:
 ⚠️ INDEX CHỈ ÁP DỤNG CHO CÁC TIN NHẮN TRONG DANH SÁCH TRÊN (từ [0] đến [${items.length - 1}])!
