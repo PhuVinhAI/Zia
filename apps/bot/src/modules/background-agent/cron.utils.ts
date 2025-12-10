@@ -195,17 +195,24 @@ export function getNextCronTime(expression: string, from?: Date): Date | null {
 
 /**
  * Kiem tra xem thoi diem hien tai co match voi cron expression khong
+ * Co tolerance 2 phut de xu ly truong hop poll interval khong chinh xac
+ * 
+ * @param expression Cron expression
+ * @param date Thoi diem can kiem tra (mac dinh: now)
+ * @param toleranceMinutes Dung sai tinh bang phut (mac dinh: 2)
  */
-export function matchesCron(expression: string, date?: Date): boolean {
+export function matchesCron(expression: string, date?: Date, toleranceMinutes = 2): boolean {
   const fields = parseCron(expression);
   if (!fields) return false;
 
   const d = date || new Date();
+  const currentMinute = d.getMinutes();
+  const currentHour = d.getHours();
 
-  if (!fields.minute.includes(d.getMinutes())) return false;
-  if (!fields.hour.includes(d.getHours())) return false;
+  // Kiem tra thang
   if (!fields.month.includes(d.getMonth() + 1)) return false;
 
+  // Kiem tra ngay
   const dayOfMonth = d.getDate();
   const dayOfWeek = d.getDay();
   const dayOfMonthMatch = fields.dayOfMonth.includes(dayOfMonth);
@@ -213,15 +220,38 @@ export function matchesCron(expression: string, date?: Date): boolean {
   const dayOfMonthIsWildcard = fields.dayOfMonth.length === 31;
   const dayOfWeekIsWildcard = fields.dayOfWeek.length === 7;
 
+  let dayMatch: boolean;
   if (dayOfMonthIsWildcard && dayOfWeekIsWildcard) {
-    return true;
+    dayMatch = true;
   } else if (dayOfMonthIsWildcard) {
-    return dayOfWeekMatch;
+    dayMatch = dayOfWeekMatch;
   } else if (dayOfWeekIsWildcard) {
-    return dayOfMonthMatch;
+    dayMatch = dayOfMonthMatch;
   } else {
-    return dayOfMonthMatch || dayOfWeekMatch;
+    dayMatch = dayOfMonthMatch || dayOfWeekMatch;
   }
+  if (!dayMatch) return false;
+
+  // Kiem tra gio va phut voi tolerance
+  // Tim xem co cron time nao trong khoang [now - tolerance, now + tolerance] khong
+  for (const cronHour of fields.hour) {
+    for (const cronMinute of fields.minute) {
+      // Tinh khoang cach phut giua thoi diem hien tai va cron time
+      const cronTotalMinutes = cronHour * 60 + cronMinute;
+      const currentTotalMinutes = currentHour * 60 + currentMinute;
+      const diff = Math.abs(cronTotalMinutes - currentTotalMinutes);
+      
+      // Xu ly truong hop qua ngay (23:59 -> 00:00)
+      const diffAcrossMidnight = Math.abs(1440 - diff); // 1440 = 24 * 60
+      const minDiff = Math.min(diff, diffAcrossMidnight);
+      
+      if (minDiff <= toleranceMinutes) {
+        return true;
+      }
+    }
+  }
+
+  return false;
 }
 
 /**
