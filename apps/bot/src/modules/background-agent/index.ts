@@ -17,6 +17,15 @@ export {
   type EnvironmentContext,
   formatContextForPrompt,
 } from './context.builder.js';
+
+// Cron utilities
+export {
+  describeCron,
+  getNextCronTime,
+  isValidCron,
+  matchesCron,
+} from './cron.utils.js';
+
 // Task repository
 export {
   cancelTask,
@@ -24,4 +33,5 @@ export {
   createTask,
   getPendingTasks,
   getTaskById,
+  rescheduleTask,
 } from './task.repository.js';

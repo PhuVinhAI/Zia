@@ -22,6 +22,7 @@ export async function createTask(task: {
   payload: Record<string, any>;
   context?: string;
   scheduledAt?: Date;
+  cronExpression?: string;
   createdBy?: string;
 }): Promise<AgentTask> {
   const now = new Date();
@@ -34,6 +35,7 @@ export async function createTask(task: {
       payload: JSON.stringify(task.payload),
       context: task.context,
       scheduledAt: task.scheduledAt || now,
+      cronExpression: task.cronExpression,
       createdBy: task.createdBy,
       createdAt: now,
       updatedAt: now,
@@ -155,4 +157,25 @@ export async function countTasksByStatus(): Promise<Record<TaskStatus, number>> 
   }
 
   return counts;
+}
+
+/**
+ * Reschedule task có cron expression
+ * Reset status về pending và cập nhật scheduledAt cho lần chạy tiếp theo
+ */
+export async function rescheduleTask(taskId: number, nextScheduledAt: Date): Promise<void> {
+  await db()
+    .update(agentTasks)
+    .set({
+      status: 'pending',
+      scheduledAt: nextScheduledAt,
+      retryCount: 0,
+      lastError: null,
+      startedAt: null,
+      completedAt: null,
+      result: null,
+      updatedAt: new Date(),
+    })
+    .where(eq(agentTasks.id, taskId));
+  notifyDbChange();
 }

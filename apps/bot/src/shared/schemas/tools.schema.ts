@@ -438,6 +438,7 @@ export const ScheduleTaskSchema = z.object({
   message: z.string().optional().describe('Nội dung tin nhắn hoặc nội dung nhắc nhở'),
   delayMinutes: z.coerce.number().min(0).default(0).describe('Số phút delay (0 = ngay lập tức)'),
   scheduledTime: z.string().optional().describe('Thời điểm thực hiện (ISO format, VD: "2024-12-25T08:00:00")'),
+  cronExpression: z.string().optional().describe('Cron expression cho task lặp lại (VD: "0 8 * * *" = 8h sáng mỗi ngày, "30 12 * * 1-5" = 12h30 thứ 2-6). Format: "phút giờ ngày tháng thứ"'),
   context: z.string().optional().describe('Ngữ cảnh/lý do tạo task'),
 });
 
@@ -712,7 +713,7 @@ export const TOOL_EXAMPLES: Record<string, string> = {
   solveMath: `[tool:solveMath]{"problem":"Giải $x^2 = 4$","solution":"$x = \\pm 2$"}[/tool]`,
   saveMemory: `[tool:saveMemory]{"content":"User thích màu xanh","type":"preference","importance":7}[/tool]`,
   recallMemory: `[tool:recallMemory]{"query":"sở thích","limit":5}[/tool]`,
-  scheduleTask: `[tool:scheduleTask]{"type":"reminder","message":"Nhớ uống thuốc nha!","scheduledTime":"2024-12-10T08:00:00"}[/tool]`,
+  scheduleTask: `[tool:scheduleTask]{"type":"reminder","message":"Nhớ uống thuốc nha!","cronExpression":"0 8 * * *"}[/tool]`,
   clearHistory: `[tool:clearHistory]{}[/tool]`,
   flush_logs: `[tool:flush_logs]{}[/tool]`,
   getAllFriends: `[tool:getAllFriends]{"limit":50}[/tool]`,
