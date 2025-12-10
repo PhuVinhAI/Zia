@@ -28,8 +28,8 @@
     "showToolCalls": false,
     "allowNSFW": false,
     "cloudDebug": {
-      "enabled": true,
-      "prefix": "#b"
+      "enabled": false,
+      "prefix": "#bot"
     },
     "sleepMode": {
       "enabled": true,
