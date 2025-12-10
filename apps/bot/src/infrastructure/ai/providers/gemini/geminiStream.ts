@@ -116,6 +116,9 @@ function cleanInlineTags(text: string): string {
 /**
  * Xử lý các inline tags bên trong text block ([msg] hoặc [quote])
  * Extract và gửi sticker, reaction, link, card, undo trước khi gửi text
+ * 
+ * ⚠️ QUAN TRỌNG: Undo được xử lý TRƯỚC các tags khác để đảm bảo
+ * tin nhắn cũ được thu hồi trước khi gửi tin mới
  */
 async function processInlineTags(
   rawText: string,
@@ -124,6 +127,30 @@ async function processInlineTags(
 ): Promise<void> {
   // Fix stuck tags trước khi parse
   const text = fixStuckTags(rawText);
+
+  // ⚠️ Extract undos TRƯỚC - hỗ trợ [undo:-1], [undo:-1:-3], [undo:all]
+  // Phải xử lý undo trước để thu hồi tin nhắn cũ trước khi gửi tin mới
+  for (const match of text.matchAll(/\[undo:(all|(-?\d+)(?::(-?\d+))?)\]/gi)) {
+    const fullMatch = match[1];
+    const key = `undo:${fullMatch}`;
+    
+    if (!state.sentUndos.has(key) && callbacks.onUndo) {
+      state.sentUndos.add(key);
+      
+      if (fullMatch === 'all') {
+        await callbacks.onUndo('all');
+      } else if (match[3] !== undefined) {
+        // Range: [undo:-1:-3]
+        const start = parseInt(match[2], 10);
+        const end = parseInt(match[3], 10);
+        await callbacks.onUndo({ start, end });
+      } else {
+        // Single: [undo:-1]
+        const index = parseInt(match[2], 10);
+        await callbacks.onUndo(index);
+      }
+    }
+  }
 
   // Extract stickers
   for (const match of text.matchAll(/\[sticker:(\w+)\]/gi)) {
@@ -157,29 +184,6 @@ async function processInlineTags(
       await callbacks.onCard(userId || undefined);
     }
   }
-
-  // Extract undos - hỗ trợ [undo:-1], [undo:-1:-3], [undo:all]
-  for (const match of text.matchAll(/\[undo:(all|(-?\d+)(?::(-?\d+))?)\]/gi)) {
-    const fullMatch = match[1];
-    const key = `undo:${fullMatch}`;
-    
-    if (!state.sentUndos.has(key) && callbacks.onUndo) {
-      state.sentUndos.add(key);
-      
-      if (fullMatch === 'all') {
-        await callbacks.onUndo('all');
-      } else if (match[3] !== undefined) {
-        // Range: [undo:-1:-3]
-        const start = parseInt(match[2], 10);
-        const end = parseInt(match[3], 10);
-        await callbacks.onUndo({ start, end });
-      } else {
-        // Single: [undo:-1]
-        const index = parseInt(match[2], 10);
-        await callbacks.onUndo(index);
-      }
-    }
-  }
 }
 
 async function processStreamChunk(state: ParserState, callbacks: StreamCallbacks): Promise<void> {
@@ -208,6 +212,32 @@ async function processStreamChunk(state: ParserState, callbacks: StreamCallbacks
     if (!state.sentStickers.has(key) && callbacks.onSticker) {
       state.sentStickers.add(key);
       await callbacks.onSticker(keyword);
+    }
+  }
+
+  // ⚠️ QUAN TRỌNG: Parse [undo:...] TRƯỚC [msg] và [quote]
+  // Lý do: Khi AI muốn undo tin nhắn cũ rồi gửi tin mới, undo phải được thực thi trước
+  // Nếu không, tin nhắn mới sẽ được lưu vào store trước, và undo sẽ undo nhầm tin mới
+  // Ví dụ: [undo:-1] [msg]Sorry![/msg] → phải undo tin cũ trước, rồi mới gửi "Sorry!"
+  for (const match of buffer.matchAll(/\[undo:(all|(-?\d+)(?::(-?\d+))?)\]/gi)) {
+    const fullMatch = match[1];
+    const key = `undo:${fullMatch}`;
+    
+    if (!state.sentUndos.has(key) && callbacks.onUndo) {
+      state.sentUndos.add(key);
+      
+      if (fullMatch === 'all') {
+        await callbacks.onUndo('all');
+      } else if (match[3] !== undefined) {
+        // Range: [undo:-1:-3]
+        const start = parseInt(match[2], 10);
+        const end = parseInt(match[3], 10);
+        await callbacks.onUndo({ start, end });
+      } else {
+        // Single: [undo:-1]
+        const index = parseInt(match[2], 10);
+        await callbacks.onUndo(index);
+      }
     }
   }
 
@@ -265,29 +295,6 @@ async function processStreamChunk(state: ParserState, callbacks: StreamCallbacks
         state.sentMessages.add(key);
         state.sentMessageTexts.push(cleanText);
         await callbacks.onMessage(cleanText);
-      }
-    }
-  }
-
-  // Parse top-level [undo:...] - hỗ trợ [undo:-1], [undo:-1:-3], [undo:all]
-  for (const match of buffer.matchAll(/\[undo:(all|(-?\d+)(?::(-?\d+))?)\]/gi)) {
-    const fullMatch = match[1];
-    const key = `undo:${fullMatch}`;
-    
-    if (!state.sentUndos.has(key) && callbacks.onUndo) {
-      state.sentUndos.add(key);
-      
-      if (fullMatch === 'all') {
-        await callbacks.onUndo('all');
-      } else if (match[3] !== undefined) {
-        // Range: [undo:-1:-3]
-        const start = parseInt(match[2], 10);
-        const end = parseInt(match[3], 10);
-        await callbacks.onUndo({ start, end });
-      } else {
-        // Single: [undo:-1]
-        const index = parseInt(match[2], 10);
-        await callbacks.onUndo(index);
       }
     }
   }
