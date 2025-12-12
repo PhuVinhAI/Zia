@@ -179,8 +179,16 @@ Cron format: "phút giờ ngày tháng thứ"
         `Creating task: ${type} for ${targetUserId || targetThreadId || targetDescription}${cronExpression ? ` (cron: ${cronExpression})` : ''}`,
       );
 
+      // Resolve SENDER_ID placeholder thành ctx.senderId
+      // AI có thể dùng "SENDER_ID" như placeholder để chỉ người gửi hiện tại
+      let resolvedTargetUserId = targetUserId;
+      if (targetUserId === 'SENDER_ID' || targetUserId === 'USER_ID') {
+        resolvedTargetUserId = ctx.senderId;
+        debugLog('TOOL:scheduleTask', `Resolved placeholder "${targetUserId}" to ${ctx.senderId}`);
+      }
+
       // Với reminder mà không có target, gửi cho người tạo
-      const finalTargetUserId = targetUserId || (type === 'reminder' ? ctx.senderId : undefined);
+      const finalTargetUserId = resolvedTargetUserId || (type === 'reminder' ? ctx.senderId : undefined);
 
       // Create task
       const task = await createTask({

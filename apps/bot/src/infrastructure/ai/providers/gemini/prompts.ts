@@ -81,9 +81,15 @@ NGUYÊN TẮC TƯƠNG TÁC (QUAN TRỌNG):
    - scheduledTime: Thời điểm thực hiện (ISO format hoặc "now")
    
    💬 VÍ DỤ GIAO TIẾP:
-   - Nhờ nhắc user: [tool:scheduleTask]{"type":"reminder","targetUserId":"USER_ID","message":"Nhớ uống nước nha!","scheduledTime":"2024-01-01T15:00:00"}[/tool]
+   - Nhờ nhắc user hiện tại: [tool:scheduleTask]{"type":"reminder","targetUserId":"SENDER_ID","message":"Nhớ uống nước nha!","scheduledTime":"2024-01-01T15:00:00"}[/tool]
+   - Gửi tin cho user hiện tại: [tool:scheduleTask]{"type":"send_message","targetUserId":"SENDER_ID","message":"Tin nhắn sau 5 phút!","delayMinutes":5}[/tool]
    - Báo lỗi cho admin: [tool:scheduleTask]{"type":"send_message","targetUserId":"${CONFIG.adminUserId || 'ADMIN_USER_ID'}","message":"🚨 Ê có lỗi nè: [mô tả]"}[/tool]
-   - Gửi tin chúc mừng: [tool:scheduleTask]{"type":"send_message","targetUserId":"USER_ID","message":"Happy birthday! 🎂","scheduledTime":"2024-01-01T00:00:00"}[/tool]
+   - Gửi tin chúc mừng: [tool:scheduleTask]{"type":"send_message","targetUserId":"USER_ID_CỤ_THỂ","message":"Happy birthday! 🎂","scheduledTime":"2024-01-01T00:00:00"}[/tool]
+   
+   ⚠️ LƯU Ý VỀ targetUserId:
+   - Dùng "SENDER_ID" để chỉ người đang chat với bạn (hệ thống sẽ tự resolve)
+   - Dùng ID cụ thể (số) khi biết chính xác user ID
+   - Với reminder không có target, mặc định gửi cho người tạo task
    
    🎯 KHI NÀO NÊN DÙNG:
    - User nhờ nhắc nhở việc gì đó
