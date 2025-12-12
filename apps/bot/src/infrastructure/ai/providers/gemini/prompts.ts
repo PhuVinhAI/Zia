@@ -81,9 +81,15 @@ NGUYÊN TẮC TƯƠNG TÁC (QUAN TRỌNG):
    - scheduledTime: Thời điểm thực hiện (ISO format hoặc "now")
    
    💬 VÍ DỤ GIAO TIẾP:
-   - Nhờ nhắc user: [tool:scheduleTask]{"type":"reminder","targetUserId":"USER_ID","message":"Nhớ uống nước nha!","scheduledTime":"2024-01-01T15:00:00"}[/tool]
+   - Nhờ nhắc user hiện tại: [tool:scheduleTask]{"type":"reminder","targetUserId":"SENDER_ID","message":"Nhớ uống nước nha!","scheduledTime":"2024-01-01T15:00:00"}[/tool]
+   - Gửi tin cho user hiện tại: [tool:scheduleTask]{"type":"send_message","targetUserId":"SENDER_ID","message":"Tin nhắn sau 5 phút!","delayMinutes":5}[/tool]
    - Báo lỗi cho admin: [tool:scheduleTask]{"type":"send_message","targetUserId":"${CONFIG.adminUserId || 'ADMIN_USER_ID'}","message":"🚨 Ê có lỗi nè: [mô tả]"}[/tool]
-   - Gửi tin chúc mừng: [tool:scheduleTask]{"type":"send_message","targetUserId":"USER_ID","message":"Happy birthday! 🎂","scheduledTime":"2024-01-01T00:00:00"}[/tool]
+   - Gửi tin chúc mừng: [tool:scheduleTask]{"type":"send_message","targetUserId":"USER_ID_CỤ_THỂ","message":"Happy birthday! 🎂","scheduledTime":"2024-01-01T00:00:00"}[/tool]
+   
+   ⚠️ LƯU Ý VỀ targetUserId:
+   - Dùng "SENDER_ID" để chỉ người đang chat với bạn (hệ thống sẽ tự resolve)
+   - Dùng ID cụ thể (số) khi biết chính xác user ID
+   - Với reminder không có target, mặc định gửi cho người tạo task
    
    🎯 KHI NÀO NÊN DÙNG:
    - User nhờ nhắc nhở việc gì đó
@@ -535,6 +541,9 @@ export interface ClassifiedItem {
   contactPhone?: string;
   // Message gốc để lấy metadata (msgId, msgType, ts)
   message?: any;
+  // Sender info (quan trọng cho group chat - phân biệt ai gửi tin nhắn nào)
+  senderName?: string;
+  senderId?: string;
 }
 
 export const PROMPTS = {
@@ -576,7 +585,7 @@ export const PROMPTS = {
     `\n\n[YOUTUBE] Có ${urls.length} video YouTube: ${urls.join(', ')}. Hãy XEM video và phản hồi.`,
 
   // Mixed content - nhiều loại tin nhắn
-  mixedContent: (items: ClassifiedItem[]) => {
+  mixedContent: (items: ClassifiedItem[], isGroup: boolean = false) => {
     const parts: string[] = [];
 
     items.forEach((item, index) => {
@@ -585,40 +594,43 @@ export const PROMPTS = {
       const metaInfo = msgData
         ? `\n   - MsgID: "${msgData.msgId}"\n   - MsgType: "${msgData.msgType}"\n   - Timestamp: ${msgData.ts}`
         : '';
+      
+      // Thêm tên người gửi nếu là group chat (quan trọng để AI phân biệt ai gửi)
+      const senderPrefix = isGroup && item.senderName ? `${item.senderName}: ` : '';
 
       switch (item.type) {
         case 'text':
-          parts.push(`[${index}] Tin nhắn: "${item.text}"`);
+          parts.push(`[${index}] ${senderPrefix}"${item.text}"`);
           break;
         case 'sticker':
-          parts.push(`[${index}] Sticker: (ID: ${item.stickerId})`);
+          parts.push(`[${index}] ${senderPrefix}Sticker (ID: ${item.stickerId})`);
           break;
         case 'image':
           if (item.text) {
-            parts.push(`[${index}] Ảnh kèm caption: "${item.text}" (URL: ${item.url})${metaInfo}`);
+            parts.push(`[${index}] ${senderPrefix}Ảnh kèm caption: "${item.text}" (URL: ${item.url})${metaInfo}`);
           } else {
-            parts.push(`[${index}] Ảnh: (URL: ${item.url})${metaInfo}`);
+            parts.push(`[${index}] ${senderPrefix}Ảnh (URL: ${item.url})${metaInfo}`);
           }
           break;
         case 'doodle':
-          parts.push(`[${index}] Hình vẽ tay (doodle): (URL: ${item.url})${metaInfo}`);
+          parts.push(`[${index}] ${senderPrefix}Hình vẽ tay (doodle) (URL: ${item.url})${metaInfo}`);
           break;
         case 'gif':
-          parts.push(`[${index}] GIF: (URL: ${item.url})${metaInfo}`);
+          parts.push(`[${index}] ${senderPrefix}GIF (URL: ${item.url})${metaInfo}`);
           break;
         case 'video':
-          parts.push(`[${index}] Video ${item.duration || 0}s: (URL: ${item.url})${metaInfo}`);
+          parts.push(`[${index}] ${senderPrefix}Video ${item.duration || 0}s (URL: ${item.url})${metaInfo}`);
           break;
         case 'voice':
           parts.push(
-            `[${index}] Tin nhắn thoại ${item.duration || 0}s: (URL: ${item.url})${metaInfo}`,
+            `[${index}] ${senderPrefix}Tin nhắn thoại ${item.duration || 0}s (URL: ${item.url})${metaInfo}`,
           );
           break;
         case 'file':
-          parts.push(`[${index}] File "${item.fileName}": (URL: ${item.url})${metaInfo}`);
+          parts.push(`[${index}] ${senderPrefix}File "${item.fileName}" (URL: ${item.url})${metaInfo}`);
           break;
         case 'link':
-          parts.push(`[${index}] Link: ${item.url}`);
+          parts.push(`[${index}] ${senderPrefix}Link: ${item.url}`);
           break;
         case 'contact': {
           // Bao gồm contactUserId để AI có thể gọi sendFriendRequest
@@ -629,14 +641,18 @@ export const PROMPTS = {
           ]
             .filter(Boolean)
             .join(', ');
-          parts.push(`[${index}] Danh thiếp: ${contactInfo}`);
+          parts.push(`[${index}] ${senderPrefix}Danh thiếp: ${contactInfo}`);
           break;
         }
       }
     });
 
+    const groupNote = isGroup 
+      ? `\n\n⚠️ ĐÂY LÀ NHÓM CHAT - Mỗi tin nhắn có TÊN NGƯỜI GỬI phía trước. Hãy chú ý AI ĐANG TRẢ LỜI AI và quote đúng tin nhắn của người đó!`
+      : '';
+
     return `Người dùng gửi ${items.length} nội dung theo thứ tự (số trong ngoặc vuông là INDEX):
-${parts.join('\n')}
+${parts.join('\n')}${groupNote}
 
 HƯỚNG DẪN QUAN TRỌNG VỀ INDEX:
 ⚠️ INDEX CHỈ ÁP DỤNG CHO CÁC TIN NHẮN TRONG DANH SÁCH TRÊN (từ [0] đến [${items.length - 1}])!

@@ -15,6 +15,7 @@ export function buildPrompt(
   quoteMediaType: string | undefined,
   youtubeUrls: string[],
   mediaNotes: string[],
+  isGroup: boolean = false,
 ): string {
   const hasMedia =
     classified.some((c) =>
@@ -38,8 +39,11 @@ export function buildPrompt(
       contactPhone: c.contactPhone,
       // QUAN TRỌNG: Truyền message gốc để prompt.ts lấy metadata (msgId, msgType, ts)
       message: c.message,
+      // Sender info (quan trọng cho group chat - phân biệt ai gửi tin nhắn nào)
+      senderName: c.senderName,
+      senderId: c.senderId,
     }));
-    prompt = PROMPTS.mixedContent(items);
+    prompt = PROMPTS.mixedContent(items, isGroup);
     prompt += PROMPTS.mediaNote(mediaNotes);
   } else if (quoteHasMedia) {
     // Quote có media → thêm context đặc biệt
@@ -47,8 +51,26 @@ export function buildPrompt(
     const quoteText =
       quoteContent && quoteContent !== '(nội dung không xác định)' ? quoteContent : undefined;
     prompt += PROMPTS.quoteMedia(quoteText, quoteMediaType);
+  } else if (isGroup && classified.length > 0) {
+    // Group chat text-only → dùng mixedContent để hiển thị tên người gửi
+    const items = classified.map((c) => ({
+      type: c.type,
+      text: c.text,
+      url: c.url,
+      duration: c.duration,
+      fileName: c.fileName,
+      stickerId: c.stickerId,
+      contactName: c.contactName,
+      contactAvatar: c.contactAvatar,
+      contactUserId: c.contactUserId,
+      contactPhone: c.contactPhone,
+      message: c.message,
+      senderName: c.senderName,
+      senderId: c.senderId,
+    }));
+    prompt = PROMPTS.mixedContent(items, isGroup);
   } else {
-    // Text only → dùng userText trực tiếp
+    // Text only (chat 1-1) → dùng userText trực tiếp
     prompt = userText;
   }
 
