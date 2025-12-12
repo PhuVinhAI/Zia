@@ -541,6 +541,9 @@ export interface ClassifiedItem {
   contactPhone?: string;
   // Message gốc để lấy metadata (msgId, msgType, ts)
   message?: any;
+  // Sender info (quan trọng cho group chat - phân biệt ai gửi tin nhắn nào)
+  senderName?: string;
+  senderId?: string;
 }
 
 export const PROMPTS = {
@@ -582,7 +585,7 @@ export const PROMPTS = {
     `\n\n[YOUTUBE] Có ${urls.length} video YouTube: ${urls.join(', ')}. Hãy XEM video và phản hồi.`,
 
   // Mixed content - nhiều loại tin nhắn
-  mixedContent: (items: ClassifiedItem[]) => {
+  mixedContent: (items: ClassifiedItem[], isGroup: boolean = false) => {
     const parts: string[] = [];
 
     items.forEach((item, index) => {
@@ -591,40 +594,43 @@ export const PROMPTS = {
       const metaInfo = msgData
         ? `\n   - MsgID: "${msgData.msgId}"\n   - MsgType: "${msgData.msgType}"\n   - Timestamp: ${msgData.ts}`
         : '';
+      
+      // Thêm tên người gửi nếu là group chat (quan trọng để AI phân biệt ai gửi)
+      const senderPrefix = isGroup && item.senderName ? `${item.senderName}: ` : '';
 
       switch (item.type) {
         case 'text':
-          parts.push(`[${index}] Tin nhắn: "${item.text}"`);
+          parts.push(`[${index}] ${senderPrefix}"${item.text}"`);
           break;
         case 'sticker':
-          parts.push(`[${index}] Sticker: (ID: ${item.stickerId})`);
+          parts.push(`[${index}] ${senderPrefix}Sticker (ID: ${item.stickerId})`);
           break;
         case 'image':
           if (item.text) {
-            parts.push(`[${index}] Ảnh kèm caption: "${item.text}" (URL: ${item.url})${metaInfo}`);
+            parts.push(`[${index}] ${senderPrefix}Ảnh kèm caption: "${item.text}" (URL: ${item.url})${metaInfo}`);
           } else {
-            parts.push(`[${index}] Ảnh: (URL: ${item.url})${metaInfo}`);
+            parts.push(`[${index}] ${senderPrefix}Ảnh (URL: ${item.url})${metaInfo}`);
           }
           break;
         case 'doodle':
-          parts.push(`[${index}] Hình vẽ tay (doodle): (URL: ${item.url})${metaInfo}`);
+          parts.push(`[${index}] ${senderPrefix}Hình vẽ tay (doodle) (URL: ${item.url})${metaInfo}`);
           break;
         case 'gif':
-          parts.push(`[${index}] GIF: (URL: ${item.url})${metaInfo}`);
+          parts.push(`[${index}] ${senderPrefix}GIF (URL: ${item.url})${metaInfo}`);
           break;
         case 'video':
-          parts.push(`[${index}] Video ${item.duration || 0}s: (URL: ${item.url})${metaInfo}`);
+          parts.push(`[${index}] ${senderPrefix}Video ${item.duration || 0}s (URL: ${item.url})${metaInfo}`);
           break;
         case 'voice':
           parts.push(
-            `[${index}] Tin nhắn thoại ${item.duration || 0}s: (URL: ${item.url})${metaInfo}`,
+            `[${index}] ${senderPrefix}Tin nhắn thoại ${item.duration || 0}s (URL: ${item.url})${metaInfo}`,
           );
           break;
         case 'file':
-          parts.push(`[${index}] File "${item.fileName}": (URL: ${item.url})${metaInfo}`);
+          parts.push(`[${index}] ${senderPrefix}File "${item.fileName}" (URL: ${item.url})${metaInfo}`);
           break;
         case 'link':
-          parts.push(`[${index}] Link: ${item.url}`);
+          parts.push(`[${index}] ${senderPrefix}Link: ${item.url}`);
           break;
         case 'contact': {
           // Bao gồm contactUserId để AI có thể gọi sendFriendRequest
@@ -635,14 +641,18 @@ export const PROMPTS = {
           ]
             .filter(Boolean)
             .join(', ');
-          parts.push(`[${index}] Danh thiếp: ${contactInfo}`);
+          parts.push(`[${index}] ${senderPrefix}Danh thiếp: ${contactInfo}`);
           break;
         }
       }
     });
 
+    const groupNote = isGroup 
+      ? `\n\n⚠️ ĐÂY LÀ NHÓM CHAT - Mỗi tin nhắn có TÊN NGƯỜI GỬI phía trước. Hãy chú ý AI ĐANG TRẢ LỜI AI và quote đúng tin nhắn của người đó!`
+      : '';
+
     return `Người dùng gửi ${items.length} nội dung theo thứ tự (số trong ngoặc vuông là INDEX):
-${parts.join('\n')}
+${parts.join('\n')}${groupNote}
 
 HƯỚNG DẪN QUAN TRỌNG VỀ INDEX:
 ⚠️ INDEX CHỈ ÁP DỤNG CHO CÁC TIN NHẮN TRONG DANH SÁCH TRÊN (từ [0] đến [${items.length - 1}])!

@@ -139,6 +139,7 @@ export async function handleMixedContent(
       quoteMediaType,
       youtubeUrls,
       notes,
+      isGroup, // Truyền isGroup để AI biết đây là nhóm chat và hiển thị tên người gửi
     );
     debugLog('MIXED', `Prompt: ${prompt.substring(0, 200)}...`);
     debugLog('MIXED', `Media parts: ${media.length}`);

@@ -34,6 +34,9 @@ export type ClassifiedMessage = {
   contactAvatar?: string;
   contactUserId?: string;
   contactPhone?: string;
+  // Sender info (quan trọng cho group chat)
+  senderName?: string;
+  senderId?: string;
 };
 
 /**
@@ -42,15 +45,19 @@ export type ClassifiedMessage = {
 export function classifyMessage(msg: any): ClassifiedMessage {
   const content = msg.data?.content;
   const msgType = msg.data?.msgType || '';
+  
+  // Lấy thông tin người gửi (quan trọng cho group chat)
+  const senderName = msg.data?.dName;
+  const senderId = msg.data?.uidFrom;
 
   // Text message
   if (typeof content === 'string' && !msgType.includes('sticker')) {
-    return { type: 'text', message: msg, text: content };
+    return { type: 'text', message: msg, text: content, senderName, senderId };
   }
 
   // Sticker
   if (msgType === 'chat.sticker' && content?.id) {
-    return { type: 'sticker', message: msg, stickerId: content.id };
+    return { type: 'sticker', message: msg, stickerId: content.id, senderName, senderId };
   }
 
   // GIF - Gemini không hỗ trợ image/gif, dùng image/png
@@ -66,6 +73,8 @@ export function classifyMessage(msg: any): ClassifiedMessage {
       thumbUrl: content?.thumb || params?.small,
       mimeType: 'image/png',
       text: keyword ? `(GIF: ${keyword})` : '(GIF)',
+      senderName,
+      senderId,
     };
   }
 
@@ -74,7 +83,7 @@ export function classifyMessage(msg: any): ClassifiedMessage {
     const url = content?.href || content?.hdUrl || content?.thumbUrl;
     // Lấy caption text nếu có (content.title chứa text đi kèm ảnh)
     const caption = content?.title || '';
-    return { type: 'image', message: msg, url, mimeType: 'image/jpeg', text: caption };
+    return { type: 'image', message: msg, url, mimeType: 'image/jpeg', text: caption, senderName, senderId };
   }
 
   // Video
@@ -92,6 +101,8 @@ export function classifyMessage(msg: any): ClassifiedMessage {
       mimeType: 'video/mp4',
       duration,
       fileSize,
+      senderName,
+      senderId,
     };
   }
 
@@ -105,6 +116,8 @@ export function classifyMessage(msg: any): ClassifiedMessage {
       url: content.href,
       mimeType: 'audio/aac',
       duration,
+      senderName,
+      senderId,
     };
   }
 
@@ -121,6 +134,8 @@ export function classifyMessage(msg: any): ClassifiedMessage {
       fileExt,
       fileSize,
       mimeType: 'application/octet-stream',
+      senderName,
+      senderId,
     };
   }
 
@@ -142,6 +157,8 @@ export function classifyMessage(msg: any): ClassifiedMessage {
       contactUserId,
       contactPhone,
       text: `Danh thiếp: ${contactName}${contactPhone ? ` (${contactPhone})` : ''}`,
+      senderName,
+      senderId,
     };
   }
 
@@ -157,7 +174,7 @@ export function classifyMessage(msg: any): ClassifiedMessage {
       // Lấy title (text kèm link) nếu có, nếu không thì chỉ dùng URL
       const title = content?.title || '';
       const text = title || url;
-      return { type: 'link', message: msg, url, text };
+      return { type: 'link', message: msg, url, text, senderName, senderId };
     }
   }
 
@@ -170,6 +187,8 @@ export function classifyMessage(msg: any): ClassifiedMessage {
       thumbUrl: content.thumb || content.href,
       mimeType: 'image/jpeg',
       text: '(Hình vẽ tay)',
+      senderName,
+      senderId,
     };
   }
 
@@ -184,6 +203,8 @@ export function classifyMessage(msg: any): ClassifiedMessage {
         message: msg,
         contactName: friendName,
         text: `[Thông báo hệ thống] Người dùng "${friendName}" vừa đồng ý kết bạn với bạn. Hãy gửi lời chào thân thiện đến họ.`,
+        senderName,
+        senderId,
       };
     }
     // Other ecard types
@@ -191,6 +212,8 @@ export function classifyMessage(msg: any): ClassifiedMessage {
       type: 'system',
       message: msg,
       text: description || '(Thông báo hệ thống)',
+      senderName,
+      senderId,
     };
   }
 
@@ -204,6 +227,8 @@ export function classifyMessage(msg: any): ClassifiedMessage {
         message: msg,
         contactName: friendName,
         text: `[Thông báo hệ thống] Người dùng "${friendName}" vừa đồng ý kết bạn với bạn. Hãy gửi lời chào thân thiện đến họ.`,
+        senderName,
+        senderId,
       };
     }
     // Other system notifications
@@ -211,10 +236,12 @@ export function classifyMessage(msg: any): ClassifiedMessage {
       type: 'system',
       message: msg,
       text: title || '(Thông báo hệ thống)',
+      senderName,
+      senderId,
     };
   }
 
-  return { type: 'unknown', message: msg };
+  return { type: 'unknown', message: msg, senderName, senderId };
 }
 
 /**
