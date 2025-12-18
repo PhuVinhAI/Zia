@@ -262,9 +262,9 @@ export const GeminiConfigSchema = z.object({
   models: z
     .array(z.string())
     .default([
+      'models/gemini-3-flash-preview',
       'models/gemini-flash-latest',
       'models/gemini-flash-lite-latest',
-      'models/gemini-robotics-er-1.5-preview',
     ]),
   rateLimitMinuteMs: z.coerce.number().min(60000).default(120000),
   rateLimitDayMs: z.coerce.number().min(3600000).default(86400000),
@@ -469,9 +469,9 @@ export const SettingsSchema = z.object({
     maxOutputTokens: 65536,
     thinkingBudget: 8192,
     models: [
+      'models/gemini-3-flash-preview',
       'models/gemini-flash-latest',
       'models/gemini-flash-lite-latest',
-      'models/gemini-robotics-er-1.5-preview',
     ],
     rateLimitMinuteMs: 120000,
     rateLimitDayMs: 86400000,

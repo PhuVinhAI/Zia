@@ -10,9 +10,9 @@ import { debugLog } from '../../../../core/logger/logger.js';
 // Danh sách models theo thứ tự ưu tiên (từ config)
 const getGeminiModels = () =>
   CONFIG.gemini?.models ?? [
+    'models/gemini-3-flash-preview',
     'models/gemini-flash-latest',
     'models/gemini-flash-lite-latest',
-    'models/gemini-robotics-er-1.5-preview',
   ];
 
 export const GEMINI_MODELS = getGeminiModels();

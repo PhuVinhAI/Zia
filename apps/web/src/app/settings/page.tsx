@@ -499,7 +499,7 @@ export default function SettingsPage() {
                 <Textarea
                   value={(localSettings.gemini?.models ?? []).join('\n')}
                   onChange={(e) => updateGemini('models', e.target.value.split('\n').filter(Boolean))}
-                  placeholder="models/gemini-flash-latest"
+                  placeholder="models/gemini-3-flash-preview"
                   rows={3}
                   className="rounded-xl border-2 resize-none font-mono text-sm"
                 />
