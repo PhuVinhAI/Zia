@@ -201,7 +201,7 @@
     "models": [
       "models/gemini-3-flash-preview",
       "models/gemini-flash-latest",
-      "models/gemini-flash-lite-latest",
+      "models/gemini-flash-lite-latest"
     ],
     "rateLimitMinuteMs": 120000,
     "rateLimitDayMs": 86400000
