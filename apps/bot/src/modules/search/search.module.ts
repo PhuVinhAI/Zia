@@ -1,15 +1,9 @@
 /**
- * Search Module - Web search, YouTube, weather, etc.
+ * Search Module - Web search (Google) and YouTube tools
  */
 import { BaseModule, type ITool, type ModuleMetadata } from '../../core/index.js';
 import {
-  currencyConvertTool,
-  currencyRatesTool,
   googleSearchTool,
-  steamGameTool,
-  steamSearchTool,
-  steamTopTool,
-  weatherTool,
   youtubeChannelTool,
   youtubeSearchTool,
   youtubeVideoTool,
@@ -18,7 +12,7 @@ import {
 export class SearchModule extends BaseModule {
   readonly metadata: ModuleMetadata = {
     name: 'search',
-    description: 'Web search, YouTube, weather, Steam, and currency tools',
+    description: 'Web search (Google) and YouTube tools',
     version: '1.0.0',
   };
 
@@ -27,12 +21,6 @@ export class SearchModule extends BaseModule {
     youtubeSearchTool,
     youtubeVideoTool,
     youtubeChannelTool,
-    weatherTool,
-    steamSearchTool,
-    steamGameTool,
-    steamTopTool,
-    currencyConvertTool,
-    currencyRatesTool,
   ];
 
   get tools(): ITool[] {
