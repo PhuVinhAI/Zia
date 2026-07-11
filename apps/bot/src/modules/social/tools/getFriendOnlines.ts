@@ -76,7 +76,7 @@ export const getFriendOnlinesTool: ToolDefinition = {
         `Raw response type: ${typeof result}, onlines count: ${result?.onlines?.length}`,
       );
 
-      if (!result || !result.onlines || !Array.isArray(result.onlines)) {
+      if (!result?.onlines || !Array.isArray(result.onlines)) {
         debugLog(
           'TOOL:getFriendOnlines',
           `Invalid/empty response: ${JSON.stringify(result)?.substring(0, 500)}`,

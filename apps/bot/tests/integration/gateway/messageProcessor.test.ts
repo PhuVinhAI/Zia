@@ -4,7 +4,7 @@
  */
 
 import { describe, test, expect } from 'bun:test';
-import { splitMessage, needsChunking, getMaxMessageLength } from '../../../src/shared/utils/message/messageChunker.js';
+import { splitMessage, needsChunking, getMaxLength } from '../../../src/shared/utils/message/messageChunker.js';
 import { TEST_CONFIG } from '../setup.js';
 
 describe('Message Processing Integration', () => {
@@ -75,7 +75,7 @@ End.`;
     });
 
     test('sử dụng default max length', () => {
-      const maxLen = getMaxMessageLength();
+      const maxLen = getMaxLength();
       expect(needsChunking('A'.repeat(maxLen - 1))).toBe(false);
       expect(needsChunking('A'.repeat(maxLen + 1))).toBe(true);
     });
@@ -83,7 +83,7 @@ End.`;
 
   describe('getMaxMessageLength', () => {
     test('trả về giá trị hợp lệ', () => {
-      const maxLen = getMaxMessageLength();
+      const maxLen = getMaxLength();
       expect(maxLen).toBeGreaterThan(0);
       expect(maxLen).toBeLessThan(5000);
     });

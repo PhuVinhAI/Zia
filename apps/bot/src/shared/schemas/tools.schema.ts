@@ -514,7 +514,6 @@ export const TOOL_EXAMPLES: Record<string, string> = {
   currencyConvert: `[tool:currencyConvert]{"amount":100,"from":"USD","to":"VND"}[/tool]`,
   currencyRates: `[tool:currencyRates]{"base":"VND","currencies":"USD,EUR,JPY"}[/tool]`,
 
-
   // System
   googleSearch: `[tool:googleSearch]{"q":"từ khóa tìm kiếm","num":5}[/tool]`,
   youtubeSearch: `[tool:youtubeSearch]{"q":"music video","maxResults":5}[/tool]`,
@@ -533,7 +532,6 @@ export const TOOL_EXAMPLES: Record<string, string> = {
   getFriendOnlines: `[tool:getFriendOnlines]{"limit":10}[/tool]`,
   getUserInfo: `[tool:getUserInfo]{"userId":"123"}[/tool]`,
   getGroupMembers: `[tool:getGroupMembers]{}[/tool]`,
-
 
   // Poll tools
   createPoll: `[tool:createPoll]{"question":"Trưa ăn gì?","options":["Cơm","Phở","Bún"],"allowMultiChoices":true}[/tool]`,

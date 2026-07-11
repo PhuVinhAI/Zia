@@ -3,7 +3,7 @@
  * Docs: https://docs.freepik.com/api-reference/text-to-image/seedream-4/post-seedream-v4
  */
 
-import ky, { type KyInstance } from 'ky';
+import ky, { type AfterResponseHook, type BeforeRequestHook, type KyInstance } from 'ky';
 import { debugLog } from '../../../core/logger/logger.js';
 
 // ═══════════════════════════════════════════════════
@@ -20,7 +20,7 @@ const FREEPIK_API_KEY = process.env.FREEPIK_API_KEY || '';
 import { CONFIG } from '../../../core/config/config.js';
 
 const freepikApi: KyInstance = ky.create({
-  prefixUrl: BASE_URL,
+  prefix: BASE_URL, // ky 2.x renamed `prefixUrl` → `prefix`
   timeout: CONFIG.freepik?.timeoutMs ?? 60000,
   retry: {
     limit: CONFIG.freepik?.retryLimit ?? 2,
@@ -33,18 +33,18 @@ const freepikApi: KyInstance = ky.create({
   },
   hooks: {
     beforeRequest: [
-      (request) => {
+      (({ request }) => {
         if (!FREEPIK_API_KEY) {
           throw new Error('FREEPIK_API_KEY chưa được cấu hình trong .env');
         }
         debugLog('FREEPIK', `→ ${request.method} ${request.url}`);
-      },
+      }) satisfies BeforeRequestHook,
     ],
     afterResponse: [
-      (_request, _options, response) => {
+      (({ response }) => {
         debugLog('FREEPIK', `← ${response.status}`);
         return response;
-      },
+      }) satisfies AfterResponseHook,
     ],
   },
 });

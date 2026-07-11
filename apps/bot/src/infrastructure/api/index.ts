@@ -56,5 +56,4 @@ apiApp.get('/', (c) => {
 });
 
 // Export
-export { onSettingsChange };
-export { settingsApi };
+export { onSettingsChange, settingsApi };

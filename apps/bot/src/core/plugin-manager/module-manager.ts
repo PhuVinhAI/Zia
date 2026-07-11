@@ -99,7 +99,7 @@ export class ModuleManager {
    */
   async unload(name: string): Promise<void> {
     const module = this.modules.get(name);
-    if (!module || !module.loaded) {
+    if (!module?.loaded) {
       return;
     }
 

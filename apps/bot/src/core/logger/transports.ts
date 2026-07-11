@@ -74,7 +74,7 @@ export function setLogCacheThreshold(threshold: number): void {
  * Flush logs qua registered transport
  */
 export async function flushLogs(): Promise<void> {
-  if (!logTransport || !logTransport.isReady() || logCache.length === 0) {
+  if (!logTransport?.isReady() || logCache.length === 0) {
     return;
   }
 

@@ -51,15 +51,14 @@ export async function initializeApp(): Promise<void> {
 }
 
 // Export module instances for direct access
+// Export module manager
 export {
   chatModule,
   gatewayModule,
   mediaModule,
+  moduleManager,
   searchModule,
   socialModule,
   systemModule,
   taskModule,
 };
-
-// Export module manager
-export { moduleManager };

@@ -2,7 +2,13 @@
  * HTTP Client - Ky-based HTTP client với retry, timeout, rate limiting
  */
 
-import ky, { type KyInstance, type Options } from 'ky';
+import ky, {
+  type AfterResponseHook,
+  type BeforeRequestHook,
+  type BeforeRetryHook,
+  type KyInstance,
+  type Options,
+} from 'ky';
 import { CONFIG } from '../../core/config/config.js';
 import { MIME_TYPES } from '../../core/config/config.schema.js';
 import { debugLog, logError } from '../../core/logger/logger.js';
@@ -46,20 +52,20 @@ export function createHttpClient(options: Options = {}): KyInstance {
     },
     hooks: {
       beforeRequest: [
-        (request) => {
+        (({ request }) => {
           debugLog('HTTP', `→ ${request.method} ${request.url}`);
-        },
+        }) satisfies BeforeRequestHook,
       ],
       afterResponse: [
-        (_request, _options, response) => {
+        (({ response }) => {
           debugLog('HTTP', `← ${response.status} ${response.url}`);
           return response;
-        },
+        }) satisfies AfterResponseHook,
       ],
       beforeRetry: [
-        ({ request, retryCount }) => {
+        (({ request, retryCount }) => {
           debugLog('HTTP', `↻ Retry ${retryCount}: ${request.url}`);
-        },
+        }) satisfies BeforeRetryHook,
       ],
     },
     ...options,

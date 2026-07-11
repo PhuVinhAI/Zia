@@ -2,6 +2,17 @@
   "name": "zia-monorepo",
   "private": true,
   "workspaces": ["apps/*", "packages/*"],
+  "overrides": {
+    "eslint": "^9.21.0",
+    "@typescript-eslint/parser": "^8.63.0",
+    "@typescript-eslint/typescript-estree": "^8.63.0",
+    "@typescript-eslint/eslint-plugin": "^8.63.0",
+    "@typescript-eslint/utils": "^8.63.0",
+    "@typescript-eslint/visitor-keys": "^8.63.0",
+    "@typescript-eslint/scope-manager": "^8.63.0",
+    "@typescript-eslint/types": "^8.63.0",
+    "typescript-eslint": "^8.63.0"
+  },
   "scripts": {
     "dev:bot": "bun run --cwd apps/bot dev",
     "dev:web": "bun run --cwd apps/web dev",

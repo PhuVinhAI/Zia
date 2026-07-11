@@ -5,13 +5,14 @@ import { describe, expect, it } from 'bun:test';
 import {
   splitMessage,
   needsChunking,
-  getMaxMessageLength,
+  // Canonical name; was previously imported as `getMaxMessageLength`.
+  getMaxLength,
 } from '../../../src/shared/utils/message/messageChunker.js';
 
 describe('Message Chunker', () => {
   describe('getMaxMessageLength()', () => {
     it('should return default max length', () => {
-      const maxLen = getMaxMessageLength();
+      const maxLen = getMaxLength();
       expect(maxLen).toBe(1800);
     });
   });

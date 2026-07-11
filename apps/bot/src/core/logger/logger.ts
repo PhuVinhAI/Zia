@@ -22,9 +22,9 @@ let sessionDir: string = '';
 let fileLoggingEnabled = false;
 let maxLinesPerFile = 1000; // Default, will be updated from config
 
-// Re-export transport functions
-export { registerLogTransport, type ILogTransport };
 export { flushLogs as forceFlushLogs } from './transports.js';
+// Re-export transport functions
+export { type ILogTransport, registerLogTransport };
 export const getLogCacheSize = getCacheSize;
 
 /**

@@ -45,7 +45,7 @@ Lưu ý: Nếu người dùng chặn tìm kiếm qua SĐT, sẽ không tìm đư
       const result = await context.api.findUser(phoneNumber);
       logZaloAPI('tool:findUserByPhone', { phoneNumber }, result);
 
-      if (!result || !result.uid) {
+      if (!result?.uid) {
         return {
           success: false,
           error: 'Không tìm thấy người dùng. Có thể họ đã chặn tìm kiếm qua số điện thoại.',
