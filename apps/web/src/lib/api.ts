@@ -126,13 +126,6 @@ export interface HistoryConfig {
   estimatedCharsPerToken: number;
 }
 
-export interface CloudBackupConfig {
-  enabled: boolean;
-  throttleMs: number;
-  restoreDelayMs: number;
-  initialBackupDelayMs: number;
-}
-
 export interface BotSettings {
   adminUserId: string;
   bot: BotConfig;
@@ -140,7 +133,6 @@ export interface BotSettings {
   gemini: GeminiConfig;
   buffer: BufferConfig;
   history: HistoryConfig;
-  cloudBackup: CloudBackupConfig;
   allowedUserIds: string[];
   [key: string]: unknown;
 }

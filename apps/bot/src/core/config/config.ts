@@ -127,7 +127,6 @@ function buildConfig(settings: Settings) {
     groupMembersFetch: settings.groupMembersFetch,
     gemini: settings.gemini,
     sandbox: settings.sandbox,
-    cloudBackup: settings.cloudBackup,
   };
 }
 
@@ -146,7 +145,6 @@ export { DEFAULT_RESPONSE, parseAIResponse } from '../../shared/types/config.sch
 export type {
   BotConfig,
   BufferConfig,
-  CloudBackupConfig,
   DatabaseConfig,
   ElevenLabsConfig,
   FetchConfig,

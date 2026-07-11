@@ -23,7 +23,6 @@ import {
   MessageSquare,
   Brain,
   Moon,
-  Cloud,
   Clock,
   Database,
   Users,
@@ -137,14 +136,6 @@ export default function SettingsPage() {
     setLocalSettings({
       ...localSettings,
       history: { ...localSettings.history, [key]: value },
-    });
-  };
-
-  const updateCloudBackup = <K extends keyof BotSettings['cloudBackup']>(key: K, value: BotSettings['cloudBackup'][K]) => {
-    if (!localSettings) return;
-    setLocalSettings({
-      ...localSettings,
-      cloudBackup: { ...localSettings.cloudBackup, [key]: value },
     });
   };
 
@@ -598,59 +589,6 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          {/* Cloud Backup Settings */}
-          <div className="rounded-2xl border-2 border-border bg-card p-6">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-[#CE82FF] text-white shadow-[0_3px_0_0_#B86EE6]">
-                <Cloud className="h-5 w-5" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold">Cloud Backup</h3>
-                <p className="text-sm text-muted-foreground">Cấu hình sao lưu đám mây</p>
-              </div>
-            </div>
-
-            <div className="space-y-6">
-              <SettingToggle
-                label="Bật Cloud Backup"
-                description="Tự động sao lưu lên cloud"
-                checked={localSettings.cloudBackup?.enabled ?? true}
-                onCheckedChange={(v) => updateCloudBackup('enabled', v)}
-                icon={Cloud}
-                color="#CE82FF"
-              />
-
-              <div className="grid gap-4 md:grid-cols-3">
-                <div className="space-y-2">
-                  <Label className="text-sm font-semibold">Throttle (ms)</Label>
-                  <Input
-                    type="number"
-                    value={localSettings.cloudBackup?.throttleMs ?? 10000}
-                    onChange={(e) => updateCloudBackup('throttleMs', Number(e.target.value))}
-                    className="h-11 rounded-xl border-2"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-semibold">Restore Delay (ms)</Label>
-                  <Input
-                    type="number"
-                    value={localSettings.cloudBackup?.restoreDelayMs ?? 15000}
-                    onChange={(e) => updateCloudBackup('restoreDelayMs', Number(e.target.value))}
-                    className="h-11 rounded-xl border-2"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-semibold">Initial Backup Delay (ms)</Label>
-                  <Input
-                    type="number"
-                    value={localSettings.cloudBackup?.initialBackupDelayMs ?? 30000}
-                    onChange={(e) => updateCloudBackup('initialBackupDelayMs', Number(e.target.value))}
-                    className="h-11 rounded-xl border-2"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
         </TabsContent>
 
 

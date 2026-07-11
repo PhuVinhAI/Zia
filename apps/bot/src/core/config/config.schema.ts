@@ -250,14 +250,6 @@ export const SandboxConfigSchema = z.object({
   executeTimeoutMs: z.coerce.number().min(5000).default(30000),
 });
 
-// Cloud Backup config schema
-export const CloudBackupConfigSchema = z.object({
-  enabled: z.boolean().default(true),
-  throttleMs: z.coerce.number().min(30000).default(120000), // 2 phút throttle - tránh rate limit GitHub Gist API
-  restoreDelayMs: z.coerce.number().min(5000).default(15000), // 15 giây delay trước restore
-  initialBackupDelayMs: z.coerce.number().min(5000).default(30000), // 30 giây sau start
-});
-
 // Full settings schema
 export const SettingsSchema = z.object({
   adminUserId: z.string().default(''),
@@ -426,12 +418,6 @@ export const SettingsSchema = z.object({
     installTimeoutMs: 60000,
     executeTimeoutMs: 30000,
   }),
-  cloudBackup: CloudBackupConfigSchema.optional().default({
-    enabled: true,
-    throttleMs: 120000,
-    restoreDelayMs: 15000,
-    initialBackupDelayMs: 30000,
-  }),
 });
 
 // Type inference từ schema
@@ -460,7 +446,6 @@ export type ResponseHandlerConfig = z.infer<typeof ResponseHandlerConfigSchema>;
 export type GroupMembersFetchConfig = z.infer<typeof GroupMembersFetchConfigSchema>;
 export type GeminiConfig = z.infer<typeof GeminiConfigSchema>;
 export type SandboxConfig = z.infer<typeof SandboxConfigSchema>;
-export type CloudBackupConfig = z.infer<typeof CloudBackupConfigSchema>;
 export type Settings = z.infer<typeof SettingsSchema>;
 
 // MIME types (static, không cần validate)
