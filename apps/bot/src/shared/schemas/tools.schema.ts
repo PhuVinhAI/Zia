@@ -147,14 +147,15 @@ export const FreepikImageSchema = z.object({
   seed: z.coerce.number().min(0).max(2147483647).optional(),
 });
 
-// ============ ELEVENLABS TTS TOOLS ============
+// ============ MICROSOFT EDGE TTS TOOLS ============
 
-// Text to Speech params (Yui voice + Eleven v3 Alpha)
+// Text to Speech params (Microsoft Edge TTS - miễn phí, không cần API key)
 export const TextToSpeechSchema = z.object({
   text: z.string().min(1, 'Thiếu văn bản cần đọc').max(5000, 'Văn bản quá dài (tối đa 5000 ký tự)'),
-  stability: z.coerce.number().min(0).max(1).optional(),
-  similarityBoost: z.coerce.number().min(0).max(1).optional(),
-  style: z.coerce.number().min(0).max(1).optional(),
+  voice: z.string().optional().describe('Mã giọng đọc, vd: vi-VN-HoaiMyNeural'),
+  rate: z.string().optional().describe('Tốc độ đọc, vd: "+0%", "-10%", "+50%"'),
+  volume: z.string().optional().describe('Âm lượng, vd: "+0%", "+50%"'),
+  pitch: z.string().optional().describe('Cao độ, vd: "+0Hz", "-10Hz"'),
 });
 
 // ============ SYSTEM TOOLS ============

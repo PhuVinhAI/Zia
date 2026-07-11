@@ -9,7 +9,7 @@
  *
  * Environment:
  *   TEST_VERBOSE=true  - Hiển thị chi tiết response data
- *   
+ *
  * Config:
  *   Tests đọc API keys từ .env.test (không phải .env)
  */
@@ -38,7 +38,7 @@ export const TEST_SUITES = {
     googleSearch: 'Google Custom Search (requires GOOGLE_SEARCH_API_KEY)',
     freepik: 'Freepik AI Image Generation (requires FREEPIK_API_KEY)',
     executeCode: 'E2B Code Execution (requires E2B_API_KEY)',
-    elevenlabs: 'ElevenLabs TTS (requires ELEVENLABS_API_KEY)',
+    edgeTts: 'Microsoft Edge TTS (miễn phí, cần kết nối Internet)',
     createChart: 'Chart.js Chart Creation',
     createApp: 'HTML App Creation',
     clearHistory: 'Clear Chat History',

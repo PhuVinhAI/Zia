@@ -37,7 +37,7 @@ export const API_KEYS = {
   googleSearchCx: process.env.GOOGLE_SEARCH_CX,
   freepik: process.env.FREEPIK_API_KEY,
   e2b: process.env.E2B_API_KEY,
-  elevenlabs: process.env.ELEVENLABS_API_KEY,
+  edgeTts: true, // Không cần API key, dùng Microsoft Edge TTS service
   zaloCredentials: process.env.ZALO_CREDENTIALS_BASE64,
 };
 

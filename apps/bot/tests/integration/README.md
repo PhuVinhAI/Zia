@@ -100,7 +100,8 @@ tests/integration/
 │   ├── compdf.test.ts         # DOCX to PDF
 │   ├── createApp.test.ts      # HTML app creation
 │   ├── createChart.test.ts    # Chart.js charts
-│   ├── elevenlabs.test.ts     # ElevenLabs TTS
+│   ├── elevenlabs.test.ts     # ElevenLabs TTS (legacy)
+│   ├── edgeTts.test.ts        # Microsoft Edge TTS (miễn phí)
 │   ├── executeCode.test.ts    # E2B code execution
 │   ├── freepik.test.ts        # Freepik AI images
 │   ├── googleSearch.test.ts   # Google Custom Search
@@ -134,7 +135,8 @@ Tests sẽ tự động skip nếu key không có.
 | Google Search | `GOOGLE_SEARCH_API_KEY`, `GOOGLE_SEARCH_CX` | https://console.cloud.google.com |
 | Freepik | `FREEPIK_API_KEY` | https://www.freepik.com/developers |
 | E2B | `E2B_API_KEY` | https://e2b.dev |
-| ElevenLabs | `ELEVENLABS_API_KEY` | https://elevenlabs.io |
+| ElevenLabs | `ELEVENLABS_API_KEY` | https://elevenlabs.io (legacy)
+| Edge TTS | _(không cần)_ | Microsoft Edge TTS service (miễn phí)
 | ComPDF | `COMPDF_API_KEY` | https://www.compdf.com |
 | Gemini | `GEMINI_API_KEY_1` ... `GEMINI_API_KEY_N` | https://aistudio.google.com |
 | Zalo | `ZALO_CREDENTIALS_BASE64` | Zalo login |

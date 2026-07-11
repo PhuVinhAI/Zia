@@ -113,12 +113,11 @@
     "retryLimit": 3,
     "backoffLimitMs": 3000
   },
-  "elevenlabs": {
-    "defaultVoiceId": "fUjY9K2nAIwlALOwSiwc",
-    "defaultModelId": "eleven_v3",
-    "defaultStability": 0.5,
-    "defaultSimilarityBoost": 0.75,
-    "defaultStyle": 0.5
+  "edgeTts": {
+    "defaultVoice": "vi-VN-HoaiMyNeural",
+    "defaultRate": "+0%",
+    "defaultVolume": "+0%",
+    "defaultPitch": "+0Hz"
   },
   "giphy": {
     "timeoutMs": 15000,

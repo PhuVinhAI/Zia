@@ -145,13 +145,12 @@ export const JikanConfigSchema = z.object({
   backoffLimitMs: z.coerce.number().min(500).default(3000),
 });
 
-// ElevenLabs config schema
-export const ElevenLabsConfigSchema = z.object({
-  defaultVoiceId: z.string().default('fUjY9K2nAIwlALOwSiwc'),
-  defaultModelId: z.string().default('eleven_v3'),
-  defaultStability: z.coerce.number().min(0).max(1).default(0.5),
-  defaultSimilarityBoost: z.coerce.number().min(0).max(1).default(0.75),
-  defaultStyle: z.coerce.number().min(0).max(1).default(0.5),
+// Microsoft Edge TTS config schema
+export const EdgeTtsConfigSchema = z.object({
+  defaultVoice: z.string().default('vi-VN-HoaiMyNeural'),
+  defaultRate: z.string().default('+0%'),
+  defaultVolume: z.string().default('+0%'),
+  defaultPitch: z.string().default('+0Hz'),
 });
 
 // Giphy config schema
@@ -342,12 +341,11 @@ export const SettingsSchema = z.object({
     retryLimit: 3,
     backoffLimitMs: 3000,
   }),
-  elevenlabs: ElevenLabsConfigSchema.optional().default({
-    defaultVoiceId: 'fUjY9K2nAIwlALOwSiwc',
-    defaultModelId: 'eleven_v3',
-    defaultStability: 0.5,
-    defaultSimilarityBoost: 0.75,
-    defaultStyle: 0.5,
+  edgeTts: EdgeTtsConfigSchema.optional().default({
+    defaultVoice: 'vi-VN-HoaiMyNeural',
+    defaultRate: '+0%',
+    defaultVolume: '+0%',
+    defaultPitch: '+0Hz',
   }),
   giphy: GiphyConfigSchema.optional().default({
     timeoutMs: 15000,
@@ -436,7 +434,7 @@ export type FriendRequestConfig = z.infer<typeof FriendRequestConfigSchema>;
 export type MessageChunkerConfig = z.infer<typeof MessageChunkerConfigSchema>;
 export type MessageStoreConfig = z.infer<typeof MessageStoreConfigSchema>;
 export type JikanConfig = z.infer<typeof JikanConfigSchema>;
-export type ElevenLabsConfig = z.infer<typeof ElevenLabsConfigSchema>;
+export type EdgeTtsConfig = z.infer<typeof EdgeTtsConfigSchema>;
 export type GiphyConfig = z.infer<typeof GiphyConfigSchema>;
 export type NekosConfig = z.infer<typeof NekosConfigSchema>;
 export type FreepikConfig = z.infer<typeof FreepikConfigSchema>;

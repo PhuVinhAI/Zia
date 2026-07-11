@@ -1,9 +1,9 @@
 /**
- * Tool: textToSpeech - Chuyển văn bản thành giọng nói với ElevenLabs
- * Sử dụng voice Yui và model Eleven v3 Alpha
+ * Tool: textToSpeech - Chuyển văn bản thành giọng nói với Microsoft Edge TTS
+ * Sử dụng giọng Neural miễn phí của Microsoft Edge, hỗ trợ nhiều ngôn ngữ bao gồm tiếng Việt.
+ * Trả về file âm thanh MP3 có thể phát trực tiếp.
  */
 
-import { CONFIG } from '../../../core/config/config.js';
 import type { ITool, ToolResult } from '../../../core/types.js';
 import {
   type TextToSpeechParams,
@@ -11,17 +11,19 @@ import {
   validateParamsWithExample,
 } from '../../../shared/schemas/tools.schema.js';
 import {
-  DEFAULT_MODEL_ID,
-  DEFAULT_VOICE_ID,
+  DEFAULT_PITCH,
+  DEFAULT_RATE,
+  DEFAULT_VOICE,
+  DEFAULT_VOLUME,
   OUTPUT_FORMATS,
   textToSpeech,
-} from '../services/elevenlabsClient.js';
+} from '../services/edgeTtsClient.js';
 
 export const textToSpeechTool: ITool = {
   name: 'textToSpeech',
-  description: `Chuyển văn bản thành giọng nói (Text-to-Speech) sử dụng ElevenLabs AI.
-Sử dụng giọng Yui và model Eleven v3 - hỗ trợ 70+ ngôn ngữ bao gồm tiếng Việt.
-Trả về file âm thanh MP3 có thể phát trực tiếp.`,
+  description: `Chuyển văn bản thành giọng nói (Text-to-Speech) sử dụng Microsoft Edge TTS.
+Hỗ trợ nhiều giọng Neural chất lượng cao, bao gồm tiếng Việt (vi-VN-HoaiMyNeural, vi-VN-NamMinhNeural).
+Trả về file âm thanh MP3 có thể phát trực tiếp. Miễn phí, không cần API key.`,
   parameters: [
     {
       name: 'text',
@@ -30,22 +32,28 @@ Trả về file âm thanh MP3 có thể phát trực tiếp.`,
       required: true,
     },
     {
-      name: 'stability',
-      type: 'number',
+      name: 'voice',
+      type: 'string',
       description:
-        'Độ ổn định giọng (0.0-1.0). Cao = nhất quán hơn, thấp = biểu cảm hơn. Mặc định: 0.5',
+        'Mã giọng nói (vd: vi-VN-HoaiMyNeural, vi-VN-NamMinhNeural, en-US-AriaNeural). Mặc định: vi-VN-HoaiMyNeural',
       required: false,
     },
     {
-      name: 'similarityBoost',
-      type: 'number',
-      description: 'Độ giống giọng gốc (0.0-1.0). Cao = giống hơn. Mặc định: 0.75',
+      name: 'rate',
+      type: 'string',
+      description: 'Tốc độ đọc (vd: "+0%", "-10%", "+50%"). Mặc định: +0%',
       required: false,
     },
     {
-      name: 'style',
-      type: 'number',
-      description: 'Mức độ biểu cảm (0.0-1.0). Cao = nhiều cảm xúc hơn. Mặc định: 0.5',
+      name: 'volume',
+      type: 'string',
+      description: 'Âm lượng (vd: "+0%", "+50%", "-20%"). Mặc định: +0%',
+      required: false,
+    },
+    {
+      name: 'pitch',
+      type: 'string',
+      description: 'Cao độ giọng (vd: "+0Hz", "-10Hz", "+50Hz"). Mặc định: +0Hz',
       required: false,
     },
   ],
@@ -57,16 +65,14 @@ Trả về file âm thanh MP3 có thể phát trực tiếp.`,
     const data = validation.data as TextToSpeechParams;
 
     try {
-      // Generate audio với Yui voice và v3 Alpha model
+      // Generate audio với Microsoft Edge TTS
       const audioBuffer = await textToSpeech({
         text: data.text,
-        voiceId: DEFAULT_VOICE_ID,
-        modelId: DEFAULT_MODEL_ID,
-        stability: data.stability,
-        similarityBoost: data.similarityBoost,
-        style: data.style,
-        useSpeakerBoost: true,
-        outputFormat: OUTPUT_FORMATS.MP3_44100_128,
+        voice: data.voice || DEFAULT_VOICE,
+        rate: data.rate || DEFAULT_RATE,
+        volume: data.volume || DEFAULT_VOLUME,
+        pitch: data.pitch || DEFAULT_PITCH,
+        outputFormat: OUTPUT_FORMATS.MP3_24KHZ_96KBITRATE,
       });
 
       return {
@@ -77,25 +83,29 @@ Trả về file âm thanh MP3 có thể phát trực tiếp.`,
           mimeType: 'audio/mpeg',
           format: 'mp3',
           textLength: data.text.length,
-          voiceId: DEFAULT_VOICE_ID,
-          voiceName: 'Yui',
-          model: DEFAULT_MODEL_ID,
+          voice: data.voice || DEFAULT_VOICE,
           settings: {
-            stability: data.stability ?? CONFIG.elevenlabs?.defaultStability ?? 0.5,
-            similarityBoost:
-              data.similarityBoost ?? CONFIG.elevenlabs?.defaultSimilarityBoost ?? 0.75,
-            style: data.style ?? CONFIG.elevenlabs?.defaultStyle ?? 0.5,
+            rate: data.rate || DEFAULT_RATE,
+            volume: data.volume || DEFAULT_VOLUME,
+            pitch: data.pitch || DEFAULT_PITCH,
           },
         },
       };
     } catch (error: any) {
-      if (error.message?.includes('API key')) {
-        return { success: false, error: 'Lỗi xác thực: API key không hợp lệ hoặc chưa cấu hình' };
+      const msg = error?.message || String(error);
+      if (msg.includes('network') || msg.includes('ECONN') || msg.includes('timeout')) {
+        return {
+          success: false,
+          error: 'Lỗi kết nối tới Microsoft Edge TTS. Vui lòng kiểm tra mạng và thử lại.',
+        };
       }
-      if (error.message?.includes('quota') || error.message?.includes('limit')) {
-        return { success: false, error: 'Đã hết quota ElevenLabs. Vui lòng thử lại sau.' };
+      if (msg.includes('voice') || msg.includes('Voice')) {
+        return {
+          success: false,
+          error: `Giọng đọc không hợp lệ. Một số giọng phổ biến: vi-VN-HoaiMyNeural, vi-VN-NamMinhNeural, en-US-AriaNeural.`,
+        };
       }
-      return { success: false, error: `Lỗi TTS: ${error.message}` };
+      return { success: false, error: `Lỗi TTS: ${msg}` };
     }
   },
 };
