@@ -6,7 +6,6 @@ import { cn } from '@/lib/utils';
 import {
   LayoutDashboard,
   MessageSquare,
-  ListTodo,
   Settings,
   FileText,
   Bot,
@@ -39,13 +38,6 @@ const navItems = [
     icon: MessageSquare,
     color: 'text-[#1CB0F6]',
     bgColor: 'bg-[#1CB0F6]/10',
-  },
-  {
-    title: 'Tác vụ',
-    href: '/tasks',
-    icon: ListTodo,
-    color: 'text-[#FF9600]',
-    bgColor: 'bg-[#FF9600]/10',
   },
   {
     title: 'Nhật ký',

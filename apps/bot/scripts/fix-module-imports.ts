@@ -87,7 +87,6 @@ walkDir('src/modules/social/tools', socialReplacements);
 const taskReplacements: [RegExp, string][] = [
   [/from '\.\.\/\.\.\/\.\.\/\.\.\/core\//g, "from '../../../core/"],
   [/from '\.\.\/\.\.\/\.\.\/\.\.\/shared\//g, "from '../../../shared/"],
-  [/from '\.\.\/\.\.\/\.\.\/background-agent\//g, "from '../../background-agent/"],
   [/from '\.\.\/media\/createFile\//g, "from '../../media/tools/createFile/"],
 ];
 walkDir('src/modules/task/tools', taskReplacements);

@@ -7,7 +7,6 @@ import { cors } from 'hono/cors';
 import { bearerAuth } from 'hono/bearer-auth';
 import { settingsApi, onSettingsChange } from './settings.api.js';
 import { statsApi } from './stats.api.js';
-import { tasksApi } from './tasks.api.js';
 import { historyApi } from './history.api.js';
 import { logsApi } from './logs.api.js';
 import { backupApi } from './backup.api.js';
@@ -36,7 +35,6 @@ apiApp.get('/health', (c) => {
 // Mount all API routes
 apiApp.route('/settings', settingsApi);
 apiApp.route('/stats', statsApi);
-apiApp.route('/tasks', tasksApi);
 apiApp.route('/history', historyApi);
 apiApp.route('/logs', logsApi);
 apiApp.route('/backup', backupApi);
@@ -50,7 +48,6 @@ apiApp.get('/', (c) => {
       '/health': 'Health check',
       '/settings': 'Bot settings management',
       '/stats': 'System statistics',
-      '/tasks': 'Background tasks',
       '/history': 'Conversation history',
       '/logs': 'System logs',
       '/backup': 'Database backup & restore',

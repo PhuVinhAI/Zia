@@ -34,9 +34,7 @@ export interface PaginatedResponse<T> extends ApiResponse<T[]> {
 // Stats types
 export interface StatsOverview {
   messages: number;
-  tasks: number;
   messagesLast24h: number;
-  tasksByStatus: Record<string, number>;
   uptime: number;
   timestamp: string;
 }
@@ -51,27 +49,6 @@ export interface ActiveThread {
   thread_id: string;
   message_count: number;
   last_activity: number;
-}
-
-// Task types
-export interface Task {
-  id: number;
-  type: string;
-  status: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';
-  targetUserId: string | null;
-  targetThreadId: string | null;
-  payload: string;
-  context: string | null;
-  scheduledAt: Date;
-  startedAt: Date | null;
-  completedAt: Date | null;
-  retryCount: number;
-  maxRetries: number;
-  lastError: string | null;
-  result: string | null;
-  createdBy: string | null;
-  createdAt: Date;
-  updatedAt: Date;
 }
 
 // History types
@@ -138,15 +115,6 @@ export interface GeminiConfig {
   rateLimitDayMs: number;
 }
 
-export interface GroqModelsConfig {
-  primary: string;
-  fallback: string;
-  primaryMaxTokens: number;
-  fallbackMaxTokens: number;
-  temperature: number;
-  topP: number;
-}
-
 export interface BufferConfig {
   delayMs: number;
   typingRefreshMs: number;
@@ -165,26 +133,14 @@ export interface CloudBackupConfig {
   initialBackupDelayMs: number;
 }
 
-export interface BackgroundAgentConfig {
-  pollIntervalMs: number;
-  maxToolIterations: number;
-  groupBatchSize: number;
-  batchDelayMinMs: number;
-  batchDelayMaxMs: number;
-  groqEnabled: boolean;
-  allowedTools: string[];
-}
-
 export interface BotSettings {
   adminUserId: string;
   bot: BotConfig;
   modules: Record<string, boolean>;
   gemini: GeminiConfig;
-  groqModels: GroqModelsConfig;
   buffer: BufferConfig;
   history: HistoryConfig;
   cloudBackup: CloudBackupConfig;
-  backgroundAgent: BackgroundAgentConfig;
   allowedUserIds: string[];
   [key: string]: unknown;
 }
@@ -195,17 +151,6 @@ export const statsApi = {
   getMessages: (days = 7) => api.get<ApiResponse<MessageStats[]>>(`/stats/messages?days=${days}`),
   getActiveThreads: (limit = 10) =>
     api.get<ApiResponse<ActiveThread[]>>(`/stats/active-threads?limit=${limit}`),
-};
-
-export const tasksApiClient = {
-  list: (params?: { page?: number; limit?: number; status?: string; type?: string }) =>
-    api.get<PaginatedResponse<Task>>('/tasks', { params }),
-  get: (id: number) => api.get<ApiResponse<Task>>(`/tasks/${id}`),
-  create: (data: { type: string; targetUserId?: string; targetThreadId?: string; payload: object; context?: string }) =>
-    api.post<ApiResponse<Task>>('/tasks', data),
-  cancel: (id: number) => api.post<ApiResponse<void>>(`/tasks/${id}/cancel`),
-  retry: (id: number) => api.post<ApiResponse<void>>(`/tasks/${id}/retry`),
-  delete: (id: number) => api.delete<ApiResponse<void>>(`/tasks/${id}`),
 };
 
 export const historyApiClient = {

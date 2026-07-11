@@ -124,14 +124,6 @@ export default function SettingsPage() {
     });
   };
 
-  const updateGroqModels = <K extends keyof BotSettings['groqModels']>(key: K, value: BotSettings['groqModels'][K]) => {
-    if (!localSettings) return;
-    setLocalSettings({
-      ...localSettings,
-      groqModels: { ...localSettings.groqModels, [key]: value },
-    });
-  };
-
   const updateBuffer = <K extends keyof BotSettings['buffer']>(key: K, value: BotSettings['buffer'][K]) => {
     if (!localSettings) return;
     setLocalSettings({
@@ -153,17 +145,6 @@ export default function SettingsPage() {
     setLocalSettings({
       ...localSettings,
       cloudBackup: { ...localSettings.cloudBackup, [key]: value },
-    });
-  };
-
-  const updateBackgroundAgent = <K extends keyof BotSettings['backgroundAgent']>(
-    key: K,
-    value: BotSettings['backgroundAgent'][K]
-  ) => {
-    if (!localSettings) return;
-    setLocalSettings({
-      ...localSettings,
-      backgroundAgent: { ...localSettings.backgroundAgent, [key]: value },
     });
   };
 
@@ -499,144 +480,6 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          {/* Groq Settings */}
-          <div className="rounded-2xl border-2 border-border bg-card p-6">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-[#FF9600] text-white shadow-[0_3px_0_0_#E68600]">
-                <Zap className="h-5 w-5" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold">Groq (Background Agent)</h3>
-                <p className="text-sm text-muted-foreground">Cấu hình model Groq cho background tasks</p>
-              </div>
-            </div>
-
-            <div className="space-y-6">
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label className="text-sm font-semibold">Primary Model</Label>
-                  <Input
-                    value={localSettings.groqModels?.primary ?? ''}
-                    onChange={(e) => updateGroqModels('primary', e.target.value)}
-                    className="h-11 rounded-xl border-2 font-mono text-sm"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-semibold">Fallback Model</Label>
-                  <Input
-                    value={localSettings.groqModels?.fallback ?? ''}
-                    onChange={(e) => updateGroqModels('fallback', e.target.value)}
-                    className="h-11 rounded-xl border-2 font-mono text-sm"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <Label className="text-sm font-semibold">Temperature: {localSettings.groqModels?.temperature ?? 0.7}</Label>
-                  </div>
-                  <Slider
-                    value={[localSettings.groqModels?.temperature ?? 0.7]}
-                    onValueChange={([v]) => updateGroqModels('temperature', v)}
-                    min={0}
-                    max={2}
-                    step={0.1}
-                    className="w-full"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <Label className="text-sm font-semibold">Top P: {localSettings.groqModels?.topP ?? 0.95}</Label>
-                  </div>
-                  <Slider
-                    value={[localSettings.groqModels?.topP ?? 0.95]}
-                    onValueChange={([v]) => updateGroqModels('topP', v)}
-                    min={0}
-                    max={1}
-                    step={0.05}
-                    className="w-full"
-                  />
-                </div>
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label className="text-sm font-semibold">Primary Max Tokens</Label>
-                  <Input
-                    type="number"
-                    value={localSettings.groqModels?.primaryMaxTokens ?? 65536}
-                    onChange={(e) => updateGroqModels('primaryMaxTokens', Number(e.target.value))}
-                    className="h-11 rounded-xl border-2"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-semibold">Fallback Max Tokens</Label>
-                  <Input
-                    type="number"
-                    value={localSettings.groqModels?.fallbackMaxTokens ?? 16384}
-                    onChange={(e) => updateGroqModels('fallbackMaxTokens', Number(e.target.value))}
-                    className="h-11 rounded-xl border-2"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Background Agent Settings */}
-          <div className="rounded-2xl border-2 border-border bg-card p-6">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-[#CE82FF] text-white shadow-[0_3px_0_0_#B86EE6]">
-                <Clock className="h-5 w-5" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold">Background Agent</h3>
-                <p className="text-sm text-muted-foreground">Cấu hình agent chạy nền</p>
-              </div>
-            </div>
-
-            <div className="space-y-6">
-              <SettingToggle
-                label="Bật Groq"
-                description="Sử dụng Groq cho background agent"
-                checked={localSettings.backgroundAgent?.groqEnabled ?? true}
-                onCheckedChange={(v) => updateBackgroundAgent('groqEnabled', v)}
-                icon={Zap}
-                color="#FF9600"
-              />
-
-              <div className="grid gap-4 md:grid-cols-3">
-                <div className="space-y-2">
-                  <Label className="text-sm font-semibold">Poll Interval (ms)</Label>
-                  <Input
-                    type="number"
-                    value={localSettings.backgroundAgent?.pollIntervalMs ?? 90000}
-                    onChange={(e) => updateBackgroundAgent('pollIntervalMs', Number(e.target.value))}
-                    className="h-11 rounded-xl border-2"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-semibold">Max Tool Iterations</Label>
-                  <Input
-                    type="number"
-                    value={localSettings.backgroundAgent?.maxToolIterations ?? 5}
-                    onChange={(e) => updateBackgroundAgent('maxToolIterations', Number(e.target.value))}
-                    className="h-11 rounded-xl border-2"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-semibold">Group Batch Size</Label>
-                  <Input
-                    type="number"
-                    value={localSettings.backgroundAgent?.groupBatchSize ?? 10}
-                    onChange={(e) => updateBackgroundAgent('groupBatchSize', Number(e.target.value))}
-                    className="h-11 rounded-xl border-2"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
         </TabsContent>
 
 

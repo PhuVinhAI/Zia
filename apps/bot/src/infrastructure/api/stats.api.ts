@@ -3,7 +3,7 @@
  */
 import { Hono } from 'hono';
 import { getDatabase, getSqliteDb } from '../database/connection.js';
-import { history, agentTasks } from '../database/schema.js';
+import { history } from '../database/schema.js';
 import { count, sql } from 'drizzle-orm';
 
 export const statsApi = new Hono();
@@ -17,22 +17,12 @@ statsApi.get('/overview', async (c) => {
 
     // Đếm tổng số
     const [totalMessages] = await db.select({ count: count() }).from(history);
-    const [totalTasks] = await db.select({ count: count() }).from(agentTasks);
 
     // Đếm trong 24h
     const [messagesLast24h] = await db
       .select({ count: count() })
       .from(history)
       .where(sql`${history.timestamp} > ${oneDayAgo}`);
-
-    // Đếm tasks theo status
-    const tasksByStatus = await db
-      .select({
-        status: agentTasks.status,
-        count: count(),
-      })
-      .from(agentTasks)
-      .groupBy(agentTasks.status);
 
     // Uptime
     const startTime = process.uptime();
@@ -41,9 +31,7 @@ statsApi.get('/overview', async (c) => {
       success: true,
       data: {
         messages: totalMessages.count,
-        tasks: totalTasks.count,
         messagesLast24h: messagesLast24h.count,
-        tasksByStatus: Object.fromEntries(tasksByStatus.map((t) => [t.status, t.count])),
         uptime: Math.floor(startTime),
         timestamp: new Date().toISOString(),
       },

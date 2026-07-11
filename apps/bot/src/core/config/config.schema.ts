@@ -124,19 +124,6 @@ export const FriendRequestConfigSchema = z.object({
   autoAcceptDelayMaxMs: z.coerce.number().min(1000).default(5000),
 });
 
-// Background agent config schema
-export const BackgroundAgentConfigSchema = z.object({
-  pollIntervalMs: z.coerce.number().min(10000).default(90000),
-  maxToolIterations: z.coerce.number().min(1).max(20).default(5),
-  groupBatchSize: z.coerce.number().min(1).default(10),
-  batchDelayMinMs: z.coerce.number().min(100).default(500),
-  batchDelayMaxMs: z.coerce.number().min(100).default(1500),
-  groqEnabled: z.boolean().default(true),
-  // Danh sách tên tools được phép gửi cho Groq (giảm token usage)
-  // Nếu rỗng → gửi tất cả tools (như cũ)
-  allowedTools: z.array(z.string()).default([]),
-});
-
 // Message chunker config schema
 export const MessageChunkerConfigSchema = z.object({
   maxMessageLength: z.coerce.number().min(500).default(1800),
@@ -221,11 +208,6 @@ export const TvuConfigSchema = z.object({
   retryLimit: z.coerce.number().min(1).max(10).default(2),
 });
 
-// Groq config schema
-export const GroqConfigSchema = z.object({
-  rateLimitCooldownMs: z.coerce.number().min(1000).default(60000),
-});
-
 // Response handler config schema
 export const ResponseHandlerConfigSchema = z.object({
   reactionDelayMs: z.coerce.number().min(100).default(300),
@@ -260,16 +242,6 @@ export const GeminiConfigSchema = z.object({
     ]),
   rateLimitMinuteMs: z.coerce.number().min(60000).default(120000),
   rateLimitDayMs: z.coerce.number().min(3600000).default(86400000),
-});
-
-// Groq models config schema
-export const GroqModelsConfigSchema = z.object({
-  primary: z.string().default('openai/gpt-oss-120b'),
-  fallback: z.string().default('moonshotai/kimi-k2-instruct-0905'),
-  primaryMaxTokens: z.coerce.number().min(1000).default(65536),
-  fallbackMaxTokens: z.coerce.number().min(1000).default(16384),
-  temperature: z.coerce.number().min(0).max(2).default(0.7),
-  topP: z.coerce.number().min(0).max(1).default(0.95),
 });
 
 // Sandbox config schema
@@ -360,15 +332,6 @@ export const SettingsSchema = z.object({
     autoAcceptDelayMinMs: 2000,
     autoAcceptDelayMaxMs: 5000,
   }),
-  backgroundAgent: BackgroundAgentConfigSchema.optional().default({
-    pollIntervalMs: 90000,
-    maxToolIterations: 5,
-    groupBatchSize: 10,
-    batchDelayMinMs: 500,
-    batchDelayMaxMs: 1500,
-    groqEnabled: true,
-    allowedTools: [],
-  }),
   messageChunker: MessageChunkerConfigSchema.optional().default({
     maxMessageLength: 1800,
   }),
@@ -424,9 +387,6 @@ export const SettingsSchema = z.object({
     timeoutMs: 10000,
     retryLimit: 2,
   }),
-  groq: GroqConfigSchema.optional().default({
-    rateLimitCooldownMs: 60000,
-  }),
   database: DatabaseConfigSchema.optional().default({
     path: 'data/bot.db',
     cleanupIntervalMs: 3600000,
@@ -462,14 +422,6 @@ export const SettingsSchema = z.object({
     rateLimitMinuteMs: 120000,
     rateLimitDayMs: 86400000,
   }),
-  groqModels: GroqModelsConfigSchema.optional().default({
-    primary: 'openai/gpt-oss-120b',
-    fallback: 'moonshotai/kimi-k2-instruct-0905',
-    primaryMaxTokens: 65536,
-    fallbackMaxTokens: 16384,
-    temperature: 0.7,
-    topP: 0.95,
-  }),
   sandbox: SandboxConfigSchema.optional().default({
     installTimeoutMs: 60000,
     executeTimeoutMs: 30000,
@@ -492,7 +444,6 @@ export type ModulesConfig = z.infer<typeof ModulesConfigSchema>;
 export type LoggerConfig = z.infer<typeof LoggerConfigSchema>;
 export type ReactionConfig = z.infer<typeof ReactionConfigSchema>;
 export type FriendRequestConfig = z.infer<typeof FriendRequestConfigSchema>;
-export type BackgroundAgentConfig = z.infer<typeof BackgroundAgentConfigSchema>;
 export type MessageChunkerConfig = z.infer<typeof MessageChunkerConfigSchema>;
 export type MessageStoreConfig = z.infer<typeof MessageStoreConfigSchema>;
 export type JikanConfig = z.infer<typeof JikanConfigSchema>;
@@ -504,12 +455,10 @@ export type MessageSenderConfig = z.infer<typeof MessageSenderConfigSchema>;
 export type MarkdownConfig = z.infer<typeof MarkdownConfigSchema>;
 export type HistoryConfig = z.infer<typeof HistoryConfigSchema>;
 export type TvuConfig = z.infer<typeof TvuConfigSchema>;
-export type GroqConfig = z.infer<typeof GroqConfigSchema>;
 export type DatabaseConfig = z.infer<typeof DatabaseConfigSchema>;
 export type ResponseHandlerConfig = z.infer<typeof ResponseHandlerConfigSchema>;
 export type GroupMembersFetchConfig = z.infer<typeof GroupMembersFetchConfigSchema>;
 export type GeminiConfig = z.infer<typeof GeminiConfigSchema>;
-export type GroqModelsConfig = z.infer<typeof GroqModelsConfigSchema>;
 export type SandboxConfig = z.infer<typeof SandboxConfigSchema>;
 export type CloudBackupConfig = z.infer<typeof CloudBackupConfigSchema>;
 export type Settings = z.infer<typeof SettingsSchema>;

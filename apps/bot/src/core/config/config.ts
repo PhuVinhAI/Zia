@@ -108,7 +108,6 @@ function buildConfig(settings: Settings) {
     logger: settings.logger,
     reaction: settings.reaction,
     friendRequest: settings.friendRequest,
-    backgroundAgent: settings.backgroundAgent,
     messageChunker: settings.messageChunker,
     messageStore: settings.messageStore,
     jikan: settings.jikan,
@@ -121,14 +120,12 @@ function buildConfig(settings: Settings) {
     history: settings.history,
     memory: settings.memory,
     tvu: settings.tvu,
-    groq: settings.groq,
     database: settings.database,
     responseHandler: settings.responseHandler,
     jikanRateLimitRetryMs: settings.jikanRateLimitRetryMs,
     websocketConnectTimeoutMs: settings.websocketConnectTimeoutMs,
     groupMembersFetch: settings.groupMembersFetch,
     gemini: settings.gemini,
-    groqModels: settings.groqModels,
     sandbox: settings.sandbox,
     cloudBackup: settings.cloudBackup,
   };
@@ -147,7 +144,6 @@ export { DEFAULT_RESPONSE, parseAIResponse } from '../../shared/types/config.sch
 
 // Re-export types từ config.schema
 export type {
-  BackgroundAgentConfig,
   BotConfig,
   BufferConfig,
   CloudBackupConfig,
@@ -158,8 +154,6 @@ export type {
   FriendRequestConfig,
   GeminiConfig,
   GiphyConfig,
-  GroqConfig,
-  GroqModelsConfig,
   GroupMembersFetchConfig,
   HistoryConfig,
   HistoryLoaderConfig,

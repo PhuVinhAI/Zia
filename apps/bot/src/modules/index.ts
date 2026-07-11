@@ -4,8 +4,6 @@
 
 // Academic - TVU Portal tools
 export { academicModule } from './academic/academic.module.js';
-// Background Agent - Scheduled tasks
-export * from './background-agent/index.js';
 // Chat - History và memory
 export { chatModule } from './chat/chat.module.js';
 // Entertainment - Anime, media tools

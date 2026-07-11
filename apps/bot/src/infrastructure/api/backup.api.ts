@@ -248,7 +248,7 @@ backupApi.get('/info', (c) => {
     let tableInfo: Record<string, number> = {};
     try {
       const sqlite = getSqliteDb();
-      const tables = ['history', 'sent_messages', 'agent_tasks'];
+      const tables = ['history', 'sent_messages'];
       for (const table of tables) {
         try {
           const result = sqlite.query(`SELECT COUNT(*) as count FROM ${table}`).get() as { count: number };

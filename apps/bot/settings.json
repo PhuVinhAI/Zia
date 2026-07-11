@@ -95,15 +95,6 @@
     "autoAcceptDelayMinMs": 2000,
     "autoAcceptDelayMaxMs": 5000
   },
-  "backgroundAgent": {
-    "pollIntervalMs": 90000,
-    "maxToolIterations": 5,
-    "groupBatchSize": 10,
-    "batchDelayMinMs": 500,
-    "batchDelayMaxMs": 1500,
-    "groqEnabled": true,
-    "allowedTools": ["googleSearch"]
-  },
   "messageChunker": {
     "maxMessageLength": 1800
   },
@@ -162,9 +153,6 @@
     "timeoutMs": 10000,
     "retryLimit": 2
   },
-  "groq": {
-    "rateLimitCooldownMs": 60000
-  },
   "database": {
     "path": "data/bot.db",
     "cleanupIntervalMs": 3600000,
@@ -199,14 +187,6 @@
     ],
     "rateLimitMinuteMs": 120000,
     "rateLimitDayMs": 86400000
-  },
-  "groqModels": {
-    "primary": "openai/gpt-oss-120b",
-    "fallback": "moonshotai/kimi-k2-instruct-0905",
-    "primaryMaxTokens": 65536,
-    "fallbackMaxTokens": 16384,
-    "temperature": 0.7,
-    "topP": 0.95
   },
   "sandbox": {
     "installTimeoutMs": 60000,

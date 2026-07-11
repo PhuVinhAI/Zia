@@ -26,7 +26,6 @@
     "test:core": "bun test tests/integration/core --timeout 60000",
     "test:gateway": "bun test tests/integration/gateway --timeout 60000",
     "test:academic": "bun test tests/integration/academic --timeout 60000",
-    "test:agent": "bun test tests/integration/background-agent --timeout 60000",
     "test:e2e": "bun test tests/e2e --timeout 120000"
   },
   "keywords": ["zalo", "bot", "gemini", "ai"],
@@ -43,7 +42,6 @@
     "docx-parser": "^0.2.1",
     "drizzle-orm": "^0.44.7",
     "exceljs": "^4.4.0",
-    "groq-sdk": "^0.37.0",
     "hono": "^4.10.7",
     "jsonrepair": "^3.13.1",
     "jszip": "^3.10.1",

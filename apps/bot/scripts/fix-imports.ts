@@ -52,16 +52,7 @@ const geminiReplacements: [RegExp, string][] = [
 walkDir('src/infrastructure/ai/providers/gemini', geminiReplacements);
 
 // ============================================
-// 2. Fix infrastructure/ai/providers/groq (4 levels deep)
-// ============================================
-const groqReplacements: [RegExp, string][] = [
-  [/from '\.\.\/\.\.\/core\//g, "from '../../../../core/"],
-  [/from '\.\.\/\.\.\/shared\//g, "from '../../../../shared/"],
-];
-walkDir('src/infrastructure/ai/providers/groq', groqReplacements);
-
-// ============================================
-// 3. Fix infrastructure/messaging/zalo (3 levels deep)
+// 2. Fix infrastructure/messaging/zalo (3 levels deep)
 // ============================================
 const zaloReplacements: [RegExp, string][] = [
   [/from '\.\.\/\.\.\/core\//g, "from '../../../core/"],

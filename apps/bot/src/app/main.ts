@@ -10,7 +10,6 @@
  */
 
 import { container, logError, logStep, registerLogTransport, Services } from '../core/index.js';
-import { startBackgroundAgent } from '../modules/background-agent/index.js';
 import { registerMessageListener } from '../modules/gateway/message.listener.js';
 import { initializeApp } from './app.module.js';
 import {
@@ -102,14 +101,7 @@ async function main() {
     shouldSkipMessage,
   });
 
-  // 6. Start background agent
-  if (process.env.GROQ_API_KEY) {
-    startBackgroundAgent(api);
-  } else {
-    console.log('⚠️ GROQ_API_KEY not set, background agent disabled');
-  }
-
-  // 7. Start sleep mode (auto offline theo giờ)
+  // 6. Start sleep mode (auto offline theo giờ)
   const { startSleepMode } = await import('../infrastructure/messaging/zalo/sleepMode.service.js');
   startSleepMode(api);
 

@@ -30,7 +30,6 @@ bun test:system        # System tools
 bun test:utils         # Utilities
 bun test:database      # Database
 bun test:entertainment # Entertainment APIs
-bun test:agent         # Background agent
 
 # Chạy tests cụ thể
 bun test:integration -- --grep "Giphy"
@@ -48,17 +47,8 @@ tests/integration/
 ├── index.ts                    # Entry point
 ├── README.md                   # Documentation
 │
-├── ai/                         # AI services
-│   └── groq.test.ts           # Groq AI
-│
 ├── academic/                   # Academic tools
 │   └── tvuTools.test.ts       # TVU student system
-│
-├── background-agent/           # Background agent
-│   ├── actionExecutor.test.ts # Action execution
-│   ├── agentRunner.test.ts    # Agent runner
-│   ├── contextBuilder.test.ts # Context building
-│   └── taskRepository.test.ts # Task management
 │
 ├── core/                       # Core functionality
 │   ├── baseModule.test.ts     # BaseModule & BaseTool
@@ -115,7 +105,6 @@ tests/integration/
 │   ├── freepik.test.ts        # Freepik AI images
 │   ├── googleSearch.test.ts   # Google Custom Search
 │   ├── memory.test.ts         # Long-term memory
-│   ├── scheduleTask.test.ts   # Task scheduling
 │   ├── solveMath.test.ts      # Math solver
 │   └── youtube.test.ts        # YouTube Data API
 │
@@ -148,10 +137,8 @@ Tests sẽ tự động skip nếu key không có.
 | ElevenLabs | `ELEVENLABS_API_KEY` | https://elevenlabs.io |
 | ComPDF | `COMPDF_API_KEY` | https://www.compdf.com |
 | Gemini | `GEMINI_API_KEY_1` ... `GEMINI_API_KEY_N` | https://aistudio.google.com |
-| Groq | `GROQ_API_KEY` | https://console.groq.com |
 | Zalo | `ZALO_CREDENTIALS_BASE64` | Zalo login |
 | TVU | `TVU_USERNAME`, `TVU_PASSWORD` | TVU student portal |
-
 ## Tests Không Cần API Key
 
 Các tests sau chạy được mà không cần API key:

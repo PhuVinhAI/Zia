@@ -39,16 +39,12 @@ export const TEST_SUITES = {
     freepik: 'Freepik AI Image Generation (requires FREEPIK_API_KEY)',
     executeCode: 'E2B Code Execution (requires E2B_API_KEY)',
     elevenlabs: 'ElevenLabs TTS (requires ELEVENLABS_API_KEY)',
-    docxToPdf: 'Local DOC/DOCX to PDF (mammoth + word-extractor + pdfkit, no API key)',
     createChart: 'Chart.js Chart Creation',
     createApp: 'HTML App Creation',
     clearHistory: 'Clear Chat History',
-    scheduleTask: 'Task Scheduling',
     solveMath: 'Math Solver',
   },
-  ai: {
-    groq: 'Groq AI (requires GROQ_API_KEY)',
-  },
+  ai: {},
   database: {
     database: 'SQLite + Drizzle ORM',
     databaseService: 'Database Service',
@@ -75,12 +71,6 @@ export const TEST_SUITES = {
     messageBuffer: 'Message Buffer (RxJS)',
     mediaProcessor: 'Media Processor (Gemini)',
     responseHandler: 'Response Handler (Stream Callbacks)',
-  },
-  backgroundAgent: {
-    taskRepository: 'Task Repository',
-    contextBuilder: 'Context Builder',
-    actionExecutor: 'Action Executor',
-    agentRunner: 'Agent Runner',
   },
   files: {
     createFile: 'File Creation (DOCX, XLSX, PPTX)',

@@ -6,7 +6,6 @@ import {
   createAppTool,
   executeCodeTool,
   flushLogsTool,
-  scheduleTaskTool,
   solveMathTool,
 } from './tools/index.js';
 
@@ -21,7 +20,6 @@ export class TaskModule extends BaseModule {
     createAppTool,
     solveMathTool,
     executeCodeTool,
-    scheduleTaskTool,
     flushLogsTool,
   ];
 

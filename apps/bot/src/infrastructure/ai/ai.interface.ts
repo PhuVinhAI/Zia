@@ -1,6 +1,6 @@
 /**
  * AI Provider Interface
- * Abstract interface cho các AI providers (Gemini, Groq, etc.)
+ * Abstract interface cho các AI providers
  */
 
 import type { Content } from '@google/genai';

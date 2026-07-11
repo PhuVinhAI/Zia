@@ -30,12 +30,3 @@ export {
   type MediaType,
   parseAIResponse,
 } from './providers/gemini/gemini.provider.js';
-
-// Groq Provider
-export {
-  GROQ_MODEL,
-  type GroqMessage,
-  generateGroqResponse,
-  getGroqModelInfo,
-  streamGroqResponse,
-} from './providers/groq/groqClient.js';

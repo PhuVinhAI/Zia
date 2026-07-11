@@ -407,27 +407,6 @@ export const CreateAppSchema = z.object({
   libraries: z.array(z.enum(APP_LIBRARIES)).optional().default(['tailwind']),
 });
 
-// ============ BACKGROUND AGENT TOOLS ============
-
-// Task types (accept_friend được xử lý tự động, không cần task)
-const TASK_TYPES = ['send_message', 'reminder'] as const;
-
-// Schedule Task params
-export const ScheduleTaskSchema = z.object({
-  type: z.enum(TASK_TYPES).describe('Loại task: send_message (gửi tin) hoặc reminder (nhắc nhở)'),
-  targetUserId: z.string().optional().describe('ID người dùng đích'),
-  targetThreadId: z.string().optional().describe('ID thread/nhóm đích (cho send_message)'),
-  targetDescription: z
-    .string()
-    .optional()
-    .describe('Mô tả nhóm/người nhận (VD: "nhóm lớp 12A", "nhóm gia đình") - agent sẽ tự tìm'),
-  message: z.string().optional().describe('Nội dung tin nhắn hoặc nội dung nhắc nhở'),
-  delayMinutes: z.coerce.number().min(0).default(0).describe('Số phút delay (0 = ngay lập tức)'),
-  scheduledTime: z.string().optional().describe('Thời điểm thực hiện (ISO format, VD: "2024-12-25T08:00:00")'),
-  cronExpression: z.string().optional().describe('Cron expression cho task lặp lại (VD: "0 8 * * *" = 8h sáng mỗi ngày, "30 12 * * 1-5" = 12h30 thứ 2-6). Format: "phút giờ ngày tháng thứ"'),
-  context: z.string().optional().describe('Ngữ cảnh/lý do tạo task'),
-});
-
 // ============ POLL TOOLS ============
 
 // Create Poll params
@@ -697,7 +676,6 @@ export const TOOL_EXAMPLES: Record<string, string> = {
   freepikImage: `[tool:freepikImage]{"prompt":"a cute cat","aspectRatio":"square_1_1"}[/tool]`,
   textToSpeech: `[tool:textToSpeech]{"text":"Xin chào"}[/tool]`,
   solveMath: `[tool:solveMath]{"problem":"Giải $x^2 = 4$","solution":"$x = \\pm 2$"}[/tool]`,
-  scheduleTask: `[tool:scheduleTask]{"type":"reminder","message":"Nhớ uống thuốc nha!","cronExpression":"0 8 * * *"}[/tool]`,
   clearHistory: `[tool:clearHistory]{}[/tool]`,
   flush_logs: `[tool:flush_logs]{}[/tool]`,
   getAllFriends: `[tool:getAllFriends]{"limit":50}[/tool]`,
@@ -852,7 +830,6 @@ export type SteamGameParams = z.infer<typeof SteamGameSchema>;
 export type SteamTopGamesParams = z.infer<typeof SteamTopGamesSchema>;
 export type CurrencyConvertParams = z.infer<typeof CurrencyConvertSchema>;
 export type CurrencyRatesParams = z.infer<typeof CurrencyRatesSchema>;
-export type ScheduleTaskParams = z.infer<typeof ScheduleTaskSchema>;
 
 // Poll types
 export type CreatePollParams = z.infer<typeof CreatePollSchema>;

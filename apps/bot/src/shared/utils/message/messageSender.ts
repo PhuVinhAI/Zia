@@ -1,6 +1,6 @@
 /**
  * Message Sender - Shared module để gửi tin nhắn với hỗ trợ mention/tag
- * Dùng chung cho cả Gateway (response handler) và Background Agent (action executor)
+ * Dùng cho Gateway (response handler)
  *
  * Features:
  * - Parse cú pháp [mention:ID:Name] thành @Name với Zalo mention format
@@ -47,7 +47,7 @@ export interface SendMessageOptions {
   /** Có parse và gửi sticker [sticker:keyword] không (default: true) */
   sendStickers?: boolean;
   /** Source identifier cho logging */
-  source?: 'gateway' | 'background-agent' | string;
+  source?: string;
 }
 
 export interface SendMessageResult {
@@ -604,23 +604,4 @@ export async function sendTextMessage(
       error: error.message || 'Unknown error',
     };
   }
-}
-
-/**
- * Gửi tin nhắn text đơn giản (không parse markdown, chỉ parse mentions)
- * Phù hợp cho background agent khi cần gửi tin nhắn nhanh
- */
-export async function sendSimpleMessage(
-  api: any,
-  text: string,
-  threadId: string,
-  source: string = 'background-agent',
-): Promise<SendMessageResult> {
-  return sendTextMessage(api, text, threadId, {
-    parseMarkdown: false,
-    sendMediaImages: false,
-    sendCodeFiles: false,
-    sendLinks: false,
-    source,
-  });
 }
