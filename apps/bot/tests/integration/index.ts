@@ -28,11 +28,6 @@ export const TEST_SUITES = {
     toolRegistry: 'Tool Registry',
     context: 'Bot Context',
   },
-  entertainment: {
-    jikan: 'Jikan API (MyAnimeList) - Anime/Manga search',
-    nekos: 'Nekos API - Anime images',
-    giphy: 'Giphy API - GIF search (requires GIPHY_API_KEY)',
-  },
   system: {
     youtube: 'YouTube Data API (requires YOUTUBE_API_KEY)',
     googleSearch: 'Google Custom Search (requires GOOGLE_SEARCH_API_KEY)',
@@ -86,9 +81,6 @@ export const TEST_SUITES = {
     historyConverter: 'History Converter',
     historyLoader: 'History Loader',
     historyStore: 'History Store',
-  },
-  academic: {
-    tvuTools: 'TVU Student System',
   },
 };
 

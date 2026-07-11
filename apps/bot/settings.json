@@ -79,9 +79,7 @@
     "media": true,
     "search": true,
     "social": true,
-    "task": true,
-    "academic": true,
-    "entertainment": true
+    "task": true
   },
   "logger": {
     "maxLinesPerFile": 1000,
@@ -106,26 +104,11 @@
   "userStore": {
     "cacheTtlMs": 300000
   },
-  "jikan": {
-    "rateLimitDelayMs": 350,
-    "timeoutMs": 15000,
-    "retryLimit": 3,
-    "backoffLimitMs": 3000
-  },
   "edgeTts": {
     "defaultVoice": "vi-VN-HoaiMyNeural",
     "defaultRate": "+0%",
     "defaultVolume": "+0%",
     "defaultPitch": "+0Hz"
-  },
-  "giphy": {
-    "timeoutMs": 15000,
-    "defaultLimit": 10,
-    "retryLimit": 2
-  },
-  "nekos": {
-    "timeoutMs": 15000,
-    "retryLimit": 2
   },
   "freepik": {
     "timeoutMs": 60000,
@@ -146,10 +129,6 @@
     "maxContextTokens": 300000,
     "estimatedCharsPerToken": 4
   },
-  "tvu": {
-    "timeoutMs": 10000,
-    "retryLimit": 2
-  },
   "database": {
     "path": "data/bot.db",
     "cleanupIntervalMs": 3600000,
@@ -164,7 +143,6 @@
     "messageDelayMaxMs": 1000,
     "imageDelayMs": 500
   },
-  "jikanRateLimitRetryMs": 2000,
   "websocketConnectTimeoutMs": 2000,
   "groupMembersFetch": {
     "delayMinMs": 300,

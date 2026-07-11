@@ -3,125 +3,6 @@
  */
 import { z } from 'zod';
 
-// ============ ENTERTAINMENT TOOLS ============
-
-// Jikan Search params
-export const JikanSearchSchema = z.object({
-  q: z.coerce.string().optional(), // Coerce để chấp nhận cả number
-  mediaType: z.enum(['anime', 'manga']).default('anime'),
-  type: z
-    .enum([
-      'tv',
-      'movie',
-      'ova',
-      'special',
-      'ona',
-      'music',
-      'manga',
-      'novel',
-      'lightnovel',
-      'oneshot',
-      'doujin',
-      'manhwa',
-      'manhua',
-    ])
-    .optional(),
-  status: z
-    .enum(['airing', 'complete', 'upcoming', 'publishing', 'hiatus', 'discontinued'])
-    .optional(),
-  minScore: z.coerce.number().min(1).max(10).optional(),
-  genres: z.string().optional(),
-  orderBy: z.enum(['title', 'score', 'popularity', 'favorites', 'rank']).optional(),
-  sort: z.enum(['desc', 'asc']).optional(),
-  page: z.coerce.number().min(1).default(1),
-  limit: z.coerce.number().min(1).max(25).default(10),
-});
-
-// Jikan Details params
-export const JikanDetailsSchema = z.object({
-  id: z.coerce.number().min(1, 'Thiếu ID anime/manga'),
-  mediaType: z.enum(['anime', 'manga']).default('anime'),
-});
-
-// Jikan Top params
-export const JikanTopSchema = z.object({
-  mediaType: z.enum(['anime', 'manga']).default('anime'),
-  type: z
-    .enum([
-      'tv',
-      'movie',
-      'ova',
-      'special',
-      'ona',
-      'music',
-      'manga',
-      'novel',
-      'lightnovel',
-      'oneshot',
-      'doujin',
-      'manhwa',
-      'manhua',
-    ])
-    .optional(),
-  filter: z.enum(['airing', 'upcoming', 'bypopularity', 'favorite']).optional(),
-  page: z.coerce.number().min(1).default(1),
-  limit: z.coerce.number().min(1).max(25).default(10),
-});
-
-// Jikan Season params
-export const JikanSeasonSchema = z.object({
-  mode: z.enum(['now', 'upcoming', 'schedule']).default('now'),
-  day: z
-    .enum(['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'])
-    .optional(),
-  page: z.coerce.number().min(1).default(1),
-  limit: z.coerce.number().min(1).max(25).default(10),
-});
-
-// Jikan Characters params
-export const JikanCharactersSchema = z.object({
-  id: z.coerce.number().min(1, 'Thiếu ID anime/manga'),
-  mediaType: z.enum(['anime', 'manga']).default('anime'),
-  limit: z.coerce.number().min(1).max(50).default(10),
-});
-
-// Jikan Episodes params
-export const JikanEpisodesSchema = z.object({
-  id: z.coerce.number().min(1, 'Thiếu ID anime'),
-  page: z.coerce.number().min(1).default(1),
-});
-
-// Jikan Genres params
-export const JikanGenresSchema = z.object({
-  mediaType: z.enum(['anime', 'manga']).default('anime'),
-});
-
-// Jikan Recommendations params
-export const JikanRecommendationsSchema = z.object({
-  id: z.coerce.number().min(1, 'Thiếu ID anime/manga'),
-  mediaType: z.enum(['anime', 'manga']).default('anime'),
-  limit: z.coerce.number().min(1).max(50).default(10),
-});
-
-// ============ NEKOS API TOOLS ============
-
-// Nekos Images params (random) - chỉ lấy ảnh safe, không hỗ trợ NSFW
-export const NekosImagesSchema = z.object({
-  tags: z.string().optional(),
-  withoutTags: z.string().optional(),
-  artist: z.coerce.number().optional(),
-  limit: z.coerce.number().min(1).max(25).default(1),
-});
-
-// ============ GIPHY API TOOLS ============
-
-// Giphy GIF params - chỉ lấy GIF an toàn (rating 'g'), không hỗ trợ NSFW
-export const GiphyGifSchema = z.object({
-  mode: z.enum(['search', 'trending', 'random']).default('search'),
-  query: z.string().optional(),
-  limit: z.coerce.number().min(1).max(25).default(1),
-});
-
 // ============ FREEPIK AI IMAGE TOOLS ============
 
 // Freepik Seedream v4 Image Generation params
@@ -212,24 +93,6 @@ export const CreateChartSchema = z.object({
     .min(1, 'Cần ít nhất 1 dataset'),
   width: z.coerce.number().min(200).max(2000).optional(),
   height: z.coerce.number().min(200).max(2000).optional(),
-});
-
-// ============ ACADEMIC TOOLS ============
-
-// TVU Login params
-export const TvuLoginSchema = z.object({
-  username: z.string().min(1, 'Thiếu mã số sinh viên'),
-  password: z.string().min(1, 'Thiếu mật khẩu'),
-});
-
-// TVU Schedule params
-export const TvuScheduleSchema = z.object({
-  hocKy: z.coerce.number().min(1, 'Thiếu mã học kỳ (hocKy)'),
-});
-
-// TVU Notifications params
-export const TvuNotificationsSchema = z.object({
-  limit: z.coerce.number().min(1).max(100).default(20),
 });
 
 // ============ YOUTUBE API TOOLS ============
@@ -651,17 +514,6 @@ export const TOOL_EXAMPLES: Record<string, string> = {
   currencyConvert: `[tool:currencyConvert]{"amount":100,"from":"USD","to":"VND"}[/tool]`,
   currencyRates: `[tool:currencyRates]{"base":"VND","currencies":"USD,EUR,JPY"}[/tool]`,
 
-  // Entertainment
-  jikanSearch: `[tool:jikanSearch]{"q":"naruto","mediaType":"anime","limit":5}[/tool]`,
-  jikanDetails: `[tool:jikanDetails]{"id":20,"mediaType":"anime"}[/tool]`,
-  jikanTop: `[tool:jikanTop]{"mediaType":"anime","filter":"airing","limit":10}[/tool]`,
-  jikanSeason: `[tool:jikanSeason]{"mode":"now","limit":10}[/tool]`,
-  jikanCharacters: `[tool:jikanCharacters]{"id":20,"mediaType":"anime","limit":10}[/tool]`,
-  jikanEpisodes: `[tool:jikanEpisodes]{"id":20,"page":1}[/tool]`,
-  jikanGenres: `[tool:jikanGenres]{"mediaType":"anime"}[/tool]`,
-  jikanRecommendations: `[tool:jikanRecommendations]{"id":20,"mediaType":"anime","limit":5}[/tool]`,
-  nekosImages: `[tool:nekosImages]{"tags":"catgirl","limit":1}[/tool]`,
-  giphyGif: `[tool:giphyGif]{"mode":"search","query":"happy","limit":1}[/tool]`,
 
   // System
   googleSearch: `[tool:googleSearch]{"q":"từ khóa tìm kiếm","num":5}[/tool]`,
@@ -682,15 +534,6 @@ export const TOOL_EXAMPLES: Record<string, string> = {
   getUserInfo: `[tool:getUserInfo]{"userId":"123"}[/tool]`,
   getGroupMembers: `[tool:getGroupMembers]{}[/tool]`,
 
-  // Academic
-  tvuLogin: `[tool:tvuLogin]{"username":"MSSV","password":"matkhau"}[/tool]`,
-  tvuGrades: `[tool:tvuGrades]{}[/tool]`,
-  tvuSchedule: `[tool:tvuSchedule]{"hocKy":20241}[/tool]`,
-  tvuSemesters: `[tool:tvuSemesters]{}[/tool]`,
-  tvuStudentInfo: `[tool:tvuStudentInfo]{}[/tool]`,
-  tvuNotifications: `[tool:tvuNotifications]{"limit":20}[/tool]`,
-  tvuCurriculum: `[tool:tvuCurriculum]{}[/tool]`,
-  tvuTuition: `[tool:tvuTuition]{}[/tool]`,
 
   // Poll tools
   createPoll: `[tool:createPoll]{"question":"Trưa ăn gì?","options":["Cơm","Phở","Bún"],"allowMultiChoices":true}[/tool]`,
@@ -797,23 +640,10 @@ export function validateParamsWithExample<T>(
 }
 
 // Type exports
-export type JikanSearchParams = z.infer<typeof JikanSearchSchema>;
-export type JikanDetailsParams = z.infer<typeof JikanDetailsSchema>;
-export type JikanTopParams = z.infer<typeof JikanTopSchema>;
-export type JikanSeasonParams = z.infer<typeof JikanSeasonSchema>;
-export type JikanCharactersParams = z.infer<typeof JikanCharactersSchema>;
-export type JikanEpisodesParams = z.infer<typeof JikanEpisodesSchema>;
-export type JikanGenresParams = z.infer<typeof JikanGenresSchema>;
-export type JikanRecommendationsParams = z.infer<typeof JikanRecommendationsSchema>;
 export type GetAllFriendsParams = z.infer<typeof GetAllFriendsSchema>;
 export type GetFriendOnlinesParams = z.infer<typeof GetFriendOnlinesSchema>;
 export type GetUserInfoParams = z.infer<typeof GetUserInfoSchema>;
 export type GetGroupMembersParams = z.infer<typeof GetGroupMembersSchema>;
-export type TvuLoginParams = z.infer<typeof TvuLoginSchema>;
-export type TvuScheduleParams = z.infer<typeof TvuScheduleSchema>;
-export type TvuNotificationsParams = z.infer<typeof TvuNotificationsSchema>;
-export type NekosImagesParams = z.infer<typeof NekosImagesSchema>;
-export type GiphyGifParams = z.infer<typeof GiphyGifSchema>;
 export type TextToSpeechParams = z.infer<typeof TextToSpeechSchema>;
 export type FreepikImageParams = z.infer<typeof FreepikImageSchema>;
 export type CreateFileParams = z.infer<typeof CreateFileSchema>;

@@ -5,9 +5,7 @@ import { container, eventBus, moduleManager, Services } from '../core/index.js';
 import { databaseService } from '../infrastructure/database/index.js';
 
 // Import module instances
-import { academicModule } from '../modules/academic/academic.module.js';
 import { chatModule } from '../modules/chat/chat.module.js';
-import { entertainmentModule } from '../modules/entertainment/entertainment.module.js';
 import { gatewayModule } from '../modules/gateway/gateway.module.js';
 import { mediaModule } from '../modules/media/media.module.js';
 import { searchModule } from '../modules/search/search.module.js';
@@ -35,8 +33,6 @@ export async function registerModules(): Promise<void> {
   await moduleManager.register(searchModule);
   await moduleManager.register(socialModule);
   await moduleManager.register(taskModule);
-  await moduleManager.register(academicModule);
-  await moduleManager.register(entertainmentModule);
 }
 
 /**
@@ -56,9 +52,7 @@ export async function initializeApp(): Promise<void> {
 
 // Export module instances for direct access
 export {
-  academicModule,
   chatModule,
-  entertainmentModule,
   gatewayModule,
   mediaModule,
   searchModule,

@@ -97,8 +97,6 @@ export const ModulesConfigSchema = z.object({
   search: z.boolean().default(true),
   social: z.boolean().default(true),
   task: z.boolean().default(true),
-  academic: z.boolean().default(true),
-  entertainment: z.boolean().default(true),
 });
 
 // Stickers config schema
@@ -136,33 +134,12 @@ export const MessageStoreConfigSchema = z.object({
   maxUndoTimeMs: z.coerce.number().min(30000).default(120000), // 2 phút - giới hạn thời gian thu hồi tin nhắn
 });
 
-// Jikan API config schema
-export const JikanConfigSchema = z.object({
-  rateLimitDelayMs: z.coerce.number().min(100).default(350),
-  timeoutMs: z.coerce.number().min(1000).default(15000),
-  retryLimit: z.coerce.number().min(1).max(10).default(3),
-  backoffLimitMs: z.coerce.number().min(500).default(3000),
-});
-
 // Microsoft Edge TTS config schema
 export const EdgeTtsConfigSchema = z.object({
   defaultVoice: z.string().default('vi-VN-HoaiMyNeural'),
   defaultRate: z.string().default('+0%'),
   defaultVolume: z.string().default('+0%'),
   defaultPitch: z.string().default('+0Hz'),
-});
-
-// Giphy config schema
-export const GiphyConfigSchema = z.object({
-  timeoutMs: z.coerce.number().min(1000).default(15000),
-  defaultLimit: z.coerce.number().min(1).max(50).default(10),
-  retryLimit: z.coerce.number().min(1).max(10).default(2),
-});
-
-// Nekos config schema
-export const NekosConfigSchema = z.object({
-  timeoutMs: z.coerce.number().min(1000).default(15000),
-  retryLimit: z.coerce.number().min(1).max(10).default(2),
 });
 
 // Freepik config schema
@@ -197,12 +174,6 @@ export const DatabaseConfigSchema = z.object({
   path: z.string().default('data/bot.db'),
   cleanupIntervalMs: z.coerce.number().min(60000).default(3600000),
   cacheSize: z.coerce.number().min(1000).default(10000),
-});
-
-// TVU config schema
-export const TvuConfigSchema = z.object({
-  timeoutMs: z.coerce.number().min(1000).default(10000),
-  retryLimit: z.coerce.number().min(1).max(10).default(2),
 });
 
 // Response handler config schema
@@ -299,15 +270,13 @@ export const SettingsSchema = z.object({
     maxTextConvertSizeMB: 20,
   }),
   modules: ModulesConfigSchema.optional().default({
-    system: true,
-    chat: true,
-    media: true,
-    search: true,
-    social: true,
-    task: true,
-    academic: true,
-    entertainment: true,
-  }),
+      system: true,
+      chat: true,
+      media: true,
+      search: true,
+      social: true,
+      task: true,
+    }),
   stickers: StickersConfigSchema.optional().default({
     keywords: [],
   }),
@@ -332,26 +301,11 @@ export const SettingsSchema = z.object({
     recentMessageWindowMs: 300000,
     maxUndoTimeMs: 120000,
   }),
-  jikan: JikanConfigSchema.optional().default({
-    rateLimitDelayMs: 350,
-    timeoutMs: 15000,
-    retryLimit: 3,
-    backoffLimitMs: 3000,
-  }),
   edgeTts: EdgeTtsConfigSchema.optional().default({
     defaultVoice: 'vi-VN-HoaiMyNeural',
     defaultRate: '+0%',
     defaultVolume: '+0%',
     defaultPitch: '+0Hz',
-  }),
-  giphy: GiphyConfigSchema.optional().default({
-    timeoutMs: 15000,
-    defaultLimit: 10,
-    retryLimit: 2,
-  }),
-  nekos: NekosConfigSchema.optional().default({
-    timeoutMs: 15000,
-    retryLimit: 2,
   }),
   freepik: FreepikConfigSchema.optional().default({
     timeoutMs: 60000,
@@ -372,10 +326,6 @@ export const SettingsSchema = z.object({
     maxContextTokens: 300000,
     estimatedCharsPerToken: 4,
   }),
-  tvu: TvuConfigSchema.optional().default({
-    timeoutMs: 10000,
-    retryLimit: 2,
-  }),
   database: DatabaseConfigSchema.optional().default({
     path: 'data/bot.db',
     cleanupIntervalMs: 3600000,
@@ -390,7 +340,6 @@ export const SettingsSchema = z.object({
     messageDelayMaxMs: 1000,
     imageDelayMs: 500,
   }),
-  jikanRateLimitRetryMs: z.coerce.number().min(500).default(2000),
   websocketConnectTimeoutMs: z.coerce.number().min(500).default(2000),
   groupMembersFetch: GroupMembersFetchConfigSchema.optional().default({
     delayMinMs: 300,
@@ -426,18 +375,16 @@ export type FetchConfig = z.infer<typeof FetchConfigSchema>;
 export type ModulesConfig = z.infer<typeof ModulesConfigSchema>;
 export type LoggerConfig = z.infer<typeof LoggerConfigSchema>;
 export type ReactionConfig = z.infer<typeof ReactionConfigSchema>;
+
 export type FriendRequestConfig = z.infer<typeof FriendRequestConfigSchema>;
 export type MessageChunkerConfig = z.infer<typeof MessageChunkerConfigSchema>;
+
 export type MessageStoreConfig = z.infer<typeof MessageStoreConfigSchema>;
-export type JikanConfig = z.infer<typeof JikanConfigSchema>;
 export type EdgeTtsConfig = z.infer<typeof EdgeTtsConfigSchema>;
-export type GiphyConfig = z.infer<typeof GiphyConfigSchema>;
-export type NekosConfig = z.infer<typeof NekosConfigSchema>;
 export type FreepikConfig = z.infer<typeof FreepikConfigSchema>;
 export type MessageSenderConfig = z.infer<typeof MessageSenderConfigSchema>;
 export type MarkdownConfig = z.infer<typeof MarkdownConfigSchema>;
 export type HistoryConfig = z.infer<typeof HistoryConfigSchema>;
-export type TvuConfig = z.infer<typeof TvuConfigSchema>;
 export type DatabaseConfig = z.infer<typeof DatabaseConfigSchema>;
 export type ResponseHandlerConfig = z.infer<typeof ResponseHandlerConfigSchema>;
 export type GroupMembersFetchConfig = z.infer<typeof GroupMembersFetchConfigSchema>;

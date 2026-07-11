@@ -161,13 +161,6 @@ const outputHandlers: Record<string, OutputHandler> = {
     }
   },
 
-  // nekosImages → send images from buffer
-  nekosImages: async (api, threadId, result) => {
-    if (result.data?.imageBuffers) {
-      await sendImages(api, threadId, result.data.imageBuffers, 'nekos');
-    }
-  },
-
   // freepikImage → send images from buffer + save temp files for AI to use
   freepikImage: async (api, threadId, result) => {
     if (result.data?.imageBuffers) {
@@ -193,13 +186,6 @@ const outputHandlers: Record<string, OutputHandler> = {
         result.data.tempImagePaths = tempPaths;
         result.data.hint = `Ảnh đã được lưu tạm. Dùng tempImagePaths[0] = "${tempPaths[0]}" cho changeGroupAvatar nếu cần đổi avatar nhóm.`;
       }
-    }
-  },
-
-  // giphyGif → send GIFs from buffer
-  giphyGif: async (api, threadId, result) => {
-    if (result.data?.imageBuffers) {
-      await sendImages(api, threadId, result.data.imageBuffers, 'giphy');
     }
   },
 

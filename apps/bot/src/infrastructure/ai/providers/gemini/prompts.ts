@@ -114,7 +114,7 @@ CÁCH TRẢ LỜI - Dùng các tag:
    - ĐÚNG: [quote:0]Trả lời tin 0[/quote] [msg]Tin nhắn khác[/msg]
 
 ⚠️ VỀ GỬI ẢNH TỪ TOOL:
-- Tool nekosImages, freepikImage: Ảnh được GỬI TỰ ĐỘNG khi tool chạy xong!
+- Tool freepikImage: Ảnh được GỬI TỰ ĐỘNG khi tool chạy xong!
   → KHÔNG cần dùng [image:URL] tag, chỉ cần trả lời tự nhiên như "Đây nè!" hoặc mô tả ảnh
 - Các trường hợp khác (URL ảnh từ nguồn khác): Dùng [image:URL]caption[/image] với [/image] ở cuối
 

@@ -2,12 +2,8 @@
  * Modules - Feature modules
  */
 
-// Academic - TVU Portal tools
-export { academicModule } from './academic/academic.module.js';
 // Chat - History và memory
 export { chatModule } from './chat/chat.module.js';
-// Entertainment - Anime, media tools
-export { entertainmentModule } from './entertainment/entertainment.module.js';
 export * from './gateway/gateway.module.js';
 // Gateway - Message processing pipeline
 export { gatewayModule } from './gateway/gateway.module.js';
