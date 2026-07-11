@@ -161,23 +161,23 @@ const outputHandlers: Record<string, OutputHandler> = {
     }
   },
 
-  // freepikImage → send images from buffer + save temp files for AI to use
-  freepikImage: async (api, threadId, result) => {
+  // imagen → send images from buffer + save temp files for AI to use
+  imagen: async (api, threadId, result) => {
     if (result.data?.imageBuffers) {
-      await sendImages(api, threadId, result.data.imageBuffers, 'freepik');
+      await sendImages(api, threadId, result.data.imageBuffers, 'imagen');
 
       // Lưu ảnh vào temp files để AI có thể dùng cho các tool khác (VD: changeGroupAvatar)
       const tempPaths: string[] = [];
       for (let i = 0; i < result.data.imageBuffers.length; i++) {
         const img = result.data.imageBuffers[i];
         const ext = img.mimeType.includes('png') ? 'png' : 'jpg';
-        const tempPath = path.join(os.tmpdir(), `freepik_${Date.now()}_${i}.${ext}`);
+        const tempPath = path.join(os.tmpdir(), `imagen_${Date.now()}_${i}.${ext}`);
         try {
           fs.writeFileSync(tempPath, img.buffer);
           tempPaths.push(tempPath);
-          debugLog('TOOL:FREEPIK', `Saved temp file for AI: ${tempPath}`);
+          debugLog('TOOL:IMAGEN', `Saved temp file for AI: ${tempPath}`);
         } catch (e: any) {
-          debugLog('TOOL:FREEPIK', `Failed to save temp file: ${e.message}`);
+          debugLog('TOOL:IMAGEN', `Failed to save temp file: ${e.message}`);
         }
       }
 

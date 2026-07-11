@@ -10,8 +10,5 @@ export {
   OUTPUT_FORMATS,
   textToSpeech,
 } from './edgeTtsClient.js';
-export {
-  generateSeedreamImage,
-  getSeedreamTaskStatus,
-  pollTaskUntilComplete,
-} from './freepikClient.js';
+// Imagen provider: re-exported via infrastructure/ai/providers/imagen
+// (Services kept minimal: legacy docxToPdf + edgeTts only)

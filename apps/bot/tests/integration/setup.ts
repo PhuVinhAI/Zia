@@ -35,7 +35,8 @@ export const API_KEYS = {
   youtube: process.env.YOUTUBE_API_KEY,
   googleSearch: process.env.GOOGLE_SEARCH_API_KEY,
   googleSearchCx: process.env.GOOGLE_SEARCH_CX,
-  freepik: process.env.FREEPIK_API_KEY,
+  // Imagen dùng chung GEMINI_API_KEY pool (không cần key riêng)
+  e2b: process.env.E2B_API_KEY,
   e2b: process.env.E2B_API_KEY,
   edgeTts: true, // Không cần API key, dùng Microsoft Edge TTS service
   zaloCredentials: process.env.ZALO_CREDENTIALS_BASE64,

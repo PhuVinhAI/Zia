@@ -3,5 +3,5 @@
  */
 export { createChartTool } from './createChart.js';
 export { createFileTool } from './createFile/index.js';
-export { freepikImageTool } from './freepikImage.js';
+export { imagenTool } from './imagen.js';
 export { textToSpeechTool } from './textToSpeech.js';

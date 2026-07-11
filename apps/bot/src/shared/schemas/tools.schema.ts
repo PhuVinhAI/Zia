@@ -3,27 +3,29 @@
  */
 import { z } from 'zod';
 
-// ============ FREEPIK AI IMAGE TOOLS ============
+// ============ GOOGLE IMAGEN AI IMAGE TOOLS ============
 
-// Freepik Seedream v4 Image Generation params
-export const FreepikImageSchema = z.object({
+// Native Google Imagen 4 generation params (via @google/genai).
+// Model rotation: imagen-4.0-generate → ultra → fast (handled by imagenKeyManager).
+// Docs: https://ai.google.dev/gemini-api/docs/image-generation
+
+// Export literal unions để consumer (imagenClient.ts) dùng chung single source of truth.
+export const IMAGEN_ASPECT_RATIOS = ['1:1', '3:4', '4:3', '9:16', '16:9'] as const;
+export type ImagenAspectRatio = (typeof IMAGEN_ASPECT_RATIOS)[number];
+
+export const IMAGEN_PERSON_GENERATION = ['dont_allow', 'allow_adult', 'allow_all'] as const;
+export type ImagenPersonGeneration = (typeof IMAGEN_PERSON_GENERATION)[number];
+
+export const ImagenImageSchema = z.object({
   prompt: z
     .string()
     .min(1, 'Thiếu prompt mô tả ảnh')
     .max(2000, 'Prompt quá dài (tối đa 2000 ký tự)'),
   aspectRatio: z
-    .enum([
-      'square_1_1',
-      'widescreen_16_9',
-      'social_story_9_16',
-      'portrait_2_3',
-      'traditional_3_4',
-      'standard_3_2',
-      'classic_4_3',
-    ])
-    .default('square_1_1'),
-  guidanceScale: z.coerce.number().min(0).max(20).default(2.5),
-  seed: z.coerce.number().min(0).max(2147483647).optional(),
+    .enum(IMAGEN_ASPECT_RATIOS)
+    .default('1:1'),
+  numberOfImages: z.coerce.number().min(1).max(4).default(1),
+  personGeneration: z.enum(IMAGEN_PERSON_GENERATION).default('allow_adult'),
 });
 
 // ============ MICROSOFT EDGE TTS TOOLS ============
@@ -468,7 +470,7 @@ export const TOOL_EXAMPLES: Record<string, string> = {
   createFile: `[tool:createFile]{"filename":"report.docx","content":"# Tiêu đề\\n\\nNội dung..."}[/tool]`,
   createApp: `[tool:createApp]{"name":"MyApp","html":"<div>Hello</div>","js":"console.log('hi')","libraries":["tailwind"]}[/tool]`,
   executeCode: `[tool:executeCode]{"code":"print('Hello')","language":"python"}[/tool]`,
-  freepikImage: `[tool:freepikImage]{"prompt":"a cute cat","aspectRatio":"square_1_1"}[/tool]`,
+  imagen: `[tool:imagen]{"prompt":"a cute cat","aspectRatio":"1:1"}[/tool]`,
   textToSpeech: `[tool:textToSpeech]{"text":"Xin chào"}[/tool]`,
   solveMath: `[tool:solveMath]{"problem":"Giải $x^2 = 4$","solution":"$x = \\pm 2$"}[/tool]`,
   clearHistory: `[tool:clearHistory]{}[/tool]`,
@@ -588,7 +590,7 @@ export type GetFriendOnlinesParams = z.infer<typeof GetFriendOnlinesSchema>;
 export type GetUserInfoParams = z.infer<typeof GetUserInfoSchema>;
 export type GetGroupMembersParams = z.infer<typeof GetGroupMembersSchema>;
 export type TextToSpeechParams = z.infer<typeof TextToSpeechSchema>;
-export type FreepikImageParams = z.infer<typeof FreepikImageSchema>;
+export type ImagenImageParams = z.infer<typeof ImagenImageSchema>;
 export type CreateFileParams = z.infer<typeof CreateFileSchema>;
 export type CreateChartParams = z.infer<typeof CreateChartSchema>;
 export type YouTubeSearchParams = z.infer<typeof YouTubeSearchSchema>;

@@ -272,7 +272,7 @@ async function processStreamingResponse(
       await saveResponseToHistory(threadId, result);
 
       // Nếu có tool call trong response, vẫn execute tool trước khi return
-      // Điều này đảm bảo tool như freepikImage vẫn gửi ảnh dù bị abort
+      // Điều này đảm bảo tool như imagen vẫn gửi ảnh dù bị abort
       const toolResult = await handleToolCalls(result, api, threadId, senderId, senderName);
       if (toolResult.hasTools) {
         debugLog('MIXED', `Executing ${toolResult.toolCalls.length} tool(s) despite abort`);

@@ -31,7 +31,7 @@ export const TEST_SUITES = {
   system: {
     youtube: 'YouTube Data API (requires YOUTUBE_API_KEY)',
     googleSearch: 'Google Custom Search (requires GOOGLE_SEARCH_API_KEY)',
-    freepik: 'Freepik AI Image Generation (requires FREEPIK_API_KEY)',
+    // Imagen native via @google/genai (dùng chung GEMINI_API_KEY pool)
     executeCode: 'E2B Code Execution (requires E2B_API_KEY)',
     edgeTts: 'Microsoft Edge TTS (miễn phí, cần kết nối Internet)',
     createChart: 'Chart.js Chart Creation',

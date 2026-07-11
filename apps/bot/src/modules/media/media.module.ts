@@ -5,7 +5,7 @@ import { BaseModule, type ITool, type ModuleMetadata } from '../../core/index.js
 import {
   createChartTool,
   createFileTool,
-  freepikImageTool,
+  imagenTool,
   textToSpeechTool,
 } from './tools/index.js';
 
@@ -16,7 +16,7 @@ export class MediaModule extends BaseModule {
     version: '1.0.0',
   };
 
-  private _tools: ITool[] = [createChartTool, createFileTool, freepikImageTool, textToSpeechTool];
+  private _tools: ITool[] = [createChartTool, createFileTool, imagenTool, textToSpeechTool];
 
   get tools(): ITool[] {
     return this._tools;

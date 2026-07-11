@@ -72,9 +72,9 @@ describe('Tool Handler', () => {
 
     it('should handle imageBuffers array', () => {
       const toolCall: ToolCall = {
-        toolName: 'freepikImage',
+        toolName: 'imagen',
         params: {},
-        rawTag: '[tool:freepikImage]',
+        rawTag: '[tool:imagen]',
       };
       const result: ToolResult = {
         success: true,

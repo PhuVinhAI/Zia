@@ -49,7 +49,7 @@ export const qrCodeTool: ToolDefinition = {
           content: data,
           size: result.size,
           imageUrl: result.url,
-          // Trả về buffer để gửi ảnh (giống freepikImage pattern)
+          // Trả về buffer để gửi ảnh (giống imagen pattern)
           imageBuffers: [
             {
               buffer: result.buffer,
