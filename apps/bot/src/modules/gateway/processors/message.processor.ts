@@ -21,11 +21,7 @@ import {
 import { setThreadType } from '../../../shared/utils/message/messageSender.js';
 import { markPendingToolExecution } from '../../../shared/utils/taskManager.js';
 // Import từ classifier
-import {
-  classifyMessages,
-  countMessageTypes,
-  isBotMentioned,
-} from '../classifier.js';
+import { classifyMessages, countMessageTypes, isBotMentioned } from '../classifier.js';
 import { checkRateLimit, markApiCall } from '../guards/rate-limit.guard.js';
 import { createStreamCallbacks, sendResponse } from '../handlers/response.handler.js';
 import { handleToolCalls, isToolOnlyResponse } from '../handlers/tool.handler.js';

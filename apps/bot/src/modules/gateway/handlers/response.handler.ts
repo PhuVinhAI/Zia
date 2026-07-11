@@ -131,9 +131,17 @@ function resolveQuoteData(
       const msg = batchMessages[quoteIndex];
       if (msg?.data?.msgId) {
         const content = msg?.data?.content ?? '(no content)';
-        const contentStr = typeof content === 'string' ? content : (content != null ? JSON.stringify(content) : '(no content)');
+        const contentStr =
+          typeof content === 'string'
+            ? content
+            : content != null
+              ? JSON.stringify(content)
+              : '(no content)';
         const preview = contentStr.substring(0, 50);
-        debugLog('QUOTE', `✅ Quote batch #${quoteIndex}: msgId=${msg.data.msgId}, content="${preview}..."`);
+        debugLog(
+          'QUOTE',
+          `✅ Quote batch #${quoteIndex}: msgId=${msg.data.msgId}, content="${preview}..."`,
+        );
         console.log(`[Bot] 📎 Quote tin batch #${quoteIndex}`);
         return msg.data;
       }
@@ -146,19 +154,27 @@ function resolveQuoteData(
       // AI có thể muốn quote tin gần đây trong history
       // Tính index từ cuối history: quoteIndex = 0 → tin mới nhất trong history
       const historyIndex = rawHistory.length - 1 - (quoteIndex - batchSize);
-      
+
       if (historyIndex >= 0 && historyIndex < rawHistory.length) {
         const historyMsg = rawHistory[historyIndex];
         if (historyMsg?.data?.msgId) {
           const content = historyMsg?.data?.content ?? '(no content)';
-          const contentStr = typeof content === 'string' ? content : (content != null ? JSON.stringify(content) : '(no content)');
+          const contentStr =
+            typeof content === 'string'
+              ? content
+              : content != null
+                ? JSON.stringify(content)
+                : '(no content)';
           const preview = contentStr.substring(0, 50);
-          debugLog('QUOTE', `✅ Quote history #${quoteIndex} (historyIdx=${historyIndex}): msgId=${historyMsg.data.msgId}, content="${preview}..."`);
+          debugLog(
+            'QUOTE',
+            `✅ Quote history #${quoteIndex} (historyIdx=${historyIndex}): msgId=${historyMsg.data.msgId}, content="${preview}..."`,
+          );
           console.log(`[Bot] 📎 Quote tin cũ từ history #${quoteIndex}`);
           return historyMsg.data;
         }
       }
-      
+
       debugLog(
         'QUOTE',
         `⚠️ Index ${quoteIndex} không tìm thấy trong batch (${batchSize}) hoặc history (${rawHistory.length})`,
@@ -356,13 +372,13 @@ function calculateSimilarity(str1: string, str2: string): number {
 /**
  * Loại bỏ nội dung nhại lại - khi AI lặp lại tin nhắn gốc trong quote
  * Trả về '' (empty string) nếu phát hiện echo để skip gửi tin nhắn
- * 
+ *
  * Cases:
  * 1. Exact match: AI chỉ lặp lại y nguyên tin nhắn -> return ''
  * 2. High similarity (>80%): AI lặp lại với thay đổi nhỏ -> return ''
  * 3. Starts with original: AI lặp lại ở đầu rồi thêm nội dung -> cắt phần lặp
  */
-function removeEchoedContent(quoteContent: string, originalText: string): string {
+function _removeEchoedContent(quoteContent: string, originalText: string): string {
   if (!originalText) return quoteContent;
 
   // Normalize để so sánh - loại bỏ tất cả dấu câu và khoảng trắng
@@ -383,31 +399,37 @@ function removeEchoedContent(quoteContent: string, originalText: string): string
 
   // Case 1: Exact match sau khi normalize -> AI đang echo hoàn toàn
   if (normalizedQuote === normalizedOriginal) {
-    debugLog('ECHO_FILTER', `Exact match detected, filtering out: "${quoteContent.substring(0, 50)}..."`);
+    debugLog(
+      'ECHO_FILTER',
+      `Exact match detected, filtering out: "${quoteContent.substring(0, 50)}..."`,
+    );
     return ''; // Return empty để skip gửi
   }
 
   // Case 2: High similarity (>80%) -> likely echo với minor changes
   const similarity = calculateSimilarity(normalizedQuote, normalizedOriginal);
   if (similarity > 0.8) {
-    debugLog('ECHO_FILTER', `High similarity (${(similarity * 100).toFixed(1)}%) detected, filtering: "${quoteContent.substring(0, 50)}..."`);
+    debugLog(
+      'ECHO_FILTER',
+      `High similarity (${(similarity * 100).toFixed(1)}%) detected, filtering: "${quoteContent.substring(0, 50)}..."`,
+    );
     return ''; // Return empty để skip gửi
   }
 
   // Case 3: Quote bắt đầu bằng tin nhắn gốc, loại bỏ phần đó và giữ phần còn lại
   const quoteLower = quoteContent.toLowerCase().trim();
   const originalLower = originalText.toLowerCase().trim();
-  
+
   if (quoteLower.startsWith(originalLower)) {
     const remaining = quoteContent.slice(originalText.length).trim();
     // Loại bỏ các ký tự phân cách đầu tiên nếu có (: - -> > etc.)
     const cleaned = remaining.replace(/^[:\-\->]+\s*/, '').trim();
-    
+
     if (!cleaned) {
       debugLog('ECHO_FILTER', `Starts with original but no additional content, filtering`);
       return ''; // Không có nội dung mới, skip
     }
-    
+
     debugLog('ECHO_FILTER', `Removed echoed prefix, remaining: "${cleaned.substring(0, 50)}..."`);
     return cleaned;
   }
@@ -477,7 +499,7 @@ export function createStreamCallbacks(
 
     onMessage: async (text: string, quoteIndex?: number) => {
       // Strip tool tags từ text trước khi gửi
-      let cleanText = stripToolTags(text);
+      const cleanText = stripToolTags(text);
 
       // Nếu text chỉ có tool tags (sau khi strip thì rỗng), không gửi
       if (!cleanText) {
@@ -493,7 +515,7 @@ export function createStreamCallbacks(
       // if (quoteIndex !== undefined && quoteIndex >= 0 && messages && messages[quoteIndex]) {
       //   const originalMsg = messages[quoteIndex];
       //   const rawContent = originalMsg?.data?.content || originalMsg?.content;
-      //   const originalText = (typeof rawContent === 'string' ? rawContent : 
+      //   const originalText = (typeof rawContent === 'string' ? rawContent :
       //     (rawContent != null ? String(rawContent) : '')).trim();
       //   if (originalText) {
       //     cleanText = removeEchoedContent(cleanText, originalText);
@@ -535,30 +557,31 @@ export function createStreamCallbacks(
       // 1. Single index: number (-1 = mới nhất, 0 = cũ nhất)
       // 2. Range: { start: -1, end: -3 } = undo từ -1 đến -3 (3 tin gần nhất)
       // 3. All: 'all' = undo tất cả tin trong cache
-      
+
       const undoSingleMessage = async (index: number): Promise<boolean> => {
         const msg = getSentMessage(threadId, index);
         if (!msg) {
           debugLog('UNDO', `Message not found: index=${index}, threadId=${threadId}`);
           return false;
         }
-        
+
         // Kiểm tra thời gian - Zalo thường chỉ cho thu hồi trong 2-5 phút
         const messageAge = Date.now() - msg.timestamp;
         const maxUndoTimeMs = CONFIG.messageStore?.maxUndoTimeMs ?? 120000;
-        
+
         if (messageAge > maxUndoTimeMs) {
           debugLog('UNDO', `Message too old: age=${messageAge}ms, max=${maxUndoTimeMs}ms`);
         }
-        
+
         try {
           const threadType = getThreadType(threadId);
           const undoData = { msgId: msg.msgId, cliMsgId: msg.cliMsgId };
           const result = await api.undo(undoData, threadId, threadType);
           logZaloAPI('undo', { undoData, threadId }, result);
           removeSentMessage(threadId, msg.msgId);
-          
-          const contentPreview = msg.content.substring(0, 50) + (msg.content.length > 50 ? '...' : '');
+
+          const contentPreview =
+            msg.content.substring(0, 50) + (msg.content.length > 50 ? '...' : '');
           console.log(`[Bot] 🗑️ Đã thu hồi tin nhắn: "${contentPreview}"`);
           logMessage('OUT', threadId, { type: 'undo', msgId: msg.msgId, content: contentPreview });
           return true;
@@ -567,37 +590,37 @@ export function createStreamCallbacks(
           return false;
         }
       };
-      
+
       // Xử lý theo loại undo
       if (indexOrRange === 'all') {
         // Undo tất cả tin nhắn trong cache (tối đa 20 tin)
         debugLog('UNDO', `Undo ALL messages in thread=${threadId}`);
         let undoCount = 0;
         let failCount = 0;
-        
+
         // Undo từ tin mới nhất (-1) đến cũ nhất
         for (let i = -1; i >= -20; i--) {
           const success = await undoSingleMessage(i);
           if (success) {
             undoCount++;
             // Delay nhỏ giữa các lần undo để tránh rate limit
-            await new Promise(r => setTimeout(r, 100));
+            await new Promise((r) => setTimeout(r, 100));
           } else {
             // Nếu không tìm thấy tin nhắn, dừng lại
             failCount++;
             if (failCount >= 3) break; // Dừng sau 3 lần thất bại liên tiếp
           }
         }
-        
+
         console.log(`[Bot] 🗑️ Đã thu hồi ${undoCount} tin nhắn (undo:all)`);
-        
+
         if (undoCount === 0) {
           try {
             const threadType = getThreadType(threadId);
             await api.sendMessage(
               '⚠️ Không có tin nhắn nào để thu hồi trong bộ nhớ.',
               threadId,
-              threadType
+              threadType,
             );
           } catch {}
         }
@@ -605,28 +628,28 @@ export function createStreamCallbacks(
         // Undo range: { start: -1, end: -3 }
         const { start, end } = indexOrRange;
         debugLog('UNDO', `Undo range: start=${start}, end=${end}, thread=${threadId}`);
-        
+
         // Xác định hướng và số lượng tin cần undo
         const step = start > end ? -1 : 1;
         let undoCount = 0;
-        
+
         for (let i = start; step > 0 ? i <= end : i >= end; i += step) {
           const success = await undoSingleMessage(i);
           if (success) {
             undoCount++;
-            await new Promise(r => setTimeout(r, 100));
+            await new Promise((r) => setTimeout(r, 100));
           }
         }
-        
+
         console.log(`[Bot] 🗑️ Đã thu hồi ${undoCount} tin nhắn (undo:${start}:${end})`);
-        
+
         if (undoCount === 0) {
           try {
             const threadType = getThreadType(threadId);
             await api.sendMessage(
               '⚠️ Không tìm thấy tin nhắn nào trong phạm vi đó để thu hồi.',
               threadId,
-              threadType
+              threadType,
             );
           } catch {}
         }
@@ -634,16 +657,16 @@ export function createStreamCallbacks(
         // Single index
         const index = indexOrRange as number;
         const success = await undoSingleMessage(index);
-        
+
         if (!success) {
           console.log(`[Bot] ⚠️ Không tìm thấy tin nhắn index ${index} để thu hồi`);
-          
+
           try {
             const threadType = getThreadType(threadId);
             await api.sendMessage(
               '⚠️ Mình không tìm thấy tin nhắn đó trong bộ nhớ. Có thể tin nhắn đã quá cũ (chỉ lưu 20 tin gần nhất) hoặc đã bị thu hồi trước đó rồi.',
               threadId,
-              threadType
+              threadType,
             );
           } catch {}
         }

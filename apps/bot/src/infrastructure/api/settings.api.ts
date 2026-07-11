@@ -5,11 +5,12 @@
  * Authentication: Handled by main API router (index.ts)
  * Usage: curl -H "Authorization: Bearer YOUR_API_KEY" http://host/api/settings
  */
-import { Hono } from 'hono';
-import { SettingsSchema, type Settings } from '../../core/config/config.schema.js';
+
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { Hono } from 'hono';
+import { type Settings, SettingsSchema } from '../../core/config/config.schema.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, '../../../');
@@ -120,8 +121,7 @@ settingsApi.patch('/:key', async (c) => {
 
     // Merge với section hiện tại
     const current = (settings as Record<string, unknown>)[key];
-    const merged =
-      typeof current === 'object' && current !== null ? { ...current, ...body } : body;
+    const merged = typeof current === 'object' && current !== null ? { ...current, ...body } : body;
 
     (settings as Record<string, unknown>)[key] = merged;
 

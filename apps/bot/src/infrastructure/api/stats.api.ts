@@ -1,10 +1,11 @@
 /**
  * Stats API - Thống kê hệ thống cho Dashboard
  */
+
+import { count, sql } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { getDatabase, getSqliteDb } from '../database/connection.js';
 import { history } from '../database/schema.js';
-import { count, sql } from 'drizzle-orm';
 
 export const statsApi = new Hono();
 
@@ -44,7 +45,6 @@ statsApi.get('/overview', async (c) => {
 // GET /stats/messages - Thống kê tin nhắn theo thời gian
 statsApi.get('/messages', async (c) => {
   try {
-    const db = getDatabase();
     const days = Number(c.req.query('days')) || 7;
     const startTime = Date.now() - days * 24 * 60 * 60 * 1000;
 

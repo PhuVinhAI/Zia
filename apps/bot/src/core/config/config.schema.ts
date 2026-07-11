@@ -272,7 +272,10 @@ export const SettingsSchema = z.object({
     allowNSFW: false,
     cloudDebug: { enabled: false, prefix: '#bot' },
     sleepMode: { enabled: false, sleepHour: 23, wakeHour: 6, checkIntervalMs: 1800000 },
-    maintenanceMode: { enabled: false, message: '🔧 Bot đang trong chế độ bảo trì. Vui lòng thử lại sau!' },
+    maintenanceMode: {
+      enabled: false,
+      message: '🔧 Bot đang trong chế độ bảo trì. Vui lòng thử lại sau!',
+    },
   }),
   retry: RetryConfigSchema.optional().default({
     maxRetries: 3,

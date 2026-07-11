@@ -45,7 +45,7 @@ export type ClassifiedMessage = {
 export function classifyMessage(msg: any): ClassifiedMessage {
   const content = msg.data?.content;
   const msgType = msg.data?.msgType || '';
-  
+
   // Lấy thông tin người gửi (quan trọng cho group chat)
   const senderName = msg.data?.dName;
   const senderId = msg.data?.uidFrom;
@@ -83,7 +83,15 @@ export function classifyMessage(msg: any): ClassifiedMessage {
     const url = content?.href || content?.hdUrl || content?.thumbUrl;
     // Lấy caption text nếu có (content.title chứa text đi kèm ảnh)
     const caption = content?.title || '';
-    return { type: 'image', message: msg, url, mimeType: 'image/jpeg', text: caption, senderName, senderId };
+    return {
+      type: 'image',
+      message: msg,
+      url,
+      mimeType: 'image/jpeg',
+      text: caption,
+      senderName,
+      senderId,
+    };
   }
 
   // Video

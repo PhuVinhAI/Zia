@@ -172,5 +172,3 @@ export function closeDatabase() {
     debugLog('DATABASE', 'Database connection closed');
   }
 }
-
-

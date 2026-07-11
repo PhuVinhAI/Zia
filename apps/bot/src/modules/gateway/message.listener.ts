@@ -228,12 +228,12 @@ function registerReactionListener(api: any): void {
       .map((id) => String(id));
 
     let botMsg = null;
-    let matchedId = null;
+    let _matchedId: string | null = null;
 
     for (const id of possibleIds) {
       botMsg = await getBotMessageByMsgId(id);
       if (botMsg) {
-        matchedId = id;
+        _matchedId = id;
         debugLog('REACTION', `Found bot message with ID: ${id}`);
         break;
       }
@@ -378,7 +378,7 @@ export function registerGroupEventListener(api: any): void {
   api.listener.on('group_event', async (event: any) => {
     debugLog('GROUP_EVENT', `RAW event: ${JSON.stringify(event)}`);
 
-    const { type, data, threadId, isSelf } = event;
+    const { type, data, threadId, isSelf: _isSelf } = event;
 
     // Bỏ qua một số event không cần thiết
     if (

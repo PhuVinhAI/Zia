@@ -56,20 +56,20 @@ interface ParserState {
  */
 function shouldSendMessage(newText: string, sentTexts: string[]): boolean {
   const normalizedNew = newText.trim().toLowerCase();
-  
+
   for (const sent of sentTexts) {
     const normalizedSent = sent.trim().toLowerCase();
-    
+
     // Exact match - đã gửi rồi
     if (normalizedNew === normalizedSent) {
       return false;
     }
-    
+
     // New text là prefix của tin đã gửi - không gửi vì đã gửi bản đầy đủ hơn
     if (normalizedSent.startsWith(normalizedNew)) {
       return false;
     }
-    
+
     // New text là extension của tin đã gửi - không gửi vì đã gửi phần đầu
     // Chỉ skip nếu overlap > 80% để tránh false positive
     if (normalizedNew.startsWith(normalizedSent)) {
@@ -79,7 +79,7 @@ function shouldSendMessage(newText: string, sentTexts: string[]): boolean {
       }
     }
   }
-  
+
   return true;
 }
 
@@ -116,7 +116,7 @@ function cleanInlineTags(text: string): string {
 /**
  * Xử lý các inline tags bên trong text block ([msg] hoặc [quote])
  * Extract và gửi sticker, reaction, link, card, undo trước khi gửi text
- * 
+ *
  * ⚠️ QUAN TRỌNG: Undo được xử lý TRƯỚC các tags khác để đảm bảo
  * tin nhắn cũ được thu hồi trước khi gửi tin mới
  */
@@ -133,10 +133,10 @@ async function processInlineTags(
   for (const match of text.matchAll(/\[undo:(all|(-?\d+)(?::(-?\d+))?)\]/gi)) {
     const fullMatch = match[1];
     const key = `undo:${fullMatch}`;
-    
+
     if (!state.sentUndos.has(key) && callbacks.onUndo) {
       state.sentUndos.add(key);
-      
+
       if (fullMatch === 'all') {
         await callbacks.onUndo('all');
       } else if (match[3] !== undefined) {
@@ -222,10 +222,10 @@ async function processStreamChunk(state: ParserState, callbacks: StreamCallbacks
   for (const match of buffer.matchAll(/\[undo:(all|(-?\d+)(?::(-?\d+))?)\]/gi)) {
     const fullMatch = match[1];
     const key = `undo:${fullMatch}`;
-    
+
     if (!state.sentUndos.has(key) && callbacks.onUndo) {
       state.sentUndos.add(key);
-      
+
       if (fullMatch === 'all') {
         await callbacks.onUndo('all');
       } else if (match[3] !== undefined) {
@@ -244,10 +244,10 @@ async function processStreamChunk(state: ParserState, callbacks: StreamCallbacks
   // Parse [quote:index]...[/quote] - xử lý quote reply
   // CHỈ parse quote tags ở TOP-LEVEL (không nằm trong [msg]...[/msg])
   // AI viết: [quote:0]Câu trả lời[/quote] - nội dung BÊN TRONG quote là câu trả lời
-  
+
   // Tạo buffer không chứa [msg]...[/msg] để chỉ parse quote ở top-level
   const bufferWithoutMsg = buffer.replace(/\[msg\][\s\S]*?\[\/msg\]/gi, '');
-  
+
   const quoteRegex = /\[quote:(-?\d+)\]([\s\S]*?)\[\/quote\]/gi;
   let quoteMatch;
   while ((quoteMatch = quoteRegex.exec(bufferWithoutMsg)) !== null) {
@@ -265,9 +265,13 @@ async function processStreamChunk(state: ParserState, callbacks: StreamCallbacks
     if (rawText && !state.sentMessages.has(key)) {
       await processInlineTags(rawText, state, callbacks);
       const cleanText = cleanInlineTags(rawText);
-      
+
       // Kiểm tra xem tin nhắn có nên được gửi không (tránh trùng lặp)
-      if (cleanText && callbacks.onMessage && shouldSendMessage(cleanText, state.sentMessageTexts)) {
+      if (
+        cleanText &&
+        callbacks.onMessage &&
+        shouldSendMessage(cleanText, state.sentMessageTexts)
+      ) {
         state.sentMessages.add(key);
         state.sentMessageTexts.push(cleanText);
         await callbacks.onMessage(cleanText, quoteIndex);
@@ -279,19 +283,23 @@ async function processStreamChunk(state: ParserState, callbacks: StreamCallbacks
   // Strip các [quote:X]...[/quote] tags bên trong vì chúng không nên được gửi như text thuần
   for (const match of buffer.matchAll(/\[msg\]([\s\S]*?)\[\/msg\]/gi)) {
     let rawText = match[1].trim();
-    
+
     // Strip [quote:X]...[/quote] tags bên trong [msg] - AI đôi khi viết quote tags trong msg
     // Ví dụ: [msg]Đây là tin [quote:0]nội dung[/quote] và tiếp tục[/msg]
     // → Chỉ giữ lại: "Đây là tin  và tiếp tục"
     rawText = rawText.replace(/\[quote:-?\d+\][\s\S]*?\[\/quote\]/gi, '').trim();
-    
+
     const key = `msg:${rawText}`;
     if (rawText && !state.sentMessages.has(key)) {
       await processInlineTags(rawText, state, callbacks);
       const cleanText = cleanInlineTags(rawText);
-      
+
       // Kiểm tra xem tin nhắn có nên được gửi không (tránh trùng lặp)
-      if (cleanText && callbacks.onMessage && shouldSendMessage(cleanText, state.sentMessageTexts)) {
+      if (
+        cleanText &&
+        callbacks.onMessage &&
+        shouldSendMessage(cleanText, state.sentMessageTexts)
+      ) {
         state.sentMessages.add(key);
         state.sentMessageTexts.push(cleanText);
         await callbacks.onMessage(cleanText);
@@ -431,7 +439,10 @@ export async function generateContentStream(
       if (plainText && callbacks.onMessage) {
         const hasTableOrCode = /(\|[^\n]+\|\n\|[-:\s|]+\|)|(```\w*\n[\s\S]*?```)/.test(plainText);
         // Kiểm tra xem tin nhắn có nên được gửi không (tránh trùng lặp)
-        if ((state.sentMessages.size === 0 || hasTableOrCode) && shouldSendMessage(plainText, state.sentMessageTexts)) {
+        if (
+          (state.sentMessages.size === 0 || hasTableOrCode) &&
+          shouldSendMessage(plainText, state.sentMessageTexts)
+        ) {
           state.sentMessageTexts.push(plainText);
           await callbacks.onMessage(plainText);
         }

@@ -3,7 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { statsApi } from '@/lib/api';
 import { formatNumber, formatUptime } from '@/lib/utils';
-import { MessageSquare, Clock, ListTodo, TrendingUp } from 'lucide-react';
+import { MessageSquare, Clock, TrendingUp } from 'lucide-react';
 
 export function StatsCards() {
   const { data, isLoading, error } = useQuery({
@@ -18,7 +18,7 @@ export function StatsCards() {
   if (isLoading) {
     return (
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {[...Array(3)].map((_, i) => (
+        {[...Array(2)].map((_, i) => (
           <div
             key={i}
             className="relative overflow-hidden rounded-2xl border-2 border-border bg-card p-6 animate-pulse"
@@ -60,16 +60,6 @@ export function StatsCards() {
       shadowColor: '#46A302',
       bgColor: 'bg-[#58CC02]/10',
       borderColor: 'border-[#58CC02]/30',
-    },
-    {
-      title: 'Tác vụ',
-      value: formatNumber(data.tasks),
-      icon: ListTodo,
-      description: 'Tổng số tác vụ',
-      color: '#FF9600',
-      shadowColor: '#E68600',
-      bgColor: 'bg-[#FF9600]/10',
-      borderColor: 'border-[#FF9600]/30',
     },
     {
       title: 'Uptime',

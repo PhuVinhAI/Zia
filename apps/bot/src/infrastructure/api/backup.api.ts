@@ -1,13 +1,14 @@
 /**
  * Backup API - Backup và Restore database (local)
  */
-import { Hono } from 'hono';
+
 import { existsSync, mkdirSync, readdirSync, statSync, unlinkSync } from 'node:fs';
 import { readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
+import { Hono } from 'hono';
 import { CONFIG } from '../../core/config/config.js';
 import { debugLog } from '../../core/logger/logger.js';
-import { closeDatabase, initDatabase, getSqliteDb } from '../database/connection.js';
+import { closeDatabase, getSqliteDb, initDatabase } from '../database/connection.js';
 
 export const backupApi = new Hono();
 
@@ -168,7 +169,7 @@ backupApi.get('/download/:name', async (c) => {
     }
 
     const content = await readFile(backupPath);
-    
+
     return new Response(content, {
       headers: {
         'Content-Type': 'application/octet-stream',
@@ -231,21 +232,23 @@ backupApi.post('/upload', async (c) => {
 backupApi.get('/info', (c) => {
   try {
     const dbPath = getDbPath();
-    
+
     if (!existsSync(dbPath)) {
       return c.json({ success: false, error: 'Database not found' }, 404);
     }
 
     const stats = statSync(dbPath);
-    
+
     // Get table counts
-    let tableInfo: Record<string, number> = {};
+    const tableInfo: Record<string, number> = {};
     try {
       const sqlite = getSqliteDb();
       const tables = ['history', 'sent_messages'];
       for (const table of tables) {
         try {
-          const result = sqlite.query(`SELECT COUNT(*) as count FROM ${table}`).get() as { count: number };
+          const result = sqlite.query(`SELECT COUNT(*) as count FROM ${table}`).get() as {
+            count: number;
+          };
           tableInfo[table] = result?.count ?? 0;
         } catch {
           tableInfo[table] = 0;
@@ -270,7 +273,6 @@ backupApi.get('/info', (c) => {
   }
 });
 
-
 /**
  * DELETE /backup/database - Xóa toàn bộ database (reset)
  * Tạo backup trước khi xóa
@@ -278,7 +280,7 @@ backupApi.get('/info', (c) => {
 backupApi.delete('/database', async (c) => {
   try {
     const dbPath = getDbPath();
-    
+
     if (!existsSync(dbPath)) {
       return c.json({ success: false, error: 'Database not found' }, 404);
     }
@@ -308,11 +310,11 @@ backupApi.delete('/database', async (c) => {
     // Xóa database files
     const walPath = `${dbPath}-wal`;
     const shmPath = `${dbPath}-shm`;
-    
+
     if (existsSync(dbPath)) unlinkSync(dbPath);
     if (existsSync(walPath)) unlinkSync(walPath);
     if (existsSync(shmPath)) unlinkSync(shmPath);
-    
+
     debugLog('BACKUP_API', 'Database files deleted');
 
     // Khởi tạo lại database mới (sẽ tự động tạo tables)

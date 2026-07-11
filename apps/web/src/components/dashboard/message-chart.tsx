@@ -60,7 +60,7 @@ export function MessageChart() {
           {} as Record<string, { date: string; user: number; model: number }>,
         ),
       )
-        .map(([_, v]) => ({
+        .map(([, v]) => ({
           ...v,
           // Format date to shorter form
           dateLabel: new Date(v.date).toLocaleDateString('vi-VN', {

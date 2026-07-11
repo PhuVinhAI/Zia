@@ -25,6 +25,10 @@ export default function LogsPage() {
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [linesToLoad, setLinesToLoad] = useState(200);
   const [copied, setCopied] = useState(false);
+  // Stable per-mount skeleton widths so we don't call Math.random during render.
+  const [skeletonWidths] = useState(() =>
+    Array.from({ length: 20 }, () => 60 + Math.random() * 40),
+  );
 
   const { data: folders, isLoading: foldersLoading } = useQuery({
     queryKey: ['log-folders'],
@@ -215,11 +219,11 @@ export default function LogsPage() {
             <div className="p-4">
               {contentLoading ? (
                 <div className="space-y-2">
-                  {[...Array(20)].map((_, i) => (
+                  {skeletonWidths.map((width, i) => (
                     <div
                       key={i}
                       className="h-4 bg-muted rounded animate-pulse"
-                      style={{ width: `${Math.random() * 40 + 60}%` }}
+                      style={{ width: `${width}%` }}
                     />
                   ))}
                 </div>

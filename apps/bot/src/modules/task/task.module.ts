@@ -2,12 +2,7 @@
  * Task Module - Code execution, math, scheduling
  */
 import { BaseModule, type ITool, type ModuleMetadata } from '../../core/index.js';
-import {
-  createAppTool,
-  executeCodeTool,
-  flushLogsTool,
-  solveMathTool,
-} from './tools/index.js';
+import { createAppTool, executeCodeTool, flushLogsTool, solveMathTool } from './tools/index.js';
 
 export class TaskModule extends BaseModule {
   readonly metadata: ModuleMetadata = {
@@ -16,12 +11,7 @@ export class TaskModule extends BaseModule {
     version: '1.0.0',
   };
 
-  private _tools: ITool[] = [
-    createAppTool,
-    solveMathTool,
-    executeCodeTool,
-    flushLogsTool,
-  ];
+  private _tools: ITool[] = [createAppTool, solveMathTool, executeCodeTool, flushLogsTool];
 
   get tools(): ITool[] {
     return this._tools;

@@ -27,7 +27,7 @@ import {
   Database,
   Users,
 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 export default function SettingsPage() {
   const queryClient = useQueryClient();
@@ -41,9 +41,10 @@ export default function SettingsPage() {
     },
   });
 
-  useEffect(() => {
-    if (data) setLocalSettings(data);
-  }, [data]);
+  // Sync fetched data into local state during render to avoid setState-in-effect.
+  if (data && localSettings === null) {
+    setLocalSettings(data);
+  }
 
   const updateMutation = useMutation({
     mutationFn: (settings: BotSettings) => settingsApiClient.update(settings),

@@ -1,10 +1,11 @@
 /**
  * History API - Quản lý lịch sử hội thoại
  */
+
+import { count, desc, eq } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { getDatabase, getSqliteDb } from '../database/connection.js';
 import { history } from '../database/schema.js';
-import { eq, desc, count, and, gte, lte } from 'drizzle-orm';
 
 export const historyApi = new Hono();
 
@@ -113,7 +114,7 @@ historyApi.delete('/thread/:threadId', async (c) => {
     const db = getDatabase();
     const threadId = c.req.param('threadId');
 
-    const result = await db.delete(history).where(eq(history.threadId, threadId));
+    await db.delete(history).where(eq(history.threadId, threadId));
 
     return c.json({ success: true, message: `History for thread ${threadId} deleted` });
   } catch (e) {
@@ -124,7 +125,6 @@ historyApi.delete('/thread/:threadId', async (c) => {
 // DELETE /history/old - Xóa history cũ hơn X ngày
 historyApi.delete('/old', async (c) => {
   try {
-    const db = getDatabase();
     const days = Number(c.req.query('days')) || 30;
     const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
 

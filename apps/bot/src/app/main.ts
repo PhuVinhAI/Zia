@@ -9,7 +9,10 @@
  * Runtime: Bun (https://bun.sh)
  */
 
+import { Hono } from 'hono';
+import { reloadSettingsFromData } from '../core/config/config.js';
 import { container, logError, logStep, registerLogTransport, Services } from '../core/index.js';
+import { apiApp, onSettingsChange } from '../infrastructure/api/index.js';
 import { registerMessageListener } from '../modules/gateway/message.listener.js';
 import { initializeApp } from './app.module.js';
 import {
@@ -21,10 +24,6 @@ import {
   setupListeners,
   shouldSkipMessage,
 } from './botSetup.js';
-
-import { Hono } from 'hono';
-import { apiApp, onSettingsChange } from '../infrastructure/api/index.js';
-import { reloadSettingsFromData } from '../core/config/config.js';
 
 // API Server với Hono - bao gồm health check và settings API
 function startApiServer() {

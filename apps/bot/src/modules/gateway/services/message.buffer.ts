@@ -93,7 +93,8 @@ async function processBatch(batch: BufferedMessage[]) {
 
   // Check maintenance mode - trả lời thông báo bảo trì và return
   if (CONFIG.maintenanceMode?.enabled) {
-    const maintenanceMessage = CONFIG.maintenanceMode.message || '🔧 Bot đang trong chế độ bảo trì. Vui lòng thử lại sau!';
+    const maintenanceMessage =
+      CONFIG.maintenanceMode.message || '🔧 Bot đang trong chế độ bảo trì. Vui lòng thử lại sau!';
     debugLog('BUFFER', `Maintenance mode enabled, sending maintenance message to ${threadId}`);
     try {
       const threadType = getThreadType(threadId);

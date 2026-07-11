@@ -3,13 +3,13 @@
  * Tất cả API endpoints cho Dashboard
  */
 import { Hono } from 'hono';
-import { cors } from 'hono/cors';
 import { bearerAuth } from 'hono/bearer-auth';
-import { settingsApi, onSettingsChange } from './settings.api.js';
-import { statsApi } from './stats.api.js';
+import { cors } from 'hono/cors';
+import { backupApi } from './backup.api.js';
 import { historyApi } from './history.api.js';
 import { logsApi } from './logs.api.js';
-import { backupApi } from './backup.api.js';
+import { onSettingsChange, settingsApi } from './settings.api.js';
+import { statsApi } from './stats.api.js';
 
 // API Key từ env - dùng chung cho cả dự án
 const API_KEY = process.env.API_KEY;

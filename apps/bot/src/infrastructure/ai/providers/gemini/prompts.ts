@@ -453,7 +453,9 @@ export function getSystemPrompt(useCharacter: boolean = true): string {
   // Thêm NSFW prompt dựa trên setting
   const nsfwPrompt = CONFIG.allowNSFW ? NSFW_ALLOWED_PROMPT : NSFW_BLOCKED_PROMPT;
 
-  return basePrompt + generateToolsPrompt() + HIDE_INTERNAL_SYSTEM_PROMPT + silentPrompt + nsfwPrompt;
+  return (
+    basePrompt + generateToolsPrompt() + HIDE_INTERNAL_SYSTEM_PROMPT + silentPrompt + nsfwPrompt
+  );
 }
 
 // ═══════════════════════════════════════════════════
@@ -527,7 +529,7 @@ export const PROMPTS = {
       const metaInfo = msgData
         ? `\n   - MsgID: "${msgData.msgId}"\n   - MsgType: "${msgData.msgType}"\n   - Timestamp: ${msgData.ts}`
         : '';
-      
+
       // Thêm tên người gửi nếu là group chat (quan trọng để AI phân biệt ai gửi)
       const senderPrefix = isGroup && item.senderName ? `${item.senderName}: ` : '';
 
@@ -540,19 +542,25 @@ export const PROMPTS = {
           break;
         case 'image':
           if (item.text) {
-            parts.push(`[${index}] ${senderPrefix}Ảnh kèm caption: "${item.text}" (URL: ${item.url})${metaInfo}`);
+            parts.push(
+              `[${index}] ${senderPrefix}Ảnh kèm caption: "${item.text}" (URL: ${item.url})${metaInfo}`,
+            );
           } else {
             parts.push(`[${index}] ${senderPrefix}Ảnh (URL: ${item.url})${metaInfo}`);
           }
           break;
         case 'doodle':
-          parts.push(`[${index}] ${senderPrefix}Hình vẽ tay (doodle) (URL: ${item.url})${metaInfo}`);
+          parts.push(
+            `[${index}] ${senderPrefix}Hình vẽ tay (doodle) (URL: ${item.url})${metaInfo}`,
+          );
           break;
         case 'gif':
           parts.push(`[${index}] ${senderPrefix}GIF (URL: ${item.url})${metaInfo}`);
           break;
         case 'video':
-          parts.push(`[${index}] ${senderPrefix}Video ${item.duration || 0}s (URL: ${item.url})${metaInfo}`);
+          parts.push(
+            `[${index}] ${senderPrefix}Video ${item.duration || 0}s (URL: ${item.url})${metaInfo}`,
+          );
           break;
         case 'voice':
           parts.push(
@@ -560,7 +568,9 @@ export const PROMPTS = {
           );
           break;
         case 'file':
-          parts.push(`[${index}] ${senderPrefix}File "${item.fileName}" (URL: ${item.url})${metaInfo}`);
+          parts.push(
+            `[${index}] ${senderPrefix}File "${item.fileName}" (URL: ${item.url})${metaInfo}`,
+          );
           break;
         case 'link':
           parts.push(`[${index}] ${senderPrefix}Link: ${item.url}`);
@@ -580,7 +590,7 @@ export const PROMPTS = {
       }
     });
 
-    const groupNote = isGroup 
+    const groupNote = isGroup
       ? `\n\n⚠️ ĐÂY LÀ NHÓM CHAT - Mỗi tin nhắn có TÊN NGƯỜI GỬI phía trước. Hãy chú ý AI ĐANG TRẢ LỜI AI và quote đúng tin nhắn của người đó!`
       : '';
 
