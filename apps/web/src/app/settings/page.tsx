@@ -148,14 +148,6 @@ export default function SettingsPage() {
     });
   };
 
-  const updateMemory = <K extends keyof BotSettings['memory']>(key: K, value: BotSettings['memory'][K]) => {
-    if (!localSettings) return;
-    setLocalSettings({
-      ...localSettings,
-      memory: { ...localSettings.memory, [key]: value },
-    });
-  };
-
   const updateCloudBackup = <K extends keyof BotSettings['cloudBackup']>(key: K, value: BotSettings['cloudBackup'][K]) => {
     if (!localSettings) return;
     setLocalSettings({
@@ -758,51 +750,6 @@ export default function SettingsPage() {
                   value={localSettings.bot.maxInputTokens}
                   onChange={(e) => updateBotSetting('maxInputTokens', Number(e.target.value))}
                   className="h-11 rounded-xl border-2"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Memory Settings */}
-          <div className="rounded-2xl border-2 border-border bg-card p-6">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-[#FF9600] text-white shadow-[0_3px_0_0_#E68600]">
-                <Brain className="h-5 w-5" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold">Memory</h3>
-                <p className="text-sm text-muted-foreground">Cấu hình bộ nhớ chung (shared memory)</p>
-              </div>
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-3">
-              <div className="space-y-2">
-                <Label className="text-sm font-semibold">Decay Half-Life (days)</Label>
-                <Input
-                  type="number"
-                  value={localSettings.memory?.decayHalfLifeDays ?? 30}
-                  onChange={(e) => updateMemory('decayHalfLifeDays', Number(e.target.value))}
-                  className="h-11 rounded-xl border-2"
-                />
-                <p className="text-xs text-muted-foreground">Thời gian giảm một nửa độ quan trọng</p>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-sm font-semibold">Access Boost Factor</Label>
-                <Input
-                  type="number"
-                  step="0.1"
-                  value={localSettings.memory?.accessBoostFactor ?? 0.2}
-                  onChange={(e) => updateMemory('accessBoostFactor', Number(e.target.value))}
-                  className="h-11 rounded-xl border-2"
-                />
-                <p className="text-xs text-muted-foreground">Hệ số tăng khi truy cập</p>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-sm font-semibold">Embedding Model</Label>
-                <Input
-                  value={localSettings.memory?.embeddingModel ?? 'gemini-embedding-001'}
-                  onChange={(e) => updateMemory('embeddingModel', e.target.value)}
-                  className="h-11 rounded-xl border-2 font-mono text-sm"
                 />
               </div>
             </div>

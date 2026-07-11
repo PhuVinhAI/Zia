@@ -1,17 +1,12 @@
 /**
  * Database Connection - Quản lý kết nối SQLite với Bun native driver
  * Sử dụng WAL mode để tối ưu hiệu năng
- * Tích hợp sqlite-vec cho vector search
  */
 import { Database } from 'bun:sqlite';
 import { drizzle } from 'drizzle-orm/bun-sqlite';
-import * as sqliteVec from 'sqlite-vec';
 import { CONFIG } from '../../core/config/config.js';
 import { debugLog } from '../../core/logger/logger.js';
 import * as schema from './schema.js';
-
-// Embedding dimensions cho vector search (từ config)
-export const EMBEDDING_DIM = CONFIG.database?.embeddingDim ?? 768;
 
 const getDbPath = () => CONFIG.database?.path ?? 'data/bot.db';
 
@@ -92,10 +87,6 @@ export function initDatabase() {
   sqliteDb.exec(`PRAGMA cache_size = ${CONFIG.database?.cacheSize ?? 10000};`);
   sqliteDb.exec('PRAGMA temp_store = MEMORY;');
 
-  // Load sqlite-vec extension cho vector search
-  sqliteVec.load(sqliteDb);
-  debugLog('DATABASE', '✅ sqlite-vec extension loaded');
-
   // Tạo Drizzle instance
   db = drizzle(sqliteDb, { schema });
 
@@ -147,33 +138,6 @@ function runMigrations(sqlite: Database) {
     );
   `);
 
-  // Tạo bảng memories (BỘ NHỚ CHUNG - Shared Memory)
-  // Chia sẻ giữa tất cả AI và background agent
-  sqlite.exec(`
-    CREATE TABLE IF NOT EXISTS memories (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      content TEXT NOT NULL,
-      type TEXT NOT NULL DEFAULT 'note' CHECK(type IN ('conversation', 'fact', 'person', 'preference', 'task', 'note')),
-      user_id TEXT,
-      user_name TEXT,
-      importance INTEGER NOT NULL DEFAULT 5,
-      created_at INTEGER NOT NULL,
-      last_accessed_at INTEGER,
-      access_count INTEGER NOT NULL DEFAULT 0,
-      metadata TEXT
-    );
-    CREATE INDEX IF NOT EXISTS idx_memories_type ON memories(type);
-    CREATE INDEX IF NOT EXISTS idx_memories_user ON memories(user_id);
-  `);
-
-  // Tạo virtual table cho vector search (sqlite-vec)
-  sqlite.exec(`
-    CREATE VIRTUAL TABLE IF NOT EXISTS vec_memories USING vec0(
-      memory_id INTEGER PRIMARY KEY,
-      embedding float[${EMBEDDING_DIM}]
-    );
-  `);
-
   // Tạo bảng agent_tasks (background task queue)
   sqlite.exec(`
     CREATE TABLE IF NOT EXISTS agent_tasks (
@@ -214,9 +178,7 @@ function runMigrations(sqlite: Database) {
     }
   } catch (e) {
     debugLog('DATABASE', `Migration check error (safe to ignore): ${e}`);
-  }
-
-  debugLog('DATABASE', '✅ Migrations completed (including vector tables and agent_tasks)');
+  }    debugLog('DATABASE', '✅ Migrations completed (including agent_tasks)');
 }
 
 /**
@@ -230,7 +192,7 @@ export function getDatabase() {
 }
 
 /**
- * Lấy raw SQLite instance (cho sqlite-vec operations)
+ * Lấy raw SQLite instance (cho raw SQL operations)
  */
 export function getSqliteDb(): Database {
   if (!sqliteDb) {

@@ -323,20 +323,6 @@ async function getBatchGroqDecisions(
 
 ${toolsPrompt}
 
-## BỘ NHỚ CHUNG (SHARED MEMORY):
-⚠️ QUAN TRỌNG: Bạn có quyền truy cập BỘ NHỚ CHUNG với tất cả AI khác!
-- Dùng [tool:recallMemory] để TÌM KIẾM thông tin về user/context từ bộ nhớ chung
-- Dùng [tool:saveMemory] để LƯU thông tin quan trọng vào bộ nhớ chung
-- Bộ nhớ này được CHIA SẺ giữa: Gemini (AI chính), Groq (background agent), và tất cả AI khác
-- Khi xử lý task, HÃY TÌM KIẾM trong bộ nhớ chung để có context về user
-- Bạn có thể LƯU observation của mình vào memory để AI khác biết
-
-## 📝 CHIA SẺ VỚI AI KHÁC (qua Memory):
-Khi xử lý task, bạn có thể lưu vào memory những gì bạn quan sát được:
-- "Đã gửi reminder cho user X về việc Y"
-- "User này hay quên deadline, cần nhắc sớm hơn"
-- "Đã chúc sinh nhật user, có vẻ vui"
-
 ## CÁCH TRẢ LỜI CHO TASKS:
 Với MỖI task, sử dụng tool tag với task_id:
 [tool:decide task_id="<ID>" action="execute|skip|delay" reason="Lý do"]
@@ -351,10 +337,8 @@ Nếu cần điều chỉnh message hoặc resolve targetDescription:
 ## QUY TẮC:
 - LUÔN execute task ngay, không delay vì online/offline
 - Hệ thống TỰ ĐỘNG accept friend requests
-- Điều chỉnh tone dựa trên giới tính (nếu biết từ memory)
 - Trả lời cho TẤT CẢ tasks trong 1 response
 - Có thể sử dụng CUSTOM TOOLS ở trên để lấy thêm thông tin nếu cần
-- TRƯỚC KHI xử lý task, hãy dùng recallMemory để tìm context về user
 - Với **reminder**: LUÔN điều chỉnh message cho thân thiện, tự nhiên, thêm emoji phù hợp
 - Với **send_message**: Viết như đang chat với bạn, không formal
 
@@ -362,7 +346,6 @@ Nếu cần điều chỉnh message hoặc resolve targetDescription:
 Khi execute task, bạn CÓ THỂ và NÊN điều chỉnh message trong payload:
 - Thêm emoji cho sinh động
 - Viết lại cho tự nhiên hơn
-- Thêm tên user nếu biết từ memory
 - Điều chỉnh tone phù hợp với context
 
 VÍ DỤ ĐIỀU CHỈNH:

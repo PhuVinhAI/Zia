@@ -3,7 +3,7 @@
  */
 import { Hono } from 'hono';
 import { getDatabase, getSqliteDb } from '../database/connection.js';
-import { history, memories, agentTasks } from '../database/schema.js';
+import { history, agentTasks } from '../database/schema.js';
 import { count, sql } from 'drizzle-orm';
 
 export const statsApi = new Hono();
@@ -17,7 +17,6 @@ statsApi.get('/overview', async (c) => {
 
     // Đếm tổng số
     const [totalMessages] = await db.select({ count: count() }).from(history);
-    const [totalMemories] = await db.select({ count: count() }).from(memories);
     const [totalTasks] = await db.select({ count: count() }).from(agentTasks);
 
     // Đếm trong 24h
@@ -42,7 +41,6 @@ statsApi.get('/overview', async (c) => {
       success: true,
       data: {
         messages: totalMessages.count,
-        memories: totalMemories.count,
         tasks: totalTasks.count,
         messagesLast24h: messagesLast24h.count,
         tasksByStatus: Object.fromEntries(tasksByStatus.map((t) => [t.status, t.count])),
@@ -67,11 +65,11 @@ statsApi.get('/messages', async (c) => {
     const result = sqlite
       .query(
         `
-      SELECT 
+      SELECT
         date(timestamp/1000, 'unixepoch') as date,
         role,
         COUNT(*) as count
-      FROM history 
+      FROM history
       WHERE timestamp > ?
       GROUP BY date, role
       ORDER BY date DESC
@@ -94,11 +92,11 @@ statsApi.get('/active-threads', async (c) => {
     const result = sqlite
       .query(
         `
-      SELECT 
+      SELECT
         thread_id,
         COUNT(*) as message_count,
         MAX(timestamp) as last_activity
-      FROM history 
+      FROM history
       GROUP BY thread_id
       ORDER BY message_count DESC
       LIMIT ?

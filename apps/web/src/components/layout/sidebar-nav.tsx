@@ -6,7 +6,6 @@ import { cn } from '@/lib/utils';
 import {
   LayoutDashboard,
   MessageSquare,
-  Brain,
   ListTodo,
   Settings,
   FileText,
@@ -40,13 +39,6 @@ const navItems = [
     icon: MessageSquare,
     color: 'text-[#1CB0F6]',
     bgColor: 'bg-[#1CB0F6]/10',
-  },
-  {
-    title: 'Bộ nhớ',
-    href: '/memories',
-    icon: Brain,
-    color: 'text-[#CE82FF]',
-    bgColor: 'bg-[#CE82FF]/10',
   },
   {
     title: 'Tác vụ',

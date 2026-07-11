@@ -207,7 +207,6 @@ export default function BackupPage() {
                   </span>
                   <ul className="list-disc list-inside space-y-1 text-sm mb-3">
                     <li>Lịch sử tin nhắn (history)</li>
-                    <li>Bộ nhớ AI (memories)</li>
                     <li>Các task đã lên lịch</li>
                     <li>Tin nhắn đã gửi</li>
                   </ul>

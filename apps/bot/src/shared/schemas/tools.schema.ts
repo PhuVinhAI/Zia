@@ -316,20 +316,6 @@ export const GoogleSearchSchema = z
   }))
   .refine((data) => data.q.length > 0, { message: 'Thiếu từ khóa tìm kiếm (q hoặc query)' });
 
-// ============ MEMORY TOOLS ============
-
-// Save Memory params
-export const SaveMemorySchema = z.object({
-  content: z.string().min(5, 'Nội dung quá ngắn (tối thiểu 5 ký tự)').max(2000, 'Nội dung quá dài'),
-  importance: z.coerce.number().min(1).max(10).default(5),
-});
-
-// Recall Memory params
-export const RecallMemorySchema = z.object({
-  query: z.string().min(2, 'Query quá ngắn (tối thiểu 2 ký tự)').max(500, 'Query quá dài'),
-  limit: z.coerce.number().min(1).max(10).default(5),
-});
-
 // ============ CREATE APP TOOL ============
 
 // All available CDN libraries
@@ -711,8 +697,6 @@ export const TOOL_EXAMPLES: Record<string, string> = {
   freepikImage: `[tool:freepikImage]{"prompt":"a cute cat","aspectRatio":"square_1_1"}[/tool]`,
   textToSpeech: `[tool:textToSpeech]{"text":"Xin chào"}[/tool]`,
   solveMath: `[tool:solveMath]{"problem":"Giải $x^2 = 4$","solution":"$x = \\pm 2$"}[/tool]`,
-  saveMemory: `[tool:saveMemory]{"content":"User thích màu xanh","type":"preference","importance":7}[/tool]`,
-  recallMemory: `[tool:recallMemory]{"query":"sở thích","limit":5}[/tool]`,
   scheduleTask: `[tool:scheduleTask]{"type":"reminder","message":"Nhớ uống thuốc nha!","cronExpression":"0 8 * * *"}[/tool]`,
   clearHistory: `[tool:clearHistory]{}[/tool]`,
   flush_logs: `[tool:flush_logs]{}[/tool]`,
@@ -868,8 +852,6 @@ export type SteamGameParams = z.infer<typeof SteamGameSchema>;
 export type SteamTopGamesParams = z.infer<typeof SteamTopGamesSchema>;
 export type CurrencyConvertParams = z.infer<typeof CurrencyConvertSchema>;
 export type CurrencyRatesParams = z.infer<typeof CurrencyRatesSchema>;
-export type SaveMemoryParams = z.infer<typeof SaveMemorySchema>;
-export type RecallMemoryParams = z.infer<typeof RecallMemorySchema>;
 export type ScheduleTaskParams = z.infer<typeof ScheduleTaskSchema>;
 
 // Poll types

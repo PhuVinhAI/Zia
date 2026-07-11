@@ -34,7 +34,6 @@ export interface PaginatedResponse<T> extends ApiResponse<T[]> {
 // Stats types
 export interface StatsOverview {
   messages: number;
-  memories: number;
   tasks: number;
   messagesLast24h: number;
   tasksByStatus: Record<string, number>;
@@ -73,19 +72,6 @@ export interface Task {
   createdBy: string | null;
   createdAt: Date;
   updatedAt: Date;
-}
-
-// Memory types
-export interface Memory {
-  id: number;
-  content: string;
-  userId: string | null;
-  userName: string | null;
-  importance: number;
-  createdAt: Date;
-  lastAccessedAt: Date | null;
-  accessCount: number;
-  metadata: string | null;
 }
 
 // History types
@@ -172,12 +158,6 @@ export interface HistoryConfig {
   estimatedCharsPerToken: number;
 }
 
-export interface MemoryConfig {
-  decayHalfLifeDays: number;
-  accessBoostFactor: number;
-  embeddingModel: string;
-}
-
 export interface CloudBackupConfig {
   enabled: boolean;
   throttleMs: number;
@@ -203,7 +183,6 @@ export interface BotSettings {
   groqModels: GroqModelsConfig;
   buffer: BufferConfig;
   history: HistoryConfig;
-  memory: MemoryConfig;
   cloudBackup: CloudBackupConfig;
   backgroundAgent: BackgroundAgentConfig;
   allowedUserIds: string[];
@@ -227,15 +206,6 @@ export const tasksApiClient = {
   cancel: (id: number) => api.post<ApiResponse<void>>(`/tasks/${id}/cancel`),
   retry: (id: number) => api.post<ApiResponse<void>>(`/tasks/${id}/retry`),
   delete: (id: number) => api.delete<ApiResponse<void>>(`/tasks/${id}`),
-};
-
-export const memoriesApiClient = {
-  list: (params?: { page?: number; limit?: number; userId?: string; search?: string }) =>
-    api.get<PaginatedResponse<Memory>>('/memories', { params }),
-  get: (id: number) => api.get<ApiResponse<Memory>>(`/memories/${id}`),
-  create: (data: Partial<Memory>) => api.post<ApiResponse<Memory>>('/memories', data),
-  update: (id: number, data: Partial<Memory>) => api.patch<ApiResponse<Memory>>(`/memories/${id}`, data),
-  delete: (id: number) => api.delete<ApiResponse<void>>(`/memories/${id}`),
 };
 
 export const historyApiClient = {

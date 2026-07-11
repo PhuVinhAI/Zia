@@ -9,12 +9,10 @@
  *   query <sql> - Chạy SQL query
  *   history     - Xem lịch sử chat
  *   users       - Xem danh sách users
- *   memories    - Xem memories (long-term)
  *   clear       - Xóa dữ liệu (cần confirm)
  */
 
 import { Database } from 'bun:sqlite';
-import * as sqliteVec from 'sqlite-vec';
 
 const DB_PATH = 'data/bot.db';
 
@@ -32,7 +30,6 @@ const c = {
 
 function initDb(): Database {
   const db = new Database(DB_PATH);
-  sqliteVec.load(db);
   return db;
 }
 
@@ -69,7 +66,7 @@ function formatDate(ts: number | Date): string {
 function cmdStats(db: Database) {
   console.log(`\n${c.bold}${c.cyan}📊 Database Stats${c.reset}\n`);
 
-  const tables = ['history', 'sent_messages', 'users', 'memories'];
+  const tables = ['history', 'sent_messages', 'users'];
   tables.forEach((table) => {
     try {
       const count = db.prepare(`SELECT COUNT(*) as count FROM ${table}`).get() as any;
@@ -78,14 +75,6 @@ function cmdStats(db: Database) {
       console.log(`  ${c.dim}${table}: (not found)${c.reset}`);
     }
   });
-
-  // Vector table
-  try {
-    const vecCount = db.prepare('SELECT COUNT(*) as count FROM vec_memories').get() as any;
-    console.log(`  ${c.green}vec_memories${c.reset}: ${vecCount.count} vectors`);
-  } catch {
-    console.log(`  ${c.dim}vec_memories: (not found)${c.reset}`);
-  }
 
   // DB file size
   const file = Bun.file(DB_PATH);
@@ -157,32 +146,8 @@ function cmdUsers(db: Database) {
   printTable(formatted);
 }
 
-function cmdMemories(db: Database, limit = 20) {
-  console.log(`\n${c.bold}${c.cyan}🧠 Memories${c.reset} (last ${limit})\n`);
-
-  const rows = db
-    .prepare(
-      `SELECT id, type, substr(content, 1, 40) as content, user_name, importance,
-              access_count, last_accessed_at, created_at
-       FROM memories ORDER BY id DESC LIMIT ?`,
-    )
-    .all(limit) as any[];
-
-  const formatted = rows.map((r) => ({
-    id: r.id,
-    type: r.type,
-    content: r.content.replace(/\n/g, ' ') + (r.content.length > 40 ? '...' : ''),
-    user: r.user_name || '-',
-    imp: r.importance,
-    access: r.access_count || 0,
-    lastAccess: r.last_accessed_at ? formatDate(r.last_accessed_at * 1000) : '-',
-  }));
-
-  printTable(formatted);
-}
-
 async function cmdClear(db: Database, table?: string) {
-  const tables = table ? [table] : ['history', 'sent_messages', 'memories', 'vec_memories'];
+  const tables = table ? [table] : ['history', 'sent_messages'];
 
   console.log(`\n${c.bold}${c.red}⚠️  Clear Data${c.reset}\n`);
   console.log(`Tables to clear: ${tables.join(', ')}`);
@@ -223,14 +188,13 @@ ${c.cyan}Commands:${c.reset}
   query <sql>        Chạy SQL query
   history [limit]    Xem lịch sử chat (default: 20)
   users              Xem danh sách users
-  memories [limit]   Xem memories (default: 20)
   clear [table]      Xóa dữ liệu (cần confirm)
 
 ${c.cyan}Examples:${c.reset}
   bun scripts/db.ts stats
   bun scripts/db.ts query "SELECT * FROM users"
   bun scripts/db.ts history 50
-  bun scripts/db.ts clear memories
+  bun scripts/db.ts clear history
 `);
 }
 
@@ -260,9 +224,6 @@ async function main() {
       break;
     case 'users':
       cmdUsers(db);
-      break;
-    case 'memories':
-      cmdMemories(db, parseInt(args[1]) || 20);
       break;
     case 'clear':
       await cmdClear(db, args[1]);

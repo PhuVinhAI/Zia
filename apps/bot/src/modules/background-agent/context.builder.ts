@@ -1,10 +1,8 @@
 /**
  * Context Builder - Thu thập ngữ cảnh môi trường cho background agent
- * Bao gồm BỘ NHỚ CHUNG (shared memory) để agent có context từ tất cả AI
  */
 import { CONFIG } from '../../core/config/config.js';
 import { debugLog } from '../../core/logger/logger.js';
-import { memoryStore } from '../../infrastructure/memory/memoryStore.js';
 
 /**
  * Delay random trong khoảng min-max ms (giống hành vi người dùng)
@@ -45,8 +43,6 @@ export interface EnvironmentContext {
     avatar: string;
     birthday?: string;
   };
-  // Memories từ vector DB
-  relevantMemories: string[];
   // Timestamp
   timestamp: Date;
 }
@@ -65,7 +61,6 @@ export async function buildEnvironmentContext(
     totalGroups: 0,
     friends: [],
     totalFriends: 0,
-    relevantMemories: [],
     timestamp: new Date(),
   };
 
@@ -153,18 +148,6 @@ export async function buildEnvironmentContext(
           birthday: profile.sdob,
         };
         debugLog('CONTEXT', `Target user: ${profile.displayName}`);
-
-        // 5. Tìm memories liên quan đến target user từ BỘ NHỚ CHUNG
-        try {
-          const searchQuery = `${profile.displayName} ${profile.zaloName || ''}`.trim();
-          const memories = await memoryStore.search(searchQuery, { limit: 5 });
-          context.relevantMemories = memories.map(
-            (m) => `[${m.userName || 'Unknown'}] ${m.content} (relevance: ${Math.round(m.relevance * 100)}%)`,
-          );
-          debugLog('CONTEXT', `Found ${memories.length} relevant memories for ${profile.displayName}`);
-        } catch (e) {
-          debugLog('CONTEXT', `Error searching memories: ${e}`);
-        }
       }
     } catch (e) {
       debugLog('CONTEXT', `Error getting user info: ${e}`);
@@ -214,16 +197,6 @@ export function formatContextForPrompt(context: EnvironmentContext): string {
     lines.push(`- Tên: ${u.displayName} (${u.zaloName})`);
     lines.push(`- Giới tính: ${gender}`);
     if (u.birthday) lines.push(`- Sinh nhật: ${u.birthday}`);
-    lines.push('');
-  }
-
-  // Memories từ BỘ NHỚ CHUNG
-  if (context.relevantMemories.length > 0) {
-    lines.push(`### BỘ NHỚ CHUNG (Shared Memory) - Ký ức liên quan đến target user:`);
-    lines.push(`⚠️ Đây là thông tin từ bộ nhớ chung, được chia sẻ giữa tất cả AI và background agent.`);
-    for (const mem of context.relevantMemories) {
-      lines.push(`- ${mem}`);
-    }
     lines.push('');
   }
 

@@ -1,5 +1,4 @@
 /**
- * Chat Tools - History và memory management
+ * Chat Tools - History management
  */
 export { clearHistoryTool } from './clearHistory.js';
-export { recallMemoryTool, saveMemoryTool } from './memory.js';

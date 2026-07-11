@@ -3,7 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { statsApi } from '@/lib/api';
 import { formatNumber, formatUptime } from '@/lib/utils';
-import { MessageSquare, Brain, Clock, ListTodo, TrendingUp } from 'lucide-react';
+import { MessageSquare, Clock, ListTodo, TrendingUp } from 'lucide-react';
 
 export function StatsCards() {
   const { data, isLoading, error } = useQuery({
@@ -17,8 +17,8 @@ export function StatsCards() {
 
   if (isLoading) {
     return (
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {[...Array(4)].map((_, i) => (
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {[...Array(3)].map((_, i) => (
           <div
             key={i}
             className="relative overflow-hidden rounded-2xl border-2 border-border bg-card p-6 animate-pulse"
@@ -62,16 +62,6 @@ export function StatsCards() {
       borderColor: 'border-[#58CC02]/30',
     },
     {
-      title: 'Bộ nhớ',
-      value: formatNumber(data.memories),
-      icon: Brain,
-      description: 'Bộ nhớ chung',
-      color: '#CE82FF',
-      shadowColor: '#B86EE6',
-      bgColor: 'bg-[#CE82FF]/10',
-      borderColor: 'border-[#CE82FF]/30',
-    },
-    {
       title: 'Tác vụ',
       value: formatNumber(data.tasks),
       icon: ListTodo,
@@ -94,7 +84,7 @@ export function StatsCards() {
   ];
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {stats.map((stat, index) => (
         <div
           key={stat.title}

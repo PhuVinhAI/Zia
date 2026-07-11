@@ -17,7 +17,6 @@ describe('Context Builder', () => {
         totalGroups: 0,
         friends: [],
         totalFriends: 0,
-        relevantMemories: [],
         timestamp: new Date('2024-03-15T10:00:00'),
       };
 
@@ -38,7 +37,6 @@ describe('Context Builder', () => {
         totalGroups: 0,
         friends: [],
         totalFriends: 0,
-        relevantMemories: [],
         timestamp: new Date(),
       };
 
@@ -59,7 +57,6 @@ describe('Context Builder', () => {
         totalGroups: 2,
         friends: [],
         totalFriends: 0,
-        relevantMemories: [],
         timestamp: new Date(),
       };
 
@@ -80,7 +77,6 @@ describe('Context Builder', () => {
           { userId: 'f2', displayName: 'Trần Thị B', gender: 'Nữ' },
         ],
         totalFriends: 2,
-        relevantMemories: [],
         timestamp: new Date(),
       };
 
@@ -98,7 +94,6 @@ describe('Context Builder', () => {
         totalGroups: 0,
         friends: [],
         totalFriends: 0,
-        relevantMemories: [],
         timestamp: new Date(),
         targetUserInfo: {
           userId: 'target123',
@@ -125,7 +120,6 @@ describe('Context Builder', () => {
         totalGroups: 0,
         friends: [],
         totalFriends: 0,
-        relevantMemories: [],
         timestamp: new Date(),
         targetUserInfo: {
           userId: 'target123',
@@ -140,27 +134,6 @@ describe('Context Builder', () => {
       expect(result).toContain('Nữ');
     });
 
-    it('should include memories', () => {
-      const context: EnvironmentContext = {
-        onlineUsers: [],
-        onlineCount: 0,
-        joinedGroups: [],
-        totalGroups: 0,
-        friends: [],
-        totalFriends: 0,
-        relevantMemories: [
-          'User likes coffee',
-          'User birthday is March 15',
-        ],
-        timestamp: new Date(),
-      };
-
-      const result = formatContextForPrompt(context);
-      expect(result).toContain('Ký ức liên quan');
-      expect(result).toContain('User likes coffee');
-      expect(result).toContain('User birthday is March 15');
-    });
-
     it('should include timestamp', () => {
       const context: EnvironmentContext = {
         onlineUsers: [],
@@ -169,8 +142,7 @@ describe('Context Builder', () => {
         totalGroups: 0,
         friends: [],
         totalFriends: 0,
-        relevantMemories: [],
-        timestamp: new Date('2024-03-15T10:30:00'),
+        timestamp: new Date('2024-03-15T:30:00'),
       };
 
       const result = formatContextForPrompt(context);

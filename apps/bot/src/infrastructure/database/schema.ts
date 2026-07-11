@@ -39,30 +39,7 @@ export const sentMessages = sqliteTable(
 );
 
 // ============================================
-// 3. Bảng memories - BỘ NHỚ CHUNG (Shared Memory)
-// Chia sẻ giữa tất cả AI và background agent
-// ============================================
-export const memories = sqliteTable(
-  'memories',
-  {
-    id: integer('id').primaryKey({ autoIncrement: true }),
-    content: text('content').notNull(),
-    userId: text('user_id'),
-    userName: text('user_name'),
-    importance: integer('importance').notNull().default(5),
-    createdAt: integer('created_at', { mode: 'timestamp' })
-      .notNull()
-      .$defaultFn(() => new Date()),
-    // Access tracking fields
-    lastAccessedAt: integer('last_accessed_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
-    accessCount: integer('access_count').notNull().default(0),
-    metadata: text('metadata'), // JSON string
-  },
-  (table) => [index('idx_memories_user').on(table.userId)],
-);
-
-// ============================================
-// 5. Bảng agent_tasks - Task queue cho background agent
+// 3. Bảng agent_tasks - Task queue cho background agent
 // ============================================
 export const agentTasks = sqliteTable(
   'agent_tasks',
@@ -123,8 +100,6 @@ export type History = typeof history.$inferSelect;
 export type NewHistory = typeof history.$inferInsert;
 export type SentMessage = typeof sentMessages.$inferSelect;
 export type NewSentMessage = typeof sentMessages.$inferInsert;
-export type Memory = typeof memories.$inferSelect;
-export type NewMemory = typeof memories.$inferInsert;
 export type AgentTask = typeof agentTasks.$inferSelect;
 export type NewAgentTask = typeof agentTasks.$inferInsert;
 

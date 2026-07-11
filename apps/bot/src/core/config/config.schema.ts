@@ -208,18 +208,10 @@ export const HistoryConfigSchema = z.object({
   estimatedCharsPerToken: z.coerce.number().min(1).default(4),
 });
 
-// Memory config schema
-export const MemoryConfigSchema = z.object({
-  decayHalfLifeDays: z.coerce.number().min(1).default(30),
-  accessBoostFactor: z.coerce.number().min(0).default(0.2),
-  embeddingModel: z.string().default('gemini-embedding-001'),
-});
-
 // Database config schema
 export const DatabaseConfigSchema = z.object({
   path: z.string().default('data/bot.db'),
   cleanupIntervalMs: z.coerce.number().min(60000).default(3600000),
-  embeddingDim: z.coerce.number().min(1).default(768),
   cacheSize: z.coerce.number().min(1000).default(10000),
 });
 
@@ -428,11 +420,6 @@ export const SettingsSchema = z.object({
     maxContextTokens: 300000,
     estimatedCharsPerToken: 4,
   }),
-  memory: MemoryConfigSchema.optional().default({
-    decayHalfLifeDays: 30,
-    accessBoostFactor: 0.2,
-    embeddingModel: 'gemini-embedding-001',
-  }),
   tvu: TvuConfigSchema.optional().default({
     timeoutMs: 10000,
     retryLimit: 2,
@@ -443,7 +430,6 @@ export const SettingsSchema = z.object({
   database: DatabaseConfigSchema.optional().default({
     path: 'data/bot.db',
     cleanupIntervalMs: 3600000,
-    embeddingDim: 768,
     cacheSize: 10000,
   }),
   responseHandler: ResponseHandlerConfigSchema.optional().default({
@@ -517,7 +503,6 @@ export type FreepikConfig = z.infer<typeof FreepikConfigSchema>;
 export type MessageSenderConfig = z.infer<typeof MessageSenderConfigSchema>;
 export type MarkdownConfig = z.infer<typeof MarkdownConfigSchema>;
 export type HistoryConfig = z.infer<typeof HistoryConfigSchema>;
-export type MemoryConfig = z.infer<typeof MemoryConfigSchema>;
 export type TvuConfig = z.infer<typeof TvuConfigSchema>;
 export type GroqConfig = z.infer<typeof GroqConfigSchema>;
 export type DatabaseConfig = z.infer<typeof DatabaseConfigSchema>;

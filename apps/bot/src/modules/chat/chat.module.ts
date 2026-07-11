@@ -1,17 +1,17 @@
 /**
- * Chat Module - History và memory management tools
+ * Chat Module - History management tools
  */
 import { BaseModule, type ITool, type ModuleMetadata } from '../../core/index.js';
-import { clearHistoryTool, recallMemoryTool, saveMemoryTool } from './tools/index.js';
+import { clearHistoryTool } from './tools/index.js';
 
 export class ChatModule extends BaseModule {
   readonly metadata: ModuleMetadata = {
     name: 'chat',
-    description: 'Chat history and memory management tools',
+    description: 'Chat history management tools',
     version: '1.0.0',
   };
 
-  private _tools: ITool[] = [clearHistoryTool, saveMemoryTool, recallMemoryTool];
+  private _tools: ITool[] = [clearHistoryTool];
 
   get tools(): ITool[] {
     return this._tools;

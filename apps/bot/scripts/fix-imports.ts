@@ -70,12 +70,8 @@ const zaloReplacements: [RegExp, string][] = [
 walkDir('src/infrastructure/messaging/zalo', zaloReplacements);
 
 // ============================================
-// 4. Fix infrastructure/memory (memoryStore needs gemini path)
+// 4. (Removed: memoryStore section - RAG feature was eliminated)
 // ============================================
-const memoryReplacements: [RegExp, string][] = [
-  [/from '\.\.\/gemini\//g, "from '../ai/providers/gemini/"],
-];
-walkDir('src/infrastructure/memory', memoryReplacements);
 
 // ============================================
 // 5. Fix modules/gateway/guards (3 levels deep)

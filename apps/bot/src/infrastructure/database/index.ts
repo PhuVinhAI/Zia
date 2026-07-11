@@ -5,7 +5,6 @@
 // Connection
 export {
   closeDatabase,
-  EMBEDDING_DIM,
   getDatabase,
   getSqliteDb,
   initDatabase,
