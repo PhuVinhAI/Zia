@@ -86,7 +86,6 @@ function buildConfig(settings: Settings) {
     selfListen: settings.bot.selfListen,
     logging: settings.bot.logging,
     useStreaming: settings.bot.useStreaming,
-    useCharacter: settings.bot.useCharacter,
     fileLogging: settings.bot.fileLogging,
     logFile: settings.bot.logFile,
     unauthorizedLogFile: settings.bot.unauthorizedLogFile,

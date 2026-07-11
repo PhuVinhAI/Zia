@@ -404,7 +404,7 @@ export async function generateContentStream(
       const chat = getChatSession(sessionId, history);
 
       // Log system prompt
-      logSystemPrompt(sessionId, getSystemPrompt(CONFIG.useCharacter));
+      logSystemPrompt(sessionId, getSystemPrompt());
 
       if (history && history.length > 0) {
         logAIHistory(sessionId, history);

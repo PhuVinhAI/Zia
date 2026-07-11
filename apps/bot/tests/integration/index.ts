@@ -50,7 +50,6 @@ export const TEST_SUITES = {
     geminiConfig: 'Gemini Config',
     geminiProvider: 'Gemini Provider (generateContent, parseAIResponse)',
     geminiStream: 'Gemini Streaming',
-    character: 'Character Config',
     prompts: 'System Prompts',
     zalo: 'Zalo Service (zca-js)',
     zaloTypes: 'Zalo Types (TextStyle)',

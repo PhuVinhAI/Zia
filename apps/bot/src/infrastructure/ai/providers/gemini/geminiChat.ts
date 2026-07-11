@@ -18,7 +18,7 @@ import { getSystemPrompt } from './prompts.js';
 const chatSessions = new Map<string, Chat>();
 
 // Lấy SYSTEM_PROMPT động dựa trên config
-const getPrompt = () => getSystemPrompt(CONFIG.useCharacter);
+const getPrompt = () => getSystemPrompt();
 
 /**
  * Lấy hoặc tạo chat session cho thread

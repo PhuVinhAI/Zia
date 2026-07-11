@@ -1,5 +1,4 @@
 import { generateToolsPrompt } from '../../../../core/index.js';
-import { CHARACTER, CHARACTER_PROMPT } from './character.js';
 
 // ═══════════════════════════════════════════════════
 // SHARED PROMPT SECTIONS - Dùng chung cho cả 2 mode
@@ -29,7 +28,7 @@ Khi nhận được media (ảnh/audio/video/file), HÃY:
 2. Mô tả những gì bạn thấy/nghe được
 3. Trả lời câu hỏi của user dựa trên nội dung media`;
 
-const ZALO_INTERACTION_PROMPT = (characterName?: string) => `
+const ZALO_INTERACTION_PROMPT = () => `
 ═══════════════════════════════════════════════════
 HƯỚNG DẪN TƯƠNG TÁC TRÊN ZALO
 ═══════════════════════════════════════════════════
@@ -43,11 +42,7 @@ NGUYÊN TẮC TƯƠNG TÁC (QUAN TRỌNG):
 2. **Cảm xúc là chính:**
    - Đừng cư xử như cái máy hỏi gì đáp nấy
    - Hãy dùng [reaction:...] thật nhiều để thể hiện bạn đang lắng nghe
-   - [sticker:...] dùng để chốt câu chuyện hoặc thay lời muốn nói${
-     characterName
-       ? `\n   - Thể hiện cảm xúc của ${characterName}: vui, buồn, hào hứng, tức giận tùy ngữ cảnh`
-       : ''
-   }
+   - [sticker:...] dùng để chốt câu chuyện hoặc thay lời muốn nói
 
 3. **Công cụ có sẵn:**
    - Google Search: Khi user hỏi về tin tức, sự kiện, thông tin mới → HÃY SỬ DỤNG GOOGLE SEARCH
@@ -288,17 +283,7 @@ Nếu user hỏi "sao quên tui?", "nhớ tui không?", hoặc tương tự:
 `;
 
 // ═══════════════════════════════════════════════════
-// SYSTEM PROMPT KHI BẬT CHARACTER (roleplay)
-// ═══════════════════════════════════════════════════
-const CHARACTER_SYSTEM_PROMPT = `${CHARACTER_PROMPT}
-${HUMANIZE_PROMPT}
-${BETA_NOTICE_PROMPT}
-${MULTIMODAL_PROMPT}
-${ZALO_INTERACTION_PROMPT(CHARACTER.name)}
-`;
-
-// ═══════════════════════════════════════════════════
-// SYSTEM PROMPT KHI TẮT CHARACTER (assistant mode)
+// SYSTEM PROMPT
 // ═══════════════════════════════════════════════════
 const ASSISTANT_BASE_PROMPT = `Bạn là một trợ lý AI tên là "Zia" thông minh, thân thiện trên Zalo.
 ${HUMANIZE_PROMPT}
@@ -408,8 +393,8 @@ VÍ DỤ ĐÚNG:
 `;
 
 // Export function để lấy prompt động (gọi generateToolsPrompt() runtime)
-export function getSystemPrompt(useCharacter: boolean = true): string {
-  const basePrompt = useCharacter ? CHARACTER_SYSTEM_PROMPT : ASSISTANT_BASE_PROMPT;
+export function getSystemPrompt(): string {
+  const basePrompt = ASSISTANT_BASE_PROMPT;
 
   // Thêm silent tool prompt nếu tắt showToolCalls
   const silentPrompt = CONFIG.showToolCalls ? '' : SILENT_TOOL_PROMPT;

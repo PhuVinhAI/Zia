@@ -17,7 +17,6 @@
     "test": "bun test",
     "test:integration": "bun test tests/integration --timeout 60000",
     "test:integration:watch": "bun test tests/integration --watch --timeout 60000",
-    "test:entertainment": "bun test tests/integration/entertainment --timeout 60000",
     "test:system": "bun test tests/integration/system --timeout 60000",
     "test:ai": "bun test tests/integration/ai --timeout 60000",
     "test:database": "bun test tests/integration/database --timeout 60000",
@@ -25,7 +24,6 @@
     "test:utils": "bun test tests/integration/utils --timeout 60000",
     "test:core": "bun test tests/integration/core --timeout 60000",
     "test:gateway": "bun test tests/integration/gateway --timeout 60000",
-    "test:academic": "bun test tests/integration/academic --timeout 60000",
     "test:e2e": "bun test tests/e2e --timeout 120000"
   },
   "keywords": ["zalo", "bot", "gemini", "ai"],

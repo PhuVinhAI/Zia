@@ -376,14 +376,6 @@ export default function SettingsPage() {
                   icon={Settings}
                   color="#777777"
                 />
-                <SettingToggle
-                  label="Sử dụng nhân vật"
-                  description="Sử dụng character/persona cho bot"
-                  checked={localSettings.bot.useCharacter}
-                  onCheckedChange={(v) => updateBotSetting('useCharacter', v)}
-                  icon={Users}
-                  color="#1CB0F6"
-                />
               </div>
             </div>
           </div>
@@ -733,8 +725,6 @@ function getModuleDescription(key: string): string {
     search: 'Tìm kiếm trên internet',
     social: 'Tương tác mạng xã hội',
     task: 'Quản lý công việc và nhắc nhở',
-    academic: 'Hỗ trợ học tập',
-    entertainment: 'Giải trí và trò chơi',
   };
   return descriptions[key] ?? '';
 }

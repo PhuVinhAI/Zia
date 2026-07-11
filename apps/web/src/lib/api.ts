@@ -95,7 +95,6 @@ export interface BotConfig {
   selfListen: boolean;
   logging: boolean;
   useStreaming: boolean;
-  useCharacter: boolean;
   fileLogging: boolean;
   maxToolDepth: number;
   showToolCalls: boolean;

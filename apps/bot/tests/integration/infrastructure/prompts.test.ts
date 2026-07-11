@@ -5,43 +5,37 @@ import { describe, expect, it } from 'bun:test';
 import {
   getSystemPrompt,
   PROMPTS,
-  SYSTEM_PROMPT,
 } from '../../../src/infrastructure/ai/providers/gemini/prompts.js';
 
 describe('Prompts', () => {
   describe('getSystemPrompt()', () => {
-    it('should return character prompt when useCharacter is true', () => {
-      const prompt = getSystemPrompt(true);
+    it('should return a non-empty system prompt', () => {
+      const prompt = getSystemPrompt();
+      expect(typeof prompt).toBe('string');
+      expect(prompt.length).toBeGreaterThan(0);
+    });
+
+    it('should include assistant identity', () => {
+      const prompt = getSystemPrompt();
+      expect(prompt).toContain('trợ lý AI');
       expect(prompt).toContain('Zia');
     });
 
-    it('should return assistant prompt when useCharacter is false', () => {
-      const prompt = getSystemPrompt(false);
-      expect(prompt).toContain('trợ lý AI');
-    });
-
     it('should include multimodal capabilities', () => {
-      const prompt = getSystemPrompt(true);
+      const prompt = getSystemPrompt();
       expect(prompt).toContain('ĐA PHƯƠNG THỨC');
     });
 
     it('should include Zalo interaction guide', () => {
-      const prompt = getSystemPrompt(true);
+      const prompt = getSystemPrompt();
       expect(prompt).toContain('[reaction:');
       expect(prompt).toContain('[sticker:');
       expect(prompt).toContain('[msg]');
     });
 
     it('should include tool instructions', () => {
-      const prompt = getSystemPrompt(true);
+      const prompt = getSystemPrompt();
       expect(prompt).toContain('[tool:');
-    });
-  });
-
-  describe('SYSTEM_PROMPT', () => {
-    it('should be pre-built', () => {
-      expect(typeof SYSTEM_PROMPT).toBe('string');
-      expect(SYSTEM_PROMPT.length).toBeGreaterThan(0);
     });
   });
 
