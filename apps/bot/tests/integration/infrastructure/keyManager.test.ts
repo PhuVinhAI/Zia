@@ -10,10 +10,8 @@ describe('Gemini Key Manager', () => {
       expect(GEMINI_MODELS.length).toBeGreaterThan(0);
     });
 
-    it('should include expected models', () => {
-       expect(GEMINI_MODELS).toContain('models/gemini-3-flash-preview');
-      expect(GEMINI_MODELS).toContain('models/gemini-flash-latest');
-      expect(GEMINI_MODELS).toContain('models/gemini-flash-lite-latest');
+    it('should include gemini-3.1-flash-lite per @google/genai latest', () => {
+      expect(GEMINI_MODELS).toContain('models/gemini-3.1-flash-lite');
     });
   });
 

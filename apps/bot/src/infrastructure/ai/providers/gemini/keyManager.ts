@@ -7,12 +7,11 @@ import { GoogleGenAI } from '@google/genai';
 import { CONFIG } from '../../../../core/config/config.js';
 import { debugLog } from '../../../../core/logger/logger.js';
 
-// Danh sách models theo thứ tự ưu tiên (từ config)
+// Danh sách models theo thứ tự ưu tiên (từ config).
+// Per @google/genai docs (https://ai.google.dev/gemini-api/docs/models), latest stable Flash-Lite là `models/gemini-3.1-flash-lite`.
 const getGeminiModels = () =>
   CONFIG.gemini?.models ?? [
-    'models/gemini-3-flash-preview',
-    'models/gemini-flash-latest',
-    'models/gemini-flash-lite-latest',
+    'models/gemini-3.1-flash-lite',
   ];
 
 export const GEMINI_MODELS = getGeminiModels();

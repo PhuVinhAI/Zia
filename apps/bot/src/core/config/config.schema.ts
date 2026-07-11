@@ -199,13 +199,15 @@ export const GeminiConfigSchema = z.object({
   temperature: z.coerce.number().min(0).max(2).default(1),
   topP: z.coerce.number().min(0).max(1).default(0.95),
   maxOutputTokens: z.coerce.number().min(1000).default(65536),
+  // Thinking params: `thinkingBudget` dùng cho Gemini 2.5, `thinkingLevel` dùng cho Gemini 3.
+  // Xem https://github.com/googleapis/js-genai/blob/main/codegen_instructions.md (Thinking section)
   thinkingBudget: z.coerce.number().min(0).default(8192),
+  // Khớp enum ThinkingLevel từ @google/genai — default HIGH theo yêu cầu dự án.
+  thinkingLevel: z.enum(['MINIMAL', 'LOW', 'MEDIUM', 'HIGH']).default('HIGH'),
   models: z
     .array(z.string())
     .default([
-      'models/gemini-3-flash-preview',
-      'models/gemini-flash-latest',
-      'models/gemini-flash-lite-latest',
+      'models/gemini-3.1-flash-lite',
     ]),
   rateLimitMinuteMs: z.coerce.number().min(60000).default(120000),
   rateLimitDayMs: z.coerce.number().min(3600000).default(86400000),
@@ -350,10 +352,9 @@ export const SettingsSchema = z.object({
     topP: 0.95,
     maxOutputTokens: 65536,
     thinkingBudget: 8192,
+    thinkingLevel: 'HIGH',
     models: [
-      'models/gemini-3-flash-preview',
-      'models/gemini-flash-latest',
-      'models/gemini-flash-lite-latest',
+      'models/gemini-3.1-flash-lite',
     ],
     rateLimitMinuteMs: 120000,
     rateLimitDayMs: 86400000,

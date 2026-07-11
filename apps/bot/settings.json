@@ -154,10 +154,9 @@
     "topP": 0.95,
     "maxOutputTokens": 65536,
     "thinkingBudget": 8192,
+    "thinkingLevel": "HIGH",
     "models": [
-      "models/gemini-3-flash-preview",
-      "models/gemini-flash-latest",
-      "models/gemini-flash-lite-latest"
+      "models/gemini-3.1-flash-lite"
     ],
     "rateLimitMinuteMs": 120000,
     "rateLimitDayMs": 86400000
