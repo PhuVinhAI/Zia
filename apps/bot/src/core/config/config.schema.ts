@@ -40,7 +40,6 @@ export const BotConfigSchema = z.object({
   unauthorizedLogFile: z.string().default('logs/unauthorized.json'),
   maxToolDepth: z.coerce.number().min(1).max(50).default(10),
   showToolCalls: z.boolean().default(true),
-  allowNSFW: z.boolean().default(false),
   cloudDebug: CloudDebugSchema.optional().default({
     enabled: false,
     prefix: '#bot',
@@ -157,7 +156,6 @@ export const EdgeTtsConfigSchema = z.object({
 export const GiphyConfigSchema = z.object({
   timeoutMs: z.coerce.number().min(1000).default(15000),
   defaultLimit: z.coerce.number().min(1).max(50).default(10),
-  defaultRating: z.string().default('g'),
   retryLimit: z.coerce.number().min(1).max(10).default(2),
 });
 
@@ -268,7 +266,6 @@ export const SettingsSchema = z.object({
     unauthorizedLogFile: 'logs/unauthorized.json',
     maxToolDepth: 10,
     showToolCalls: true,
-    allowNSFW: false,
     cloudDebug: { enabled: false, prefix: '#bot' },
     sleepMode: { enabled: false, sleepHour: 23, wakeHour: 6, checkIntervalMs: 1800000 },
     maintenanceMode: {
@@ -350,7 +347,6 @@ export const SettingsSchema = z.object({
   giphy: GiphyConfigSchema.optional().default({
     timeoutMs: 15000,
     defaultLimit: 10,
-    defaultRating: 'g',
     retryLimit: 2,
   }),
   nekos: NekosConfigSchema.optional().default({

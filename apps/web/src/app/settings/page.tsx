@@ -19,7 +19,6 @@ import {
   Puzzle,
   Wrench,
   Zap,
-  Shield,
   MessageSquare,
   Brain,
   Moon,
@@ -637,14 +636,6 @@ export default function SettingsPage() {
               </div>
 
               <div className="space-y-4">
-                <SettingToggle
-                  label="Cho phép NSFW"
-                  description="Cho phép nội dung người lớn"
-                  checked={localSettings.bot.allowNSFW}
-                  onCheckedChange={(v) => updateBotSetting('allowNSFW', v)}
-                  icon={Shield}
-                  color="#FF4B4B"
-                />
                 <SettingToggle
                   label="Tự nghe"
                   description="Bot nghe tin nhắn của chính mình"

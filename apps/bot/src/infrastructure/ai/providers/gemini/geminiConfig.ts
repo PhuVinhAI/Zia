@@ -24,11 +24,11 @@ export { GEMINI_MODELS, type GeminiModel, keyManager } from './keyManager.js';
 // Model động - lấy từ keyManager (hỗ trợ fallback)
 export const getGeminiModel = () => keyManager.getCurrentModel();
 
-// Safety settings - tắt tất cả bộ lọc để tránh response rỗng
+// Safety settings - tắt các bộ lọc không liên quan NSFW để tránh response rỗng.
+// HARM_CATEGORY_SEXUALLY_EXPLICIT dùng Gemini default (chặn nội dung người lớn).
 const SAFETY_SETTINGS = [
   { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.OFF },
   { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.OFF },
-  { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.OFF },
   { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.OFF },
   { category: HarmCategory.HARM_CATEGORY_CIVIC_INTEGRITY, threshold: HarmBlockThreshold.OFF },
 ];

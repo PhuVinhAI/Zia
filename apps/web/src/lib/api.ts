@@ -99,7 +99,6 @@ export interface BotConfig {
   fileLogging: boolean;
   maxToolDepth: number;
   showToolCalls: boolean;
-  allowNSFW: boolean;
   cloudDebug: CloudDebugSettings;
   sleepMode: SleepModeSettings;
   maintenanceMode: MaintenanceModeSettings;

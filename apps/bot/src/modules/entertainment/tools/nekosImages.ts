@@ -31,13 +31,6 @@ export const nekosImagesTool: ToolDefinition = {
       required: false,
     },
     {
-      name: 'rating',
-      type: 'string',
-      description:
-        "Độ tuổi phù hợp: 'safe' (an toàn), 'suggestive' (gợi cảm nhẹ), 'borderline' (ranh giới), 'explicit' (18+). Mặc định: safe",
-      required: false,
-    },
-    {
       name: 'artist',
       type: 'number',
       description: 'ID của artist để lọc ảnh theo tác giả',
@@ -59,7 +52,7 @@ export const nekosImagesTool: ToolDefinition = {
 
     try {
       const queryParams: Record<string, any> = {
-        rating: data.rating,
+        rating: 'safe',
         artist: data.artist,
         tags: data.tags,
         without_tags: data.withoutTags,

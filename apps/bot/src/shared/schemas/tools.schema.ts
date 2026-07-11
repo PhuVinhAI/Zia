@@ -105,23 +105,21 @@ export const JikanRecommendationsSchema = z.object({
 
 // ============ NEKOS API TOOLS ============
 
-// Nekos Images params (random)
+// Nekos Images params (random) - chỉ lấy ảnh safe, không hỗ trợ NSFW
 export const NekosImagesSchema = z.object({
   tags: z.string().optional(),
   withoutTags: z.string().optional(),
-  rating: z.enum(['safe', 'suggestive', 'borderline', 'explicit']).default('safe'),
   artist: z.coerce.number().optional(),
   limit: z.coerce.number().min(1).max(25).default(1),
 });
 
 // ============ GIPHY API TOOLS ============
 
-// Giphy GIF params
+// Giphy GIF params - chỉ lấy GIF an toàn (rating 'g'), không hỗ trợ NSFW
 export const GiphyGifSchema = z.object({
   mode: z.enum(['search', 'trending', 'random']).default('search'),
   query: z.string().optional(),
   limit: z.coerce.number().min(1).max(25).default(1),
-  rating: z.enum(['y', 'g', 'pg', 'pg-13', 'r']).default('r'),
 });
 
 // ============ FREEPIK AI IMAGE TOOLS ============
@@ -662,7 +660,7 @@ export const TOOL_EXAMPLES: Record<string, string> = {
   jikanEpisodes: `[tool:jikanEpisodes]{"id":20,"page":1}[/tool]`,
   jikanGenres: `[tool:jikanGenres]{"mediaType":"anime"}[/tool]`,
   jikanRecommendations: `[tool:jikanRecommendations]{"id":20,"mediaType":"anime","limit":5}[/tool]`,
-  nekosImages: `[tool:nekosImages]{"tags":"catgirl","rating":"safe","limit":1}[/tool]`,
+  nekosImages: `[tool:nekosImages]{"tags":"catgirl","limit":1}[/tool]`,
   giphyGif: `[tool:giphyGif]{"mode":"search","query":"happy","limit":1}[/tool]`,
 
   // System

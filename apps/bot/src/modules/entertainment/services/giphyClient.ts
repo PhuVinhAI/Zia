@@ -54,18 +54,17 @@ export async function searchGifs(
   options: {
     limit?: number;
     offset?: number;
-    rating?: GiphyRating;
     lang?: string;
   } = {},
 ): Promise<GiphySearchResponse> {
   const defaultLimit = CONFIG.giphy?.defaultLimit ?? 10;
-  const defaultRating = CONFIG.giphy?.defaultRating ?? 'g';
+  // Luôn dùng rating 'g' (an toàn) - không hỗ trợ NSFW
   const searchParams = new URLSearchParams({
     api_key: API_KEY,
     q: query,
     limit: String(options.limit || defaultLimit),
     offset: String(options.offset || 0),
-    rating: options.rating || defaultRating,
+    rating: 'g',
     lang: options.lang || 'en',
   });
 
@@ -76,13 +75,14 @@ export async function searchGifs(
  * Get trending GIFs
  */
 export async function getTrendingGifs(
-  options: { limit?: number; offset?: number; rating?: GiphyRating } = {},
+  options: { limit?: number; offset?: number } = {},
 ): Promise<GiphySearchResponse> {
+  // Luôn dùng rating 'g' (an toàn) - không hỗ trợ NSFW
   const searchParams = new URLSearchParams({
     api_key: API_KEY,
     limit: String(options.limit || 10),
     offset: String(options.offset || 0),
-    rating: options.rating || 'g',
+    rating: 'g',
   });
 
   return giphyApi.get('gifs/trending', { searchParams }).json<GiphySearchResponse>();
@@ -91,12 +91,11 @@ export async function getTrendingGifs(
 /**
  * Get random GIF
  */
-export async function getRandomGif(
-  options: { tag?: string; rating?: GiphyRating } = {},
-): Promise<GiphyRandomResponse> {
+export async function getRandomGif(options: { tag?: string } = {}): Promise<GiphyRandomResponse> {
+  // Luôn dùng rating 'g' (an toàn) - không hỗ trợ NSFW
   const searchParams = new URLSearchParams({
     api_key: API_KEY,
-    rating: options.rating || 'g',
+    rating: 'g',
   });
 
   if (options.tag) {

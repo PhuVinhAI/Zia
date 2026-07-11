@@ -38,13 +38,6 @@ export const giphyGifTool: ToolDefinition = {
       description: 'Số lượng GIF trả về (1-25, mặc định: 1). Không áp dụng cho mode random',
       required: false,
     },
-    {
-      name: 'rating',
-      type: 'string',
-      description:
-        "Độ tuổi: 'y' (trẻ em), 'g' (mọi lứa tuổi), 'pg' (cần hướng dẫn), 'pg-13' (13+), 'r' (17+). Mặc định: r",
-      required: false,
-    },
   ],
   execute: async (params): Promise<ToolResult> => {
     const validation = validateParamsWithExample(GiphyGifSchema, params, 'giphyGif');
@@ -60,7 +53,6 @@ export const giphyGifTool: ToolDefinition = {
         case 'trending': {
           const response = await getTrendingGifs({
             limit: data.limit,
-            rating: data.rating,
           });
           gifs = response.data;
           break;
@@ -68,7 +60,6 @@ export const giphyGifTool: ToolDefinition = {
         case 'random': {
           const response = await getRandomGif({
             tag: data.query,
-            rating: data.rating,
           });
           if (response.data) {
             gifs = [response.data];
@@ -81,7 +72,6 @@ export const giphyGifTool: ToolDefinition = {
           }
           const response = await searchGifs(data.query, {
             limit: data.limit,
-            rating: data.rating,
           });
           gifs = response.data;
           break;
